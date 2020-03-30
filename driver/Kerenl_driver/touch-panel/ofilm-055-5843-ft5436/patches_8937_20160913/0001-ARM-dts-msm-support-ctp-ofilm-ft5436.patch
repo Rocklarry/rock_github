@@ -1,0 +1,88 @@
+From 76e805d4a90a5af1e50cfdbbcbcd42f0e2604183 Mon Sep 17 00:00:00 2001
+From: Li Zhanchao <lizc1023@thundersoft.com>
+Date: Tue, 13 Sep 2016 16:19:50 +0800
+Subject: [PATCH 1/2] ARM:dts:msm: support ctp ofilm ft5436
+
+Add CTP O-FILM@055-5843@FT5436 device tree
+
+Change-Id: Id7ce10cbf5d83bcfad7f825a43bbd68018f6ecf5
+Signed-off-by: Li Zhanchao <lizc1023@thundersoft.com>
+---
+ .../boot/dts/qcom/msm8937-pmi8950-qrd-sku1.dtsi    | 50 +++++++++++++++++++++-
+ 1 file changed, 49 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8937-pmi8950-qrd-sku1.dtsi b/arch/arm/boot/dts/qcom/msm8937-pmi8950-qrd-sku1.dtsi
+index 8e4f251..1e8571d 100644
+--- a/arch/arm/boot/dts/qcom/msm8937-pmi8950-qrd-sku1.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8937-pmi8950-qrd-sku1.dtsi
+@@ -47,6 +47,7 @@
+ 
+ 	i2c@78b7000 {
+ 		status = "ok";
++/*
+ 		synaptics@4b {
+ 			compatible = "synaptics,dsx";
+ 			reg = <0x4b>;
+@@ -66,11 +67,58 @@
+ 			synaptics,disable-gpios;
+ 			synaptics,button-map = <158 139 172>;
+ 			synaptics,resume-in-workqueue;
+-			/* Underlying clocks used by secure touch */
++			/* Underlying clocks used by secure touch * /
+ 			clock-names = "iface_clk", "core_clk";
+ 			clocks = <&clock_gcc clk_gcc_blsp1_ahb_clk>,
+ 				<&clock_gcc clk_gcc_blsp1_qup3_i2c_apps_clk>;
+ 		};
++*/
++		focaltech@38 {
++			compatible = "focaltech,5x06";
++			reg = <0x38>;
++			interrupt-parent = <&tlmm>;
++			interrupts = <65 0x2008>;
++			vdd-supply = <&pm8937_l10>;
++			vcc_i2c-supply = <&pm8937_l5>;
++			/* pins used by touchscreen */
++			pinctrl-names = "pmx_ts_active","pmx_ts_suspend",
++				"pmx_ts_release";
++			pinctrl-0 = <&ts_int_active &ts_reset_active>;
++			pinctrl-1 = <&ts_int_suspend &ts_reset_suspend>;
++			pinctrl-2 = <&ts_release>;
++			focaltech,name = "ft5436";
++			focaltech,family-id = <0x14>;
++			focaltech,reset-gpio = <&tlmm 64 0x00>;
++			focaltech,irq-gpio = <&tlmm 65 0x2008>;
++			focaltech,display-coords = <0 0 710 1280>;
++			focaltech,panel-coords = <0 0 710 1400>;
++			focaltech,button-map= <139 172 158>;
++			focaltech,no-force-update;
++			focaltech,i2c-pull-up;
++			focaltech,group-id = <1>;
++			focaltech,hard-reset-delay-ms = <20>;
++			focaltech,soft-reset-delay-ms = <200>;
++			focaltech,num-max-touches = <5>;
++			focaltech,fw-delay-aa-ms = <30>;
++			focaltech,fw-delay-55-ms = <30>;
++			focaltech,fw-upgrade-id1 = <0x11>;
++			focaltech,fw-upgrade-id2 = <0x11>;
++			focaltech,fw-delay-readid-ms = <10>;
++			focaltech,fw-delay-era-flsh-ms = <2000>;
++			focaltech,fw-auto-cal;
++			focaltech,fw-vkey-support;
++			focaltech,ignore-id-check;
++		};
++	};
++	gen-vkeys {
++		compatible = "qcom,gen-vkeys";
++		label = "ft5x06_ts";
++		qcom,disp-maxx = <1080>;
++		qcom,disp-maxy = <1920>;
++		qcom,panel-maxx = <1080>;
++		qcom,panel-maxy = <2098>;
++		qcom,key-codes = <139 172 158>;
++		qcom,y-offset = <0>;
+ 	};
+ };
+ 
+-- 
+1.9.1
+

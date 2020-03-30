@@ -1,0 +1,22 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/rock/qccode/workspace/code_test/c++/string/src/string.cpp
+iostream
+-
+array
+-
+stdlib.h
+-
+vector
+-
+cstring
+-
+stdio.h
+-
+

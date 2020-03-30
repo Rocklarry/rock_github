@@ -1,0 +1,28 @@
+From 269b72135c59ff61bf762f64368673513103be17 Mon Sep 17 00:00:00 2001
+From: wangwf <wangwf0922@thundersoft.com>
+Date: Thu, 16 Oct 2014 14:19:57 +0800
+Subject: [PATCH 3/3] defconfig: msm: Add OV2685 litearray-GCDF140048R camera config
+
+Add ov2685 litearray-GCDF140048R camera defconfig for msm8909
+
+Change-Id: I25be36080c6af88079372c7e7616ac6bec9bbb66
+Signed-off-by: wweifeng <wangwf0922@thundersoft.com>
+---
+ arch/arm/configs/msm8916_defconfig |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/configs/msm8916_defconfig b/arch/arm/configs/msm8916_defconfig
+index e37223c..15e790a 100644
+--- a/arch/arm/configs/msm8916_defconfig
++++ b/arch/arm/configs/msm8916_defconfig
+@@ -329,6 +329,7 @@ CONFIG_MSM_CSID=y
+ CONFIG_MSM_EEPROM=y
+ CONFIG_MSM_ISPIF=y
+ CONFIG_MT9M114=y
++CONFIG_OV2685=y
+ CONFIG_OV5645=y
+ CONFIG_MSMB_JPEG=y
+ CONFIG_MSM_VIDC_V4L2=y
+-- 
+1.7.4.1
+

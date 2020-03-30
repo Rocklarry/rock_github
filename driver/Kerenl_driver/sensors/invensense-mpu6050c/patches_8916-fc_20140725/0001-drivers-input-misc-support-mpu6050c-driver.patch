@@ -1,0 +1,85 @@
+From c9f34bd5f41fba32ad1c46fd4b13cd9b16d084ad Mon Sep 17 00:00:00 2001
+From: Yukun Wan <wanyk0402@thundersoft.com>
+Date: Fri, 25 Jul 2014 14:22:31 +0800
+Subject: [PATCH 1/3] drivers:input:misc: support mpu6050c driver
+
+Driver support mpu6050c
+
+Change-Id: I406822559719307eb03f7acdea48c21d4ee05635
+Signed-off-by: Yukun Wan <wanyk0402@thundersoft.com>
+---
+ .../devicetree/bindings/input/misc/mpu6050.txt     |    4 ++++
+ drivers/input/misc/mpu6050.c                       |   22 +++++++++++++++++---
+ 2 files changed, 23 insertions(+), 3 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/input/misc/mpu6050.txt b/Documentation/devicetree/bindings/input/misc/mpu6050.txt
+index 316b598..113d7c1 100644
+--- a/Documentation/devicetree/bindings/input/misc/mpu6050.txt
++++ b/Documentation/devicetree/bindings/input/misc/mpu6050.txt
+@@ -19,6 +19,8 @@ Required properties:
+ 				"Landscape Right Back Side": Landscape Right (back side view)
+ 				"Portrait Down Back Side": Portrait Down (back side view)
+ 				"Landscape Left Back Side": Landscape Left (back side view)
++-invn,accel_poll_ms	:The poll_delay time of the accel.
++-invn,gyro_poll_ms	:The poll_delay time of the gyro.
+ 
+ Optional properties:
+ 
+@@ -38,5 +40,7 @@ Example:
+ 			vdd-supply = <&pm8916_l6>;
+ 			vi2c-supply = <&pm8916_l16>;
+ 			invn,place = "Portrait Up";
++			invn,accel_poll_ms = <200>;
++			invn,gyro_poll_ms = <200>;
+ 		};
+ 	};
+diff --git a/drivers/input/misc/mpu6050.c b/drivers/input/misc/mpu6050.c
+index 3a054c8..b8fce20 100644
+--- a/drivers/input/misc/mpu6050.c
++++ b/drivers/input/misc/mpu6050.c
+@@ -1615,7 +1615,10 @@ static int mpu6050_parse_dt(struct device *dev,
+ 			struct mpu6050_platform_data *pdata)
+ {
+ 	int rc;
+-
++	unsigned int tmp;
++	struct device_node *np = dev->of_node;
++	struct mpu6050_sensor *sensor;
++	sensor = dev_get_drvdata(dev);
+ 	rc = mpu6050_dt_get_place(dev, pdata);
+ 	if (rc)
+ 		return rc;
+@@ -1630,6 +1633,19 @@ static int mpu6050_parse_dt(struct device *dev,
+ 	pdata->use_int = of_property_read_bool(dev->of_node,
+ 				"invn,use-interrupt");
+ 
++	rc = of_property_read_u32(np, "invn,accel_poll_ms", &tmp);
++	 if (rc) {
++		dev_err(dev, "Unable to read accel_poll_ms.\n");
++		return rc;
++	}
++	sensor->accel_poll_ms = tmp;
++
++	rc = of_property_read_u32(np, "invn,gyro_poll_ms", &tmp);
++	 if (rc) {
++		dev_err(dev, "Unable to read gyro_poll_ms.\n");
++		return rc;
++	}
++	sensor->gyro_poll_ms = tmp;
+ 	return 0;
+ }
+ #else
+@@ -1764,8 +1780,8 @@ static int mpu6050_probe(struct i2c_client *client,
+ 	sensor->gyro_dev->name = MPU6050_DEV_NAME_GYRO;
+ 	sensor->accel_dev->id.bustype = BUS_I2C;
+ 	sensor->gyro_dev->id.bustype = BUS_I2C;
+-	sensor->accel_poll_ms = MPU6050_ACCEL_DEFAULT_POLL_INTERVAL_MS;
+-	sensor->gyro_poll_ms = MPU6050_GYRO_DEFAULT_POLL_INTERVAL_MS;
++	/*sensor->accel_poll_ms = MPU6050_ACCEL_DEFAULT_POLL_INTERVAL_MS;
++	sensor->gyro_poll_ms = MPU6050_GYRO_DEFAULT_POLL_INTERVAL_MS;*/
+ 
+ 	input_set_capability(sensor->accel_dev, EV_ABS, ABS_MISC);
+ 	input_set_capability(sensor->gyro_dev, EV_ABS, ABS_MISC);
+-- 
+1.7.9.5
+

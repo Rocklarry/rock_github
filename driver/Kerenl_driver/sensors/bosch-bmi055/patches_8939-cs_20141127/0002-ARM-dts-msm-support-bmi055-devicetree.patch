@@ -1,0 +1,67 @@
+From 2c42ad02172262d5ba0ad72c736a25e9a6667660 Mon Sep 17 00:00:00 2001
+From: yanqy <yanqy0911@thundersoft.com>
+Date: Thu, 27 Nov 2014 10:29:06 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support bmi055 devicetree
+
+Devicetree support bmi055
+
+Change-Id: Ibca15de081d8c30d16c877edb5462eafdcc8acc7
+Signed-off-by: Qiyang Yan <yanqy0911@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi |   21 ++++++++++-----------
+ 1 file changed, 10 insertions(+), 11 deletions(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+index 8691993..aad4c7e 100755
+--- a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+@@ -82,20 +82,18 @@
+ 		avago,ga-value = <560>;
+ 	};
+ 
++	bosch@69 { /* gyro sensor */
++		compatible = "bosch,bmg160";
++		reg = <0x69>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++	};
++
+ 	bosch@18 { /* Accelerometer sensor */
+ 		compatible = "bosch,bma2x2";
+ 		reg = <0x18>;
+-		pinctrl-names = "bma_default","bma_sleep";
+-		pinctrl-0 = <&bma2x2_int1_default &bma2x2_int2_default>;
+-		pinctrl-1 = <&bma2x2_int1_sleep &bma2x2_int2_sleep>;
+-		interrupt-parent = <&msm_gpio>;
+-		interrupts = <112 0x2002>;
+ 		vdd-supply = <&pm8916_l17>;
+ 		vio-supply = <&pm8916_l6>;
+-		bosch,init-interval = <200>;
+-		bosch,place = <2>;
+-		bosch,gpio-int1 = <&msm_gpio 112 0x2002>;
+-		bosch,gpio-int2 = <&msm_gpio 114 0x2002>;
+ 	};
+ 
+ 	memsic@30 { /* Magnetic field sensor */
+@@ -107,7 +105,8 @@
+ 		memsic,auto-report;
+ 	};
+ 
+-	mpu6050@68 { /* Gyroscope and accelerometer sensor combo */
++/*
++	mpu6050@68 {  Gyroscope and accelerometer sensor combo
+ 		compatible = "invn,mpu6050";
+ 		reg = <0x68>;
+ 		pinctrl-names = "mpu_default","mpu_sleep";
+@@ -121,7 +120,7 @@
+ 		invn,gpio-int = <&msm_gpio 115 0x2002>;
+ 		invn,place = "Portrait Down Back Side";
+ 	};
+-
++*/
+ 	tps65132@3e {
+ 		compatible = "ti,tps65132";
+ 		reg = <0x3e>;
+-- 
+1.7.9.5
+

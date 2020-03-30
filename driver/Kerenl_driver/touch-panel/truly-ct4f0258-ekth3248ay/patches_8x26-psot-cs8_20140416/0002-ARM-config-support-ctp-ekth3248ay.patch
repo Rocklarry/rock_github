@@ -1,0 +1,38 @@
+From 7ba9e372884afb2376f25587c308c96872770e9c Mon Sep 17 00:00:00 2001
+From: Wang Xinhui <wangxh0701@thundersoft.com>
+Date: Mon, 14 Apr 2014 19:38:42 +0800
+Subject: [PATCH 2/3] ARM:config: support ctp ekth3248ay
+
+Add ctp TRULY@CT4F0258@EKTH3248AY driver
+
+Change-Id: I5bc3fd174038b5e01df76db15937d433883a0f94
+Signed-off-by: Xinhui Wang <wangxh0701@thundersoft.com>
+---
+ arch/arm/configs/msm8226_defconfig |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
+
+diff --git a/arch/arm/configs/msm8226_defconfig b/arch/arm/configs/msm8226_defconfig
+index f4ee78d..87cb869 100644
+--- a/arch/arm/configs/msm8226_defconfig
++++ b/arch/arm/configs/msm8226_defconfig
+@@ -258,11 +258,12 @@ CONFIG_INPUT_JOYSTICK=y
+ CONFIG_JOYSTICK_XPAD=y
+ CONFIG_INPUT_TOUCHSCREEN=y
+ CONFIG_TOUCHSCREEN_ATMEL_MXT=y
+-CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI4=y
+-CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_RMI4_DEV=y
+-CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE=y
+-CONFIG_TOUCHSCREEN_FT5X06=y
+-CONFIG_TOUCHSCREEN_GEN_VKEYS=y
++#CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI4=y
++#CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_RMI4_DEV=y
++#CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE=y
++#CONFIG_TOUCHSCREEN_FT5X06=y
++#CONFIG_TOUCHSCREEN_GEN_VKEYS=y
++CONFIG_TOUCHSCREEN_ELAN_EKTF3XXX=y
+ CONFIG_INPUT_MISC=y
+ CONFIG_INPUT_UINPUT=y
+ CONFIG_INPUT_GPIO=m
+-- 
+1.7.9.5
+

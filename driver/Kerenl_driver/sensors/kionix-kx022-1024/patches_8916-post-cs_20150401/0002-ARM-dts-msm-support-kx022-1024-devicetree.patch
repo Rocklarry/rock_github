@@ -1,0 +1,51 @@
+From cb2d9b0ceb5fab72df665893fca17f4e076403cf Mon Sep 17 00:00:00 2001
+From: chenx <chenxiang0527@thundersoft.com>
+Date: Wed, 11 Mar 2015 16:14:19 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support kx022-1024 devicetree
+
+Devicetree support kx022-1024
+
+Change-Id: I82aa8e5fae9dfdbd292447efd640991b44ab5fee
+Signed-off-by: Xiang Chen <chenxiang0527@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi |   17 ++++++++++++++++-
+ 1 file changed, 16 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi b/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
+index 5bb6734..a68c8a8 100644
+--- a/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
+@@ -87,7 +87,7 @@
+ 		akm,gpio_rstn = <&msm_gpio 36 0x0>;
+ 		akm,auto-report;
+ 	};
+-
++/*
+ 	avago@39 {
+ 		compatible = "avago,apds9930";
+ 		reg = <0x39>;
+@@ -128,6 +128,21 @@
+ 		st,negate-x;
+ 		st,negate-y;
+ 	};
++*/
++	kionix@1e {
++		compatible = "kionix,kx022-1024";
++		reg = <0x1e>;
++		interrupt-parent = <&msm_gpio>;
++		interrupts = <113 0x2002>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++		kionix,min_interval = <5>;
++		kionix,poll_interval = <100>;
++		kionix,accel_direction = <1>;
++		kionix,accel_irq_use_drdy = <0>;
++		kionix,accel_res = <12>;
++		kionix,accel_g_range = <2>;
++	};
+ 
+ 	tps65132@3e {
+ 		compatible = "ti,tps65132";
+-- 
+1.7.9.5
+

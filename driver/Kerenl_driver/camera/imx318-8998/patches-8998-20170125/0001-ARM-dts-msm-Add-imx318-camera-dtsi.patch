@@ -1,0 +1,54 @@
+From 24d3ea8b704deb9f287cde69c40d39cc030c91a0 Mon Sep 17 00:00:00 2001
+From: liu ying <liuying0704@thundersoft.com>
+Date: Wed, 25 Jan 2017 10:15:59 +0800
+Subject: [PATCH] ARM: dts: msm: Add imx318 camera dtsi
+
+Add imx318 devicetree description for msm8998
+
+Change-Id: I465fbb7d23b6b8d4869866ef68c72bfde215d295
+Signed-off-by: liu ying <liuying0704@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8998-camera.dtsi | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8998-camera.dtsi b/arch/arm/boot/dts/qcom/msm8998-camera.dtsi
+index d0fa992..6f6405e 100644
+--- a/arch/arm/boot/dts/qcom/msm8998-camera.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8998-camera.dtsi
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (c) 2015-2016, The Linux Foundation. All rights reserved.
++ * Copyright (c) 2015-2017, The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 and
+@@ -51,7 +51,7 @@
+ 			"csi_src_clk", "csi_clk", "cphy_csid_clk",
+ 			"csiphy_timer_src_clk", "csiphy_timer_clk",
+ 			"camss_ispif_ahb_clk", "csiphy_clk_src", "csiphy_clk";
+-		qcom,clock-rates = <0 0 0 0 0 0 256000000 0 0 200000000 0
++		qcom,clock-rates = <0 0 0 0 0 0 256000000 0 0 266700000 0
+ 			0 256000000 0>;
+ 		status = "ok";
+ 	};
+@@ -159,7 +159,7 @@
+ 			"ispif_ahb_clk", "csi_src_clk", "csiphy_clk_src",
+ 			"csi_clk", "csi_ahb_clk", "csi_rdi_clk",
+ 			"csi_pix_clk", "cphy_csid_clk";
+-		qcom,clock-rates = <0 0 0 0 0 0 0 256000000 256000000
++		qcom,clock-rates = <0 0 0 0 0 0 0 480000000 256000000
+ 			0 0 0 0 0>;
+ 		status = "ok";
+ 	};
+@@ -502,7 +502,7 @@
+ 			"camss_vfe_vfe1_clk",
+ 			"vfe1_clk_src", "camss_csi_vfe1_clk";
+ 		qcom,clock-rates = <0 0 0 0 0
+-			0 0 0 0
++			480000000 0 0 0
+ 			0 0 0 0
+ 			0 0 0 0
+ 			0 0 0 0
+-- 
+1.9.1
+

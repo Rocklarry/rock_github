@@ -1,0 +1,71 @@
+From 4998bc733eb6211fd65dc3e72728c85ca2537ffc Mon Sep 17 00:00:00 2001
+From: chenx <chenxiang0527@thundersoft.com>
+Date: Thu, 23 Apr 2015 11:11:21 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support lis3dh devicetree
+
+Devicetree support lis3dh
+
+Change-Id: I2c1b6055c498c4bd1871c41600ebeac92ac9445b
+Signed-off-by: Xiang Chen <chenxiang0527@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi |   34 ++++++++++++++++++++++++++
+ 1 file changed, 34 insertions(+)
+ mode change 100755 => 100644 arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+
+diff --git a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+old mode 100755
+new mode 100644
+index 1039722..c19a06b
+--- a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+@@ -47,6 +47,20 @@
+ 		};
+ 	};
+ 
++	lis3dh_int1_pin {
++		qcom,pins = <&gp 115>;
++		qcom,num-grp-pins = <1>;
++		label = "lis3dh_int_pin";
++		lis3dh_int1_default: int1_default {
++			drive-strength = <6>;
++			bias-pull-down;
++		};
++		lis3dh_int1_sleep: int1_sleep {
++			drive-strength = <2>;
++			bias-pull-down;
++		};
++	};
++
+ 	tps65132-en-pin {
+ 		qcom,pins = <&gp 97>, <&gp 98>;
+ 		qcom,num-grp-pins = <2>;
+@@ -82,6 +96,26 @@
+ 		avago,ga-value = <560>;
+ 	};
+ 
++	st@19 {
++		compatible = "st,lis3dh";
++		reg = <0x19>;
++		pinctrl-names = "lis3dh_default","lis3dh_sleep";
++		pinctrl-0 = <&lis3dh_int1_default>;
++		pinctrl-1 = <&lis3dh_int1_sleep>;
++		interrupt-parent = <&msm_gpio>;
++		vdd-supply = <&pm8916_l17>;
++		vddio-supply = <&pm8916_l6>;
++		st,min-interval = <5>;
++		st,init-interval = <200>;
++		st,axis-map-x = <0>;
++		st,axis-map-y = <1>;
++		st,axis-map-z = <2>;
++		st,g-range = <2>;
++		st,gpio-int1 = <&msm_gpio 115 0x2002>;
++		st,negate-x;
++		st,negate-y;
++	};
++
+ 	bosch@18 { /* Accelerometer sensor */
+ 		compatible = "bosch,bma2x2";
+ 		reg = <0x18>;
+-- 
+1.7.9.5
+

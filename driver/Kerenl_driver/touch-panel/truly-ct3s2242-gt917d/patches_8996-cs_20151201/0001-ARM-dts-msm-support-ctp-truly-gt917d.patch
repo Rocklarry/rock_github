@@ -1,0 +1,130 @@
+From 408be9a2d10e235ffdf77f72f98debbbddbc7da2 Mon Sep 17 00:00:00 2001
+From: maoyq0504 <maoyq0504@thundersoft.com>
+Date: Tue, 1 Dec 2015 10:37:45 +0800
+Subject: [PATCH 1/3] ARM:dts:msm: support ctp truly gt917d
+
+Add CTP TRULY@CT3S2242@GT917D device tree
+
+Change-Id: Ibf5077d4ec2686d286533d02168bf15c908a42ae
+Signed-off-by: Yuanqiu Mao <maoyq0504@thundersoft.com>
+---
+ .../bindings/input/touchscreen/gt9xx/gt9xx.txt     | 53 +++++++++-------------
+ arch/arm/boot/dts/qcom/msm8996-dtp.dtsi            | 36 +++++++++++++++
+ 2 files changed, 58 insertions(+), 31 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/input/touchscreen/gt9xx/gt9xx.txt b/Documentation/devicetree/bindings/input/touchscreen/gt9xx/gt9xx.txt
+index ba61a2f..bcb9483 100644
+--- a/Documentation/devicetree/bindings/input/touchscreen/gt9xx/gt9xx.txt
++++ b/Documentation/devicetree/bindings/input/touchscreen/gt9xx/gt9xx.txt
+@@ -63,37 +63,28 @@ i2c@f9927000 {
+ 		goodix@5d {
+ 			compatible = "goodix,gt9xx";
+ 			reg = <0x5d>;
+-			interrupt-parent = <&msmgpio>;
+-			interrupts = <17 0x2008>;
+-			reset-gpios = <&msmgpio 16 0x00>;
+-			interrupt-gpios = <&msmgpio 17 0x00>;
+-			avdd-supply = <&tp_power>;
+-			goodix,panel-coords = <0 0 720 1200>;
+-			goodix,display-coords = <0 0 720 1080>;
+-			goodix,button-map= <158 102 139>;
+-			goodix,product-id = "915";
+-			goodix,cfg-data0 = [
+-				41 D0 02 00 05 0A 05 01 01 08
+-				12 58 50 41 03 05 00 00 00 00
+-				00 00 00 00 00 00 00 8C 2E 0E
+-				28 24 73 13 00 00 00 83 03 1D
+-				40 02 00 00 00 03 64 32 00 00
+-				00 1A 38 94 C0 02 00 00 00 04
+-				9E 1C 00 8D 20 00 7A 26 00 6D
+-				2C 00 60 34 00 60 10 38 68 00
+-				F0 50 35 FF FF 27 00 00 00 00
+-				00 01 1B 14 0C 14 00 00 01 00
+-				00 00 00 00 00 00 00 00 00 00
+-				00 00 02 04 06 08 0A 0C 0E 10
+-				12 14 16 18 1A 1C FF FF FF FF
+-				FF FF FF FF FF FF FF FF FF FF
+-				FF FF 00 02 04 06 08 0A 0C 0F
+-				10 12 13 14 16 18 1C 1D 1E 1F
+-				20 21 22 24 26 28 29 2A FF FF
+-				FF FF FF FF FF FF FF 22 22 22
+-				22 22 22 FF 07 01];
++			interrupt-parent = <&tlmm>;
++			interrupts = <125 0x2008>;
++			reset-gpios = <&tlmm 89 0x00>;
++			interrupt-gpios = <&tlmm 125 0x0>;
++			vdd-supply = <&pm8994_l22>;
++			vcc-i2c-supply = <&pm8994_l14>;
++			pinctrl-names = "pmx_ts_active",
++				"pmx_ts_suspend","pmx_ts_release";
++			pinctrl-0 = <&ts_active>;
++			pinctrl-1 = <&ts_suspend>;
++			goodix,button-map = <139 172 158>;
++			goodix,panel-coords = <0 0 1080 2090>;
++			goodix,display-coords = <0 0 1080 1920>;
++			goodix,product-id = "917D";
++			goodix,num_max_touches = <5>;
++			goodix,soft_rst_dly = <20>;
++			goodix,name = "GT917D";
+ 			goodix,fw_name = "gtp_fw.bin";
+-			goodix,have-touch-key;
+-			goodix,driver-send-cfg;
++			goodix,fw-vkey-support;
++			goodix,i2c-pull-up;
++			goodix,no-force-update;
++			goodix,enable-power-off;
++			compatible = "goodix,gt9xx";
+ 		};
+ };
+diff --git a/arch/arm/boot/dts/qcom/msm8996-dtp.dtsi b/arch/arm/boot/dts/qcom/msm8996-dtp.dtsi
+index 1abe2f4..df678af 100644
+--- a/arch/arm/boot/dts/qcom/msm8996-dtp.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8996-dtp.dtsi
+@@ -472,8 +472,44 @@
+ 			synaptics,disable-gpios;
+ 			synaptics,button-map = <102 139 158>;
+ 		};
++		goodix@5d {
++			compatible = "goodix,gt9xx";
++			reg = <0x5d>;
++			interrupt-parent = <&tlmm>;
++			interrupts = <125 0x2008>;
++			reset-gpios = <&tlmm 89 0x00>;
++			interrupt-gpios = <&tlmm 125 0x0>;
++			vdd-supply = <&pm8994_l22>;
++			vcc-i2c-supply = <&pm8994_l14>;
++			pinctrl-names = "pmx_ts_active",
++				"pmx_ts_suspend","pmx_ts_release";
++			pinctrl-0 = <&ts_active>;
++			pinctrl-1 = <&ts_suspend>;
++			goodix,button-map = <139 172 158>;
++			goodix,panel-coords = <0 0 1080 2090>;
++			goodix,display-coords = <0 0 1080 1920>;
++			goodix,product-id = "917D";
++			goodix,num_max_touches = <5>;
++			goodix,soft_rst_dly = <20>;
++			goodix,name = "GT917D";
++			goodix,fw_name = "gtp_fw.bin";
++			goodix,fw-vkey-support;
++			goodix,i2c-pull-up;
++			goodix,no-force-update;
++			goodix,enable-power-off;
++		};
+ 	};
+ 
++	gen-vkeys {
++		compatible = "qcom,gen-vkeys";
++		label = "goodix-ts";
++		qcom,disp-maxx = <1440>;
++		qcom,disp-maxy = <2560>;
++		qcom,panel-maxx = <1440>;
++		qcom,panel-maxy = <2660>;
++		qcom,key-codes = <139 172 158>;
++		qcom,y-offset = <0>;
++	};
+ 	gpio_keys {
+ 		compatible = "gpio-keys";
+ 		input-name = "gpio-keys";
+-- 
+1.9.1
+

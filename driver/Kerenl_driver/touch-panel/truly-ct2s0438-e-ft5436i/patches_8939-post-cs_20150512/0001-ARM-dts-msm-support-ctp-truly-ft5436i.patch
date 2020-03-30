@@ -1,0 +1,157 @@
+From 982f30cfc73911ee0424ca08e35899f493eb151c Mon Sep 17 00:00:00 2001
+From: yanqy <yanqy0911@thundersoft.com>
+Date: Fri, 24 Apr 2015 09:22:56 +0800
+Subject: [PATCH 1/2] ARM:dts:msm: support ctp truly ft5436i
+
+Add CTP TRULY@CT2S0438-E@FT5436I device tree
+
+Change-Id: Ica6728ba199509e29676434d0e7abdf90950d61f
+Signed-off-by: Qiyang Yan <yanqy0911@thundersoft.com>
+---
+ .../bindings/input/touchscreen/ft5x06-ts.txt       |   59 ++++++++++----------
+ arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi       |   25 +++++----
+ 2 files changed, 44 insertions(+), 40 deletions(-)
+ mode change 100755 => 100644 arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+
+diff --git a/Documentation/devicetree/bindings/input/touchscreen/ft5x06-ts.txt b/Documentation/devicetree/bindings/input/touchscreen/ft5x06-ts.txt
+index 42293ff..a366f95 100644
+--- a/Documentation/devicetree/bindings/input/touchscreen/ft5x06-ts.txt
++++ b/Documentation/devicetree/bindings/input/touchscreen/ft5x06-ts.txt
+@@ -48,53 +48,54 @@ Required properties:
+ 
+ Optional properties:
+ 
+- - focaltech,name	: name of the controller
+- - focaltech,i2c-pull-up : to specify pull up is required
+- - focaltech,no-force-update : to specify force update is allowed
+- - focaltech,button-map : button map of key codes. The number
++ - focaltech,name		: name of the controller
++ - focaltech,i2c-pull-up	: to specify pull up is required
++ - focaltech,no-force-update	: to specify force update is allowed
++ - focaltech,button-map		: button map of key codes. The number
+  - focaltech,fw-vkey-support	: specify if virtual keys are supported through firmware
+ 				of key codes depend on panel
+  - focaltech,fw-auto-cal	: specify whether calibration is needed after firmware upgrade
+- - focaltech,fw-vkey-support	: specify if virtual keys are supported through firmware
+- - focaltech,ignore-id-check : specify ignore family-id check
+- - focaltech,panel-coords : panel coordinates for the chip in pixels.
++ - focaltech,ignore-id-check	: specify ignore family-id check
++ - focaltech,panel-coords	: panel coordinates for the chip in pixels.
+ 				It is a four tuple consisting of min x,
+ 				min y, max x and max y values
+- - focaltech,fw-name	: specify the firmware file name
++ - focaltech,fw-name		: specify the firmware file name
+ 
+ Example:
+-	i2c@f9923000{
+-		focaltech@38{
++	i2c@78b9000 {
++		focaltech@38 {
+ 			compatible = "focaltech,5x06";
+ 			reg = <0x38>;
+-			interrupt-parent = <&msmgpio>;
+-			interrupts = <1 0x2>;
+-			vdd-supply = <&pm8110_l19>;
+-			vcc_i2c-supply = <&pm8110_l14>;
+-			pinctrl-names = "pmx_ts_active","pmx_ts_suspend","pmx_ts_release";
++			interrupt-parent = <&msm_gpio>;
++			interrupts = <13 0x2008>;
++			vdd-supply = <&pm8916_l17>;
++			vcc_i2c-supply = <&pm8916_l16>;
++			/* pins used by touchscreen */
++			pinctrl-names = "pmx_ts_active","pmx_ts_suspend";
+ 			pinctrl-0 = <&ts_int_active &ts_reset_active>;
+ 			pinctrl-1 = <&ts_int_suspend &ts_reset_suspend>;
+-			pinctrl-2 = <&ts_release>;
+-			focaltech,name = "ft6x06";
+-			focaltech,family-id = <0x06>;
+-			focaltech,reset-gpio = <&msmgpio 0 0x00>;
+-			focaltech,irq-gpio = <&msmgpio 1 0x00>;
+-			focaltech,display-coords = <0 0 480 800>;
+-			focaltech,panel-coords = <0 0 480 800>;
+-			focaltech,button-map= <139 102 158>;
++			focaltech,name = "ft5436i";
++			focaltech,family-id = <0x12>;
++			focaltech,reset-gpio = <&msm_gpio 12 0x0>;
++			focaltech,irq-gpio = <&msm_gpio 13 0x2008>;
++			focaltech,display-coords = <0 0 720 1280>;
++			focaltech,panel-coords = <0 0 720 1380>;
++			focaltech,button-map= <139 172 158>;
+ 			focaltech,no-force-update;
+ 			focaltech,i2c-pull-up;
+ 			focaltech,group-id = <1>;
+-			focaltech,hard-reset-delay = <20>;
+-			focaltech,soft-reset-delay = <150>;
+-			focaltech,num-max-touches = <2>;
+-			focaltech,fw-name = "ft_8610_qrd_fw.bin";
+-			focaltech,fw-delay-aa-ms = <100>;
++			focaltech,hard-reset-delay-ms = <20>;
++			focaltech,soft-reset-delay-ms = <150>;
++			focaltech,num-max-touches = <5>;
++			focaltech,fw-name = "ft_8226_qrd_fw.bin";
++			focaltech,fw-delay-aa-ms = <50>;
+ 			focaltech,fw-delay-55-ms = <30>;
+ 			focaltech,fw-upgrade-id1 = <0x79>;
+-			focaltech,fw-upgrade-id2 = <0x08>;
++			focaltech,fw-upgrade-id2 = <0x03>;
+ 			focaltech,fw-delay-readid-ms = <10>;
+ 			focaltech,fw-delay-era-flsh-ms = <2000>;
+ 			focaltech,fw-auto-cal;
++			focaltech,fw-vkey-support;
++			focaltech,ignore-id-check;
+ 		};
+ 	};
+diff --git a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+old mode 100755
+new mode 100644
+index 1039722..9b9b97a
+--- a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+@@ -164,30 +164,33 @@
+ 			vdd-supply = <&pm8916_l17>;
+ 			vcc_i2c-supply = <&pm8916_l6>;
+ 			/* pins used by touchscreen */
+-			pinctrl-names = "pmx_ts_active","pmx_ts_suspend","pmx_ts_release";
++/*
++			pinctrl-names = "pmx_ts_active","pmx_ts_suspend";
+ 			pinctrl-0 = <&ts_int_active &ts_reset_active>;
+ 			pinctrl-1 = <&ts_int_suspend &ts_reset_suspend>;
+-			pinctrl-2 = <&ts_release>;
+-			focaltech,name = "ft5336";
+-			focaltech,family-id = <0x14>;
++*/
++			focaltech,name = "ft5436i";
++			focaltech,family-id = <0x12>;
+ 			focaltech,reset-gpio = <&msm_gpio 12 0x0>;
+ 			focaltech,irq-gpio = <&msm_gpio 13 0x2008>;
+-			focaltech,display-coords = <0 0 1080 1920>;
+-			focaltech,panel-coords = <0 0 1080 2098>;
+-			focaltech,button-map= <139 102 158>;
++			focaltech,display-coords = <0 0 720 1280>;
++			focaltech,panel-coords = <0 0 720 1380>;
++			focaltech,button-map= <139 172 158>;
+ 			focaltech,no-force-update;
+ 			focaltech,i2c-pull-up;
+ 			focaltech,group-id = <1>;
+ 			focaltech,hard-reset-delay-ms = <20>;
+-			focaltech,soft-reset-delay-ms = <200>;
++			focaltech,soft-reset-delay-ms = <150>;
+ 			focaltech,num-max-touches = <5>;
+-			focaltech,fw-delay-aa-ms = <30>;
++			focaltech,fw-name = "ft_8226_qrd_fw.bin";
++			focaltech,fw-delay-aa-ms = <50>;
+ 			focaltech,fw-delay-55-ms = <30>;
+-			focaltech,fw-upgrade-id1 = <0x11>;
+-			focaltech,fw-upgrade-id2 = <0x11>;
++			focaltech,fw-upgrade-id1 = <0x79>;
++			focaltech,fw-upgrade-id2 = <0x03>;
+ 			focaltech,fw-delay-readid-ms = <10>;
+ 			focaltech,fw-delay-era-flsh-ms = <2000>;
+ 			focaltech,fw-auto-cal;
++			focaltech,fw-vkey-support;
+ 			focaltech,ignore-id-check;
+ 		};
+ 	};
+-- 
+1.7.9.5
+

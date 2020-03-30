@@ -1,0 +1,75 @@
+From 53ee598da4d9c761aee2aada15c8580218c61b88 Mon Sep 17 00:00:00 2001
+From: chenqingfeng <chenqf0228@thundersoft.com>
+Date: Fri, 7 Nov 2014 15:03:04 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support ltr553als devicetree
+
+Devicetree support ltr553als
+
+Change-Id: I3970be0111dbaab2e4a7d8488ccc5d84d73495ce
+Signed-off-by: Qingfeng Chen <chenqf0228@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi |   34 ++++++++++++++++++++++++--
+ 1 file changed, 32 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+index e9902b8..3d7c4c2 100755
+--- a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+@@ -47,6 +47,21 @@
+ 		};
+ 	};
+ 
++	ltr553_int_pin {
++		qcom,pins = <&gp 113>;
++		qcom,pin-func = <0>;
++		qcom,num-grp-pins = <1>;
++		label = "ltr553-irq";
++		ltr553_default: ltr553_default {
++			drive-strength = <6>;
++			bias-pull-up;
++		};
++		ltr553_sleep: ltr553_sleep {
++			drive-strength = <2>;
++			bias-pull-down;
++		};
++	};
++
+ 	tps65132-en-pin {
+ 		qcom,pins = <&gp 97>, <&gp 98>;
+ 		qcom,num-grp-pins = <2>;
+@@ -61,8 +76,8 @@
+ };
+ 
+ &i2c_0 { /* BLSP1 QUP2 */
+-	avago@39 { /* Ambient light and proximity sensor */
+-		compatible = "avago,apds9930";
++/*	avago@39 { /* Ambient light and proximity sensor */
++/*		compatible = "avago,apds9930";
+ 		reg = <0x39>;
+ 		pinctrl-names = "default","sleep";
+ 		pinctrl-0 = <&apds99xx_default>;
+@@ -80,6 +95,21 @@
+ 		avago,als-C = <70>;
+ 		avago,als-D = <142>;
+ 		avago,ga-value = <48>;
++	};*/
++
++	liteon@23 {
++		compatible = "liteon,ltr553";
++		reg = <0x23>;
++		pinctrl-names = "default","sleep";
++		pinctrl-0 = <&ltr553_default>;
++		pinctrl-1 = <&ltr553_sleep>;
++		interrupt-parent = <&msm_gpio>;
++		interrupts = <113 0x2002>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++		liteon,intr = <&msm_gpio 113 0x2002>;
++		liteon,highthr = <800>;
++		liteon,lowthr = <300>;
+ 	};
+ 
+ 	bosch@18 { /* Accelerometer sensor */
+-- 
+1.7.9.5
+

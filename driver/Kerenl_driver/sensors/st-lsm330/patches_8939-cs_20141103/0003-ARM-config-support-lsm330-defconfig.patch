@@ -1,0 +1,34 @@
+From 13bc7d48dbece986daa3e101d8264ae1469b923e Mon Sep 17 00:00:00 2001
+From: chenqingfeng <chenqf0228@thundersoft.com>
+Date: Mon, 3 Nov 2014 11:33:12 +0800
+Subject: [PATCH 3/3] ARM:config: support lsm330 defconfig
+
+Defconfig support lsm330
+
+Change-Id: I0d63ea317e7da9b482cbd8b92c2109aa7aa28261
+Signed-off-by: Qingfeng Chen <chenqf0228@thundersoft.com>
+---
+ arch/arm/configs/msm8916_defconfig |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/configs/msm8916_defconfig b/arch/arm/configs/msm8916_defconfig
+index c476b05..d669a1b 100644
+--- a/arch/arm/configs/msm8916_defconfig
++++ b/arch/arm/configs/msm8916_defconfig
+@@ -265,9 +265,11 @@ CONFIG_INPUT_MISC=y
+ CONFIG_INPUT_UINPUT=y
+ CONFIG_INPUT_GPIO=m
+ CONFIG_SENSORS_LIS3DH=y
+-CONFIG_SENSORS_MPU6050=y
++CONFIG_SENSORS_LSM330_ACC=y
++CONFIG_SENSORS_LSM330_GYR=y
++#CONFIG_SENSORS_MPU6050 is not set
+ CONFIG_SENSORS_AKM09911=y
+-CONFIG_SENSORS_BMA2X2=y
++#CONFIG_SENSORS_BMA2X2 is not set
+ CONFIG_SENSORS_MMC3416X=y
+ CONFIG_SENSORS_AKM8963=y
+ CONFIG_SERIAL_MSM_HSL=y
+-- 
+1.7.9.5
+

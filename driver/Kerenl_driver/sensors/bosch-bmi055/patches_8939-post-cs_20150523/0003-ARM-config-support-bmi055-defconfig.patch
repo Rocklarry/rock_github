@@ -1,0 +1,33 @@
+From 4561e1eb505a822e965e94a5f700b80350c6b22c Mon Sep 17 00:00:00 2001
+From: Li Zhanchao <lizc1023@thundersoft.com>
+Date: Fri, 22 May 2015 15:33:17 +0800
+Subject: [PATCH 3/3] ARM:config: support bmi055 defconfig
+
+Defconfig support bmi055
+
+Change-Id: Ie7d8a70222d844d3106e40b9c9e43e4c7aae65f8
+Signed-off-by: Li Zhanchao <lizc1023@thundersoft.com>
+---
+ arch/arm/configs/msm8916-perf_defconfig | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/configs/msm8916-perf_defconfig b/arch/arm/configs/msm8916-perf_defconfig
+index 7dd8192..34f87e3 100644
+--- a/arch/arm/configs/msm8916-perf_defconfig
++++ b/arch/arm/configs/msm8916-perf_defconfig
+@@ -264,8 +264,10 @@ CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE_v21=y
+ CONFIG_INPUT_MISC=y
+ CONFIG_INPUT_UINPUT=y
+ CONFIG_INPUT_GPIO=m
+-CONFIG_SENSORS_LIS3DH=y
+-CONFIG_SENSORS_MPU6050=y
++#CONFIG_SENSORS_LIS3DH is not set
++#CONFIG_SENSORS_MPU6050 is not set
++CONFIG_SENSORS_BMG=y
++CONFIG_SENSORS_BMG_FIFO=y
+ CONFIG_SENSORS_AKM09911=y
+ CONFIG_SENSORS_BMA2X2=y
+ CONFIG_SENSORS_MMC3416X=y
+-- 
+1.9.1
+

@@ -1,0 +1,30 @@
+From ec141fd51844dfb3e5da3f04fd220b2d6b71320b Mon Sep 17 00:00:00 2001
+From: Yukun Wan <wanyk0402@thundersoft.com>
+Date: Mon, 23 Mar 2015 13:18:57 +0800
+Subject: [PATCH 3/3] ARM:config: support rpr0521c defconfig
+
+Defconfig support rpr0521c
+
+Change-Id: Ibd8ef10160f0bb7ea7d1a6b09bd61f5965297597
+Signed-off-by: Yukun Wan <wanyk0402@thundersoft.com>
+---
+ arch/arm/configs/msm8916_defconfig | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/configs/msm8916_defconfig b/arch/arm/configs/msm8916_defconfig
+index 08fd762..de626ca 100644
+--- a/arch/arm/configs/msm8916_defconfig
++++ b/arch/arm/configs/msm8916_defconfig
+@@ -213,7 +213,8 @@ CONFIG_CMA=y
+ CONFIG_CMA_SIZE_MBYTES=8
+ CONFIG_BLK_DEV_LOOP=y
+ CONFIG_BLK_DEV_RAM=y
+-CONFIG_APDS9930=y
++#CONFIG_APDS9930 is not set
++CONFIG_SENSORS_RPR0521C=y
+ CONFIG_QSEECOM=y
+ CONFIG_SCSI=y
+ CONFIG_SCSI_TGT=y
+-- 
+2.2.2
+

@@ -1,0 +1,74 @@
+From b211744940abe760752090795e49bd345487c3bc Mon Sep 17 00:00:00 2001
+From: zhang shu <zhangshu1009@thundersoft.com>
+Date: Tue, 18 Nov 2014 18:09:25 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support kx022-1024 devicetree
+
+Devicetree support kx022-1024
+
+Change-Id: I00c6b29a9a50745934c2a1b3c3299d74c074a858
+Signed-off-by: zhang shu <zhangshu1009@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi |   23 +++++++++++++++++++----
+ 1 files changed, 19 insertions(+), 4 deletions(-)
+ mode change 100755 => 100644 arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+
+diff --git a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+old mode 100755
+new mode 100644
+index 8691993..e9ad48d
+--- a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+@@ -81,8 +81,8 @@
+ 		avago,als-D = <129>;
+ 		avago,ga-value = <560>;
+ 	};
+-
+-	bosch@18 { /* Accelerometer sensor */
++/*
++	bosch@18 {  Accelerometer sensor
+ 		compatible = "bosch,bma2x2";
+ 		reg = <0x18>;
+ 		pinctrl-names = "bma_default","bma_sleep";
+@@ -97,6 +97,21 @@
+ 		bosch,gpio-int1 = <&msm_gpio 112 0x2002>;
+ 		bosch,gpio-int2 = <&msm_gpio 114 0x2002>;
+ 	};
++*/
++	kionix@1e {
++		compatible = "kionix,kx022-1024";
++		reg = <0x1f>;
++		interrupt-parent = <&msm_gpio>;
++		interrupts = <113 0x2002>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++		kionix,min_interval = <5>;
++		kionix,poll_interval = <100>;
++		kionix,accel_direction = <1>;
++		kionix,accel_irq_use_drdy = <0>;
++		kionix,accel_res = <12>;
++		kionix,accel_g_range = <2>;
++	};
+ 
+ 	memsic@30 { /* Magnetic field sensor */
+ 		compatible = "memsic,mmc3416x";
+@@ -107,7 +122,7 @@
+ 		memsic,auto-report;
+ 	};
+ 
+-	mpu6050@68 { /* Gyroscope and accelerometer sensor combo */
++/*	mpu6050@68 {  Gyroscope and accelerometer sensor combo
+ 		compatible = "invn,mpu6050";
+ 		reg = <0x68>;
+ 		pinctrl-names = "mpu_default","mpu_sleep";
+@@ -121,7 +136,7 @@
+ 		invn,gpio-int = <&msm_gpio 115 0x2002>;
+ 		invn,place = "Portrait Down Back Side";
+ 	};
+-
++*/
+ 	tps65132@3e {
+ 		compatible = "ti,tps65132";
+ 		reg = <0x3e>;
+-- 
+1.7.4.1
+

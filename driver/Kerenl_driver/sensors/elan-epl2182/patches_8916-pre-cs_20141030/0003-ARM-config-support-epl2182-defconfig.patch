@@ -1,0 +1,30 @@
+From 5a34977668cac7bf4b8d4827fd1029af2f29576e Mon Sep 17 00:00:00 2001
+From: chenqingfeng <chenqf0228@thundersoft.com>
+Date: Thu, 30 Oct 2014 11:04:48 +0800
+Subject: [PATCH 3/3] ARM:config: support epl2182 defconfig
+
+Defconfig support epl2182
+
+Change-Id: Iaa2a1e40c3f4a36b7b8b802c31a41ed57cd8dec2
+Signed-off-by: Qingfeng Chen <chenqf0228@thundersoft.com>
+---
+ arch/arm/configs/msm8916_defconfig |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/configs/msm8916_defconfig b/arch/arm/configs/msm8916_defconfig
+index 3d19788..cdcfafb 100644
+--- a/arch/arm/configs/msm8916_defconfig
++++ b/arch/arm/configs/msm8916_defconfig
+@@ -213,7 +213,8 @@ CONFIG_CMA=y
+ CONFIG_CMA_SIZE_MBYTES=8
+ CONFIG_BLK_DEV_LOOP=y
+ CONFIG_BLK_DEV_RAM=y
+-CONFIG_APDS9930=y
++#CONFIG_APDS9930=y
++CONFIG_SENSORS_ELAN_EPL2182=y
+ CONFIG_QSEECOM=y
+ CONFIG_SCSI=y
+ CONFIG_SCSI_TGT=y
+-- 
+1.7.9.5
+

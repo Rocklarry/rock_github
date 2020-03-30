@@ -1,0 +1,28 @@
+From 3627da3dcd24944298b2cfc397695116aefd0e47 Mon Sep 17 00:00:00 2001
+From: liuhm0427 <liuhm0427@thundersoft.com>
+Date: Fri, 9 Dec 2016 13:26:41 +0800
+Subject: [PATCH] ARM: dts: msm: Add ov5675 d5v15b 2lane camera dtsi
+
+Add ov5675 d5v15b devicetree description for msm8976
+
+Change-Id: I84a40a2ddc48071552400e93bb41708de83acc1b
+Signed-off-by: Hongmei Liu <liuhm0427@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8976-camera-sensor-qrd.dtsi | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8976-camera-sensor-qrd.dtsi b/arch/arm/boot/dts/qcom/msm8976-camera-sensor-qrd.dtsi
+index 4dd4b7c..14cbffa 100644
+--- a/arch/arm/boot/dts/qcom/msm8976-camera-sensor-qrd.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8976-camera-sensor-qrd.dtsi
+@@ -199,7 +199,6 @@
+ 		cell-index = <0>;
+ 		compatible = "qcom,camera";
+ 		reg = <0x0>;
+-		qcom,special-support-sensors = "ov13850_q13v06k";
+ 		qcom,csiphy-sd-index = <0>;
+ 		qcom,csid-sd-index = <0>;
+ 		qcom,mount-angle = <90>;
+-- 
+2.2.2
+

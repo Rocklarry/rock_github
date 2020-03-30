@@ -1,0 +1,32 @@
+From 176e64095e101ae8e9e72341dd727a60107caa3a Mon Sep 17 00:00:00 2001
+From: chenqingfeng <chenqf0228@thundersoft.com>
+Date: Mon, 29 Sep 2014 17:08:25 +0800
+Subject: [PATCH 3/3] ARM:config: support ak8963c defconfig
+
+Defconfig support ak8963c
+
+Change-Id: I840bccafed8a5c1912446a89c0baa2cf4411a347
+Signed-off-by: Qingfeng Chen <chenqf0228@thundersoft.com>
+---
+ arch/arm/configs/msm8916_defconfig |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/configs/msm8916_defconfig b/arch/arm/configs/msm8916_defconfig
+index 9fb4f3c..4966a40 100644
+--- a/arch/arm/configs/msm8916_defconfig
++++ b/arch/arm/configs/msm8916_defconfig
+@@ -267,9 +267,9 @@ CONFIG_INPUT_UINPUT=y
+ CONFIG_INPUT_GPIO=m
+ CONFIG_SENSORS_LIS3DH=y
+ CONFIG_SENSORS_MPU6050=y
+-CONFIG_SENSORS_AKM09911=y
++#CONFIG_SENSORS_AKM09911 is not set
+ CONFIG_SENSORS_BMA2X2=y
+-CONFIG_SENSORS_MMC3416X=y
++#CONFIG_SENSORS_MMC3416X is not set
+ CONFIG_SENSORS_AKM8963=y
+ CONFIG_SERIAL_MSM_HSL=y
+ CONFIG_SERIAL_MSM_HSL_CONSOLE=y
+-- 
+1.7.9.5
+

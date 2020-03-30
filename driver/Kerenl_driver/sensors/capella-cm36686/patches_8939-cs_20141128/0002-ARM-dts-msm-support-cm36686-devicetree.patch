@@ -1,0 +1,62 @@
+From 81602c2ade343475b5432d6eeeaff008b79b7f23 Mon Sep 17 00:00:00 2001
+From: chenqingfeng <chenqf0228@thundersoft.com>
+Date: Wed, 26 Nov 2014 17:29:15 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support cm36686 devicetree
+
+Devicetree support cm36686
+
+Change-Id: I42e1a2866a6933140886392e65fdef42e6553479
+Signed-off-by: Qingfeng Chen <chenqf0228@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi |   28 ++++++++++++++++++++++++++
+ 1 file changed, 28 insertions(+)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+index 8691993..d14200a 100755
+--- a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+@@ -47,6 +47,17 @@
+ 		};
+ 	};
+ 
++	cm36686_int_pin {
++		qcom,pins = <&gp 113>;
++		qcom,pin-func = <0>;
++		qcom,num-grp-pins = <1>;
++		label = "cm36686-irq";
++		cm36686_default: cm36686_default {
++			drive-strength = <6>;
++			bias-pull-up;
++		};
++	};
++
+ 	tps65132-en-pin {
+ 		qcom,pins = <&gp 97>, <&gp 98>;
+ 		qcom,num-grp-pins = <2>;
+@@ -82,6 +93,23 @@
+ 		avago,ga-value = <560>;
+ 	};
+ 
++	capella@60 { /* Ambient light and proximity sensor */
++		compatible = "capella,cm36686";
++		reg = <0x60>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&cm36686_default>;
++		interrupt-parent = <&msm_gpio>;
++		interrupts = <113 0x2002>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++		capella,interrupt-gpio = <&msm_gpio 113 0x2002>;
++		capella,use-polling = <0>;
++		capella,ls_poll_delay = <200>;
++		capella,ps_poll_delay = <200>;
++		capella,ps_away_thd_set = <3>;
++		capella,ps_close_thd_set = <8>;
++	};
++
+ 	bosch@18 { /* Accelerometer sensor */
+ 		compatible = "bosch,bma2x2";
+ 		reg = <0x18>;
+-- 
+1.7.9.5
+

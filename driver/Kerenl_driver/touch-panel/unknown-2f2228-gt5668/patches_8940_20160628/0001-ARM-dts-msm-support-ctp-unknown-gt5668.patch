@@ -1,0 +1,131 @@
+From 46f732e9bda1429a56c0527f1afe4d65264a1812 Mon Sep 17 00:00:00 2001
+From: Li Zhanchao <lizc1023@thundersoft.com>
+Date: Tue, 28 Jun 2016 19:40:56 +0800
+Subject: [PATCH 1/3] ARM:dts:msm: support ctp unknown gt5668
+
+Add CTP UNKNOWN@2F2228@GT5668 device tree
+
+Change-Id: I7fd3186d3575f4b9a7d0d9c8d33520a48ee090c1
+Signed-off-by: Li Zhanchao <lizc1023@thundersoft.com>
+---
+ .../bindings/input/touchscreen/gt9xx/gt1x.txt      | 48 ++++++++++++++++++++++
+ .../boot/dts/qcom/msm8937-pmi8950-qrd-sku1.dtsi    | 41 ++++++++++--------
+ 2 files changed, 71 insertions(+), 18 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/input/touchscreen/gt9xx/gt1x.txt
+
+diff --git a/Documentation/devicetree/bindings/input/touchscreen/gt9xx/gt1x.txt b/Documentation/devicetree/bindings/input/touchscreen/gt9xx/gt1x.txt
+new file mode 100644
+index 0000000..4f1fa1d
+--- /dev/null
++++ b/Documentation/devicetree/bindings/input/touchscreen/gt9xx/gt1x.txt
+@@ -0,0 +1,48 @@
++Goodix GT9xx series touch controller
++
++Required properties:
++
++ - compatible		: Should be "goodix,gt1x"
++ - reg			: I2C slave address of the device.
++ - interrupt-parent	: Parent of interrupt.
++ - interrupts		: Configuration of touch panel controller interrupt
++				GPIO.
++ - goodix,product-id	: Product identification of the controller.
++ - interrupt-gpios	: Interrupt gpio which is to provide interrupts to
++				host, same as "interrupts" node.
++ - reset-gpios		: Reset gpio to control the reset of chip.
++
++Optional properties:
++
++ - vdd-supply		: Power supply needed to power up the device, when use
++				external regulator, do not add this property.
++ - vcc-i2c-supply	: Power source required to power up i2c bus.
++				GT9xx series can provide 1.8V from internal
++				LDO, add this properties base on hardware
++				design.
++ - goodix,name		: The IC name.
++ - goodix,fw-vkey-support	: To specify virtual key is supported.
++
++Example:
++	i2c@78b7000 {
++		status = "okay";
++		goodix@5d {
++			compatible = "goodix,gt1x";
++			reg = <0x5d>;
++			interrupt-parent = <&tlmm>;
++			interrupts = <65 0x2008>;
++			reset-gpios = <&tlmm 64 0x00>;
++			interrupt-gpios = <&tlmm 65 0x2002>;
++			vdd-supply = <&pm8937_l10>;
++			vcc-i2c-supply = <&pm8937_l5>;
++			/* pins used by touchscreen */
++			pinctrl-names = "pmx_ts_active",
++				"pmx_ts_suspend","pmx_ts_release";
++			pinctrl-0 = <&ts_int_active &ts_reset_active>;
++			pinctrl-1 = <&ts_int_suspend &ts_reset_suspend>;
++			pinctrl-2 = <&ts_release>;
++			goodix,product-id = "5668";
++			goodix,name = "GT5668";
++			goodix,fw-vkey-support;
++		};
++	};
+diff --git a/arch/arm/boot/dts/qcom/msm8937-pmi8950-qrd-sku1.dtsi b/arch/arm/boot/dts/qcom/msm8937-pmi8950-qrd-sku1.dtsi
+index 8e4f251..98963ed 100644
+--- a/arch/arm/boot/dts/qcom/msm8937-pmi8950-qrd-sku1.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8937-pmi8950-qrd-sku1.dtsi
+@@ -47,31 +47,36 @@
+ 
+ 	i2c@78b7000 {
+ 		status = "ok";
+-		synaptics@4b {
+-			compatible = "synaptics,dsx";
+-			reg = <0x4b>;
++		goodix@5d {
++			compatible = "goodix,gt1x";
++			reg = <0x5d>;
+ 			interrupt-parent = <&tlmm>;
+ 			interrupts = <65 0x2008>;
+-			vdd-supply = <&pm8937_l5>;
+-			avdd-supply = <&pm8937_l10>;
+-			pinctrl-names = "pmx_ts_active","pmx_ts_suspend",
+-				"pmx_ts_release";
++			reset-gpios = <&tlmm 64 0x00>;
++			interrupt-gpios = <&tlmm 65 0x2002>;
++			vdd-supply = <&pm8937_l10>;
++			vcc-i2c-supply = <&pm8937_l5>;
++			/* pins used by touchscreen */
++			pinctrl-names = "pmx_ts_active",
++				"pmx_ts_suspend","pmx_ts_release";
+ 			pinctrl-0 = <&ts_int_active &ts_reset_active>;
+ 			pinctrl-1 = <&ts_int_suspend &ts_reset_suspend>;
+ 			pinctrl-2 = <&ts_release>;
+-			synaptics,display-coords = <0 0 1079 1919>;
+-			synaptics,panel-coords = <0 0 1079 1919>;
+-			synaptics,reset-gpio = <&tlmm 64 0x00>;
+-			synaptics,irq-gpio = <&tlmm 65 0x2008>;
+-			synaptics,disable-gpios;
+-			synaptics,button-map = <158 139 172>;
+-			synaptics,resume-in-workqueue;
+-			/* Underlying clocks used by secure touch */
+-			clock-names = "iface_clk", "core_clk";
+-			clocks = <&clock_gcc clk_gcc_blsp1_ahb_clk>,
+-				<&clock_gcc clk_gcc_blsp1_qup3_i2c_apps_clk>;
++			goodix,product-id = "5668";
++			goodix,name = "GT5668";
++			goodix,fw-vkey-support;
+ 		};
+ 	};
++	gen-vkeys {
++		compatible = "qcom,gen-vkeys";
++		label = "goodix_ts";
++		qcom,disp-maxx = <1080>;
++		qcom,disp-maxy = <1920>;
++		qcom,panel-maxx = <1080>;
++		qcom,panel-maxy = <2098>;
++		qcom,key-codes = <139 172 158>;
++		qcom,y-offset = <0>;
++	};
+ };
+ 
+ &mdss_mdp {
+-- 
+1.9.1
+

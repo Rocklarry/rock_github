@@ -1,0 +1,3 @@
+/home/rock/qccode/workspace/code_test/c++/string/build/CMakeFiles/edit_cache.dir
+/home/rock/qccode/workspace/code_test/c++/string/build/CMakeFiles/rebuild_cache.dir
+/home/rock/qccode/workspace/code_test/c++/string/build/CMakeFiles/string_test.dir

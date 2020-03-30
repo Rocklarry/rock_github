@@ -1,0 +1,121 @@
+From 71e914db49ec29b2f150b5750757c6bd3fbbdc9d Mon Sep 17 00:00:00 2001
+From: Li Zhanchao <lizc1023@thundersoft.com>
+Date: Wed, 28 Jan 2015 13:08:18 +0800
+Subject: [PATCH 1/3] ARM:dts:msm: support ctp toptouch gsl2682
+
+Add CTP TOPTOUCH@TTCT045030@GSL2682 device tree
+
+Change-Id: I570749b5cce76e075932e4fbda23183d9f3bdce0
+Signed-off-by: Li Zhanchao <lizc1023@thundersoft.com>
+---
+ .../bindings/input/touchscreen/gsl2680.txt         |   48 ++++++++++++++++++++
+ .../devicetree/bindings/vendor-prefixes.txt        |    1 +
+ arch/arm/boot/dts/qcom/msm8909-qrd-skue.dtsi       |   18 +++++++-
+ 3 files changed, 66 insertions(+), 1 deletion(-)
+ create mode 100644 Documentation/devicetree/bindings/input/touchscreen/gsl2680.txt
+ mode change 100755 => 100644 arch/arm/boot/dts/qcom/msm8909-qrd-skue.dtsi
+
+diff --git a/Documentation/devicetree/bindings/input/touchscreen/gsl2680.txt b/Documentation/devicetree/bindings/input/touchscreen/gsl2680.txt
+new file mode 100644
+index 0000000..76b3be4
+--- /dev/null
++++ b/Documentation/devicetree/bindings/input/touchscreen/gsl2680.txt
+@@ -0,0 +1,48 @@
++Silead touch controller
++
++The gsl controller is connected to host processor
++via i2c. The controller generates interrupts when the
++user touches the panel. The host controller is expected
++to read the touch coordinates over i2c and pass the coordinates
++to the rest of the system.
++
++Required properties:
++
++ - compatible		: should be "gsl,2688"
++ - reg			: i2c slave address of the device
++ - interrupt-parent	: parent of interrupt
++ - interrupts		: touch sample interrupt to indicate presense or release
++				of fingers on the panel.
++ - vdd-supply		: Power supply needed to power up the device
++ - vcc_i2c-supply	: Power source required to power up i2c bus
++ - gsl,irq-gpio		: irq gpio which is to provide interrupts to host,
++				same as "interrupts" node. It will also
++				contain active low or active high information.
++ - gsl,reset-gpio	: reset gpio to control the reset of chip
++
++Optional properties:
++ - gsl,panel-maxx	: panel coordinates in pixels, max x value
++ - gsl,panel-maxy	: panel coordinates in pixels, max y value
++ - gsl,fw-name		: the file name of loading the firmware
++ - gsl,IC-name		: the name of IC
++ - gsl,virtual_key	: specify if virtual keys are supported through firmware
++				of key codes depend on panel
++
++Example:
++	i2c@78b9000 { /* BLSP1 QUP5 */
++		gsl@40 {
++			compatible = "gsl,2688";
++			reg = <0x40>;
++			interrupt-parent = <&msm_gpio>;
++			interrupts = <13 0x2008>;
++			vdd-supply = <&pm8909_l17>;
++			vcc_i2c-supply = <&pm8909_l6>;
++			gsl,reset-gpio = <&msm_gpio 12 0x00>;
++			gsl,irq-gpio = <&msm_gpio 13 0x00>;
++			gsl,fw-name = "gsl2680.h";
++			gsl,fw-vkey-support;
++			gsl,panel-maxx = <480>;
++			gsl,panel-maxy = <854>;
++			gsl,IC-name = "gsl2682";
++		};
++	};
+diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
+index e3c6b1e..6d2b838 100644
+--- a/Documentation/devicetree/bindings/vendor-prefixes.txt
++++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+@@ -30,6 +30,7 @@ focaltech Focaltech systems
+ fsl	Freescale Semiconductor
+ GEFanuc	GE Fanuc Intelligent Platforms Embedded Systems, Inc.
+ goodix	Goodix. Ltd.
++gsl	Silead.
+ gef	GE Fanuc Intelligent Platforms Embedded Systems, Inc.
+ hp	Hewlett Packard
+ ibm	International Business Machines (IBM)
+diff --git a/arch/arm/boot/dts/qcom/msm8909-qrd-skue.dtsi b/arch/arm/boot/dts/qcom/msm8909-qrd-skue.dtsi
+old mode 100755
+new mode 100644
+index cd313a1..e058b84
+--- a/arch/arm/boot/dts/qcom/msm8909-qrd-skue.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8909-qrd-skue.dtsi
+@@ -92,11 +92,27 @@
+ 			focaltech,fw-auto-cal;
+ 			focaltech,ignore-id-check;
+ 		};
++
++		gsl@40 {
++			compatible = "gsl,2688";
++			reg = <0x40>;
++			interrupt-parent = <&msm_gpio>;
++			interrupts = <13 0x2008>;
++			vdd-supply = <&pm8909_l17>;
++			vcc_i2c-supply = <&pm8909_l6>;
++			gsl,reset-gpio = <&msm_gpio 12 0x00>;
++			gsl,irq-gpio = <&msm_gpio 13 0x00>;
++			gsl,fw-name = "gsl2680.h";
++			gsl,fw-vkey-support;
++			gsl,panel-maxx = <480>;
++			gsl,panel-maxy = <854>;
++			gsl,IC-name = "gsl2682";
++		};
+ 	};
+ 
+ 	gen-vkeys {
+ 		compatible = "qcom,gen-vkeys";
+-		label = "ft5x06_ts";
++		label = "gsl2682";
+ 		qcom,disp-maxx = <480>;
+ 		qcom,disp-maxy = <854>;
+ 		qcom,panel-maxx = <480>;
+-- 
+1.7.9.5
+

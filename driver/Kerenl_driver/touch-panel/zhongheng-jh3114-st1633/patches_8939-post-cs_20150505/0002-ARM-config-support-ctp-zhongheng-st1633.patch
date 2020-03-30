@@ -1,0 +1,28 @@
+From ebf17a58b515e707ae298a493e1b5c2cf048202b Mon Sep 17 00:00:00 2001
+From: yanqy <yanqy0911@thundersoft.com>
+Date: Mon, 4 May 2015 15:13:40 +0800
+Subject: [PATCH 2/3] ARM:config: support ctp zhongheng st1633
+
+Add CTP ZHONGHENG@JH3114@ST1633 config
+
+Change-Id: I390c7722c7730a3668e62a419f62b6cb2f7fe298
+Signed-off-by: Qiyang Yan <yanqy0911@thundersoft.com>
+---
+ arch/arm/configs/msm8916-perf_defconfig |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm/configs/msm8916-perf_defconfig b/arch/arm/configs/msm8916-perf_defconfig
+index 7dd8192..da481a3 100644
+--- a/arch/arm/configs/msm8916-perf_defconfig
++++ b/arch/arm/configs/msm8916-perf_defconfig
+@@ -252,6 +252,7 @@ CONFIG_JOYSTICK_XPAD=y
+ CONFIG_INPUT_TOUCHSCREEN=y
+ CONFIG_TOUCHSCREEN_ATMEL_MXT=y
+ CONFIG_TOUCHSCREEN_FT5X06=y
++CONFIG_TOUCHSCREEN_ST1232=y
+ CONFIG_TOUCHSCREEN_GEN_VKEYS=y
+ CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI4=y
+ CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_RMI4_DEV=y
+-- 
+1.7.9.5
+

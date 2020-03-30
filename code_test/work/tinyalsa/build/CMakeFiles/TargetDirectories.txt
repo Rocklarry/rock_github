@@ -1,0 +1,3 @@
+/home/rock/workspack/code_test/work/tinyalsa/build/CMakeFiles/rebuild_cache.dir
+/home/rock/workspack/code_test/work/tinyalsa/build/CMakeFiles/edit_cache.dir
+/home/rock/workspack/code_test/work/tinyalsa/build/CMakeFiles/tinyalsa.dir

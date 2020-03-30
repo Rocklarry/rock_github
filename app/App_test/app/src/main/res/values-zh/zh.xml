@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">App_test</string>
+    <string name="connet">连接</string>
+    <string name="test">测试</string>
+    <string name="unconnect">断开</string>
+    <string name="sub">订阅</string>
+    <string name="pub">发布</string>
+</resources>

@@ -1,0 +1,31 @@
+From c339f3e5565fe3edd60f739eabf0728a15548b97 Mon Sep 17 00:00:00 2001
+From: caihj0701 <caihj0701@thundersoft.com>
+Date: Fri, 26 May 2017 10:32:46 +0800
+Subject: [PATCH] ARM: dts: msm: Add s5k2t7sp camera dtsi
+
+Add s5k2t7sp devicetree description for sdm660
+
+Change-Id: If3b9bf4dd9c6e7a5b3fcef57cf149a1ba111494d
+Signed-off-by: caihj0701 <caihj0701@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/sdm660-camera.dtsi | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/boot/dts/qcom/sdm660-camera.dtsi b/arch/arm/boot/dts/qcom/sdm660-camera.dtsi
+index f3b81b5..dfb24b8 100644
+--- a/arch/arm/boot/dts/qcom/sdm660-camera.dtsi
++++ b/arch/arm/boot/dts/qcom/sdm660-camera.dtsi
+@@ -131,8 +131,8 @@
+ 			"csiphy_timer_src_clk", "csiphy_timer_clk",
+ 			"camss_ispif_ahb_clk", "csiphy_clk_src", "csiphy_clk",
+ 			"csiphy_ahb2crif";
+-		qcom,clock-rates = <0 0 0 0 0 0 310000000 0 0 269333333 0
+-			0 200000000 0 0>;
++		qcom,clock-rates = <0 0 0 0 0 0 310000000 0 0 310000000 0
++			0 310000000 0 0>;
+ 		status = "ok";
+ 	};
+ 
+-- 
+1.9.1
+

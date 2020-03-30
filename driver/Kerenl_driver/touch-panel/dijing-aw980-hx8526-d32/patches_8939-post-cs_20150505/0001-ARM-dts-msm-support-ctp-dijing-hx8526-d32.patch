@@ -1,0 +1,111 @@
+From f08fb2e5c0f207084222f974bab2547ffb06cfa5 Mon Sep 17 00:00:00 2001
+From: yanqy <yanqy0911@thundersoft.com>
+Date: Mon, 4 May 2015 17:28:53 +0800
+Subject: [PATCH 1/3] ARM:dts:msm: support ctp dijing hx8526-d32
+
+Add CTP IHV-DIJING@AW980@HX8526-D32 device tree
+
+Change-Id: If4a8503f54f3279f3b9e74f81a964608bf35f0d6
+Signed-off-by: Qiyang Yan <yanqy0911@thundersoft.com>
+---
+ .../bindings/input/touchscreen/himax8526.txt       |   52 ++++++++++++++++++++
+ arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi       |   17 ++++++-
+ 2 files changed, 68 insertions(+), 1 deletion(-)
+ create mode 100644 Documentation/devicetree/bindings/input/touchscreen/himax8526.txt
+ mode change 100755 => 100644 arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+
+diff --git a/Documentation/devicetree/bindings/input/touchscreen/himax8526.txt b/Documentation/devicetree/bindings/input/touchscreen/himax8526.txt
+new file mode 100644
+index 0000000..82a8252
+--- /dev/null
++++ b/Documentation/devicetree/bindings/input/touchscreen/himax8526.txt
+@@ -0,0 +1,52 @@
++Himax touch controller
++The himax controller is connected to host processor
++via i2c. The controller generates interrupts when the
++user touches the panel. The host controller is expected
++to read the touch coordinates over i2c and pass the coordinates
++to the rest of the system.
++
++Required properties:
++
++ - compatible		: should be "himax,hx8526-d32"
++ - reg			: i2c slave address of the device
++ - interrupt-parent	: parent of interrupt
++ - interrupts		: touch sample interrupt to indicate presense or release
++				of fingers on the panel.
++ - vdd-supply		: Power supply needed to power up the device
++ - vcc_i2c-supply	: Power source required to power up i2c bus
++ - himax,irq-gpio	: irq gpio which is to provide interrupts to host,
++				same as "interrupts" node. It will also
++				contain active low or active high information.
++ - himax,reset-gpio	: reset gpio to control the reset of chip
++ - himax,num-max-touches	 : maximum number of touches supported
++
++Optional properties:
++
++ - himax,name	: name of the controller
++ - himax,i2c-pull-up : to specify pull up is required
++ - himax,reg-en	: regulator enable or not
++ - himax,button-map : button map of key codes. The number
++ - himax,virtual_key	: specify if virtual keys are supported through firmware
++				of key codes depend on panel
++ - himax,x-max	: display coordinates in pixels, max x value
++ - himax,y-max	: display coordinates in pixels, max y value
++
++Example:
++	i2c@78b9000{
++		himax@4a {
++			compatible = "himax,hx8526-d32";
++			reg = <0x4a>;
++			interrupt-parent = <&msm_gpio>;
++			interrupts = <13 0x2008>;
++			vdd-supply = <&pm8916_l17>;
++			vcc_i2c-supply = <&pm8916_l16>;
++			himax,name = "hx8526";
++			himax,reset-gpio = <&msm_gpio 12 0x00>;
++			himax,irq-gpio = <&msm_gpio 13 0x2008>;
++			himax,virtual_key;
++			himax,i2c-pull-up;
++			himax,reg-en;
++			himax,num-max-touches = <5>;
++		};
++	};
++
+diff --git a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+old mode 100755
+new mode 100644
+index 1039722..7420905
+--- a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+@@ -190,11 +190,26 @@
+ 			focaltech,fw-auto-cal;
+ 			focaltech,ignore-id-check;
+ 		};
++		himax@4a {
++			compatible = "himax,hx8526-d32";
++			reg = <0x4a>;
++			interrupt-parent = <&msm_gpio>;
++			interrupts = <13 0x2008>;
++			vdd-supply = <&pm8916_l17>;
++			vcc_i2c-supply = <&pm8916_l6>;
++			himax,name = "hx8526";
++			himax,irq-gpio = <&msm_gpio 13 0x2008>;
++			himax,reset-gpio = <&msm_gpio 12 0x0>;
++			himax,virtual_key;
++			himax,i2c-pull-up;
++			himax,reg-en;
++			himax,num-max-touches = <5>;
++		};
+ 	};
+ 
+ 	gen-vkeys {
+ 		compatible = "qcom,gen-vkeys";
+-		label = "ft5x06_ts";
++		label = "himax8526";
+ 		qcom,disp-maxx = <1080>;
+ 		qcom,disp-maxy = <1920>;
+ 		qcom,panel-maxx = <1080>;
+-- 
+1.7.9.5
+

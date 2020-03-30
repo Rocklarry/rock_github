@@ -1,0 +1,74 @@
+From 503def593737b72b3a1af2a5470088af554d3ef4 Mon Sep 17 00:00:00 2001
+From: wangwf <wangwf0922@thundersoft.com>
+Date: Fri, 17 Oct 2014 08:42:15 +0800
+Subject: [PATCH 2/3] ARM: dts: msm: Add hi258 ST-CLQRD8916F40263 camera dtsi
+
+Add hi258 camera dts for 8909
+
+Change-Id: I7098d6e2d43d6092f54c4873c8bee93119b431f5
+Signed-off-by: wweifeng <wangwf0922@thundersoft.com>
+---
+ .../boot/dts/qcom/msm8916-camera-sensor-qrd.dtsi   |   47 ++++++++++++++++++++
+ 1 files changed, 47 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8916-camera-sensor-qrd.dtsi b/arch/arm/boot/dts/qcom/msm8916-camera-sensor-qrd.dtsi
+index fb3b3c6..eb75702 100644
+--- a/arch/arm/boot/dts/qcom/msm8916-camera-sensor-qrd.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8916-camera-sensor-qrd.dtsi
+@@ -128,6 +128,53 @@
+ 				<&clock_gcc clk_gcc_camss_mclk1_clk>;
+ 		clock-names = "cam_src_clk", "cam_clk";
+ 	};
++
++	qcom,camera@40 {
++		compatible = "qcom,hi258";
++		reg = <0x40 0x0>;
++		qcom,slave-id = <0x40 0x04 0xd100>;
++		qcom,csiphy-sd-index = <1>;
++		qcom,csid-sd-index = <1>;
++		qcom,mount-angle = <270>;
++		qcom,sensor-name = "hi258";
++		cam_vdig-supply = <&pm8916_l2>;
++		qcom,cam-vreg-name = "cam_vdig";
++		qcom,cam-vreg-type = <0>;
++		qcom,cam-vreg-min-voltage = <1200000>;
++		qcom,cam-vreg-max-voltage = <1200000>;
++		qcom,cam-vreg-op-mode = <200000>;
++		pinctrl-names = "cam_default", "cam_suspend";
++		pinctrl-0 = <&cam_sensor_mclk1_default
++			&cam_sensor_front_default>;
++		pinctrl-1 = <&cam_sensor_mclk1_sleep &cam_sensor_front_sleep>;
++		gpios = <&msm_gpio 27 0>,
++			<&msm_gpio 28 0>,
++			<&msm_gpio 33 0>,
++			<&msm_gpio 114 0>,
++			<&msm_gpio 110 0>;
++		qcom,gpio-reset = <1>;
++		qcom,gpio-standby = <2>;
++		qcom,gpio-vdig = <3>;
++		qcom,gpio-vana = <4>;
++		qcom,gpio-req-tbl-num = <0 1 2 3 4>;
++		qcom,gpio-req-tbl-flags = <1 0 0 0 0>;
++		qcom,gpio-req-tbl-label = "CAMIF_MCLK",
++			"CAM_RESET",
++			"CAM_STANDBY",
++			"CAM_VDIG",
++			"CAM_VANA";
++		qcom,gpio-set-tbl-num = <1 1>;
++		qcom,gpio-set-tbl-flags = <0 2>;
++		qcom,gpio-set-tbl-delay = <1000 4000>;
++		qcom,csi-lane-assign = <0x4320>;
++		qcom,csi-lane-mask = <0x3>;
++		qcom,sensor-position = <1>;
++		qcom,sensor-mode = <0>;
++		qcom,cci-master = <0>;
++		clocks = <&clock_gcc clk_mclk1_clk_src>,
++			<&clock_gcc clk_gcc_camss_mclk1_clk>;
++		clock-names = "cam_src_clk", "cam_clk";
++		};
+ };
+ 
+ 
+-- 
+1.7.4.1
+

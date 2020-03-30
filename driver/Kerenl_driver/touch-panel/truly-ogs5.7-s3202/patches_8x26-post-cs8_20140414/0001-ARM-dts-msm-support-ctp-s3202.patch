@@ -1,0 +1,72 @@
+From e5a0186c132b55a41e3e5c9bf62ad81430619564 Mon Sep 17 00:00:00 2001
+From: Zhang Zhenzhen <zhangzz6687@thundersoft.com>
+Date: Tue, 1 Apr 2014 19:27:13 +0800
+Subject: [PATCH 1/2] ARM:dts:msm: support ctp s3202
+
+Add CTP TRULY@OGS5.7@S3202 device tree
+
+Change-Id: I840947543269e9ef432c8262a0e096c4d19182a4
+Signed-off-by: Zhang Zhenzhen <zhangzz6687@thundersoft.com>
+---
+ arch/arm/boot/dts/msm8226-qrd.dtsi | 34 +++++++++++++++++++++++++---------
+ 1 file changed, 25 insertions(+), 9 deletions(-)
+
+diff --git a/arch/arm/boot/dts/msm8226-qrd.dtsi b/arch/arm/boot/dts/msm8226-qrd.dtsi
+index 7ff97f6..869c3aa 100644
+--- a/arch/arm/boot/dts/msm8226-qrd.dtsi
++++ b/arch/arm/boot/dts/msm8226-qrd.dtsi
+@@ -18,7 +18,23 @@
+ 	};
+ 
+ 	i2c@f9927000 { /* BLSP1 QUP5 */
+-		synaptics@20 {
++		synaptics@22 {
++			compatible = "synaptics,rmi4";
++			reg = <0x22>;
++			interrupt-parent = <&msmgpio>;
++			interrupts = <17 0x2008>;
++			vdd-supply = <&pm8226_l19>;
++			vcc_i2c-supply = <&pm8226_lvs1>;
++			synaptics,reset-gpio = <&msmgpio 16 0x00>;
++			synaptics,irq-gpio = <&msmgpio 17 0x2008>;
++			synaptics,button-map = <158 102 139>;
++			synaptics,i2c-pull-up;
++			synaptics,power-down;
++			synaptics,disable-gpios;
++			synaptics,fw-vkey-support;
++		};
++
++	/*	synaptics@20 {
+ 			compatible = "synaptics,rmi4";
+ 			reg = <0x20>;
+ 			interrupt-parent = <&msmgpio>;
+@@ -61,18 +77,18 @@
+ 			focaltech,fw-upgrade-id2 = <0x03>;
+ 			focaltech,fw-delay-readid-ms = <10>;
+ 			focaltech,fw-delay-era-flsh-ms = <2000>;
+-		};
++		}; */
+ 	};
+ 
+ 	gen-vkeys {
+ 		compatible = "qcom,gen-vkeys";
+-		label = "ft5x06_ts";
+-		qcom,disp-maxx = <1080>;
+-		qcom,disp-maxy = <1920>;
+-		qcom,panel-maxx = <1080>;
+-		qcom,panel-maxy = <2080>;
+-		qcom,key-codes = <139 102 158>;
+-		qcom,y-offset = <0>;
++		label = "synaptics_rmi4_i2c";
++		qcom,disp-maxx = <720>;
++		qcom,disp-maxy = <1280>;
++		qcom,panel-maxx = <720>;
++		qcom,panel-maxy = <1320>;
++		qcom,key-codes = <158 102 139>;
++		qcom,y-offset = <50>;
+ 	};
+ 
+ 	gpio_keys {
+-- 
+1.8.3.1
+

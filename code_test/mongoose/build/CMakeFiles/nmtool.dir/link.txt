@@ -1,0 +1,2 @@
+/usr/bin/ar qc libnmtool.a  CMakeFiles/nmtool.dir/nmtool/nmtool.c.o CMakeFiles/nmtool.dir/nmtool/nmset.c.o
+/usr/bin/ranlib libnmtool.a

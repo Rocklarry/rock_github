@@ -1,0 +1,42 @@
+From a92fca1dfe3b07a0cff54734ecd3572fcb7dfa77 Mon Sep 17 00:00:00 2001
+From: chenqingfeng <chenqf0228@thundersoft.com>
+Date: Thu, 19 Mar 2015 15:37:56 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support kxtj2-1009 devicetree
+
+Devicetree support kxtj2-1009
+
+Change-Id: I1034ac6cdecdf250bf6ce53ba1c573cf303afe60
+Signed-off-by: Qingfeng Chen <chenqf0228@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi |   15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+index bd81985..aca59ab 100644
+--- a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+@@ -188,6 +188,21 @@
+ 		bosch,gpio-int2 = <&msm_gpio 114 0x2002>;
+ 	};
+ 
++   kionix@e {
++           compatible = "kionix,kxtj2-1009";
++           reg = <0x0f>;
++           interrupt-parent = <&msm_gpio>;
++           interrupts = <112 0x2002>;
++           vdd-supply = <&pm8916_l17>;
++           vio-supply = <&pm8916_l6>;
++           kionix,min_interval = <5>;
++           kionix,poll_interval = <100>;
++           kionix,accel_direction = <1>;
++           kionix,accel_irq_use_drdy = <0>;
++           kionix,accel_res = <12>;
++           kionix,accel_g_range = <2>;
++   };
++
+ 	memsic@30 { /* Magnetic field sensor */
+ 		compatible = "memsic,mmc3416x";
+ 		reg = <0x30>;
+-- 
+1.7.9.5
+

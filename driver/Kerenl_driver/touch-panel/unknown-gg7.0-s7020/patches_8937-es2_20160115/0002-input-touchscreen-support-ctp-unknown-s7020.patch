@@ -1,0 +1,603 @@
+From 0f12f77c598ea433de5025d41b9e7d66f5280a45 Mon Sep 17 00:00:00 2001
+From: maoyq0504 <maoyq0504@thundersoft.com>
+Date: Thu, 14 Jan 2016 14:41:38 +0800
+Subject: [PATCH 2/2] input:touchscreen: support ctp unknown s7020
+
+Add CTP UNKNOWN@GG7.0@S7020 driver
+Change-Id: I067c93673b3dd66b97ea38fe5a0b2a99329ed6f0
+Signed-off-by: Yuanqiu Mao <maoyq0504@thundersoft.com>
+---
+ .../touchscreen/synaptics_dsx/synaptics_dsx_core.c | 336 ++++++++++++++++++---
+ .../touchscreen/synaptics_dsx/synaptics_dsx_core.h |  11 +-
+ .../synaptics_dsx/synaptics_dsx_fw_update.c        |   6 +-
+ .../touchscreen/synaptics_dsx/synaptics_dsx_i2c.c  |   8 +-
+ .../synaptics_dsx/synaptics_dsx_proximity.c        |   6 +-
+ .../synaptics_dsx/synaptics_dsx_rmi_dev.c          |   6 +-
+ .../touchscreen/synaptics_dsx/synaptics_dsx_spi.c  |   6 +-
+ 7 files changed, 321 insertions(+), 58 deletions(-)
+ mode change 100755 => 100644 drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_i2c.c
+ mode change 100755 => 100644 drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_proximity.c
+ mode change 100755 => 100644 drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_spi.c
+
+diff --git a/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_core.c b/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_core.c
+index e4262bf..11a9cc1 100644
+--- a/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_core.c
++++ b/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_core.c
+@@ -1,11 +1,11 @@
+ /*
+  * Synaptics DSX touchscreen driver
+  *
+- * Copyright (C) 2012 Synaptics Incorporated
++ * Copyright (C) 2012-2016 Synaptics Incorporated
+  *
+- * Copyright (C) 2012 Alexandra Chin <alexandra.chin@tw.synaptics.com>
+- * Copyright (C) 2012 Scott Lin <scott.lin@tw.synaptics.com>
+- * Copyright (c) 2014-2015, The Linux Foundation. All rights reserved.
++ * Copyright (C) 2012-2016 Alexandra Chin <alexandra.chin@tw.synaptics.com>
++ * Copyright (C) 2012-2016 Scott Lin <scott.lin@tw.synaptics.com>
++ * Copyright (c) 2014-2016, The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License as published by
+@@ -29,22 +29,25 @@
+ #include <linux/regulator/consumer.h>
+ #include <linux/input/synaptics_dsx_v2.h>
+ #include "synaptics_dsx_core.h"
++
+ #ifdef KERNEL_ABOVE_2_6_38
+ #include <linux/input/mt.h>
+ #endif
+ #if defined(CONFIG_SECURE_TOUCH)
+ #include <linux/errno.h>
+-#include <soc/qcom/scm.h>
+-enum subsystem {
+-	TZ = 1,
+-	APSS = 3
+-};
+-
+-#define TZ_BLSP_MODIFY_OWNERSHIP_ID 3
+ #endif
+ 
+ #define INPUT_PHYS_NAME "synaptics_dsx/input0"
+ #define DEBUGFS_DIR_NAME "ts_debug"
++#define RMI4_INFO_MAX_LEN 200
++#define RMI4_STORE_TS_INFO(buf, id, rev, max_tch, fw_ver) \
++			snprintf(buf, RMI4_INFO_MAX_LEN, \
++					"controller\t= synaptics\n" \
++					"model\t\t= %d rev %d\n" \
++					"max_touches\t= %d\n" \
++					"fw_vkey_support\t= NO\n" \
++					"fw_ver\t\t= %d\n", id, \
++					rev, max_tch, fw_ver)
+ 
+ #ifdef KERNEL_ABOVE_2_6_38
+ #define TYPE_B_PROTOCOL
+@@ -113,6 +116,21 @@ static ssize_t synaptics_rmi4_full_pm_cycle_show(struct device *dev,
+ 
+ static ssize_t synaptics_rmi4_full_pm_cycle_store(struct device *dev,
+ 		struct device_attribute *attr, const char *buf, size_t count);
++static ssize_t synaptics_rmi4_enable_show(struct device *dev,
++		struct device_attribute *attr, char *buf);
++
++static ssize_t synaptics_rmi4_enable_store(struct device *dev,
++		struct device_attribute *attr, const char *buf, size_t count);
++
++static ssize_t synaptics_rmi4_mt_protocol_type_show(struct device *dev,
++		struct device_attribute *attr, char *buf);
++
++static ssize_t synaptics_rmi4_ts_info_show(struct device *dev,
++		struct device_attribute *attr, char *buf);
++static void synaptics_rmi4_sensor_sleep(struct synaptics_rmi4_data *rmi4_data);
++static void synaptics_rmi4_sensor_wake(struct synaptics_rmi4_data *rmi4_data);
++static int synaptics_rmi4_irq_enable(struct synaptics_rmi4_data *rmi4_data,
++		bool enable);
+ 
+ #if defined(CONFIG_FB)
+ static int fb_notifier_callback(struct notifier_block *self,
+@@ -395,6 +413,15 @@ static struct device_attribute attrs[] = {
+ 	__ATTR(0dbutton, (S_IRUGO | S_IWUSR | S_IWGRP),
+ 			synaptics_rmi4_0dbutton_show,
+ 			synaptics_rmi4_0dbutton_store),
++	__ATTR(enable, (S_IRUGO | S_IWUSR | S_IWGRP),
++			synaptics_rmi4_enable_show,
++			synaptics_rmi4_enable_store),
++	__ATTR(mt_protocol_type, S_IRUGO,
++			synaptics_rmi4_mt_protocol_type_show,
++			NULL),
++	__ATTR(ts_info, S_IRUGO,
++			synaptics_rmi4_ts_info_show,
++			NULL),
+ #if defined(CONFIG_SECURE_TOUCH)
+ 	__ATTR(secure_touch_enable, (S_IRUGO | S_IWUSR | S_IWGRP),
+ 			synaptics_secure_touch_enable_show,
+@@ -441,6 +468,223 @@ static struct attribute *vkey_attr[] = {
+ static struct attribute_group vkey_grp = {
+ 	.attrs = vkey_attr,
+ };
++/**
++ * synaptics_rmi4_release_all()
++ *
++ * Called by synaptics_rmi4_suspend()
++ *
++ * Release all touch data during the touch device switch to suspend state.
++ */
++
++static void synaptics_rmi4_release_all(struct synaptics_rmi4_data *rmi4_data)
++{
++	int finger;
++	int max_num_fingers = rmi4_data->num_of_fingers;
++
++	for (finger = 0; finger < max_num_fingers; finger++) {
++		input_mt_slot(rmi4_data->input_dev, finger);
++		input_mt_report_slot_state(rmi4_data->input_dev,
++				MT_TOOL_FINGER, 0);
++	}
++
++	input_report_key(rmi4_data->input_dev, BTN_TOUCH, 0);
++	input_report_key(rmi4_data->input_dev,
++			BTN_TOOL_FINGER, 0);
++
++	input_sync(rmi4_data->input_dev);
++}
++
++/***************add  sysfy 20150820****************************/
++static bool synaptics_rmi4_debug_addr_is_valid(int addr)
++{
++	if (addr < 0 || addr > 0xFFFF) {
++		pr_err("synaptics_rmi4 reg address is invalid: 0x%x\n", addr);
++		return false;
++	}
++
++	return true;
++}
++static int debug_dump_info(struct seq_file *m, void *v)
++{
++	struct synaptics_rmi4_data *data = m->private;
++
++	seq_printf(m, "%s\n", data->ts_info);
++
++	return 0;
++}
++
++static int debugfs_dump_info_open(struct inode *inode, struct file *file)
++{
++	return single_open(file, debug_dump_info, inode->i_private);
++}
++
++static const struct file_operations debug_dump_info_fops = {
++	.owner = THIS_MODULE,
++	.open = debugfs_dump_info_open,
++	.read = seq_read,
++	.release = single_release,
++};
++
++static ssize_t synaptics_rmi4_enable_show(struct device *dev,
++		struct device_attribute *attr, char *buf)
++{
++	struct synaptics_rmi4_data *rmi4_data = dev_get_drvdata(dev);
++
++	if (rmi4_data->suspended) {
++		dev_info(rmi4_data->pdev->dev.parent, "Already in suspend state\n");
++		return snprintf(buf, 4, "%s\n", "0");
++	}
++
++	return snprintf(buf, 4, "%s\n", rmi4_data->enable ? "1" : "0");
++}
++
++
++static ssize_t synaptics_rmi4_enable_store(struct device *dev,
++		struct device_attribute *attr, const char *buf, size_t count)
++{
++	struct synaptics_rmi4_data *data = dev_get_drvdata(dev);
++	unsigned long val;
++	int rc;
++
++	if (count > 2)
++		return -EINVAL;
++
++	if (data->suspended) {
++		dev_info(data->pdev->dev.parent, "Already in suspend state\n");
++		goto no_operation;
++	}
++
++	rc = kstrtoul(buf, 10, &val);
++	if (rc != 0)
++		return rc;
++
++	if (val) {
++		synaptics_rmi4_sensor_wake(data);
++		data->touch_stopped = false;
++		synaptics_rmi4_irq_enable(data, true);
++
++		data->enable = true;
++	} else {
++		if (!data->sensor_sleep) {
++			data->touch_stopped = true;
++			synaptics_rmi4_irq_enable(data, false);
++			synaptics_rmi4_sensor_sleep(data);
++		}
++
++		synaptics_rmi4_release_all(data);
++		data->enable = false;
++	}
++no_operation:
++	return count;
++}
++
++static ssize_t synaptics_rmi4_mt_protocol_type_show(struct device *dev,
++		struct device_attribute *attr, char *buf)
++{
++	return snprintf(buf, 16, "%s\n", "MT Protocol B");
++}
++
++static ssize_t synaptics_rmi4_ts_info_show(struct device *dev,
++		 struct device_attribute *attr, char *buf)
++{
++	struct synaptics_rmi4_data *data = dev_get_drvdata(dev);
++
++	return snprintf(buf, RMI4_INFO_MAX_LEN, "%s\n", data->ts_info);
++}
++
++/********************debug*************************/
++static void synaptics_rmi4_update_ts_info(struct synaptics_rmi4_data *rmi4_data)
++{
++	unsigned char pkg_id[4];
++	unsigned int build_id;
++	struct synaptics_rmi4_device_info *rmi;
++	/* read device package id */
++	synaptics_rmi4_reg_read(rmi4_data,
++			rmi4_data->f01_query_base_addr + 17,
++			pkg_id,
++			sizeof(pkg_id));
++	rmi = &(rmi4_data->rmi4_mod_info);
++
++	build_id = (unsigned int)rmi->build_id[0] +
++		(unsigned int)rmi->build_id[1] * 0x100 +
++		(unsigned int)rmi->build_id[2] * 0x10000;
++
++	RMI4_STORE_TS_INFO(rmi4_data->ts_info, pkg_id[1] << 8 | pkg_id[0],
++			pkg_id[3] << 8 | pkg_id[2], rmi4_data->num_of_fingers,
++			build_id);
++}
++
++static int synaptics_rmi4_debug_data_set(void *_data, u64 val)
++{
++	struct synaptics_rmi4_data *data = _data;
++
++	mutex_lock(&data->input_dev->mutex);
++
++	if (synaptics_rmi4_debug_addr_is_valid(data->addr))
++		dev_info(data->pdev->dev.parent,
++				"Writing into synaptics_rmi4 registers not supported\n");
++
++	mutex_unlock(&data->input_dev->mutex);
++
++	return 0;
++}
++
++static int synaptics_rmi4_debug_data_get(void *_data, u64 *val)
++{
++	struct synaptics_rmi4_data *data = _data;
++	int rc;
++	unsigned char reg;
++
++	mutex_lock(&data->input_dev->mutex);
++
++	if (synaptics_rmi4_debug_addr_is_valid(data->addr)) {
++		rc = synaptics_rmi4_reg_read(data, data->addr,
++						&reg, sizeof(reg));
++		if (rc < 0)
++			dev_err(data->pdev->dev.parent,
++					"synaptics_rmi4 read register 0x%x failed (%d)\n",
++					data->addr, rc);
++		else
++			*val = reg;
++	}
++
++	mutex_unlock(&data->input_dev->mutex);
++
++	return 0;
++}
++
++DEFINE_SIMPLE_ATTRIBUTE(debug_data_fops, synaptics_rmi4_debug_data_get,
++			synaptics_rmi4_debug_data_set, "0x%02llX\n");
++
++static int synaptics_rmi4_debug_addr_set(void *_data, u64 val)
++{
++	struct synaptics_rmi4_data *data = _data;
++
++	if (synaptics_rmi4_debug_addr_is_valid(val)) {
++		mutex_lock(&data->input_dev->mutex);
++		data->addr = val;
++		mutex_unlock(&data->input_dev->mutex);
++	}
++
++	return 0;
++}
++
++static int synaptics_rmi4_debug_addr_get(void *_data, u64 *val)
++{
++	struct synaptics_rmi4_data *data = _data;
++
++	mutex_lock(&data->input_dev->mutex);
++
++	if (synaptics_rmi4_debug_addr_is_valid(data->addr))
++		*val = data->addr;
++
++	mutex_unlock(&data->input_dev->mutex);
++
++	return 0;
++}
++
++DEFINE_SIMPLE_ATTRIBUTE(debug_addr_fops, synaptics_rmi4_debug_addr_get,
++		synaptics_rmi4_debug_addr_set, "0x%04llX\n");
+ 
+ static int synaptics_rmi4_debug_suspend_set(void *_data, u64 val)
+ {
+@@ -467,28 +711,6 @@ DEFINE_SIMPLE_ATTRIBUTE(debug_suspend_fops, synaptics_rmi4_debug_suspend_get,
+ 			synaptics_rmi4_debug_suspend_set, "%lld\n");
+ 
+ #if defined(CONFIG_SECURE_TOUCH)
+-static int synaptics_i2c_change_pipe_owner(
+-	struct synaptics_rmi4_data *rmi4_data, enum subsystem subsystem)
+-{
+-	/*scm call descriptor */
+-	struct scm_desc desc;
+-	struct i2c_client *i2c = to_i2c_client(rmi4_data->pdev->dev.parent);
+-	int ret = 0;
+-
+-	/* number of arguments */
+-	desc.arginfo = SCM_ARGS(2);
+-	/* BLSPID (1-12) */
+-	desc.args[0] = i2c->adapter->nr;
+-	 /* Owner if TZ or APSS */
+-	desc.args[1] = subsystem;
+-	ret = scm_call2(SCM_SIP_FNID(SCM_SVC_TZ, TZ_BLSP_MODIFY_OWNERSHIP_ID),
+-			&desc);
+-	if (ret)
+-		return ret;
+-
+-	return desc.ret[0];
+-}
+-
+ static void synaptics_secure_touch_init(struct synaptics_rmi4_data *data)
+ {
+ 	int ret = 0;
+@@ -613,7 +835,6 @@ static ssize_t synaptics_secure_touch_enable_store(struct device *dev,
+ 		if (atomic_read(&rmi4_data->st_enabled) == 0)
+ 			break;
+ 
+-		synaptics_i2c_change_pipe_owner(rmi4_data, APSS);
+ 		synaptics_rmi4_bus_put(rmi4_data);
+ 		atomic_set(&rmi4_data->st_enabled, 0);
+ 		synaptics_secure_touch_notify(rmi4_data);
+@@ -637,7 +858,6 @@ static ssize_t synaptics_secure_touch_enable_store(struct device *dev,
+ 			err = -EIO;
+ 			break;
+ 		}
+-		synaptics_i2c_change_pipe_owner(rmi4_data, TZ);
+ 		reinit_completion(&rmi4_data->st_powerdown);
+ 		reinit_completion(&rmi4_data->st_irq_processed);
+ 		atomic_set(&rmi4_data->st_enabled, 1);
+@@ -2605,12 +2825,12 @@ static void synaptics_rmi4_set_params(struct synaptics_rmi4_data *rmi4_data)
+ 				0, bdata->disp_maxx, 0, 0);
+ 		input_set_abs_params(rmi4_data->input_dev, ABS_MT_POSITION_Y,
+ 				0, bdata->disp_maxy, 0, 0);
+-	} else {
++	} /* else {
+ 		input_set_abs_params(rmi4_data->input_dev, ABS_MT_POSITION_X,
+ 				0, rmi4_data->sensor_max_x, 0, 0);
+ 		input_set_abs_params(rmi4_data->input_dev, ABS_MT_POSITION_Y,
+ 				0, rmi4_data->sensor_max_y, 0, 0);
+-	}
++	}*/
+ 
+ #ifdef REPORT_2D_W
+ 	input_set_abs_params(rmi4_data->input_dev,
+@@ -3712,9 +3932,45 @@ static int synaptics_rmi4_probe(struct platform_device *pdev)
+ 			__func__, retval);
+ 		goto err_create_debugfs_file;
+ 	}
++	temp = debugfs_create_file("addr", S_IRUSR | S_IWUSR, rmi4_data->dir,
++					rmi4_data, &debug_addr_fops);
++	if (temp == NULL || IS_ERR(temp)) {
++		dev_err(&pdev->dev,
++			"%s: Failed to create addr debugfs file, rc = %ld\n",
++			__func__, PTR_ERR(temp));
++		retval = PTR_ERR(temp);
++		goto err_create_debugfs_file;
++	}
++
++	temp = debugfs_create_file("data", S_IRUSR | S_IWUSR, rmi4_data->dir,
++					rmi4_data, &debug_data_fops);
++	if (temp == NULL || IS_ERR(temp)) {
++		dev_err(&pdev->dev,
++			"%s: Failed to create data debugfs file, rc = %ld\n",
++			__func__, PTR_ERR(temp));
++		retval = PTR_ERR(temp);
++		goto err_create_debugfs_file;
++	}
++	temp = debugfs_create_file("dump_info", S_IRUSR | S_IWUSR,
++					rmi4_data->dir,
++					rmi4_data, &debug_dump_info_fops);
++	if (temp == NULL || IS_ERR(temp)) {
++		dev_err(&pdev->dev,
++			"%s: Failed to create data debugfs file, rc = %ld\n",
++			__func__, PTR_ERR(temp));
++		retval = PTR_ERR(temp);
++		goto err_create_debugfs_file;
++	}
++
++	rmi4_data->ts_info = kzalloc(RMI4_INFO_MAX_LEN, GFP_KERNEL);
++	if (!rmi4_data->ts_info) {
++		/*dev_err(&pdev->dev, "Not enough memory\n");*/
++		goto err_alloc_ts_info_mem;
++	}
++	synaptics_rmi4_update_ts_info(rmi4_data);
+ 
+ 	for (attr_count = 0; attr_count < ARRAY_SIZE(attrs); attr_count++) {
+-		retval = sysfs_create_file(&rmi4_data->input_dev->dev.kobj,
++		retval = sysfs_create_file(&rmi4_data->pdev->dev.kobj,
+ 				&attrs[attr_count].attr);
+ 		if (retval < 0) {
+ 			dev_err(&pdev->dev,
+@@ -3724,6 +3980,7 @@ static int synaptics_rmi4_probe(struct platform_device *pdev)
+ 		}
+ 	}
+ 
++
+ 	synaptics_secure_touch_init(rmi4_data);
+ 	synaptics_secure_touch_stop(rmi4_data, 1);
+ 
+@@ -3734,6 +3991,9 @@ err_sysfs:
+ 		sysfs_remove_file(&rmi4_data->input_dev->dev.kobj,
+ 				&attrs[attr_count].attr);
+ 	}
++	kfree(rmi4_data->ts_info);
++	rmi4_data->ts_info = NULL;
++err_alloc_ts_info_mem:
+ err_create_debugfs_file:
+ 	debugfs_remove_recursive(rmi4_data->dir);
+ err_create_debugfs_dir:
+diff --git a/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_core.h b/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_core.h
+index 0483fa4..f47d1f7 100644
+--- a/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_core.h
++++ b/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_core.h
+@@ -1,11 +1,11 @@
+ /*
+  * Synaptics DSX touchscreen driver
+  *
+- * Copyright (C) 2012 Synaptics Incorporated
++ * Copyright (C) 2012-2016 Synaptics Incorporated
+  *
+- * Copyright (C) 2012 Alexandra Chin <alexandra.chin@tw.synaptics.com>
+- * Copyright (C) 2012 Scott Lin <scott.lin@tw.synaptics.com>
+- * Copyright (c) 2014, The Linux Foundation. All rights reserved.
++ * Copyright (C) 2012-2016 Alexandra Chin <alexandra.chin@tw.synaptics.com>
++ * Copyright (C) 2012-2016 Scott Lin <scott.lin@tw.synaptics.com>
++ * Copyright (c) 2014-2016, The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License as published by
+@@ -264,6 +264,7 @@ struct synaptics_rmi4_data {
+ 	unsigned char no_sleep_setting;
+ 	unsigned char intr_mask[MAX_INTR_REGISTERS];
+ 	unsigned char *button_txrx_mapping;
++	unsigned char *ts_info;
+ 	unsigned short num_of_intr_regs;
+ 	unsigned short f01_query_base_addr;
+ 	unsigned short f01_cmd_base_addr;
+@@ -292,6 +293,8 @@ struct synaptics_rmi4_data {
+ 	struct pinctrl_state *pinctrl_state_release;
+ 	char fw_name[SYNA_FW_NAME_MAX_LEN];
+ 	bool suspended;
++	bool enable;
++	unsigned short addr;
+ #if defined(CONFIG_SECURE_TOUCH)
+ 	atomic_t st_enabled;
+ 	atomic_t st_pending_irqs;
+diff --git a/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_fw_update.c b/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_fw_update.c
+index 2282fe0..5a858ae 100644
+--- a/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_fw_update.c
++++ b/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_fw_update.c
+@@ -1,10 +1,10 @@
+ /*
+  * Synaptics DSX touchscreen driver
+  *
+- * Copyright (C) 2012 Synaptics Incorporated
++ * Copyright (C) 2012-2016 Synaptics Incorporated
+  *
+- * Copyright (C) 2012 Alexandra Chin <alexandra.chin@tw.synaptics.com>
+- * Copyright (C) 2012 Scott Lin <scott.lin@tw.synaptics.com>
++ * Copyright (C) 2012-2016 Alexandra Chin <alexandra.chin@tw.synaptics.com>
++ * Copyright (C) 2014-2016 Scott Lin <scott.lin@tw.synaptics.com>
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License as published by
+diff --git a/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_i2c.c b/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_i2c.c
+old mode 100755
+new mode 100644
+index 5f35796..22148b6
+--- a/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_i2c.c
++++ b/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_i2c.c
+@@ -1,15 +1,15 @@
+ /*
+  * Synaptics DSX touchscreen driver
+  *
+- * Copyright (c) 2014-2015, The Linux Foundation.  All rights reserved.
++ * Copyright (c) 2014-2016, The Linux Foundation.  All rights reserved.
+  *
+  * Linux foundation chooses to take subject only to the GPLv2 license terms,
+  * and distributes only under these terms.
+  *
+- * Copyright (C) 2012 Synaptics Incorporated
++ * Copyright (C) 2012-2016 Synaptics Incorporated
+  *
+- * Copyright (C) 2012 Alexandra Chin <alexandra.chin@tw.synaptics.com>
+- * Copyright (C) 2012 Scott Lin <scott.lin@tw.synaptics.com>
++ * Copyright (C) 2012-2016 Alexandra Chin <alexandra.chin@tw.synaptics.com>
++ * Copyright (C) 2012-2016 Scott Lin <scott.lin@tw.synaptics.com>
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License as published by
+diff --git a/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_proximity.c b/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_proximity.c
+old mode 100755
+new mode 100644
+index 99c05e6..0991313
+--- a/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_proximity.c
++++ b/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_proximity.c
+@@ -1,10 +1,10 @@
+ /*
+  * Synaptics DSX touchscreen driver
+  *
+- * Copyright (C) 2012 Synaptics Incorporated
++ * Copyright (C) 2012-2016 Synaptics Incorporated
+  *
+- * Copyright (C) 2012 Alexandra Chin <alexandra.chin@tw.synaptics.com>
+- * Copyright (C) 2012 Scott Lin <scott.lin@tw.synaptics.com>
++ * Copyright (C) 2012-2016 Alexandra Chin <alexandra.chin@tw.synaptics.com>
++ * Copyright (C) 2012-2016 Scott Lin <scott.lin@tw.synaptics.com>
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License as published by
+diff --git a/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_rmi_dev.c b/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_rmi_dev.c
+index 4c341ff..9e9ce79 100644
+--- a/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_rmi_dev.c
++++ b/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_rmi_dev.c
+@@ -1,10 +1,10 @@
+ /*
+  * Synaptics DSX touchscreen driver
+  *
+- * Copyright (C) 2012 Synaptics Incorporated
++ * Copyright (C) 2012-2016 Synaptics Incorporated
+  *
+- * Copyright (C) 2012 Alexandra Chin <alexandra.chin@tw.synaptics.com>
+- * Copyright (C) 2012 Scott Lin <scott.lin@tw.synaptics.com>
++ * Copyright (C) 2012-2016 Alexandra Chin <alexandra.chin@tw.synaptics.com>
++ * Copyright (C) 2012-2016 Scott Lin <scott.lin@tw.synaptics.com>
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License as published by
+diff --git a/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_spi.c b/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_spi.c
+old mode 100755
+new mode 100644
+index dd797ee..b0565d0
+--- a/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_spi.c
++++ b/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_spi.c
+@@ -1,10 +1,10 @@
+ /*
+  * Synaptics DSX touchscreen driver
+  *
+- * Copyright (C) 2012 Synaptics Incorporated
++ * Copyright (C) 2012-2016 Synaptics Incorporated
+  *
+- * Copyright (C) 2012 Alexandra Chin <alexandra.chin@tw.synaptics.com>
+- * Copyright (C) 2012 Scott Lin <scott.lin@tw.synaptics.com>
++ * Copyright (C) 2012-2016 Alexandra Chin <alexandra.chin@tw.synaptics.com>
++ * Copyright (C) 2012-2016 Scott Lin <scott.lin@tw.synaptics.com>
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License as published by
+-- 
+1.9.1
+

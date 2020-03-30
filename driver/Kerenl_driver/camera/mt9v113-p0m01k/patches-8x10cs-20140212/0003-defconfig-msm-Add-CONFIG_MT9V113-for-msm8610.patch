@@ -1,0 +1,28 @@
+From 2d7990d5c5b0fb36b5b32d1492b4f75db55bdb20 Mon Sep 17 00:00:00 2001
+From: Lin Zhang <zhanglin0425@thundersoft.com>
+Date: Mon, 27 Jan 2014 17:23:13 +0800
+Subject: [PATCH 3/3] defconfig: msm: Add CONFIG_MT9V113 for msm8610
+
+Add CONFIG_MT9V113=y to the defconfig file of msm8610
+
+Change-Id: I9f48ebd8614eb1f236402fadb154c608583e5d5e
+Signed-off-by: Lin Zhang <zhanglin0425@thundersoft.com>
+---
+ arch/arm/configs/msm8610_defconfig |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/configs/msm8610_defconfig b/arch/arm/configs/msm8610_defconfig
+index 1ca7ed6..b275864 100644
+--- a/arch/arm/configs/msm8610_defconfig
++++ b/arch/arm/configs/msm8610_defconfig
+@@ -332,6 +332,7 @@ CONFIG_OV9724=y
+ CONFIG_SP1628=y
+ CONFIG_GC0339=y
+ CONFIG_OV5648=y
++CONFIG_MT9V113=y
+ CONFIG_MSMB_JPEG=y
+ CONFIG_MSM_VIDC_V4L2=y
+ CONFIG_MSM_WFD=y
+-- 
+1.7.4.1
+

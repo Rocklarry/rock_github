@@ -1,0 +1,28 @@
+From 9e23d60032328e1128abd542ae2bf448e4397bc7 Mon Sep 17 00:00:00 2001
+From: liuhm0427 <liuhm0427@thundersoft.com>
+Date: Tue, 15 Nov 2016 09:50:31 +0800
+Subject: [PATCH] ARM: dts: msm: Add ov8865 oyl8f03 camera dtsi
+
+Add ov8865 devicetree description for msm8976
+
+Change-Id: Ic487533ae44388f8eca3636d9813052531721c87
+Signed-off-by: Liu hongmei <liuhm0427@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8976-camera-sensor-qrd.dtsi | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8976-camera-sensor-qrd.dtsi b/arch/arm/boot/dts/qcom/msm8976-camera-sensor-qrd.dtsi
+index 4dd4b7c..14cbffa 100644
+--- a/arch/arm/boot/dts/qcom/msm8976-camera-sensor-qrd.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8976-camera-sensor-qrd.dtsi
+@@ -199,7 +199,6 @@
+ 		cell-index = <0>;
+ 		compatible = "qcom,camera";
+ 		reg = <0x0>;
+-		qcom,special-support-sensors = "ov13850_q13v06k";
+ 		qcom,csiphy-sd-index = <0>;
+ 		qcom,csid-sd-index = <0>;
+ 		qcom,mount-angle = <90>;
+-- 
+2.2.2
+

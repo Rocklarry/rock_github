@@ -1,0 +1,29 @@
+From 472622c942a634279e50c508c2dcc6458fc64388 Mon Sep 17 00:00:00 2001
+From: chenqingfeng <chenqf0228@thundersoft.com>
+Date: Thu, 21 Aug 2014 13:40:42 +0800
+Subject: [PATCH 3/3] ARM:config: support mmc3416xpj defconfig
+
+Defconfig support mmc3416xpj
+
+Change-Id: I3b238be4d229bc4d6ed6cbda6488992b44cdfe1c
+Signed-off-by: Qingfeng Chen <chenqf0228@thundersoft.com>
+---
+ arch/arm/configs/msm8916_defconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/configs/msm8916_defconfig b/arch/arm/configs/msm8916_defconfig
+index 9fb4f3c..bbff0cb 100644
+--- a/arch/arm/configs/msm8916_defconfig
++++ b/arch/arm/configs/msm8916_defconfig
+@@ -268,7 +268,7 @@ CONFIG_INPUT_GPIO=m
+ CONFIG_SENSORS_LIS3DH=y
+ CONFIG_SENSORS_MPU6050=y
+ CONFIG_SENSORS_AKM09911=y
+-CONFIG_SENSORS_BMA2X2=y
++#CONFIG_SENSORS_BMA2X2=y
+ CONFIG_SENSORS_MMC3416X=y
+ CONFIG_SENSORS_AKM8963=y
+ CONFIG_SERIAL_MSM_HSL=y
+-- 
+1.7.9.5
+

@@ -1,0 +1,42 @@
+From d3b4c4f21bc5c026a63df5a05baf9eb0f45db184 Mon Sep 17 00:00:00 2001
+From: Yukun Wan <wanyk0402@thundersoft.com>
+Date: Wed, 22 Apr 2015 16:31:08 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support kxcjk-1013 devicetree
+
+Devicetree support kxcjk-1013
+
+Change-Id: I32b7bd54b32d698dbf520d4c0a46e3d4f9631207
+Signed-off-by: Yukun Wan <wanyk0402@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+index 1039722..5b10b71 100755
+--- a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+@@ -98,6 +98,21 @@
+ 		bosch,gpio-int2 = <&msm_gpio 114 0x2002>;
+ 	};
+ 
++	kionix@f {
++		compatible = "kionix,kxcjk-1013";
++		reg = <0x0f>;
++		interrupt-parent = <&msm_gpio>;
++		interrupts = <113 0x2002>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++		kionix,min_interval = <5>;
++		kionix,poll_interval = <100>;
++		kionix,accel_direction = <1>;
++		kionix,accel_irq_use_drdy = <0>;
++		kionix,accel_res = <12>;
++		kionix,accel_g_range = <2>;
++	};
++
+ 	memsic@30 { /* Magnetic field sensor */
+ 		compatible = "memsic,mmc3416x";
+ 		reg = <0x30>;
+-- 
+2.2.2
+

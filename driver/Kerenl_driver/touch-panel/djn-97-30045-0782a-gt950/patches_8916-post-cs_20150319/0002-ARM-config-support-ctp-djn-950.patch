@@ -1,0 +1,31 @@
+From 820fc82f4f5aa8d84f2a4d02851084396eb74dca Mon Sep 17 00:00:00 2001
+From: yanqy <yanqy0911@thundersoft.com>
+Date: Thu, 19 Mar 2015 10:24:33 +0800
+Subject: [PATCH 2/3] ARM:config: support ctp djn 950
+
+Add CTP IHV-DJN@97-30045-0782A@GT950 config
+
+Change-Id: I75d89139c6d3fec1f57a9e1cc4e1a16397ac5300
+Signed-off-by: Qiyang Yan <yanqy0911@thundersoft.com>
+---
+ arch/arm/configs/msm8916_defconfig |    4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/arch/arm/configs/msm8916_defconfig b/arch/arm/configs/msm8916_defconfig
+index 08fd762..6c82fc6 100644
+--- a/arch/arm/configs/msm8916_defconfig
++++ b/arch/arm/configs/msm8916_defconfig
+@@ -258,6 +258,10 @@ CONFIG_TOUCHSCREEN_GEN_VKEYS=y
+ CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI4=y
+ CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_RMI4_DEV=y
+ CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE=y
++CONFIG_TOUCHSCREEN_GT9XX=y
++CONFIG_GT9XX_TOUCHPANEL_DRIVER=y
++CONFIG_GT9XX_TOUCHPANEL_UPDATE=y
++# CONFIG_GT9XX_TOUCHPANEL_DEBUG is not set
+ CONFIG_INPUT_MISC=y
+ CONFIG_INPUT_UINPUT=y
+ CONFIG_INPUT_GPIO=m
+-- 
+1.7.9.5
+

@@ -1,0 +1,85 @@
+From fdc5bb7f579870f5ea9ab5a827d2073a953f6d22 Mon Sep 17 00:00:00 2001
+From: Cai Hanjue <caihj0301@thundersoft.com>
+Date: Wed, 26 Apr 2017 13:51:54 +0800
+Subject: [PATCH] ARM: msm: camera_v2: Add hi846 camera driver
+
+Add hi846 eeporm driver for msm8937
+
+Change-Id: If2501f1ef0c25796885200a5a9728bebe91ef7fd
+Signed-off-by: Cai Hanjue <caihj0301@thundersoft.com>
+---
+ .../msm/camera_v2/sensor/eeprom/msm_eeprom.c       | 27 ++++++++++++++++++++--
+ include/uapi/media/msm_camsensor_sdk.h             |  1 +
+ 2 files changed, 26 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/media/platform/msm/camera_v2/sensor/eeprom/msm_eeprom.c b/drivers/media/platform/msm/camera_v2/sensor/eeprom/msm_eeprom.c
+index 1f891ac..7d068da 100644
+--- a/drivers/media/platform/msm/camera_v2/sensor/eeprom/msm_eeprom.c
++++ b/drivers/media/platform/msm/camera_v2/sensor/eeprom/msm_eeprom.c
+@@ -1,4 +1,4 @@
+-/* Copyright (c) 2011-2016, The Linux Foundation. All rights reserved.
++/* Copyright (c) 2011-2017, The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 and
+@@ -58,6 +58,10 @@ static int msm_get_read_mem_size
+ 				MSM_CAM_READ) {
+ 				size += eeprom_map->mem_settings[i].reg_data;
+ 			}
++			if (eeprom_map->mem_settings[i].i2c_operation ==
++				MSM_CAM_READ_CONTINUOUS) {
++				size += eeprom_map->mem_settings[i].reg_data;
++			}
+ 		}
+ 	}
+ 	CDBG("Total Data Size: %d\n", size);
+@@ -325,7 +329,7 @@ ERROR:
+ static int eeprom_parse_memory_map(struct msm_eeprom_ctrl_t *e_ctrl,
+ 	struct msm_eeprom_memory_map_array *eeprom_map_array)
+ {
+-	int rc =  0, i, j;
++	int rc =  0, i, j, k;
+ 	uint8_t *memptr;
+ 	struct msm_eeprom_mem_map_t *eeprom_map;
+ 
+@@ -406,6 +410,25 @@ static int eeprom_parse_memory_map(struct msm_eeprom_ctrl_t *e_ctrl,
+ 				memptr += eeprom_map->mem_settings[i].reg_data;
+ 			}
+ 			break;
++			case MSM_CAM_READ_CONTINUOUS: {
++			e_ctrl->i2c_client.addr_type =
++				eeprom_map->mem_settings[i].addr_type;
++			for (k = 0; k < eeprom_map->mem_settings[i].reg_data;
++				k++) {
++				rc = e_ctrl->i2c_client.i2c_func_tbl->
++					i2c_read_seq(&(e_ctrl->i2c_client),
++					eeprom_map->mem_settings[i].reg_addr,
++					memptr, 1);
++				msleep(eeprom_map->mem_settings[i].delay);
++				if (rc < 0) {
++					pr_err("%s: read failed\n",
++						__func__);
++					goto clean_up;
++				}
++				memptr++;
++				}
++			}
++			break;
+ 			default:
+ 				pr_err("%s: %d Invalid i2c operation LC:%d\n",
+ 					__func__, __LINE__, i);
+diff --git a/include/uapi/media/msm_camsensor_sdk.h b/include/uapi/media/msm_camsensor_sdk.h
+index 01e52b6..41760e9 100644
+--- a/include/uapi/media/msm_camsensor_sdk.h
++++ b/include/uapi/media/msm_camsensor_sdk.h
+@@ -209,6 +209,7 @@ enum msm_camera_i2c_operation {
+ 	MSM_CAM_WRITE = 0,
+ 	MSM_CAM_POLL,
+ 	MSM_CAM_READ,
++	MSM_CAM_READ_CONTINUOUS,
+ };
+ 
+ struct msm_sensor_i2c_sync_params {
+-- 
+1.9.1
+

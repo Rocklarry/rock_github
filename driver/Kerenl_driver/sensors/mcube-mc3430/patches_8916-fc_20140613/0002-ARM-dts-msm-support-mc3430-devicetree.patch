@@ -1,0 +1,56 @@
+From addbb3a9f2471393515ee07f14d74b05c02886e2 Mon Sep 17 00:00:00 2001
+From: chenqingfeng <chenqf0228@thundersoft.com>
+Date: Fri, 12 Sep 2014 16:54:58 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support mc3430 devicetree
+
+Devicetree support mc3430
+
+Change-Id: I02e4ad0c9e300c6f30d3d4c980ad05b120cfc180
+Signed-off-by: Qingfeng Chen <chenqf0228@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8916-qrd-skui.dtsi |   22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8916-qrd-skui.dtsi b/arch/arm/boot/dts/qcom/msm8916-qrd-skui.dtsi
+index 81e799b..8501386 100644
+--- a/arch/arm/boot/dts/qcom/msm8916-qrd-skui.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8916-qrd-skui.dtsi
+@@ -156,6 +156,16 @@
+ 			  bias-pull-down;
+ 		};
+ 	};
++	mc3xxx_int_pin {
++		qcom,pins = <&gp 113>;
++		qcom,pin-func = <0>;
++		qcom,num-grp-pins = <1>;
++		label = "mc3xxx_irq";
++		mc3xxx_default: mc3xxx_default {
++			  drive-strength = <6>;
++			  bias-pull-up;
++		};
++	};
+ 
+ 	bma2x2_int1_pin {
+ 		qcom,pins = <&gp 112>;
+@@ -200,6 +210,18 @@
+ 		avago,ga-value = <48>;
+ 	};
+ 
++	mcube@4c { /* Accelerometer sensor */
++		compatible = "mcube,mc3xxx";
++		reg = <0x4c>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&mc3xxx_default>;
++		interrupt-parent = <&msm_gpio>;
++		interrupts = <113 0x2002>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++		mcube,position = <1>;
++	};
++
+ 	bosch@18 { /* Accelerometer sensor */
+ 		compatible = "bosch,bma2x2";
+ 		reg = <0x18>;
+-- 
+1.7.9.5
+

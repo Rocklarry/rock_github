@@ -1,0 +1,28 @@
+From e67c264d3bc1157ba02420094b162f28c6330b72 Mon Sep 17 00:00:00 2001
+From: Li Zhanchao <lizc1023@thundersoft.com>
+Date: Mon, 5 Jan 2015 18:34:22 +0800
+Subject: [PATCH 2/3] ARM:config: support hx8526-d32 defconfig
+
+Defconfig support hx8526-d32
+
+Change-Id: I7be28a3deaa884ed07711cea0c71c9e5ef4477be
+Signed-off-by: Li Zhanchao <lizc1023@thundersoft.com>
+---
+ arch/arm/configs/msm8909_defconfig |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm/configs/msm8909_defconfig b/arch/arm/configs/msm8909_defconfig
+index a94587e..9c9e3e0 100644
+--- a/arch/arm/configs/msm8909_defconfig
++++ b/arch/arm/configs/msm8909_defconfig
+@@ -282,6 +282,7 @@ CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE_v21=y
+ CONFIG_TOUCHSCREEN_ATMEL_MXT=y
+ CONFIG_TOUCHSCREEN_FT5X06=y
+ CONFIG_TOUCHSCREEN_FT5X06_GESTURE=y
++CONFIG_TOUCHSCREEN_HIMAX8526=y
+ CONFIG_TOUCHSCREEN_GEN_VKEYS=y
+ CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI4=y
+ CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_RMI4_DEV=y
+-- 
+1.7.9.5
+

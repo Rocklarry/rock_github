@@ -1,0 +1,1809 @@
+From 231d1683f25e3498f6f5102fc7d10acffa94796c Mon Sep 17 00:00:00 2001
+From: Ran Gu <guran1128@thundersoft.com>
+Date: Thu, 29 May 2014 16:53:11 +0800
+Subject: [PATCH 1/3] drivers:input:misc:support tmd27723 driver
+
+Driver support of tmd27723
+
+Change-Id: Ifd2d8161b637f624f2d7b9619c352759edfa3785
+Signed-off-by: Ran Gu <guran1128@thundersoft.com>
+---
+ .../devicetree/bindings/input/misc/tmd27723.txt    |   33 +
+ drivers/input/misc/Kconfig                         |   10 +
+ drivers/input/misc/Makefile                        |    2 +-
+ drivers/input/misc/tmd277x.c                       | 1596 ++++++++++++++++++++
+ include/linux/input/tmd277x.h                      |  106 ++
+ 5 files changed, 1746 insertions(+), 1 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/input/misc/tmd27723.txt
+ create mode 100644 drivers/input/misc/tmd277x.c
+ create mode 100644 include/linux/input/tmd277x.h
+
+diff --git a/Documentation/devicetree/bindings/input/misc/tmd27723.txt b/Documentation/devicetree/bindings/input/misc/tmd27723.txt
+new file mode 100644
+index 0000000..9cfac78
+--- /dev/null
++++ b/Documentation/devicetree/bindings/input/misc/tmd27723.txt
+@@ -0,0 +1,33 @@
++Taos tmd27723 L/P sensor
++
++Required properties:
++
++ - compatible		: Should be "taos,tmd27723".
++ - reg			: i2c slave address of the device.
++ - interrupt-parent	: Parent of interrupt.
++ - interrupts		: L/P sample interrupt to indicate new data ready.
++ - vdd-supply		: Power supply needed to power up the device.
++ - vio-supply		: IO power supply needed for IO and I2C.
++ - tmd27723,int_gpio	: The gpio pin for the interrupt.
++ - tmd27723,prox_th_min	: The threshold adc value for proximity sensor to trigger away interrupt.
++ - tmd27723,prox_th_max	: The threshold adc value for proximity sensor to trigger close interrupt.
++ - tmd27723,als_gate	: The adc value for light sensor to trigger different light level.
++
++
++Example:
++
++		taos@39 {
++			compatible = "taos,tmd27723";
++			reg = <0x39>;
++			pinctrl-names = "default";
++			pinctrl-0 = <&tmd27723_default>;
++			interrupt-parent = <&msm_gpio>;
++			interrupts = <113 0x2>;
++			vdd-supply = <&pm8916_l17>;
++			vio-supply = <&pm8916_l6>;
++			tmd27723,int_gpio = <&msm_gpio 113 0x2>;
++			tmd27723,prox_th_min = <530>;
++			tmd27723,prox_th_max = <900>;
++			tmd27723,als_gate = <10>;
++		};
++
+diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
+index b358471..8cd3604 100644
+--- a/drivers/input/misc/Kconfig
++++ b/drivers/input/misc/Kconfig
+@@ -819,5 +819,15 @@ config SENSORS_BMI058
+ 	 If you say yes here, you get support for Bosch Sensortec's
+ 	 sensor driver of BMI058.
+ 
++config SENSORS_TMD27723
++   tristate "TAOS TMD27723 proximity and ambient light sensor"
++   depends on I2C
++   default n
++   help
++     If you say yes here you get support for the TAOS tmd27723,
++     proximity and ambient light sensors.
++     This driver can also be built as a module.  If so, the module
++     will be called tmd277x.
++
+ endif
+ 
+diff --git a/drivers/input/misc/Makefile b/drivers/input/misc/Makefile
+index 139a4fb..caa6c84 100644
+--- a/drivers/input/misc/Makefile
++++ b/drivers/input/misc/Makefile
+@@ -75,7 +75,7 @@ obj-$(CONFIG_SENSORS_LIS3DH)		+= lis3dh_acc.o
+ obj-$(CONFIG_SENSORS_BMA2X2)	+= bstclass.o
+ 
+ obj-$(CONFIG_SENSORS_BMA2X2)	+= bma2x2.o
+-
++obj-$(CONFIG_SENSORS_TMD27723)		+= tmd277x.o
+ ifeq ($(CONFIG_SENSORS_BMA2X2_ENABLE_INT1),y)
+ 	EXTRA_CFLAGS += -DBMA2X2_ENABLE_INT1
+ endif
+diff --git a/drivers/input/misc/tmd277x.c b/drivers/input/misc/tmd277x.c
+new file mode 100644
+index 0000000..cd9d4ca
+--- /dev/null
++++ b/drivers/input/misc/tmd277x.c
+@@ -0,0 +1,1596 @@
++/* drivers/staging/taos/tmd277x.c
++ *
++ * Copyright (C) 2011-2014 Sony Ericsson Mobile Communications AB.
++ *
++ * Author: Aleksej Makarov <aleksej.makarov@sonyericsson.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2, as
++ * published by the Free Software Foundation; either version 2
++ * of the License, or (at your option) any later version.
++ */
++#include <linux/kernel.h>
++#include <linux/i2c.h>
++#include <linux/errno.h>
++#include <linux/delay.h>
++#include <linux/string.h>
++#include <linux/mutex.h>
++#include <linux/unistd.h>
++#include <linux/interrupt.h>
++#include <linux/platform_device.h>
++#include <linux/input.h>
++#include <linux/slab.h>
++#include <linux/pm.h>
++#include <linux/input/tmd277x.h>
++#include <linux/module.h>
++#include <linux/sensors.h>
++
++#ifdef CONFIG_OF
++#include <linux/of_gpio.h>
++#endif
++
++#include <mach/irqs.h>
++#include <linux/irq.h>
++
++enum tmd277x_regs {
++	TMD277X_ENABLE,
++	TMD277X_ALS_TIME,
++	TMD277X_PRX_TIME,
++	TMD277X_WAIT_TIME,
++	TMD277X_ALS_MINTHRESHLO,
++	TMD277X_ALS_MINTHRESHHI,
++	TMD277X_ALS_MAXTHRESHLO,
++	TMD277X_ALS_MAXTHRESHHI,
++	TMD277X_PRX_MINTHRESHLO,
++	TMD277X_PRX_MINTHRESHHI,
++	TMD277X_PRX_MAXTHRESHLO,
++	TMD277X_PRX_MAXTHRESHHI,
++	TMD277X_PERSISTENCE,
++	TMD277X_CONFIG,
++	TMD277X_PRX_PULSE_COUNT,
++	TMD277X_CONTROL,
++
++	TMD277X_REVID = 0x11,
++	TMD277X_CHIPID,
++	TMD277X_STATUS,
++	TMD277X_ALS_CHAN0LO,
++	TMD277X_ALS_CHAN0HI,
++	TMD277X_ALS_CHAN1LO,
++	TMD277X_ALS_CHAN1HI,
++	TMD277X_PRX_LO,
++	TMD277X_PRX_HI,
++
++	TMD277X_REG_PRX_OFFS = 0x1e,
++	TMD277X_REG_MAX,
++};
++
++enum tmd277x_cmd_reg {
++	TMD277X_CMD_REG           = (1 << 7),
++	TMD277X_CMD_INCR          = (0x1 << 5),
++	TMD277X_CMD_SPL_FN        = (0x3 << 5),
++	TMD277X_CMD_PROX_INT_CLR  = (0x5 << 0),
++	TMD277X_CMD_ALS_INT_CLR   = (0x6 << 0),
++};
++
++enum tmd277x_en_reg {
++	TMD277X_EN_PWR_ON   = (1 << 0),
++	TMD277X_EN_ALS      = (1 << 1),
++	TMD277X_EN_PRX      = (1 << 2),
++	TMD277X_EN_WAIT     = (1 << 3),
++	TMD277X_EN_ALS_IRQ  = (1 << 4),
++	TMD277X_EN_PRX_IRQ  = (1 << 5),
++	TMD277X_EN_SAI      = (1 << 6),
++};
++
++enum tmd277x_status {
++	TMD277X_ST_ALS_VALID  = (1 << 0),
++	TMD277X_ST_PRX_VALID  = (1 << 1),
++	TMD277X_ST_ALS_IRQ    = (1 << 4),
++	TMD277X_ST_PRX_IRQ    = (1 << 5),
++	TMD277X_ST_PRX_SAT    = (1 << 6),
++};
++
++enum {
++	TMD277X_ALS_GAIN_MASK = (3 << 0),
++	TMD277X_ALS_AGL_MASK  = (1 << 2),
++	TMD277X_ALS_AGL_SHIFT = 2,
++	TMD277X_ATIME_PER_100 = 273,
++	TMD277X_ATIME_DEFAULT_MS = 50,
++	SCALE_SHIFT = 11,
++	RATIO_SHIFT = 10,
++	MAX_ALS_VALUE = 0xffff,
++	MIN_ALS_VALUE = 10,
++	GAIN_SWITCH_LEVEL = 100,
++	GAIN_AUTO_INIT_VALUE = 16,
++};
++
++static u8 const tmd277x_ids[] = {
++	0x39,
++	0x30,
++};
++
++static char const *tmd277x_names[] = {
++	"tmd27723 / tmd27727",
++	"tmd27721 / tmd27725",
++};
++
++static u8 const restorable_regs[] = {
++	TMD277X_ALS_TIME,
++	TMD277X_PRX_TIME,
++	TMD277X_WAIT_TIME,
++	TMD277X_PERSISTENCE,
++	TMD277X_CONFIG,
++	TMD277X_PRX_PULSE_COUNT,
++	TMD277X_CONTROL,
++	TMD277X_REG_PRX_OFFS,
++};
++
++static u8 const als_gains[] = {
++	1,
++	8,
++	16,
++	120
++};
++
++struct taos_als_info {
++	int ch0;
++	int ch1;
++	u32 cpl;
++	u32 saturation;
++	int lux;
++};
++
++struct taos_prox_info {
++	int raw;
++	int detected;
++};
++
++static struct lux_segment segment_default[] = {
++	{
++		.ratio = (435 << RATIO_SHIFT) / 1000,
++		.k0 = (46516 << SCALE_SHIFT) / 1000,
++		.k1 = (95381 << SCALE_SHIFT) / 1000,
++	},
++	{
++		.ratio = (551 << RATIO_SHIFT) / 1000,
++		.k0 = (23740 << SCALE_SHIFT) / 1000,
++		.k1 = (43044 << SCALE_SHIFT) / 1000,
++	},
++};
++
++struct tmd2772_chip {
++	struct mutex lock;
++	struct i2c_client *client;
++	struct taos_prox_info prx_inf;
++	struct taos_als_info als_inf;
++	struct taos_parameters params;
++	struct tmd2772_i2c_platform_data *pdata;
++	struct sensors_classdev als_cdev;
++	struct sensors_classdev ps_cdev;
++
++	u8 shadow[TMD277X_REG_MAX];
++	struct input_dev *p_idev;
++	struct input_dev *a_idev;
++	struct work_struct tmd_work;
++	struct workqueue_struct *tmd_wq;
++	int int_gpio;
++	int irq;
++
++	int in_suspend;
++	int wake_irq;
++	int irq_pending;
++	bool unpowered;
++	bool als_enabled;
++	bool prx_enabled;
++	struct lux_segment *segment;
++	int segment_num;
++	int seg_num_max;
++	bool als_gain_auto;
++};
++static struct tmd2772_chip *pdev_data;
++static struct sensors_classdev sensors_light_cdev = {
++	.name = "light",
++	.vendor = "taos",
++	.version = 1,
++	.handle = SENSORS_LIGHT_HANDLE,
++	.type = SENSOR_TYPE_LIGHT,
++	.max_range = "30000",
++	.resolution = "0.0125",
++	.sensor_power = "0.20",
++	.min_delay = 1000, /* in microseconds */
++	.fifo_reserved_event_count = 0,
++	.fifo_max_event_count = 0,
++	.enabled = 0,
++	.delay_msec = 100,
++	.sensors_enable = NULL,
++	.sensors_poll_delay = NULL,
++};
++
++static struct sensors_classdev sensors_proximity_cdev = {
++	.name = "proximity",
++	.vendor = "taos",
++	.version = 1,
++	.handle = SENSORS_PROXIMITY_HANDLE,
++	.type = SENSOR_TYPE_PROXIMITY,
++	.max_range = "5",
++	.resolution = "5.0",
++	.sensor_power = "3",
++	.min_delay = 1000, /* in microseconds */
++	.fifo_reserved_event_count = 0,
++	.fifo_max_event_count = 0,
++	.enabled = 0,
++	.delay_msec = 100,
++	.sensors_enable = NULL,
++	.sensors_poll_delay = NULL,
++};
++
++static int taos_i2c_read(struct tmd2772_chip *chip, u8 reg, u8 *val)
++{
++	int ret;
++	s32 read;
++	struct i2c_client *client = chip->client;
++
++	ret = i2c_smbus_write_byte(client, (TMD277X_CMD_REG | reg));
++	if (ret < 0) {
++		dev_err(&client->dev, "%s: failed to write register %x\n",
++				__func__, reg);
++		return ret;
++	}
++	read = i2c_smbus_read_byte(client);
++	if (read < 0) {
++		dev_err(&client->dev, "%s: failed to read from register %x\n",
++				__func__, reg);
++		return ret;
++	}
++	*val = read;
++	return read;
++}
++
++static int taos_i2c_blk_read(struct tmd2772_chip *chip,
++		u8 reg, u8 *val, int size)
++{
++	s32 ret;
++	struct i2c_client *client = chip->client;
++
++	ret =  i2c_smbus_read_i2c_block_data(client,
++			TMD277X_CMD_REG | TMD277X_CMD_INCR | reg, size, val);
++	if (ret < 0)
++		dev_err(&client->dev, "%s: failed at address %x (%d bytes)\n",
++				__func__, reg, size);
++	return ret;
++}
++
++static int taos_i2c_write(struct tmd2772_chip *chip, u8 reg, u8 val)
++{
++	int ret;
++	struct i2c_client *client = chip->client;
++
++	ret = i2c_smbus_write_byte_data(client, TMD277X_CMD_REG | reg, val);
++	if (ret < 0)
++		dev_err(&client->dev, "%s: failed to write register %x\n",
++				__func__, reg);
++	return ret;
++}
++
++static int taos_i2c_blk_write(struct tmd2772_chip *chip,
++		u8 reg, u8 *val, int size)
++{
++	s32 ret;
++	struct i2c_client *client = chip->client;
++
++	ret =  i2c_smbus_write_i2c_block_data(client,
++			TMD277X_CMD_REG | TMD277X_CMD_INCR | reg, size, val);
++	if (ret < 0)
++		dev_err(&client->dev, "%s: failed at address %x (%d bytes)\n",
++				__func__, reg, size);
++	return ret;
++}
++
++static int set_segment_table(struct tmd2772_chip *chip,
++		struct lux_segment *segment, int seg_num)
++{
++	int i;
++	struct device *dev = &chip->client->dev;
++
++	chip->seg_num_max = chip->pdata->segment_num ?
++			chip->pdata->segment_num : ARRAY_SIZE(segment_default);
++
++	if (!chip->segment) {
++		dev_dbg(dev, "%s: allocating segment table\n", __func__);
++		chip->segment = kzalloc(sizeof(*chip->segment) *
++				chip->seg_num_max, GFP_KERNEL);
++		if (!chip->segment) {
++			dev_err(dev, "%s: no memory!\n", __func__);
++			return -ENOMEM;
++		}
++	}
++	if (seg_num > chip->seg_num_max) {
++		dev_warn(dev, "%s: %d segment requested, %d applied\n",
++				__func__, seg_num, chip->seg_num_max);
++		chip->segment_num = chip->seg_num_max;
++	} else {
++		chip->segment_num = seg_num;
++	}
++	memcpy(chip->segment, segment,
++			chip->segment_num * sizeof(*chip->segment));
++	dev_dbg(dev, "%s: %d segment requested, %d applied\n", __func__,
++			seg_num, chip->seg_num_max);
++	for (i = 0; i < chip->segment_num; i++)
++		dev_dbg(dev, "segment %d: ratio %6u, k0 %6u, k1 %6u\n",
++				i, chip->segment[i].ratio,
++				chip->segment[i].k0, chip->segment[i].k1);
++	return 0;
++}
++
++static void taos_calc_cpl(struct tmd2772_chip *chip)
++{
++	u32 cpl;
++	u32 sat;
++	u8 atime = chip->shadow[TMD277X_ALS_TIME];
++	u8 agl = (chip->shadow[TMD277X_CONFIG] & TMD277X_ALS_AGL_MASK) >>
++			TMD277X_ALS_AGL_SHIFT;
++
++
++	u32 time_scale = (256 - atime) * 2730 / 200;/*2730 =2.73*1000*/
++
++
++	/*time_scale = ((256-238)<<11)*273/(50*100) = 2012*/
++	cpl = time_scale * chip->params.als_gain;/*cpl = 2012 * 8 = 16096*/
++	if (agl)
++		cpl = cpl * 16 / 1000;	/*cpl = 16096*16/1000 = 257*/
++	/*(256-238)<<10 = 18432,min_t(u32,X,u32,Y)*/
++	sat = min_t(u32, MAX_ALS_VALUE, (u32)(256 - atime) << 10);
++	sat = sat * 8 / 10;
++	dev_dbg(&chip->client->dev,
++			"%s: cpl = %u [time_scale %u, gain %u, agl %u], "
++			"saturation %u\n", __func__, cpl, time_scale,
++			chip->params.als_gain, agl, sat);
++	chip->als_inf.cpl = cpl;
++	chip->als_inf.saturation = sat;
++}
++
++static int set_als_gain(struct tmd2772_chip *chip, int gain)
++{
++	int rc;
++	u8 ctrl_reg  = chip->shadow[TMD277X_CONTROL] & ~TMD277X_ALS_GAIN_MASK;
++
++	switch (gain) {
++	case 1:
++		ctrl_reg |= AGAIN_1;
++		break;
++	case 8:
++		ctrl_reg |= AGAIN_8;
++		break;
++	case 16:
++		ctrl_reg |= AGAIN_16;
++		break;
++	case 120:
++		ctrl_reg |= AGAIN_120;
++		break;
++	default:
++		dev_err(&chip->client->dev, "%s: wrong als gain %d\n",
++				__func__, gain);
++		return -EINVAL;
++	}
++	rc = taos_i2c_write(chip, TMD277X_CONTROL, ctrl_reg);
++	if (!rc) {
++		chip->shadow[TMD277X_CONTROL] = ctrl_reg;
++		chip->params.als_gain = gain;
++		dev_dbg(&chip->client->dev, "%s: new gain %d\n",
++				__func__, gain);
++	}
++	return rc;
++}
++
++static int taos_get_lux(struct tmd2772_chip *chip)
++{
++	unsigned i;
++	int ret = 0;
++	struct device *dev = &chip->client->dev;
++	struct lux_segment *s = chip->segment;
++	u32 c0 = chip->als_inf.ch0;
++	u32 c1 = chip->als_inf.ch1;
++	u32 sat = chip->als_inf.saturation;
++	u32 ratio;
++	u64 lux_0, lux_1;
++	u32 cpl = chip->als_inf.cpl;
++	u32 lux, k0 = 0, k1 = 0;
++
++	if (!chip->als_gain_auto) {
++		if (c0 <= MIN_ALS_VALUE) {	/*MIN_ALS_VALUE = 10*/
++			dev_dbg(dev, "%s: darkness\n", __func__);
++			lux = 0;
++			goto exit;
++		} else if (c0 >= sat) {
++			dev_dbg(dev, "%s: saturation, keep lux\n", __func__);
++			lux = chip->als_inf.lux;
++			goto exit;
++		}
++	} else {
++		/*chip->als_gain_auto = "AUTO";auto gain , 1x , 16x , 120x*/
++		u8 gain = chip->params.als_gain;
++		int rc = -EIO;
++
++		if (gain == 16 && c0 >= sat) {
++			rc = set_als_gain(chip, 1);
++		} else if (gain == 16 && c0 < GAIN_SWITCH_LEVEL) {
++			rc = set_als_gain(chip, 120);
++		} else if ((gain == 120 && c0 >= sat) ||
++			(gain == 1 && c0 < GAIN_SWITCH_LEVEL)) {
++			rc = set_als_gain(chip, 16);
++		}
++		if (!rc) {
++			dev_dbg(dev, "%s: gain adjusted, skip\n", __func__);
++			taos_calc_cpl(chip);
++			ret = -EAGAIN;
++			lux = chip->als_inf.lux;
++			goto exit;
++		}
++
++		if (c0 <= MIN_ALS_VALUE) {
++			dev_dbg(dev, "%s: darkness\n", __func__);
++			lux = 0;
++			goto exit;
++		} else if (c0 >= sat) {
++			dev_dbg(dev, "%s: saturation, keep lux\n", __func__);
++			lux = chip->als_inf.lux;
++			goto exit;
++		}
++	}
++
++	/*atime = 50ms, gain = 8x , ch0 = 3891 , ch1 = 424*/
++
++	ratio = (c1 << RATIO_SHIFT) / c0;
++	for (i = 0; i < chip->segment_num; i++, s++) {
++		if (ratio <= s->ratio) {
++			dev_dbg(&chip->client->dev, "%s: ratio %u segment %u\t",
++					__func__, ratio, i);
++			dev_dbg(&chip->client->dev, "[r %u, k0 %u, k1 %u]\n",
++					s->ratio, s->k0, s->k1);
++			k0 = s->k0;
++			k1 = s->k1;
++			break;
++		}
++	}
++	if (i >= chip->segment_num) {
++		dev_dbg(&chip->client->dev, "%s: ratio %u - darkness\n",
++				__func__, ratio);
++		lux = 0;
++		goto exit;
++	}
++
++	lux_0 = (((c0 * 100) - (c1 * 175)) * 10) / cpl;
++	lux_1 = (((c0 * 63) - (c1 * 100)) * 10) / cpl;
++
++	lux = max(lux_0, lux_1);
++	lux = max_t(u32, lux, 0);
++
++exit:
++	dev_dbg(&chip->client->dev, "%s: lux %u (%u x %u - %u x %u) / %u\n",
++		__func__, lux, k0, c0, k1, c1, cpl);
++	lux = lux / 4;
++	chip->als_inf.lux = lux;
++	return ret;
++}
++
++static int pltf_power_on(struct tmd2772_chip *chip)
++{
++	int rc = 0;
++	if (chip->pdata->platform_power) {
++		rc = chip->pdata->platform_power(&chip->client->dev,
++			POWER_ON);
++		usleep(10000);
++	}
++	chip->unpowered = rc != 0;
++	return rc;
++}
++
++static int pltf_power_off(struct tmd2772_chip *chip)
++{
++	int rc = 0;
++	if (chip->pdata->platform_power) {
++		rc = chip->pdata->platform_power(&chip->client->dev,
++			POWER_OFF);
++		chip->unpowered = rc == 0;
++	} else {
++		chip->unpowered = false;
++	}
++	return rc;
++}
++
++static int taos_irq_clr(struct tmd2772_chip *chip, u8 bits)
++{
++	int ret = i2c_smbus_write_byte(chip->client, TMD277X_CMD_REG |
++			TMD277X_CMD_SPL_FN | bits);
++
++	if (ret < 0)
++		dev_err(&chip->client->dev, "%s: failed, bits %x\n",
++				__func__, bits);
++	return ret;
++}
++
++static void taos_get_als(struct tmd2772_chip *chip)
++{
++	u32 ch0, ch1;
++	u8 *buf = &chip->shadow[TMD277X_ALS_CHAN0LO];
++
++	ch0 = le16_to_cpup((const __le16 *)&buf[0]);
++	ch1 = le16_to_cpup((const __le16 *)&buf[2]);
++	chip->als_inf.ch0 = ch0;
++	chip->als_inf.ch1 = ch1;
++	dev_dbg(&chip->client->dev, "%s: ch0 %u, ch1 %u\n", __func__, ch0, ch1);
++}
++
++static void taos_get_prox(struct tmd2772_chip *chip)
++{
++	u8 *buf = &chip->shadow[TMD277X_PRX_LO];
++	bool d = chip->prx_inf.detected;
++
++	chip->prx_inf.raw = (buf[1] << 8) | buf[0];
++	chip->prx_inf.detected =
++			(d && (chip->prx_inf.raw > chip->params.prox_th_min)) ||
++			(!d && (chip->prx_inf.raw > chip->params.prox_th_max));
++	dev_dbg(&chip->client->dev, "%s: raw %d, detected %d\n", __func__,
++			chip->prx_inf.raw, chip->prx_inf.detected);
++}
++
++static int taos_read_all(struct tmd2772_chip *chip)
++{
++	struct i2c_client *client = chip->client;
++	s32 ret;
++
++	dev_dbg(&client->dev, "%s\n", __func__);
++	ret = taos_i2c_blk_read(chip, TMD277X_STATUS,
++			&chip->shadow[TMD277X_STATUS],
++			TMD277X_PRX_HI - TMD277X_STATUS + 1);
++	return (ret < 0) ? ret : 0;
++}
++
++static int update_prox_thresh(struct tmd2772_chip *chip, bool on_enable)
++{
++	s32 ret;
++	u8 *buf = &chip->shadow[TMD277X_PRX_MINTHRESHLO];
++	u16 from, to;
++
++	if (on_enable) {
++		/* zero gate to force irq */
++		from = to = 0;
++	} else {
++		if (chip->prx_inf.detected) {
++			from = chip->params.prox_th_min;
++			to = 0xffff;
++		} else {
++			from = 0;
++			to = chip->params.prox_th_max;
++		}
++	}
++	dev_dbg(&chip->client->dev, "%s: %u - %u\n", __func__, from, to);
++	*buf++ = from & 0xff;
++	*buf++ = from >> 8;
++	*buf++ = to & 0xff;
++	*buf++ = to >> 8;
++	ret = taos_i2c_blk_write(chip, TMD277X_PRX_MINTHRESHLO,
++			&chip->shadow[TMD277X_PRX_MINTHRESHLO],
++			TMD277X_PRX_MAXTHRESHHI - TMD277X_PRX_MINTHRESHLO + 1);
++	return (ret < 0) ? ret : 0;
++}
++
++static int update_als_thres(struct tmd2772_chip *chip, bool on_enable)
++{
++	s32 ret;
++	u8 *buf = &chip->shadow[TMD277X_ALS_MINTHRESHLO];
++	u16 gate = chip->params.als_gate;
++	u16 from, to, cur;
++
++	cur = chip->als_inf.ch0;
++	if (on_enable) {
++		/* zero gate far away form current position to force an irq */
++		from = to = cur > 0xffff / 2 ? 0 : 0xffff;
++	} else {
++		gate = cur * gate / 100;
++		if (!gate)
++			gate = 1;
++		if (cur > gate)
++			from = cur - gate;
++		else
++			from = 0;
++		if (cur < (0xffff - gate))
++			to = cur + gate;
++		else
++			to = 0xffff;
++	}
++	dev_dbg(&chip->client->dev, "%s: [%u - %u]\n", __func__, from, to);
++	*buf++ = from & 0xff;
++	*buf++ = from >> 8;
++	*buf++ = to & 0xff;
++	*buf++ = to >> 8;
++	ret = taos_i2c_blk_write(chip, TMD277X_ALS_MINTHRESHLO,
++			&chip->shadow[TMD277X_ALS_MINTHRESHLO],
++			TMD277X_ALS_MAXTHRESHHI - TMD277X_ALS_MINTHRESHLO + 1);
++	return (ret < 0) ? ret : 0;
++}
++
++static void report_prox(struct tmd2772_chip *chip)
++{
++	if (chip->p_idev) {
++		input_report_abs(chip->p_idev, ABS_DISTANCE,
++				chip->prx_inf.detected ? 0 : 1);
++		input_sync(chip->p_idev);
++	}
++}
++
++static void report_als(struct tmd2772_chip *chip)
++{
++	if (chip->a_idev) {
++		int rc = taos_get_lux(chip);
++		if (!rc) {
++			int lux = chip->als_inf.lux;
++			input_report_abs(chip->a_idev, ABS_MISC, lux);
++			input_sync(chip->a_idev);
++			update_als_thres(chip, 0);
++		} else {
++			update_als_thres(chip, 1);
++		}
++	}
++}
++
++static int taos_check_and_report(struct tmd2772_chip *chip)
++{
++	u8 status;
++
++	int ret = taos_read_all(chip);
++
++	if (ret)
++		goto exit_clr;
++
++	status = chip->shadow[TMD277X_STATUS];
++	dev_dbg(&chip->client->dev, "%s: status 0x%02x\n", __func__, status);
++	if ((status & (TMD277X_ST_PRX_VALID | TMD277X_ST_PRX_IRQ)) ==
++			(TMD277X_ST_PRX_VALID | TMD277X_ST_PRX_IRQ)) {
++		taos_get_prox(chip);
++		report_prox(chip);
++		update_prox_thresh(chip, 0);
++	}
++
++	if ((status & (TMD277X_ST_ALS_VALID | TMD277X_ST_ALS_IRQ)) ==
++			(TMD277X_ST_ALS_VALID | TMD277X_ST_ALS_IRQ)) {
++		taos_get_als(chip);
++		report_als(chip);
++	}
++exit_clr:
++	taos_irq_clr(chip, TMD277X_CMD_PROX_INT_CLR | TMD277X_CMD_ALS_INT_CLR);
++	return ret;
++}
++
++static void tmd_work_func(struct work_struct *work)
++{
++	struct tmd2772_chip *chip =
++		container_of(work, struct tmd2772_chip, tmd_work);
++	taos_check_and_report(chip);
++	enable_irq(chip->irq);
++	return;
++}
++
++static irqreturn_t taos_irq(int irq, void *handle)
++{
++	struct tmd2772_chip *chip = handle;
++
++	disable_irq_nosync(irq);
++	queue_work(chip->tmd_wq, &chip->tmd_work);
++
++	return IRQ_HANDLED;
++}
++
++static void set_pltf_settings(struct tmd2772_chip *chip)
++{
++	struct taos_raw_settings const *s = chip->pdata->raw_settings;
++	u8 *sh = chip->shadow;
++	struct device *dev = &chip->client->dev;
++
++	if (s) {
++		dev_dbg(dev, "%s: form pltf data\n", __func__);
++		sh[TMD277X_ALS_TIME] = s->als_time;
++		sh[TMD277X_PRX_TIME] = s->prx_time;
++		sh[TMD277X_WAIT_TIME] = s->wait_time;
++		sh[TMD277X_PERSISTENCE] = s->persist;
++		sh[TMD277X_CONFIG] = s->cfg_reg;
++		sh[TMD277X_PRX_PULSE_COUNT] = s->prox_pulse_cnt;
++		sh[TMD277X_CONTROL] = s->ctrl_reg;
++		sh[TMD277X_REG_PRX_OFFS] = s->prox_offs;
++	} else {
++		dev_dbg(dev, "%s: use defaults\n", __func__);
++		sh[TMD277X_ALS_TIME] = 238; /* ~50 ms */
++		sh[TMD277X_PRX_TIME] = 255;
++		sh[TMD277X_WAIT_TIME] = 0;
++		sh[TMD277X_PERSISTENCE] = PRX_PERSIST(1) | ALS_PERSIST(3);
++		sh[TMD277X_CONFIG] = 0;
++		sh[TMD277X_PRX_PULSE_COUNT] = 12;
++		sh[TMD277X_CONTROL] = AGAIN_8 | PGAIN_4 |
++				PDIOD_CH0 | PDRIVE_30MA;
++		sh[TMD277X_REG_PRX_OFFS] = 0;
++	}
++	chip->params.als_gate = chip->pdata->parameters.als_gate;
++	chip->params.prox_th_max = chip->pdata->parameters.prox_th_max;
++	chip->params.prox_th_min = chip->pdata->parameters.prox_th_min;
++	chip->params.als_gain = chip->pdata->parameters.als_gain;
++	if (chip->pdata->parameters.als_gain) {
++		chip->params.als_gain = chip->pdata->parameters.als_gain;
++	} else {
++		chip->als_gain_auto = true;
++		chip->params.als_gain = GAIN_AUTO_INIT_VALUE;
++		dev_dbg(&chip->client->dev, "%s: auto als gain.\n", __func__);
++	}
++	(void)set_als_gain(chip, chip->params.als_gain);
++	taos_calc_cpl(chip);
++}
++
++static int flush_regs(struct tmd2772_chip *chip)
++{
++	unsigned i;
++	int rc;
++	u8 reg;
++
++	dev_dbg(&chip->client->dev, "%s\n", __func__);
++	for (i = 0; i < ARRAY_SIZE(restorable_regs); i++) {
++		reg = restorable_regs[i];
++		rc = taos_i2c_write(chip, reg, chip->shadow[reg]);
++		if (rc) {
++			dev_err(&chip->client->dev, "%s: err on reg 0x%02x\n",
++					__func__, reg);
++			break;
++		}
++	}
++	return rc;
++}
++
++static int update_enable_reg(struct tmd2772_chip *chip)
++{
++	dev_dbg(&chip->client->dev, "%s: %02x\n", __func__,
++			chip->shadow[TMD277X_ENABLE]);
++
++	return taos_i2c_write(chip, TMD277X_ENABLE,
++			chip->shadow[TMD277X_ENABLE]);
++}
++
++static int taos_prox_enable(struct tmd2772_chip *chip, int on)
++{
++	int rc;
++
++	dev_dbg(&chip->client->dev, "%s: on = %d\n", __func__, on);
++	if (on) {
++		taos_irq_clr(chip, TMD277X_CMD_PROX_INT_CLR);
++		update_prox_thresh(chip, 1);
++		chip->shadow[TMD277X_ENABLE] |=
++				(TMD277X_EN_PWR_ON | TMD277X_EN_PRX |
++				TMD277X_EN_PRX_IRQ);
++		rc = update_enable_reg(chip);
++		if (rc)
++			return rc;
++		usleep(5000);
++	} else {
++		chip->shadow[TMD277X_ENABLE] &=
++				~(TMD277X_EN_PRX_IRQ | TMD277X_EN_PRX);
++		if (!(chip->shadow[TMD277X_ENABLE] & TMD277X_EN_ALS))
++			chip->shadow[TMD277X_ENABLE] &= ~TMD277X_EN_PWR_ON;
++		rc = update_enable_reg(chip);
++		if (rc)
++			return rc;
++		taos_irq_clr(chip, TMD277X_CMD_PROX_INT_CLR);
++	}
++	if (!rc)
++		chip->prx_enabled = on;
++	return rc;
++}
++
++static int taos_als_enable(struct tmd2772_chip *chip, int on)
++{
++	int rc;
++
++	dev_dbg(&chip->client->dev, "%s: on = %d\n", __func__, on);
++	pr_info("%s: on = %d\n", __func__, on);
++	if (on) {
++		taos_irq_clr(chip, TMD277X_CMD_ALS_INT_CLR);
++		update_als_thres(chip, 1);
++		chip->shadow[TMD277X_ENABLE] |=
++				(TMD277X_EN_PWR_ON | TMD277X_EN_ALS |
++				TMD277X_EN_ALS_IRQ);
++		rc = update_enable_reg(chip);
++		if (rc)
++			return rc;
++		usleep(5000);
++	} else {
++		chip->shadow[TMD277X_ENABLE] &=
++				~(TMD277X_EN_ALS_IRQ | TMD277X_EN_ALS);
++		if (!(chip->shadow[TMD277X_ENABLE] & TMD277X_EN_PRX))
++			chip->shadow[TMD277X_ENABLE] &= ~TMD277X_EN_PWR_ON;
++		rc = update_enable_reg(chip);
++		if (rc)
++			return rc;
++		taos_irq_clr(chip, TMD277X_CMD_ALS_INT_CLR);
++	}
++	if (!rc)
++		chip->als_enabled = on;
++	return rc;
++}
++
++static ssize_t taos_device_als_ch0(struct device *dev,
++	struct device_attribute *attr, char *buf)
++{
++	struct tmd2772_chip *chip = dev_get_drvdata(dev);
++	return snprintf(buf, PAGE_SIZE, "%d\n", chip->als_inf.ch0);
++}
++
++static ssize_t taos_device_als_ch1(struct device *dev,
++	struct device_attribute *attr, char *buf)
++{
++	struct tmd2772_chip *chip = dev_get_drvdata(dev);
++	return snprintf(buf, PAGE_SIZE, "%d\n", chip->als_inf.ch1);
++}
++
++static ssize_t taos_device_als_cpl(struct device *dev,
++	struct device_attribute *attr, char *buf)
++{
++	struct tmd2772_chip *chip = dev_get_drvdata(dev);
++	return snprintf(buf, PAGE_SIZE, "%d\n", chip->als_inf.cpl);
++}
++
++static ssize_t taos_device_als_lux(struct device *dev,
++	struct device_attribute *attr, char *buf)
++{
++	struct tmd2772_chip *chip = dev_get_drvdata(dev);
++	return snprintf(buf, PAGE_SIZE, "%d\n", chip->als_inf.lux);
++}
++
++static ssize_t taos_lux_table_show(struct device *dev,
++	struct device_attribute *attr, char *buf)
++{
++	struct tmd2772_chip *chip = dev_get_drvdata(dev);
++	struct lux_segment *s = chip->segment;
++	int i, k;
++
++	for (i = k = 0; i < chip->segment_num; i++)
++		k += snprintf(buf + k, PAGE_SIZE - k, "%d:%u,%u,%u\n", i,
++				(s[i].ratio * 1000) >> RATIO_SHIFT,
++				(s[i].k0 * 1000) >> SCALE_SHIFT,
++				(s[i].k1 * 1000) >> SCALE_SHIFT);
++	return k;
++}
++
++static ssize_t taos_lux_table_store(struct device *dev,
++				struct device_attribute *attr,
++				const char *buf, size_t size)
++{
++	int i;
++	struct tmd2772_chip *chip = dev_get_drvdata(dev);
++	u32 ratio, k0, k1;
++
++	if (4 != sscanf(buf, "%10d:%10u,%10u,%10u", &i, &ratio, &k0, &k1))
++		return -EINVAL;
++	if (i >= chip->segment_num)
++		return -EINVAL;
++	mutex_lock(&chip->lock);
++	chip->segment[i].ratio = (ratio << RATIO_SHIFT) / 1000;
++	chip->segment[i].k0 = (k0 << SCALE_SHIFT) / 1000;
++	chip->segment[i].k1 = (k1 << SCALE_SHIFT) / 1000;
++	mutex_unlock(&chip->lock);
++	return size;
++}
++
++static ssize_t tmd2772_als_enable_show(struct device *dev,
++	struct device_attribute *attr, char *buf)
++{
++	struct tmd2772_chip *chip = dev_get_drvdata(dev);
++	return snprintf(buf, PAGE_SIZE, "%d\n", chip->als_enabled);
++}
++
++static ssize_t tmd2772_als_enable(struct device *dev,
++				struct device_attribute *attr,
++				const char *buf, size_t size)
++{
++	struct tmd2772_chip *chip = dev_get_drvdata(dev);
++	bool value;
++
++	if (strtobool(buf, &value))
++		return -EINVAL;
++
++	if (value)
++		taos_als_enable(chip, 1);
++	else
++		taos_als_enable(chip, 0);
++
++	return size;
++}
++
++static ssize_t tmd2772_prox_enable_show(struct device *dev,
++	struct device_attribute *attr, char *buf)
++{
++	struct tmd2772_chip *chip = dev_get_drvdata(dev);
++	return snprintf(buf, PAGE_SIZE, "%d\n", chip->prx_enabled);
++}
++
++static ssize_t tmd2772_prox_enable(struct device *dev,
++				struct device_attribute *attr,
++				const char *buf, size_t size)
++{
++	struct tmd2772_chip *chip = dev_get_drvdata(dev);
++	bool value;
++
++	if (strtobool(buf, &value))
++		return -EINVAL;
++
++	if (value)
++		taos_prox_enable(chip, 1);
++	else
++		taos_prox_enable(chip, 0);
++
++	return size;
++}
++/******************************************************************************/
++static int tmd27723_als_set_enable(struct sensors_classdev *sensors_cdev,
++			unsigned int enable)
++{
++	struct tmd2772_chip *data = container_of(sensors_cdev,
++			struct tmd2772_chip, als_cdev);
++
++	if ((enable != 0) && (enable != 1)) {
++		pr_err("%s: invalid value(%d)\n", __func__, enable);
++		return -EINVAL;
++	}
++
++	return taos_als_enable(data, enable);
++}
++
++static int tmd27723_ps_set_enable(struct sensors_classdev *sensors_cdev,
++		unsigned int enable)
++{
++	struct tmd2772_chip *data = container_of(sensors_cdev,
++			struct tmd2772_chip, ps_cdev);
++
++	if ((enable != 0) && (enable != 1)) {
++		pr_err("%s: invalid value(%d)\n", __func__, enable);
++		return -EINVAL;
++	}
++
++	return taos_prox_enable(data, enable);
++}
++
++/******************************************************************************/
++
++static ssize_t taos_als_gain_show(struct device *dev,
++	struct device_attribute *attr, char *buf)
++{
++	struct tmd2772_chip *chip = dev_get_drvdata(dev);
++	return snprintf(buf, PAGE_SIZE, "%d (%s)\n", chip->params.als_gain,
++			chip->als_gain_auto ? "auto" : "manual");
++}
++
++static ssize_t taos_als_gain_store(struct device *dev,
++				struct device_attribute *attr,
++				const char *buf, size_t size)
++{
++	unsigned long gain;
++	int rc;
++	struct tmd2772_chip *chip = dev_get_drvdata(dev);
++
++	rc = kstrtouint(buf, 10, (unsigned int *)&gain);
++	if (rc)
++		return -EINVAL;
++	if (gain != 0 && gain != 1 && gain != 8 && gain != 16 && gain != 120)
++		return -EINVAL;
++	mutex_lock(&chip->lock);
++	if (gain) {
++		chip->als_gain_auto = false;
++		rc = set_als_gain(chip, gain);
++		if (!rc)
++			taos_calc_cpl(chip);
++	} else {
++		chip->als_gain_auto = true;
++	}
++	mutex_unlock(&chip->lock);
++	return rc ? rc : size;
++}
++
++static ssize_t taos_als_gate_show(struct device *dev,
++	struct device_attribute *attr, char *buf)
++{
++	struct tmd2772_chip *chip = dev_get_drvdata(dev);
++	return snprintf(buf, PAGE_SIZE, "%d (in %%)\n", chip->params.als_gate);
++}
++
++static ssize_t taos_als_gate_store(struct device *dev,
++				struct device_attribute *attr,
++				const char *buf, size_t size)
++{
++	unsigned long gate;
++	int rc;
++	struct tmd2772_chip *chip = dev_get_drvdata(dev);
++
++	rc = kstrtouint(buf, 10, (unsigned int *)&gate);
++	if (rc || gate > 100)
++		return -EINVAL;
++	mutex_lock(&chip->lock);
++	chip->params.als_gate = gate;
++	mutex_unlock(&chip->lock);
++	return size;
++}
++
++static ssize_t taos_device_prox_raw(struct device *dev,
++	struct device_attribute *attr, char *buf)
++{
++	u8 *bufff;
++	int rawww;
++	struct tmd2772_chip *chip = dev_get_drvdata(dev);
++
++	int ret = taos_read_all(chip);
++	if (ret)
++		goto exit_clr;
++
++	bufff = &chip->shadow[TMD277X_PRX_LO];
++
++	rawww = (bufff[1] << 8) | bufff[0];
++	return snprintf(buf, PAGE_SIZE, "%d\n", rawww);
++exit_clr:
++	taos_irq_clr(chip, TMD277X_CMD_PROX_INT_CLR | TMD277X_CMD_ALS_INT_CLR);
++	return ret;
++}
++
++static ssize_t taos_device_prx_raw(struct device *dev,
++	struct device_attribute *attr, char *buf)
++{
++	struct tmd2772_chip *chip = dev_get_drvdata(dev);
++	return snprintf(buf, PAGE_SIZE, "%d\n", chip->prx_inf.raw);
++}
++
++static ssize_t taos_device_prx_detected(struct device *dev,
++	struct device_attribute *attr, char *buf)
++{
++	struct tmd2772_chip *chip = dev_get_drvdata(dev);
++	return snprintf(buf, PAGE_SIZE, "%d\n", chip->prx_inf.detected);
++}
++
++static ssize_t read_reg(struct device *dev,
++	struct device_attribute *attr, char *buf)
++{
++	struct tmd2772_chip *chip = dev_get_drvdata(dev);
++	struct i2c_client *client = chip->client;
++
++	char *after;
++	int i;
++	u8 reg;
++	ssize_t ret;
++
++	after = buf;
++	reg = 0x01;
++
++	for (i = 0; i < 15; i++) {
++		i2c_smbus_write_byte(client, (TMD277X_CMD_REG | reg));
++		after += snprintf(after, sizeof(after),
++				"0x%02x\t", i2c_smbus_read_byte(client));
++		reg++;
++	}
++	after += snprintf(after, sizeof(after), "\n\t");
++
++	reg = 0x12;
++	for (i = 0; i < 8; i++) {
++		i2c_smbus_write_byte(client, (TMD277X_CMD_REG | reg));
++		after += snprintf(after, sizeof(after),
++				"0x%02x\t", i2c_smbus_read_byte(client));
++		reg++;
++	}
++	i2c_smbus_write_byte(client, (TMD277X_CMD_REG | 0x1e));
++	after += snprintf(after, sizeof(after),
++				"0x%02x\t", i2c_smbus_read_byte(client));
++	after += snprintf(after, sizeof(after), "\n");
++
++	ret = after - buf;
++	return ret;
++}
++
++static struct device_attribute prox_attrs[] = {
++	__ATTR(prox_raw, 0444, taos_device_prox_raw, NULL),
++	__ATTR(prx_raw, 0444, taos_device_prx_raw, NULL),
++	__ATTR(prx_detect, 0444, taos_device_prx_detected, NULL),
++	__ATTR(enable_ps_sensor, 0666,
++				tmd2772_prox_enable_show, tmd2772_prox_enable),
++};
++
++static struct device_attribute als_attrs[] = {
++	__ATTR(als_ch0, 0444, taos_device_als_ch0, NULL),
++	__ATTR(als_ch1, 0444, taos_device_als_ch1, NULL),
++	__ATTR(als_cpl, 0444, taos_device_als_cpl, NULL),
++	__ATTR(als_chlux, 0444, taos_device_als_lux, NULL),
++	__ATTR(als_gain, 0644, taos_als_gain_show, taos_als_gain_store),
++	__ATTR(als_gate, 0644, taos_als_gate_show, taos_als_gate_store),
++	__ATTR(lux_table, 0644, taos_lux_table_show, taos_lux_table_store),
++	__ATTR(enable_als_sensor, 0666,
++				tmd2772_als_enable_show, tmd2772_als_enable),
++	__ATTR(get_reg, 0444, read_reg, NULL),
++};
++
++static int add_sysfs_interfaces(struct device *dev,
++	struct device_attribute *a, int size)
++{
++	int i;
++	for (i = 0; i < size; i++)
++		if (device_create_file(dev, a + i))
++			goto undo;
++	return 0;
++undo:
++	for (; i >= 0; i--)
++		device_remove_file(dev, a + i);
++	dev_err(dev, "%s: failed to create sysfs interface\n", __func__);
++	return -ENODEV;
++}
++
++static void remove_sysfs_interfaces(struct device *dev,
++	struct device_attribute *a, int size)
++{
++	int i;
++	for (i = 0; i < size; i++)
++		device_remove_file(dev, a + i);
++}
++
++static int taos_get_id(struct tmd2772_chip *chip, u8 *id, u8 *rev)
++{
++	int rc = taos_i2c_read(chip, TMD277X_REVID, rev);
++	if (rc < 0)
++		return rc;
++	return taos_i2c_read(chip, TMD277X_CHIPID, id);
++}
++
++static int power_on(struct tmd2772_chip *chip)
++{
++	int rc;
++	rc = pltf_power_on(chip);
++	if (rc)
++		return rc;
++	dev_dbg(&chip->client->dev, "%s: chip was off, restoring regs\n",
++			__func__);
++	return flush_regs(chip);
++}
++
++static int tmd2772_setup_irq(struct i2c_client *client)
++{
++	int irq, err = -EIO;
++	struct tmd2772_chip *ps_data = i2c_get_clientdata(client);
++
++	irq = gpio_to_irq(ps_data->int_gpio);
++
++	if (irq <= 0) {
++		pr_err("irq number is not specified, irq # = %d, int pin=%d\n",
++			irq, ps_data->int_gpio);
++		return irq;
++	}
++	ps_data->irq = irq;
++
++	err = request_any_context_irq(irq, taos_irq, IRQF_TRIGGER_FALLING,
++		      "taos_irq", ps_data);
++	if (err < 0) {
++		pr_err("%s: request_any_context_irq(%d) failed for (%d)\n",
++			__func__, irq, err);
++		goto err_request_any_context_irq;
++	}
++
++	return 0;
++err_request_any_context_irq:
++	gpio_free(ps_data->int_gpio);
++	return err;
++}
++
++static int taos_parse_dt(struct device *dev,
++				struct tmd2772_i2c_platform_data *pdata)
++{
++	struct device_node *np = dev->of_node;
++	u32 temp_val;
++	int rc;
++
++	/* irq gpio */
++	rc = of_get_named_gpio_flags(dev->of_node,
++			"tmd27723,int_gpio", 0, NULL);
++	if (rc < 0) {
++		dev_err(dev, "Unable to read irq gpio\n");
++		return rc;
++	}
++	pdata->int_gpio = rc;
++
++	rc = of_property_read_u32(np, "tmd27723,prox_th_min", &temp_val);
++	if (rc && (rc != -EINVAL)) {
++		dev_err(dev, "Unable to read prox_th_min\n");
++		return rc;
++	} else {
++		pdata->parameters.prox_th_min = (u16)temp_val;
++	}
++	rc = of_property_read_u32(np, "tmd27723,prox_th_max", &temp_val);
++	if (rc && (rc != -EINVAL)) {
++		dev_err(dev, "Unable to read prox_th_max\n");
++		return rc;
++	} else {
++			pdata->parameters.prox_th_max = (u16)temp_val;
++		}
++	rc = of_property_read_u32(np, "tmd27723,als_gate", &temp_val);
++	if (rc && (rc != -EINVAL)) {
++		dev_err(dev, "Unable to read als_gate\n");
++		return rc;
++	} else {
++			pdata->parameters.als_gate = (u16)temp_val;
++		}
++	pdata->raw_settings = NULL;
++	return 0;
++}
++
++static int taos_probe(struct i2c_client *client,
++		const struct i2c_device_id *idp)
++{
++	int i, ret;
++	u8 id, rev;
++
++	static struct tmd2772_chip *chip;
++	struct tmd2772_i2c_platform_data *pdata;
++	bool powered = 0;
++
++	if (client->dev.of_node) {
++		pdata = devm_kzalloc(&client->dev,
++				sizeof(struct tmd2772_i2c_platform_data),
++				GFP_KERNEL);
++		if (!pdata) {
++			dev_err(&client->dev, "Failed to allocate memory\n");
++			return -ENOMEM;
++		}
++
++		client->dev.platform_data = pdata;
++		ret = taos_parse_dt(&client->dev, pdata);
++		if (ret) {
++			dev_err(&client->dev,
++				"Unable to parse platfrom data err=%d\n", ret);
++			return ret;
++		}
++	}  else {
++		pdata = client->dev.platform_data;
++
++		if (!pdata) {
++			dev_err(&client->dev,
++				"platform data is NULL. Abort.\n");
++			return -EINVAL;
++		}
++	}
++
++	pdata->prox_name = "proximity";
++	pdata->als_name = "light";
++	dev_info(&client->dev, "%s: client->irq = %d\n", __func__, client->irq);
++	if (!i2c_check_functionality(client->adapter,
++			I2C_FUNC_SMBUS_BYTE_DATA)) {
++		dev_err(&client->dev,
++			"%s: i2c smbus byte data unsupported\n", __func__);
++		ret = -EOPNOTSUPP;
++		goto init_failed;
++	}
++	if (!pdata) {
++		dev_err(&client->dev, "%s: platform data required\n", __func__);
++		ret = -EINVAL;
++		goto init_failed;
++	}
++	if (!(pdata->prox_name || pdata->als_name) || client->irq < 0) {
++		dev_err(&client->dev, "%s: no reason to run.\n", __func__);
++		ret = -EINVAL;
++		goto init_failed;
++	}
++	if (pdata->platform_init) {
++		ret = pdata->platform_init(&client->dev);
++		if (ret)
++			goto init_failed;
++	}
++	if (pdata->platform_power) {
++		ret = pdata->platform_power(&client->dev, POWER_ON);
++		if (ret) {
++			dev_err(&client->dev,
++				"%s: pltf power on failed\n", __func__);
++			goto pon_failed;
++		}
++		powered = true;
++		usleep(10000);
++	}
++	chip = kzalloc(sizeof(struct tmd2772_chip), GFP_KERNEL);
++	if (!chip) {
++		ret = -ENOMEM;
++		goto malloc_failed;
++	}
++
++	pdev_data = chip;
++
++	chip->client = client;
++	chip->pdata = pdata;
++	chip->int_gpio = pdata->int_gpio;
++	i2c_set_clientdata(client, chip);
++	chip->seg_num_max = chip->pdata->segment_num ?
++			chip->pdata->segment_num : ARRAY_SIZE(segment_default);
++	if (chip->pdata->segment)
++		ret = set_segment_table(chip, chip->pdata->segment,
++			chip->pdata->segment_num);
++	else
++		ret =  set_segment_table(chip, segment_default,
++			ARRAY_SIZE(segment_default));
++	if (ret)
++		goto set_segment_failed;
++
++	ret = taos_get_id(chip, &id, &rev);
++	if (ret < 0)
++		goto id_failed;
++	for (i = 0; i < ARRAY_SIZE(tmd277x_ids); i++) {
++		if (id == tmd277x_ids[i])
++			break;
++	}
++	if (i < ARRAY_SIZE(tmd277x_names)) {
++		dev_info(&client->dev, "%s: '%s rev. %d' detected\n", __func__,
++			tmd277x_names[i], rev);
++	} else {
++		dev_err(&client->dev, "%s: not supported chip id\n", __func__);
++		ret = -EOPNOTSUPP;
++		goto id_failed;
++	}
++	mutex_init(&chip->lock);
++	set_pltf_settings(chip);
++	ret = flush_regs(chip);
++	if (ret)
++		goto flush_regs_failed;
++	if (pdata->platform_power) {
++		pdata->platform_power(&client->dev, POWER_OFF);
++		powered = false;
++		chip->unpowered = true;
++	}
++
++	if (!pdata->prox_name)
++		goto bypass_prox_idev;
++	chip->p_idev = input_allocate_device();
++	if (!chip->p_idev) {
++		dev_err(&client->dev, "%s: no memory for input_dev '%s'\n",
++				__func__, pdata->prox_name);
++		ret = -ENODEV;
++		goto input_p_alloc_failed;
++	}
++	chip->p_idev->name = pdata->prox_name;
++	chip->p_idev->id.bustype = BUS_I2C;
++	set_bit(EV_ABS, chip->p_idev->evbit);
++	set_bit(ABS_DISTANCE, chip->p_idev->absbit);
++	input_set_abs_params(chip->p_idev, ABS_DISTANCE, 0, 1, 0, 0);
++
++	dev_set_drvdata(&chip->p_idev->dev, chip);
++	ret = input_register_device(chip->p_idev);
++	if (ret) {
++		input_free_device(chip->p_idev);
++		dev_err(&client->dev, "%s: cant register input '%s'\n",
++				__func__, pdata->prox_name);
++		goto input_p_alloc_failed;
++	}
++	ret = add_sysfs_interfaces(&chip->p_idev->dev,
++			prox_attrs, ARRAY_SIZE(prox_attrs));
++	if (ret)
++		goto input_p_sysfs_failed;
++bypass_prox_idev:
++	if (!pdata->als_name)
++		goto bypass_als_idev;
++	chip->a_idev = input_allocate_device();
++	if (!chip->a_idev) {
++		dev_err(&client->dev, "%s: no memory for input_dev '%s'\n",
++				__func__, pdata->als_name);
++		ret = -ENODEV;
++		goto input_a_alloc_failed;
++	}
++	chip->a_idev->name = pdata->als_name;
++	chip->a_idev->id.bustype = BUS_I2C;
++	set_bit(EV_ABS, chip->a_idev->evbit);
++	set_bit(ABS_MISC, chip->a_idev->absbit);
++	input_set_abs_params(chip->a_idev, ABS_MISC, 0, 65535, 0, 0);
++
++	dev_set_drvdata(&chip->a_idev->dev, chip);
++	ret = input_register_device(chip->a_idev);
++	if (ret) {
++		input_free_device(chip->a_idev);
++		dev_err(&client->dev, "%s: cant register input '%s'\n",
++				__func__, pdata->prox_name);
++		goto input_a_alloc_failed;
++	}
++	ret = add_sysfs_interfaces(&chip->a_idev->dev,
++			als_attrs, ARRAY_SIZE(als_attrs));
++	if (ret)
++		goto input_a_sysfs_failed;
++
++	chip->tmd_wq = create_singlethread_workqueue("tmd_wq");
++	INIT_WORK(&chip->tmd_work, tmd_work_func);
++bypass_als_idev:
++
++	ret = tmd2772_setup_irq(client);
++	if (ret < 0) {
++		pr_err("%s: Could not allocate TMD27723_INT !\n", __func__);
++		goto irq_register_fail;
++	}
++
++
++	/* Register to sensors class */
++	chip->als_cdev = sensors_light_cdev;
++	chip->als_cdev.sensors_enable = tmd27723_als_set_enable;
++	chip->als_cdev.sensors_poll_delay = NULL;
++
++	chip->ps_cdev = sensors_proximity_cdev;
++	chip->ps_cdev.sensors_enable = tmd27723_ps_set_enable;
++	chip->ps_cdev.sensors_poll_delay = NULL,
++
++	ret = sensors_classdev_register(&client->dev, &chip->als_cdev);
++	if (ret) {
++		pr_err("%s: Unable to register to sensors class: %d\n",
++				__func__, ret);
++		goto exit_free_irq;
++	}
++
++	ret = sensors_classdev_register(&client->dev, &chip->ps_cdev);
++	if (ret) {
++		pr_err("%s: Unable to register to sensors class: %d\n",
++			       __func__, ret);
++		goto exit_create_class_sysfs;
++	}
++
++	pr_info("%s: Probe success!\n", __func__);
++	return 0;
++
++exit_create_class_sysfs:
++	sensors_classdev_unregister(&chip->als_cdev);
++exit_free_irq:
++	free_irq(chip->pdata->int_gpio, client);
++irq_register_fail:
++	destroy_workqueue(chip->tmd_wq);
++	if (chip->a_idev) {
++		remove_sysfs_interfaces(&chip->a_idev->dev,
++			als_attrs, ARRAY_SIZE(als_attrs));
++input_a_sysfs_failed:
++		input_unregister_device(chip->a_idev);
++	}
++input_a_alloc_failed:
++	if (chip->p_idev) {
++		remove_sysfs_interfaces(&chip->p_idev->dev,
++			prox_attrs, ARRAY_SIZE(prox_attrs));
++input_p_sysfs_failed:
++		input_unregister_device(chip->p_idev);
++	}
++input_p_alloc_failed:
++flush_regs_failed:
++id_failed:
++	kfree(chip->segment);
++set_segment_failed:
++	i2c_set_clientdata(client, NULL);
++	kfree(chip);
++malloc_failed:
++	if (powered && pdata->platform_power)
++		pdata->platform_power(&client->dev, POWER_OFF);
++pon_failed:
++	if (pdata->platform_teardown)
++		pdata->platform_teardown(&client->dev);
++init_failed:
++	dev_err(&client->dev, "Probe failed.\n");
++	return ret;
++}
++
++static int taos_suspend(struct device *dev)
++{
++
++	struct tmd2772_chip *chip = dev_get_drvdata(dev);
++
++	dev_dbg(dev, "%s\n", __func__);
++	mutex_lock(&chip->lock);
++
++	chip->in_suspend = 1;
++
++	taos_prox_enable(chip, 0);
++	taos_als_enable(chip, 0);
++	if (!chip->unpowered)
++		pltf_power_off(chip);
++
++	mutex_unlock(&chip->lock);
++
++	return 0;
++}
++
++static int taos_resume(struct device *dev)
++{
++	struct tmd2772_chip *chip = dev_get_drvdata(dev);
++	bool als_on, prx_on;
++	int rc = 0;
++
++	mutex_lock(&chip->lock);
++	prx_on = chip->p_idev && chip->p_idev->users;
++	als_on = chip->a_idev && chip->a_idev->users;
++	chip->in_suspend = 0;
++	dev_dbg(dev, "%s: powerd %d, als: needed %d  enabled %d\n", __func__,
++			!chip->unpowered, als_on, chip->als_enabled);
++	dev_dbg(dev, "%s: powerd %d, prox: needed %d  enabled %d\n", __func__,
++			!chip->unpowered, prx_on, chip->prx_enabled);
++	if (chip->wake_irq) {
++		irq_set_irq_wake(chip->irq, 0);
++		chip->wake_irq = 0;
++	}
++	if (chip->unpowered && (prx_on || als_on)) {
++		dev_dbg(dev, "powering on\n");
++		rc = power_on(chip);
++		if (rc)
++			goto err_power;
++	}
++	if (prx_on && !chip->prx_enabled)
++		(void)taos_prox_enable(chip, 1);
++	if (als_on && !chip->als_enabled)
++		(void)taos_als_enable(chip, 1);
++	if (chip->irq_pending) {
++		dev_dbg(dev, "%s: pending interrupt\n", __func__);
++		chip->irq_pending = 0;
++		(void)taos_check_and_report(chip);
++		enable_irq(chip->irq);
++	}
++err_power:
++	mutex_unlock(&chip->lock);
++
++	return 0;
++}
++
++static int taos_remove(struct i2c_client *client)
++{
++	struct tmd2772_chip *chip = i2c_get_clientdata(client);
++	free_irq(chip->irq, chip);
++	destroy_workqueue(chip->tmd_wq);
++	if (chip->a_idev) {
++		remove_sysfs_interfaces(&chip->a_idev->dev,
++			als_attrs, ARRAY_SIZE(als_attrs));
++		input_unregister_device(chip->a_idev);
++	}
++	if (chip->p_idev) {
++		remove_sysfs_interfaces(&chip->p_idev->dev,
++			prox_attrs, ARRAY_SIZE(prox_attrs));
++		input_unregister_device(chip->p_idev);
++	}
++	if (chip->pdata->platform_teardown)
++		chip->pdata->platform_teardown(&client->dev);
++	i2c_set_clientdata(client, NULL);
++	kfree(chip->segment);
++	kfree(chip);
++	return 0;
++}
++
++static struct i2c_device_id taos_idtable[] = {
++	{ "tmd27723", 0 },
++	{}
++};
++MODULE_DEVICE_TABLE(i2c, taos_idtable);
++
++static struct of_device_id taos_match_table[] = {
++	{ .compatible = "taos,tmd27723", },
++	{ },
++};
++
++static const struct dev_pm_ops taos_pm_ops = {
++	.suspend = taos_suspend,
++	.resume  = taos_resume,
++};
++
++static struct i2c_driver taos_driver = {
++	.driver = {
++		.name = "tmd27723",
++		.pm = &taos_pm_ops,
++		.of_match_table = taos_match_table,
++	},
++	.id_table = taos_idtable,
++	.probe = taos_probe,
++	.remove = taos_remove,
++};
++
++static int __init taos_init(void)
++{
++	return i2c_add_driver(&taos_driver);
++}
++
++static void __exit taos_exit(void)
++{
++	i2c_del_driver(&taos_driver);
++}
++
++module_init(taos_init);
++module_exit(taos_exit);
++
++MODULE_AUTHOR("Aleksej Makarov <aleksej.makarov@sonyericsson.com>");
++MODULE_DESCRIPTION("TAOS tmd27723 ambient light and proximity sensor driver");
++MODULE_LICENSE("GPL");
+diff --git a/include/linux/input/tmd277x.h b/include/linux/input/tmd277x.h
+new file mode 100644
+index 0000000..e13b489
+--- /dev/null
++++ b/include/linux/input/tmd277x.h
+@@ -0,0 +1,106 @@
++/*
++ * Copyright (C) 2010-2014 Samsung Electronics. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
++ * 02110-1301 USA
++ */
++
++#ifndef __LINUX_TAOS_H
++#define __LINUX_TAOS_H
++
++#include <linux/types.h>
++
++#ifdef __KERNEL__
++#define TAOS_OPT "taos-opt"
++#define MIN 1
++struct device;
++
++/* POWER SUPPLY VOLTAGE RANGE */
++#define TMD27723_VDD_MIN_UV  2000000
++#define TMD27723_VDD_MAX_UV  3300000
++#define TMD27723_VIO_MIN_UV  1750000
++#define TMD27723_VIO_MAX_UV  1950000
++
++enum tmd2772_pwr_state {
++	POWER_ON,
++	POWER_OFF,
++	POWER_STANDBY,
++};
++
++enum taos_ctrl_reg {
++	AGAIN_1        = (0 << 0),
++	AGAIN_8        = (1 << 0),
++	AGAIN_16       = (2 << 0),
++	AGAIN_120      = (3 << 0),
++	PGAIN_1        = (0 << 2),
++	PGAIN_2        = (1 << 2),
++	PGAIN_4        = (2 << 2),
++	PGAIN_8        = (3 << 2),
++	PDIOD_NO       = (0 << 4),
++	PDIOD_CH0      = (1 << 4),
++	PDIOD_CH1      = (2 << 4),
++	PDIOD_DONT_USE = (3 << 4),
++	PDRIVE_120MA   = (0 << 6),
++	PDRIVE_60MA    = (1 << 6),
++	PDRIVE_30MA    = (2 << 6),
++	PDRIVE_15MA    = (3 << 6),
++};
++
++#define PRX_PERSIST(p) (((p) & 0xf) << 4)
++#define ALS_PERSIST(p) (((p) & 0xf) << 0)
++
++struct taos_raw_settings {
++	u8 als_time;
++	u8 als_gain;
++	u8 prx_time;
++	u8 wait_time;
++	u8 persist;
++	u8 cfg_reg;
++	u8 prox_pulse_cnt;
++	u8 ctrl_reg;
++	u8 prox_offs;
++};
++
++struct taos_parameters {
++	u16 prox_th_min;
++	u16 prox_th_max;
++	u16 als_gate;
++	u16 als_gain;
++};
++
++struct lux_segment {
++	u32 ratio;
++	u32 k0;
++	u32 k1;
++};
++
++struct tmd2772_i2c_platform_data {
++	/* The following callback for power events received and handled by
++	   the driver.  Currently only for SUSPEND and RESUME */
++	int (*platform_power)(struct device *dev, enum tmd2772_pwr_state state);
++	int (*platform_init)(struct device *dev);
++	void (*platform_teardown)(struct device *dev);
++	char const *prox_name;
++	char const *als_name;
++	struct taos_parameters parameters;
++	struct taos_raw_settings const *raw_settings;
++	bool proximity_can_wake;
++	bool als_can_wake;
++	struct lux_segment *segment;
++	int segment_num;
++	int int_gpio;
++};
++
++#endif /*__KERNEL__*/
++#endif
+-- 
+1.7.4.1
+

@@ -1,0 +1,53 @@
+From 3c81a9ffab6e6535c5202bfc94e950f2ab5dcaff Mon Sep 17 00:00:00 2001
+From: yangzh <yangzh0324@thundersoft.com>
+Date: Tue, 29 Jul 2014 13:33:15 +0800
+Subject: [PATCH 1/3] ARM:dts:msm: support ctp hx8526-d32
+
+Add CTP DIJING@AW980@HX8526-D32 driver
+
+Signed-off-by: yangzh <yagnzh0324@thundersoft.com>
+
+Change-Id: Icce660ba01093dfad69665cc03ca96463af77704
+---
+ arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi |   18 +++++++++++++++++-
+ 1 file changed, 17 insertions(+), 1 deletion(-)
+ mode change 100755 => 100644 arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+
+diff --git a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+old mode 100755
+new mode 100644
+index e9902b8..12db2c4
+--- a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+@@ -189,11 +189,27 @@
+ 			focaltech,fw-auto-cal;
+ 			focaltech,ignore-id-check;
+ 		};
++		
++		himax@4a {
++			compatible = "himax,hx8526-d32";
++			reg = <0x4a>;
++			interrupt-parent = <&msm_gpio>;
++			interrupts = <13 0x2008>;
++			vdd-supply = <&pm8916_l17>;
++			vcc_i2c-supply = <&pm8916_l6>;
++			himax,name = "hx8526";
++			himax,reset-gpio = <&msm_gpio 13 0x2008>;
++			himax,irq-gpio = <&msm_gpio 12 0x0>;
++			himax,virtual_key;
++			himax,i2c-pull-up;
++			himax,reg-en;
++			himax,num-max-touches = <5>;
++		};
+ 	};
+ 
+ 	gen-vkeys {
+ 		compatible = "qcom,gen-vkeys";
+-		label = "ft5x06_ts";
++		label = "himax8526";
+ 		qcom,disp-maxx = <1080>;
+ 		qcom,disp-maxy = <1920>;
+ 		qcom,panel-maxx = <1080>;
+-- 
+1.7.9.5
+

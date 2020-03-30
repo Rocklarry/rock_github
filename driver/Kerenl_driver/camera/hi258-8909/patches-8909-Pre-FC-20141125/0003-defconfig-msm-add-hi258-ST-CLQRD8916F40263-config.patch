@@ -1,0 +1,28 @@
+From ea7493db54a3a9116c075e45940aa553dc94a36b Mon Sep 17 00:00:00 2001
+From: Wei Ding <weiding@qti.qualcomm.com>
+Date: Mon, 24 Nov 2014 17:15:58 +0800
+Subject: [PATCH 3/3] defconfig: msm: add hi258_8909 ST-CLQRD8916F40263 config
+
+Add hi258_8909 deconfig for 8909
+
+Change-Id: Ieb26a9c2339a1dbd592b4af9e0e4ff17b42bb647
+Signed-off-by: wweifeng <wangwf0922@thundersoft.com>
+---
+ arch/arm/configs/msm8909_defconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm/configs/msm8909_defconfig b/arch/arm/configs/msm8909_defconfig
+index f15076a..ff33e15 100644
+--- a/arch/arm/configs/msm8909_defconfig
++++ b/arch/arm/configs/msm8909_defconfig
+@@ -343,6 +343,7 @@ CONFIG_VIDEOBUF2_MSM_MEM=y
+ CONFIG_V4L_PLATFORM_DRIVERS=y
+ CONFIG_SOC_CAMERA=y
+ CONFIG_MSMB_CAMERA=y
++CONFIG_HI258_8909=y
+ CONFIG_MSM_CAMERA_SENSOR=y
+ CONFIG_MSM_CSI30_HEADER=y
+ CONFIG_MSM_CSIPHY=y
+-- 
+1.8.2.1
+

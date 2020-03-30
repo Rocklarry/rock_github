@@ -1,0 +1,32 @@
+From 20a2a1e96affb85ab85e23934f2f2c1198cb598e Mon Sep 17 00:00:00 2001
+From: chenqingfeng <chenqf0228@thundersoft.com>
+Date: Wed, 27 Aug 2014 16:50:15 +0800
+Subject: [PATCH 3/3] ARM:config: support lis3dh defconfig
+
+Defconfig support lis3dh
+
+Change-Id: I056ec832a60960274af074e62bd5dcfdb8f3a3b4
+Signed-off-by: Qingfeng Chen <chenqf0228@thundersoft.com>
+---
+ arch/arm/configs/msm8916_defconfig |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/configs/msm8916_defconfig b/arch/arm/configs/msm8916_defconfig
+index 9fb4f3c..bab8b88 100644
+--- a/arch/arm/configs/msm8916_defconfig
++++ b/arch/arm/configs/msm8916_defconfig
+@@ -266,9 +266,9 @@ CONFIG_INPUT_MISC=y
+ CONFIG_INPUT_UINPUT=y
+ CONFIG_INPUT_GPIO=m
+ CONFIG_SENSORS_LIS3DH=y
+-CONFIG_SENSORS_MPU6050=y
++#CONFIG_SENSORS_MPU6050 is not set
+ CONFIG_SENSORS_AKM09911=y
+-CONFIG_SENSORS_BMA2X2=y
++#CONFIG_SENSORS_BMA2X2 is not set
+ CONFIG_SENSORS_MMC3416X=y
+ CONFIG_SENSORS_AKM8963=y
+ CONFIG_SERIAL_MSM_HSL=y
+-- 
+1.7.9.5
+

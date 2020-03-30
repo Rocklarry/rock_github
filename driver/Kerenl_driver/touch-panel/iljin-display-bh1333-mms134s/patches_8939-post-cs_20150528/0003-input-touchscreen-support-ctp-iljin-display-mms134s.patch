@@ -1,0 +1,2111 @@
+From 7e5dcc37b0e03ba1a3a899cfee733fe05cbb4e71 Mon Sep 17 00:00:00 2001
+From: maoyq0504 <maoyq0504@thundersoft.com>
+Date: Thu, 28 May 2015 11:11:25 +0800
+Subject: [PATCH 3/3] input:touchscreen: support ctp iljin-display mms134s
+
+Add CTP ILJIN-DISPLAY@BH1333@MMS134S driver
+
+Change-Id: I52e7919d968c17125fc2ad551911c4b02f2bdfd8
+Signed-off-by: Yuanqiu Mao <maoyq0504@thundersoft.com>
+---
+ drivers/input/touchscreen/Kconfig                  |   12 +
+ drivers/input/touchscreen/MMS100S_ISC_Updater.h    |   39 +
+ .../touchscreen/MMS100S_ISC_Updater_Customize.c    |   36 +
+ .../touchscreen/MMS100S_ISC_Updater_Customize.h    |   23 +
+ .../input/touchscreen/MMS100S_ISC_Updater_V01.c    |  213 +++
+ drivers/input/touchscreen/Makefile                 |    3 +
+ drivers/input/touchscreen/mms134s_ts.c             | 1655 ++++++++++++++++++++
+ include/linux/input/mms134s_ts.h                   |   46 +
+ 8 files changed, 2027 insertions(+)
+ create mode 100644 drivers/input/touchscreen/MMS100S_ISC_Updater.h
+ create mode 100644 drivers/input/touchscreen/MMS100S_ISC_Updater_Customize.c
+ create mode 100644 drivers/input/touchscreen/MMS100S_ISC_Updater_Customize.h
+ create mode 100644 drivers/input/touchscreen/MMS100S_ISC_Updater_V01.c
+ create mode 100644 drivers/input/touchscreen/mms134s_ts.c
+ create mode 100644 include/linux/input/mms134s_ts.h
+
+diff --git a/drivers/input/touchscreen/Kconfig b/drivers/input/touchscreen/Kconfig
+index 54e0003..fcde191 100644
+--- a/drivers/input/touchscreen/Kconfig
++++ b/drivers/input/touchscreen/Kconfig
+@@ -383,6 +383,18 @@ config TOUCHSCREEN_MMS114
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called mms114.
+ 
++config TOUCHSCREEN_MMS134S
++	tristate "MELFAS MMS134S touchscreen driver"
++	depends on I2C
++	help
++	  Say Y here if you have the MELFAS MMS134S touchscreen controller
++	  chip in your system.
++
++	  If unsure, say N.
++
++	  To compile this driver as a module, choose M here: the
++	  module will be called mms134s.
++
+ config TOUCHSCREEN_MTOUCH
+ 	tristate "MicroTouch serial touchscreens"
+ 	select SERIO
+diff --git a/drivers/input/touchscreen/MMS100S_ISC_Updater.h b/drivers/input/touchscreen/MMS100S_ISC_Updater.h
+new file mode 100644
+index 0000000..91e4adc
+--- /dev/null
++++ b/drivers/input/touchscreen/MMS100S_ISC_Updater.h
+@@ -0,0 +1,39 @@
++#ifndef __MMS100S_ISC_Updater_H__
++#define __MMS100S_ISC_Updater_H__
++
++#include <linux/types.h>
++
++#include "MMS100S_ISC_Updater_Customize.h"
++
++enum eMFSRet_t {
++	MRET_NONE = -1,
++	MRET_SUCCESS = 0,
++	MRET_FILE_OPEN_ERROR,
++	MRET_FILE_CLOSE_ERROR,
++	MRET_FILE_FORMAT_ERROR,
++	MRET_WRITE_BUFFER_ERROR,
++	MRET_I2C_ERROR,
++	MRET_MASS_ERASE_ERROR,
++	MRET_FIRMWARE_WRITE_ERROR,
++	MRET_FIRMWARE_VERIFY_ERROR,
++	MRET_UPDATE_MODE_ENTER_ERROR,
++	MRET_CHECK_COMPATIBILITY_ERROR,
++	MRET_CHECK_VERSION_ERROR,
++	MRET_CHECK_IC_TYPE_ERROR,
++	MRET_LIMIT
++};
++
++/* typedef int mfs_bool_t; */
++#define MFS_TRUE		(0 == 0)
++#define MFS_FALSE		(0 != 0)
++
++extern enum eMFSRet_t MFS_ISC_update(void);
++extern enum eMFSRet_t MFS_ISC_update_CRC_Error(void);
++extern int mms_fw_i2c_read(u16 addr, u8 *value, u16 length);
++extern int mms_fw_i2c_write(char *buf, int length);
++extern int mms_fw_i2c_read_without_addr(u8 *value, u16 length);
++extern int mms_fw_i2c_busrt_write(u8 *value, u16 length);
++extern void ts_power_control(int en);
++extern unsigned char TSP_PanelVersion, TSP_PhoneVersion;
++
++#endif
+diff --git a/drivers/input/touchscreen/MMS100S_ISC_Updater_Customize.c b/drivers/input/touchscreen/MMS100S_ISC_Updater_Customize.c
+new file mode 100644
+index 0000000..25bdf12
+--- /dev/null
++++ b/drivers/input/touchscreen/MMS100S_ISC_Updater_Customize.c
+@@ -0,0 +1,36 @@
++
++#include "MMS100S_ISC_Updater_Customize.h"
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/interrupt.h>
++#include <linux/gpio.h>
++#include <linux/delay.h>
++#include <linux/irq.h>
++
++/* #include <asm/gpio.h> */
++/* #include <asm/io.h> */
++#include <linux/gpio.h>
++#include <linux/io.h>
++
++const unsigned char mfs_i2c_slave_addr = 0x48;
++uint8_t mfs_slave_addr;
++
++int MFS_I2C_set_slave_addr(unsigned char _slave_addr)
++{
++	mfs_slave_addr = _slave_addr << 1;
++	return MFS_TRUE;
++}
++
++void MFS_ms_delay(int msec)
++{
++	msleep(msec);
++}
++
++void MFS_TSP_reboot(void)
++{
++	MFS_ms_delay(50);
++	ts_power_control(0);
++	MFS_ms_delay(500);
++	ts_power_control(1);
++	MFS_ms_delay(300);
++}
+diff --git a/drivers/input/touchscreen/MMS100S_ISC_Updater_Customize.h b/drivers/input/touchscreen/MMS100S_ISC_Updater_Customize.h
+new file mode 100644
+index 0000000..0008354
+--- /dev/null
++++ b/drivers/input/touchscreen/MMS100S_ISC_Updater_Customize.h
+@@ -0,0 +1,23 @@
++
++#ifndef __MMS100S_ISC_Updater_CUSTOMIZE_H__
++#define __MMS100S_ISC_Updater_CUSTOMIZE_H__
++
++/*download firmware enable CONFIG_MACH_KYLE_I macros*/
++/* #define CONFIG_MACH_KYLE_I */
++#include "MMS100S_ISC_Updater.h"
++
++extern void ts_power_control(int en);
++
++#define MCSDL_VDD_SET_HIGH()	ts_power_control(1);
++#define MCSDL_VDD_SET_LOW()	ts_power_control(0);
++#define MCSDL_CE_SET_HIGH()		ts_power_control(1);
++#define MCSDL_CE_SET_LOW()		ts_power_control(0);
++
++extern const unsigned char mfs_i2c_slave_addr;
++
++extern int MFS_I2C_set_slave_addr(unsigned char _slave_addr);
++extern void MFS_ms_delay(int msec);
++extern void MFS_reboot(void);
++extern void MFS_TSP_reboot(void);
++
++#endif
+diff --git a/drivers/input/touchscreen/MMS100S_ISC_Updater_V01.c b/drivers/input/touchscreen/MMS100S_ISC_Updater_V01.c
+new file mode 100644
+index 0000000..bb20fce
+--- /dev/null
++++ b/drivers/input/touchscreen/MMS100S_ISC_Updater_V01.c
+@@ -0,0 +1,213 @@
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/interrupt.h>
++#include <linux/gpio.h>
++#include <linux/delay.h>
++#include <linux/irq.h>
++
++/* #include <asm/gpio.h> */
++/* #include <asm/io.h> */
++#include "MMS100S_ISC_Updater_Customize.h"
++#include "MMS100S_ISC_Updater.h"
++
++#ifdef CONFIG_MACH_KYLE_I
++#include "KYLE_I_R03_VA19.h"
++#endif
++
++#define MFS_HEADER_		5
++#define MFS_DATA_		20480
++#define PACKET_			(MFS_HEADER_ + MFS_DATA_)
++
++unsigned char g_write_buffer[PACKET_];
++unsigned char IC_type;
++bool module_type_check;
++/* bool exception_condition = false; */
++
++#define ISC_CMD_ENTER_ISC						0x5F
++#define ISC_CMD_ENTER_ISC_PARA1					0x01
++#define ISC_CMD_ISC_ADDR						0xD5
++#define ISC_CMD_ISC_STATUS_ADDR					0xD9
++
++#define MODULE_COMPATIBILITY_ADDR	0x1C
++#define SET_COMPATIBILITY_ADDR	0x4C09
++#define FIRMWARE_VERSION_ADDR	0x1D
++#define SET_VERSION_ADDR	0x4C08
++#define READ_RETRY_CNT 3
++
++/*
++ * ISC Status Value
++ */
++#define ISC_STATUS_RET_MASS_ERASE_DONE			0X0C
++#define ISC_STATUS_RET_MASS_ERASE_MODE			0X08
++
++#define MFS_DEFAULT_SLAVE_ADDR	0x48
++
++#ifdef CONFIG_MACH_KYLE_I
++static enum eMFSRet_t enter_ISC_mode(void);
++static enum eMFSRet_t check_firmware_version(const
++					unsigned char *_pBinary_Data);
++
++static int firmware_write(const unsigned char *_pBinary_Data);
++static int mass_erase(void);
++#endif
++unsigned char IC_type;
++enum eMFSRet_t MFS_ISC_update(void)
++{
++	enum eMFSRet_t ret = MRET_NONE;
++	MFS_I2C_set_slave_addr(mfs_i2c_slave_addr);
++
++#ifdef CONFIG_MACH_KYLE_I
++	ret = check_firmware_version(MELFAS_binary);
++	pr_err("<MELFAS> TSP_PanelVersion=%x\n", TSP_PanelVersion);
++	pr_err("<MELFAS> TSP_PhoneVersion=%x\n", TSP_PhoneVersion);
++#endif
++
++#ifdef CONFIG_MACH_KYLE_I
++/*
++	ret = check_module_compatibility(MELFAS_binary);
++	if (ret != MRET_SUCCESS)
++		  goto MFS_ISC_UPDATE_FINISH;
++*/
++	ret = check_firmware_version(MELFAS_binary);
++	if (ret != MRET_SUCCESS)
++		goto MFS_ISC_UPDATE_FINISH;
++
++	MFS_TSP_reboot();
++
++	ret = mass_erase();
++	if (ret != MRET_SUCCESS)
++		goto MFS_ISC_UPDATE_FINISH;
++
++	ret = firmware_write(MELFAS_binary);
++	if (ret != MRET_SUCCESS)
++		goto MFS_ISC_UPDATE_FINISH;
++
++	MFS_TSP_reboot();
++	pr_err("<MELFAS> TOUCH IC REBOOT!!!\n");
++
++	ret = enter_ISC_mode();
++	if (ret != MRET_SUCCESS)
++		goto MFS_ISC_UPDATE_FINISH;
++/*
++	ret = firmware_verify(MELFAS_binary);
++	pr_info("slz=== firmware_verify return value=%d\n", ret);
++	if (ret != MRET_SUCCESS)
++	      goto MFS_ISC_UPDATE_FINISH;
++*/
++	MFS_TSP_reboot();
++	pr_err("<MELFAS> FIRMWARE_UPDATE_FINISHED!!!\n\n");
++	pr_info("<MELFAS> FIRMWARE_UPDATE_FINISHED!!!\n\n");
++	ret = check_firmware_version(MELFAS_binary);
++
++	pr_err("<MELFAS> TSP_PanelVersion=%2x\n", TSP_PanelVersion);
++	pr_err("<MELFAS> TSP_PhoneVersion=%2x\n", TSP_PhoneVersion);
++
++	pr_err("<MELFAS> FIRMWARE_UPDATE_FINISHED!!!\n\n");
++
++MFS_ISC_UPDATE_FINISH:
++#endif
++
++	MFS_I2C_set_slave_addr(mfs_i2c_slave_addr);
++	return ret;
++}
++
++#ifdef CONFIG_MACH_KYLE_I
++enum eMFSRet_t check_firmware_version(const unsigned char *_pBinary_Data)
++{
++	unsigned char read_buffer;
++	unsigned char moduleVersion, setVersion;
++	int ret;
++	pr_err("<MELFAS> Check Firmware Version\n");
++	ret = mms_fw_i2c_read(FIRMWARE_VERSION_ADDR, &read_buffer, 1);
++	moduleVersion = read_buffer;
++	setVersion = _pBinary_Data[SET_VERSION_ADDR];
++	setVersion = 0x23;	/* kylei white panel R03 */
++	TSP_PanelVersion = moduleVersion;
++	TSP_PhoneVersion = setVersion;
++
++	return MRET_SUCCESS;
++}
++
++/*
++enum eMFSRet_t check_firmware_version_func(void)
++{
++	return check_firmware_version(MELFAS_binary);
++}
++*/
++enum eMFSRet_t enter_ISC_mode(void)
++{
++	unsigned char write_buffer[2];
++	pr_err("<MELFAS> ENTER_ISC_MODE\n\n");
++	write_buffer[0] = ISC_CMD_ENTER_ISC;
++	write_buffer[1] = ISC_CMD_ENTER_ISC_PARA1;
++	if (!mms_fw_i2c_write(write_buffer, 2))
++		pr_err("<MELFAS> MMS100S Firmare is not exist!!!\n\n");
++	MFS_ms_delay(50);
++	return MRET_SUCCESS;
++}
++
++int firmware_write(const unsigned char *_pBinary_Data)
++{
++#define DATA_SIZE 1024
++#define CLENGTH 4
++	int ret;
++	int i, lStartAddr = 0, lCnt = 0;
++
++	while (lStartAddr * CLENGTH < 20 * 1024) {
++		g_write_buffer[0] = ISC_CMD_ISC_ADDR;
++		g_write_buffer[1] = (char)(lStartAddr & 0xFF);
++		g_write_buffer[2] = (char)((lStartAddr >> 8) & 0xFF);
++		g_write_buffer[3] = g_write_buffer[4] = 0;
++
++		for (i = 0; i < DATA_SIZE; i++)
++			g_write_buffer[MFS_HEADER_ + i] =
++			    _pBinary_Data[lStartAddr * CLENGTH + i];
++
++		MFS_ms_delay(5);
++		ret =
++		    mms_fw_i2c_busrt_write(g_write_buffer,
++					   MFS_HEADER_ + DATA_SIZE);
++		lCnt++;
++		lStartAddr = DATA_SIZE * lCnt / CLENGTH;
++	}
++
++	MFS_ms_delay(5);
++	return MRET_SUCCESS;
++}
++
++int mass_erase(void)
++{
++	int i = 0;
++	unsigned char mass_erase_cmd[MFS_HEADER_] = {
++		ISC_CMD_ISC_ADDR, 0, 0xC1, 0, 0
++	};
++	unsigned char read_buffer[4] = { 0, };
++
++	pr_err("<MELFAS> mass erase start\n\n");
++
++	MFS_ms_delay(5);
++	if (!mms_fw_i2c_write(mass_erase_cmd, MFS_HEADER_))
++		pr_err("<MELFAS> mass erase start write fail\n\n");
++	MFS_ms_delay(5);
++	while (read_buffer[2] != ISC_STATUS_RET_MASS_ERASE_DONE) {
++		mms_fw_i2c_write(mass_erase_cmd, MFS_HEADER_);
++		MFS_ms_delay(1000);
++		if (!mms_fw_i2c_read(ISC_CMD_ISC_STATUS_ADDR, read_buffer, 4))
++
++			MFS_ms_delay(1000);
++
++		if (read_buffer[2] == ISC_STATUS_RET_MASS_ERASE_DONE) {
++			pr_err("<MELFAS> Firmware Mass Erase done.\n");
++			return MRET_SUCCESS;
++		} else if (read_buffer[2] == ISC_STATUS_RET_MASS_ERASE_MODE)
++			pr_err(
++			"<MELFAS> Firmware Mass Erase enter success!!!\n");
++
++		MFS_ms_delay(1);
++		if (i > 20)
++			return MRET_MASS_ERASE_ERROR;
++		i++;
++	}
++	return MRET_SUCCESS;
++}
++#endif
+diff --git a/drivers/input/touchscreen/Makefile b/drivers/input/touchscreen/Makefile
+index 7c6f060..3a0dd39 100644
+--- a/drivers/input/touchscreen/Makefile
++++ b/drivers/input/touchscreen/Makefile
+@@ -81,3 +81,6 @@ obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_RMI4_DEV)	+= synaptics_rmi_dev.o
+ obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE) 	+= synaptics_fw_update.o
+ obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI4)		+= synaptics_i2c_rmi4.o
+ obj-$(CONFIG_TOUCHSCREEN_GT9XX)		+= gt9xx/
++obj-$(CONFIG_TOUCHSCREEN_MMS134S) += mms134s_ts.o
++obj-$(CONFIG_TOUCHSCREEN_MMS134S) += MMS100S_ISC_Updater_Customize.o
++obj-$(CONFIG_TOUCHSCREEN_MMS134S) += MMS100S_ISC_Updater_V01.o
+diff --git a/drivers/input/touchscreen/mms134s_ts.c b/drivers/input/touchscreen/mms134s_ts.c
+new file mode 100644
+index 0000000..5c02c59
+--- /dev/null
++++ b/drivers/input/touchscreen/mms134s_ts.c
+@@ -0,0 +1,1655 @@
++/* drivers/input/touchscreen/mms134s_ts.c
++ *
++ * Copyright (C) 2014-2015 Melfas, Inc.
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++#define SEC_TSP
++#undef TA_DETECTION
++#include <linux/module.h>
++#include <linux/delay.h>
++#include <linux/hrtimer.h>
++#include <linux/i2c.h>
++#include <linux/input.h>
++#include <linux/interrupt.h>
++#include <linux/io.h>
++#include <linux/slab.h>
++#include <linux/platform_device.h>
++#include <linux/input/mms134s_ts.h>
++#include <linux/cpufreq.h>
++#ifdef SEC_TSP
++#include <linux/gpio.h>
++#endif
++
++#include <linux/miscdevice.h>
++#include <linux/ioctl.h>
++#include <linux/string.h>
++#include <linux/semaphore.h>
++#include <linux/kthread.h>
++#include <linux/timer.h>
++#include <linux/workqueue.h>
++#include <linux/firmware.h>
++#include <linux/input/mt.h>
++/* #include <asm/io.h> */
++#include <mach/gpio.h>
++#include <linux/regulator/machine.h>
++
++#include <linux/of_gpio.h>
++#include <linux/regulator/consumer.h>
++#include <linux/debugfs.h>
++
++#ifdef CONFIG_FB
++#include <linux/notifier.h>
++#include <linux/fb.h>
++#endif
++
++#ifdef CONFIG_HAS_EARLYSUSPEND
++#include <linux/earlysuspend.h>
++#endif
++
++#define VTG_MIN_UV		2600000
++#define VTG_MAX_UV		3300000
++#define I2C_VTG_MIN_UV	1800000
++#define I2C_VTG_MAX_UV	1800000
++
++static struct regulator *touch_regulator_1v8;
++static struct regulator *touch_regulator_2v8;
++
++struct i2c_client *global_i2c_client;
++static int GPIO_I2C_INT;
++#define DEBUG_DIR_NAME		"ts_debug"
++#define TS_INFO_MAX_LEN		256
++#define FIRMWARE_VERSION_ADDR 0x1D
++#define PANEL_ID_ADDR 0xC4
++
++#define STORE_TS_INFO(buf, max_tch, fw_ver, fw_vkey_support) \
++			snprintf(buf, TS_INFO_MAX_LEN, \
++				"controller     = Melfas Inc.\n" \
++				"chip name      = mms134s\n" \
++				"max_touches    = %d\n" \
++				"driver_ver     = N/A\n" \
++				"fw_ver         = 0x%x\n" \
++				"fw_vkey_support= %s\n", \
++				max_tch, fw_ver, fw_vkey_support)
++
++#define TS_MAX_Z_TOUCH			255
++#define TS_MAX_W_TOUCH		100
++#define TS_MAX_X_COORD		720
++#define TS_MAX_Y_COORD		1280
++#ifdef SEC_TSP
++#define P5_THRESHOLD			0x05
++#define TS_WRITE_REGS_LEN		16
++#endif
++#ifdef CONFIG_SEC_DVFS
++#define TOUCH_BOOSTER			1
++#define TOUCH_BOOSTER_OFF_TIME	100
++#define TOUCH_BOOSTER_CHG_TIME	200
++#else
++#define TOUCH_BOOSTER			0
++#endif
++#define TS_READ_REGS_LEN		66
++#define MELFAS_MAX_TOUCH		5
++/* need to delete after completed PV */
++#define DEBUG_PRINT			0
++#define PRESS_KEY					1
++#define RELEASE_KEY					0
++#define TS_READ_VERSION_ADDR		0x1B
++#define DOWNLOAD_RETRY_CNT		1
++#define MIP_CONTACT_ON_EVENT_THRES	0x05
++#define MIP_MOVING_EVENT_THRES		0x06
++#define MIP_ACTIVE_REPORT_RATE		0x07
++#define MIP_POSITION_FILTER_LEVEL	0x08
++#define TS_READ_START_ADDR			0x0F
++#define TS_READ_START_ADDR2			0x10
++#define MIP_TSP_REVISION				0xF0
++#define MIP_HARDWARE_REVISION		0xF1
++#define MIP_COMPATIBILITY_GROUP		0xF2
++#define MIP_CORE_VERSION				0xF3
++#define MIP_PRIVATECUSTOM_VERSION	0xF4
++#define MIP_PUBLICCUSTOM_VERSION		0xF5
++#define MIP_PRODUCT_CODE				0xF6
++#define SET_TSP_CONFIG
++#define TSP_PATTERN_TRACTKING
++#undef TSP_PATTERN_TRACTKING
++#include <MMS100S_ISC_Updater.h>
++#define TS_READ_EXCITING_CH_ADDR	0x2E
++#define TS_READ_SENSING_CH_ADDR	    0x2F
++#define TS_WRITE_REGS_LEN		    16
++#define RMI_ADDR_TESTMODE           0xA0
++#define UNIVERSAL_CMD_RESULT_SIZE   0xAE
++#define UNIVERSAL_CMD_RESULT        0xAF
++
++unsigned long saved_rate;
++static int tsp_enabled;
++int touch_is_pressed;
++static int gMenuKey_Intensity, gBackKey_Intensity;
++
++unsigned char TSP_PanelVersion, TSP_PhoneVersion;
++
++#ifdef TSP_BOOST
++static unsigned char is_boost;
++#endif
++enum {
++	None = 0,
++	TOUCH_SCREEN,
++	TOUCH_KEY
++};
++struct muti_touch_info {
++	int strength;
++	int width;
++	int posX;
++	int posY;
++};
++struct mms_ts_data {
++	uint16_t addr;
++	struct i2c_client *client;
++	struct input_dev *input_dev;
++	struct mms_tsi_platform_data *pdata;
++	struct work_struct work;
++	struct mms_version *version;
++	uint32_t flags;
++	int (*power) (int on);
++	int (*gpio) (void);
++	const u8 *config_fw_version;
++	int irq;
++	bool suspended;
++	bool enable;
++	struct dentry *dir;
++	char *ts_info;
++	char fw_ver;
++	bool fw_vkey_support;
++#ifdef CONFIG_FB
++	struct notifier_block fb_notif;
++#endif
++
++#ifdef TA_DETECTION
++	void (*register_cb) (void *);
++	void (*read_ta_status) (void *);
++#endif
++#ifdef CONFIG_HAS_EARLYSUSPEND
++	struct early_suspend early_suspend;
++#endif
++
++#if TOUCH_BOOSTER
++	struct delayed_work work_dvfs_off;
++	struct delayed_work work_dvfs_chg;
++	bool dvfs_lock_status;
++	struct mutex dvfs_lock;
++#endif
++
++	struct mutex lock;
++	bool enabled;
++	bool noise_mode;
++	bool ta_status;
++};
++/* static struct mms_ts_data *ts = NULL; */
++static struct mms_ts_data *ts;
++#ifdef SEC_TSP
++struct class *sec_class;
++struct device *sec_touchscreen_dev;
++struct device *sec_touchkey_dev;
++int menu_pressed;
++int back_pressed;
++#endif
++#ifdef CONFIG_HAS_EARLYSUSPEND
++static void mms_ts_early_suspend(struct early_suspend *h);
++static void mms_ts_late_resume(struct early_suspend *h);
++#endif
++
++#if TOUCH_BOOSTER
++static void change_dvfs_lock(struct work_struct *work)
++{
++	struct mms_ts_data *ts = container_of(work,
++					      struct mms_ts_data,
++					      work_dvfs_chg.work);
++	int ret;
++	mutex_lock(&ts->dvfs_lock);
++	ret = set_freq_limit(DVFS_TOUCH_ID, 1008000);
++	mutex_unlock(&ts->dvfs_lock);
++
++	if (ret < 0)
++		dev_err(&global_i2c_client->dev,
++			"%s: 1booster stop failed(%d)\n", __func__, __LINE__);
++	else
++		dev_info(&global_i2c_client->dev, "[TSP] %s", __func__);
++}
++
++static void set_dvfs_off(struct work_struct *work)
++{
++	struct mms_ts_data *ts = container_of(work,
++					      struct mms_ts_data,
++					      work_dvfs_off.work);
++	mutex_lock(&ts->dvfs_lock);
++	set_freq_limit(DVFS_TOUCH_ID, -1);
++	ts->dvfs_lock_status = false;
++	mutex_unlock(&ts->dvfs_lock);
++
++}
++
++static void set_dvfs_lock(struct mms_ts_data *ts, uint32_t on)
++{
++	int ret = 0;
++
++	mutex_lock(&ts->dvfs_lock);
++	if (on == 0) {
++		if (ts->dvfs_lock_status) {
++			schedule_delayed_work(&ts->work_dvfs_off,
++				msecs_to_jiffies(TOUCH_BOOSTER_OFF_TIME));
++		}
++	} else if (on == 1) {
++		cancel_delayed_work(&ts->work_dvfs_off);
++		if (!ts->dvfs_lock_status) {
++			ret = set_freq_limit(DVFS_TOUCH_ID, 1008000);
++			if (ret < 0)
++				dev_err(&global_i2c_client->dev,
++					"%s: cpu lock failed(%d)\n",
++				       __func__, ret);
++
++			ts->dvfs_lock_status = true;
++		}
++	} else if (on == 2) {
++		cancel_delayed_work(&ts->work_dvfs_off);
++		schedule_work(&ts->work_dvfs_off.work);
++	}
++	mutex_unlock(&ts->dvfs_lock);
++}
++#endif
++
++#ifdef SEC_TSP
++static void release_all_fingers(struct mms_ts_data *ts);
++static int mms_i2c_write(struct i2c_client *client, char *buf, int length);
++static void TSP_reboot(void);
++#endif
++/* int mms_fw_i2c_read(u16 addr, u8 *value, u16 length); */
++/* int mms_fw_i2c_write(char *buf, int length); */
++static struct muti_touch_info g_Mtouch_info[MELFAS_MAX_TOUCH];
++
++static int ts_power_init(bool on)
++{
++	int rc;
++
++	if (!on)
++		goto pwr_deinit;
++
++	touch_regulator_2v8 = regulator_get(&global_i2c_client->dev, "vdd");
++	if (IS_ERR(touch_regulator_2v8)) {
++		rc = PTR_ERR(touch_regulator_2v8);
++		dev_err(&global_i2c_client->dev,
++			"Regulator get failed vdd rc=%d\n", rc);
++		return rc;
++	}
++
++	if (regulator_count_voltages(touch_regulator_2v8) > 0) {
++		rc = regulator_set_voltage(touch_regulator_2v8, VTG_MIN_UV,
++					   VTG_MAX_UV);
++		if (rc) {
++			dev_err(&global_i2c_client->dev,
++				"Regulator set_vtg failed vdd rc=%d\n", rc);
++			goto reg_vdd_put;
++		}
++	}
++
++	touch_regulator_1v8 = regulator_get(&global_i2c_client->dev,
++		"vcc_i2c");
++	if (IS_ERR(touch_regulator_1v8)) {
++		rc = PTR_ERR(touch_regulator_1v8);
++		dev_err(&global_i2c_client->dev,
++			"Regulator get failed vcc_i2c rc=%d\n", rc);
++		goto reg_vdd_set_vtg;
++	}
++
++	if (regulator_count_voltages(touch_regulator_1v8) > 0) {
++		rc = regulator_set_voltage(touch_regulator_1v8, I2C_VTG_MIN_UV,
++					   I2C_VTG_MAX_UV);
++		if (rc) {
++			dev_err(&global_i2c_client->dev,
++				"Regulator set_vtg failed vcc_i2c rc=%d\n",
++				rc);
++			goto reg_vcc_i2c_put;
++		}
++	}
++
++	return 0;
++
++reg_vcc_i2c_put:
++	regulator_put(touch_regulator_1v8);
++reg_vdd_set_vtg:
++	if (regulator_count_voltages(touch_regulator_2v8) > 0)
++		regulator_set_voltage(touch_regulator_2v8, 0, VTG_MAX_UV);
++reg_vdd_put:
++	regulator_put(touch_regulator_2v8);
++	return rc;
++
++pwr_deinit:
++	if (regulator_count_voltages(touch_regulator_2v8) > 0)
++		regulator_set_voltage(touch_regulator_2v8, 0, VTG_MAX_UV);
++
++	regulator_put(touch_regulator_2v8);
++
++	if (regulator_count_voltages(touch_regulator_1v8) > 0)
++		regulator_set_voltage(touch_regulator_1v8, 0, I2C_VTG_MAX_UV);
++
++	regulator_put(touch_regulator_1v8);
++	return 0;
++}
++
++static int ts_power_enable(bool on)
++{
++	int rc;
++
++	if (!on)
++		goto power_off;
++
++	rc = regulator_enable(touch_regulator_2v8);
++	if (rc) {
++		dev_err(&global_i2c_client->dev,
++			"Regulator vdd enable failed rc=%d\n", rc);
++		return rc;
++	}
++
++	rc = regulator_enable(touch_regulator_1v8);
++	if (rc) {
++		dev_err(&global_i2c_client->dev,
++			"Regulator vcc_i2c enable failed rc=%d\n", rc);
++		regulator_disable(touch_regulator_2v8);
++	}
++
++	return rc;
++
++power_off:
++	rc = regulator_disable(touch_regulator_2v8);
++	if (rc) {
++		dev_err(&global_i2c_client->dev,
++			"Regulator vdd disable failed rc=%d\n", rc);
++		return rc;
++	}
++
++	rc = regulator_disable(touch_regulator_1v8);
++	if (rc) {
++		dev_err(&global_i2c_client->dev,
++			"Regulator vcc_i2c disable failed rc=%d\n", rc);
++		rc = regulator_enable(touch_regulator_2v8);
++		if (rc) {
++			dev_err(&global_i2c_client->dev,
++				"Regulator vcc_i2c enable failed rc=%d\n", rc);
++		}
++	}
++
++	return rc;
++}
++void ts_power_control(int en)
++{
++	ts_power_enable(en);
++}
++
++#ifdef TA_DETECTION
++static void tsp_ta_probe(int ta_status)
++{
++	u8 write_buffer[3];
++
++	if (tsp_enabled == false) {
++		dev_err(&global_i2c_client->dev, "[TSP] tsp_enabled is 0\n");
++		return;
++	}
++	write_buffer[0] = 0xB0;
++	write_buffer[1] = 0x11;
++	if (ta_status)
++		write_buffer[2] = 1;
++	else
++		write_buffer[2] = 0;
++	mms_i2c_write(ts_data->client, (char *)write_buffer, 3);
++}
++#endif
++#ifdef TSP_PATTERN_TRACTKING
++/*
++ *	To do forced calibration when ghost touch occured at the same point
++ *  for several second.
++ */
++#define MAX_GHOSTCHECK_FINGER				10
++#define MAX_GHOSTTOUCH_COUNT					300
++#define MAX_GHOSTTOUCH_BY_PATTERNTRACKING	5
++
++static int tcount_finger[MAX_GHOSTCHECK_FINGER] = { 0,
++					0, 0, 0, 0, 0, 0, 0, 0, 0 };
++static int touchbx[MAX_GHOSTCHECK_FINGER] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
++static int touchby[MAX_GHOSTCHECK_FINGER] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
++
++static int ghosttouchcount;
++static int cFailbyPattenTracking;
++static void clear_tcount(void)
++{
++	int i;
++	for (i = 0; i < MAX_GHOSTCHECK_FINGER; i++) {
++		tcount_finger[i] = 0;
++		touchbx[i] = 0;
++		touchby[i] = 0;
++	}
++}
++
++static int diff_two_point(int x, int y, int oldx, int oldy)
++{
++	int diffx, diffy;
++	int distance;
++	diffx = x - oldx;
++	diffy = y - oldy;
++	distance = abs(diffx) + abs(diffy);
++	if (distance < 3)
++		return 1;
++	else
++		return 0;
++}
++
++static int tsp_pattern_tracking(struct mms_ts_data *ts, int fingerindex, int x,
++				int y)
++{
++	int i;
++	int ghosttouch = 0;
++	if (i == fingerindex) {
++		if (diff_two_point(x, y, touchbx[i], touchby[i]))
++			tcount_finger[i] = tcount_finger[i] + 1;
++		else
++			tcount_finger[i] = 0;
++
++		touchbx[i] = x;
++		touchby[i] = y;
++		if (tcount_finger[i] > MAX_GHOSTTOUCH_COUNT) {
++			ghosttouch = 1;
++			ghosttouchcount++;
++			dev_debug(&global_i2c_client->dev,
++			       "[TSP] SUNFLOWER (PATTERN TRACKING) %d\n",
++			       ghosttouchcount);
++			clear_tcount();
++			cFailbyPattenTracking++;
++			if (cFailbyPattenTracking >
++			    MAX_GHOSTTOUCH_BY_PATTERNTRACKING) {
++				cFailbyPattenTracking = 0;
++				dev_info(&global_i2c_client->dev,
++					"[TSP] Reboot.\n");
++				TSP_reboot();
++			} else {
++				/* Do something for calibration */
++			}
++		}
++	}
++	return ghosttouch;
++}
++#endif
++
++static void mms_set_noise_mode(struct mms_ts_data *ts)
++{
++	int ret;
++	u8 setLowLevelData[2];
++
++	if (!ts->noise_mode)
++		return;
++
++	if (ts->ta_status) {
++		dev_info(&global_i2c_client->dev, "TA connect!!\n");
++		setLowLevelData[0] = 0x30;
++		setLowLevelData[1] = 0x01;
++		ret = mms_i2c_write(ts->client, setLowLevelData, 2);
++	} else {
++		dev_info(&global_i2c_client->dev, "TA disconnect!!\n");
++		setLowLevelData[0] = 0x30;
++		setLowLevelData[1] = 0x02;
++		ret = mms_i2c_write(ts->client, setLowLevelData, 2);
++		ts->noise_mode = 0;
++	}
++}
++
++void charger_enable(int enable)
++{
++	if (ts == NULL)
++		return;
++	if (enable == 0)
++		ts->ta_status = 0;
++	else
++		ts->ta_status = 1;
++
++	mms_set_noise_mode(ts);
++}
++
++static void mms_ts_get_data(struct work_struct *work)
++{
++	struct mms_ts_data *ts = container_of(work, struct mms_ts_data, work);
++	int ret = 0, i, j;
++	uint8_t buf[TS_READ_REGS_LEN] = { 0, };
++	int read_num, FingerID;
++	int _touch_is_pressed, line;
++	int keyID = 0, touchType = 0, touchState = 0;
++	u8 setLowLevelData[2];
++	if (tsp_enabled == false) {
++		dev_err(&global_i2c_client->dev, "[TSP ]%s. tsp_disabled.\n",
++			__func__);
++		msleep(500);
++		return;
++	}
++#if DEBUG_PRINT
++	dev_err(&global_i2c_client->dev, "%s start\n", __func__);
++	if (ts == NULL)
++		dev_err(&global_i2c_client->dev, "%s : TS NULL\n", __func__);
++#endif
++	for (j = 0; j < 3; j++) {
++		buf[0] = TS_READ_START_ADDR;
++		ret = i2c_master_send(ts->client, buf, 1);
++		if (ret < 0) {
++			line = __LINE__;
++			goto tsp_error;
++		}
++		ret = i2c_master_recv(ts->client, buf, 1);
++		if (ret < 0) {
++			line = __LINE__;
++			goto tsp_error;
++		}
++		read_num = buf[0];
++		if (read_num < 60)
++			break;
++	}
++	if (read_num > TS_READ_REGS_LEN)
++		read_num = TS_READ_REGS_LEN;
++
++	if (read_num > 0) {
++		buf[0] = TS_READ_START_ADDR2;
++		ret = i2c_master_send(ts->client, buf, 1);
++		if (ret < 0) {
++			line = __LINE__;
++			goto tsp_error;
++		}
++		ret = i2c_master_recv(ts->client, buf, read_num);
++		if (ret < 0) {
++			line = __LINE__;
++			goto tsp_error;
++		}
++
++		if (buf[0] == 0x0E) {
++			dev_info(&global_i2c_client->dev,
++				"[TSP] noise mode enter!!\n");
++			ts->noise_mode = 1;
++			setLowLevelData[0] = 0x10;
++			setLowLevelData[1] = 0x00;
++			ret = mms_i2c_write(ts->client, setLowLevelData, 2);
++			mms_set_noise_mode(ts);
++		}
++		for (i = 0; i < read_num; i = i + 6) {
++			if (buf[i] == 0x0F) {
++				dev_err(&global_i2c_client->dev,
++					"%s : ESD-DETECTED!!!\n", __func__);
++				line = __LINE__;
++				goto tsp_error;
++			}
++			touchType = (buf[i] >> 5) & 0x03;
++			if (touchType == TOUCH_SCREEN) {
++				FingerID = (buf[i] & 0x0F) - 1;
++#if DEBUG_PRINT
++				dev_err(&global_i2c_client->dev,
++					"FingerID = %d\n", FingerID);
++#endif
++				if (FingerID > MELFAS_MAX_TOUCH - 1)
++					FingerID = MELFAS_MAX_TOUCH - 1;
++				g_Mtouch_info[FingerID].posX =
++				    (uint16_t) (buf[i + 1] & 0x0F)
++							<< 8 | buf[i + 2];
++				g_Mtouch_info[FingerID].posY =
++				    (uint16_t) (buf[i + 1] & 0xF0)
++							<< 4 | buf[i + 3];
++				if ((buf[i] & 0x80) == 0)
++					g_Mtouch_info[FingerID].strength = 0;
++				else
++					g_Mtouch_info[FingerID].strength =
++					    buf[i + 4];
++				g_Mtouch_info[FingerID].width = buf[i + 5];
++			} else if (touchType == TOUCH_KEY) {
++				keyID = (buf[i] & 0x0F);
++				touchState = (buf[i] & 0x80);
++				gMenuKey_Intensity = 0;
++				gBackKey_Intensity = 0;
++/*				dev_err(&global_i2c_client->dev,
++				       "[TSP] keyID : %d, touchstate : %d\n",
++				       keyID, touchState);*/
++				if (keyID == 0x1) {
++					if (touchState)
++						menu_pressed = 1;
++					else
++						menu_pressed = 0;
++					gMenuKey_Intensity = buf[i + 5];
++					input_report_key(ts->input_dev,
++							 KEY_MENU,
++							 touchState ? PRESS_KEY
++							 : RELEASE_KEY);
++				}
++				if (keyID == 0x2) {
++					if (touchState)
++						back_pressed = 1;
++					else
++						back_pressed = 0;
++					gBackKey_Intensity = buf[i + 5];
++					input_report_key(ts->input_dev,
++							 KEY_BACK,
++							 touchState ? PRESS_KEY
++							 : RELEASE_KEY);
++				}
++			}
++		}
++	}
++	_touch_is_pressed = 0;
++	for (i = 0; i < MELFAS_MAX_TOUCH; i++) {
++		if (g_Mtouch_info[i].strength == -1)
++			continue;
++#ifdef TSP_PATTERN_TRACTKING
++		tsp_pattern_tracking(ts, i, g_Mtouch_info[i].posX,
++				     g_Mtouch_info[i].posY);
++#endif
++		if (g_Mtouch_info[i].strength) {
++			input_mt_slot(ts->input_dev, i);
++			input_mt_report_slot_state(ts->input_dev,
++						   MT_TOOL_FINGER, true);
++			input_report_abs(ts->input_dev, ABS_MT_PRESSURE,
++					 g_Mtouch_info[i].strength);
++			input_report_abs(ts->input_dev, ABS_MT_POSITION_X,
++					 g_Mtouch_info[i].posX);
++			input_report_abs(ts->input_dev, ABS_MT_POSITION_Y,
++					 g_Mtouch_info[i].posY);
++			input_report_key(ts->input_dev, BTN_TOUCH,
++					 g_Mtouch_info[i].strength);
++		} else {
++			input_mt_slot(ts->input_dev, i);
++			input_mt_report_slot_state(ts->input_dev,
++						   MT_TOOL_FINGER, false);
++		}
++#if DEBUG_PRINT
++		dev_err(&global_i2c_client->dev,
++		       "[TSP] ID, S, x, y, z, w : %d, %d, %d, %d,  %d %d\n", i,
++		       (g_Mtouch_info[i].strength > 0), g_Mtouch_info[i].posX,
++		       g_Mtouch_info[i].posY, g_Mtouch_info[i].strength,
++		       g_Mtouch_info[i].width);
++#endif
++
++		if (g_Mtouch_info[i].strength == 0)
++			g_Mtouch_info[i].strength = -1;
++		if (g_Mtouch_info[i].strength > 0)
++			_touch_is_pressed = 1;
++	}
++	input_sync(ts->input_dev);
++	touch_is_pressed = _touch_is_pressed;
++	return;
++tsp_error:
++	dev_err(&global_i2c_client->dev, "[TSP] %s: i2c failed(%d)\n",
++		__func__, line);
++	TSP_reboot();
++}
++
++static irqreturn_t mms_ts_irq_handler(int irq, void *handle)
++{
++	struct mms_ts_data *ts = (struct mms_ts_data *)handle;
++#if DEBUG_PRINT
++	dev_err(&global_i2c_client->dev, "mms_ts_irq_handler\n");
++#endif
++	mms_ts_get_data(&ts->work);
++#if TOUCH_BOOSTER
++	set_dvfs_lock(ts, !!touch_is_pressed);
++#endif
++	return IRQ_HANDLED;
++}
++
++#ifdef SEC_TSP
++static int mms_i2c_read(struct i2c_client *client, u16 addr, u16 length,
++			u8 *value)
++{
++	struct i2c_adapter *adapter = client->adapter;
++	struct i2c_msg msg[2];
++	msg[0].addr = client->addr;
++	msg[0].flags = 0x00;
++	msg[0].len = 1;
++	msg[0].buf = (u8 *)&addr;
++	msg[1].addr = client->addr;
++	msg[1].flags = I2C_M_RD;
++	msg[1].len = length;
++	msg[1].buf = (u8 *) value;
++	if (i2c_transfer(adapter, msg, 2) == 2)
++		return 0;
++	else
++		return -EIO;
++}
++
++static int mms_i2c_read_without_addr(struct i2c_client *client,
++				     u16 length, u8 *value)
++{
++	struct i2c_adapter *adapter = client->adapter;
++	struct i2c_msg msg[1];
++	msg[0].addr = client->addr;
++	msg[0].flags = I2C_M_RD;
++	msg[0].len = length;
++	msg[0].buf = (u8 *) value;
++	if (i2c_transfer(adapter, msg, 1) == 1)
++		return 0;
++	else
++		return -EIO;
++}
++
++static int mms_i2c_busrt_write(struct i2c_client *client, u16 length,
++			       u8 *value)
++{
++	struct i2c_adapter *adapter = client->adapter;
++	struct i2c_msg msg[1];
++	msg[0].addr = client->addr;
++	msg[0].flags = 0;
++	msg[0].len = length;
++	msg[0].buf = (u8 *) value;
++	if (i2c_transfer(adapter, msg, 1) == 1)
++		return 0;
++	else
++		return -EIO;
++}
++
++static int mms_i2c_write(struct i2c_client *client, char *buf, int length)
++{
++	int i;
++	char data[TS_WRITE_REGS_LEN];
++	if (length > TS_WRITE_REGS_LEN) {
++		pr_err("[TSP] size error - %s\n", __func__);
++		return -EINVAL;
++	}
++	for (i = 0; i < length; i++)
++		data[i] = *buf++;
++	i = i2c_master_send(client, (char *)data, length);
++	if (i == length)
++		return length;
++	else
++		return -EIO;
++}
++
++int mms_fw_i2c_read(u16 addr, u8 *value, u16 length)
++{
++	if (mms_i2c_read(ts->client, addr, length, value) == 0)
++		return 1;
++	else
++		return 0;
++}
++
++int mms_fw_i2c_write(char *buf, int length)
++{
++	int ret;
++	ret = mms_i2c_write(ts->client, buf, length);
++	dev_err(&global_i2c_client->dev,
++		"<MELFAS> mass erase start write ret%d\n\n", ret);
++	if (ret > 0)
++		return 1;
++	else
++		return 0;
++}
++
++int mms_fw_i2c_read_without_addr(u8 *value, u16 length)
++{
++	if (mms_i2c_read_without_addr(ts->client, length, value) == 0)
++		return 1;
++	else
++		return 0;
++}
++
++int mms_fw_i2c_busrt_write(u8 *value, u16 length)
++{
++	if (mms_i2c_busrt_write(ts->client, length, value) == 0)
++		return 1;
++	else
++		return 0;
++}
++
++#endif
++
++static void release_all_fingers(struct mms_ts_data *ts)
++{
++	int i;
++	dev_err(&global_i2c_client->dev, "%s start.\n", __func__);
++	for (i = 0; i < MELFAS_MAX_TOUCH; i++) {
++		if (-1 == g_Mtouch_info[i].strength) {
++			g_Mtouch_info[i].posX = 0;
++			g_Mtouch_info[i].posY = 0;
++			continue;
++		}
++		dev_err(&global_i2c_client->dev, "%s %s(%d)\n", __func__,
++		       ts->input_dev->name, i);
++		g_Mtouch_info[i].strength = 0;
++		input_mt_slot(ts->input_dev, i);
++		input_mt_report_slot_state(ts->input_dev,
++					   MT_TOOL_FINGER, false);
++		g_Mtouch_info[i].posX = 0;
++		g_Mtouch_info[i].posY = 0;
++		if (0 == g_Mtouch_info[i].strength)
++			g_Mtouch_info[i].strength = -1;
++	}
++	input_sync(ts->input_dev);
++#if TOUCH_BOOSTER
++	set_dvfs_lock(ts, 2);
++	dev_info(&global_i2c_client->dev, "[TSP] dvfs_lock free.\n ");
++#endif
++}
++
++static void TSP_reboot(void)
++{
++	dev_err(&global_i2c_client->dev, "%s start!\n", __func__);
++	dev_err(&global_i2c_client->dev, "[TSP] %s disable IRQ( %d)\n",
++		__func__, __LINE__);
++	disable_irq_nosync(ts->client->irq);
++	tsp_enabled = false;
++
++	ts_power_enable(0);
++	msleep(60);
++
++	release_all_fingers(ts);
++
++	msleep(60);
++	ts_power_enable(1);
++	msleep(60);
++
++	dev_err(&global_i2c_client->dev, "[TSP] %s enable IRQ( %d)\n",
++		__func__, __LINE__);
++	enable_irq(ts->client->irq);
++	tsp_enabled = true;
++
++};
++/*
++void TSP_force_released(void)
++{
++	dev_err(&global_i2c_client->dev, "%s satrt!\n", __func__);
++	if (tsp_enabled == false) {
++		dev_err(&global_i2c_client->dev, "[TSP] Disabled\n");
++		return;
++	}
++	release_all_fingers(ts);
++	touch_is_pressed = 0;
++};
++
++EXPORT_SYMBOL(TSP_force_released);
++*/
++
++void TSP_ESD_seq(void)
++{
++	TSP_reboot();
++	dev_err(&global_i2c_client->dev, "%s satrt!\n", __func__);
++};
++
++int tsp_i2c_read_mms(u8 reg, unsigned char *rbuf, int buf_size)
++{
++	int i, ret = -1;
++	struct i2c_msg rmsg;
++	uint8_t start_reg;
++	int retry = 3;
++	for (i = 0; i < retry; i++) {
++		rmsg.addr = ts->client->addr;
++		rmsg.flags = 0;
++		rmsg.len = 1;
++		rmsg.buf = &start_reg;
++		start_reg = reg;
++		ret = i2c_transfer(ts->client->adapter, &rmsg, 1);
++		if (ret >= 0) {
++			rmsg.flags = I2C_M_RD;
++			rmsg.len = buf_size;
++			rmsg.buf = rbuf;
++			ret = i2c_transfer(ts->client->adapter, &rmsg, 1);
++			if (ret >= 0)
++				break;
++		}
++		if (i == (retry - 1)) {
++			dev_err(&global_i2c_client->dev,
++				"[TSP] Error code : %d, %d\n", __LINE__, ret);
++		}
++	}
++	return ret;
++}
++
++#ifdef CONFIG_PM
++static int ts_suspend(struct device *dev)
++{
++	struct mms_ts_data *ts = dev_get_drvdata(dev);
++
++	tsp_enabled = false;
++	if (ts->suspended) {
++		dev_info(dev, "%s, Already in suspend state\n", __func__);
++		return 0;
++	}
++	disable_irq(ts->client->irq);
++	release_all_fingers(ts);
++	touch_is_pressed = 0;
++
++	ts_power_enable(0);
++	ts->suspended = true;
++
++	return 0;
++}
++
++static int ts_resume(struct device *dev)
++{
++	struct mms_ts_data *ts = dev_get_drvdata(dev);
++
++	if (!ts->suspended) {
++		dev_dbg(dev, "%s, Already in awake state\n", __func__);
++		return 0;
++	}
++
++	ts_power_enable(1);
++	msleep(50);
++	tsp_enabled = true;
++	enable_irq(ts->client->irq);
++
++	ts->suspended = false;
++
++	return 0;
++}
++#endif
++
++static const struct dev_pm_ops ts_pm_ops = {
++#ifdef CONFIG_FB
++	.suspend = ts_suspend,
++	.resume = ts_resume,
++#endif
++};
++
++
++static ssize_t update_fw_show(struct device *dev,
++				struct device_attribute *attr, char *buf)
++{
++/*	struct mms_ts_data *data = dev_get_drvdata(dev); */
++
++	return snprintf(buf, 8, "%s\n", "N/A\n");
++}
++
++static ssize_t update_fw_store(struct device *dev,
++				struct device_attribute *attr,
++				const char *buf, size_t size)
++{
++/*	struct mms_ts_data *data = dev_get_drvdata(dev); */
++
++	return size;
++}
++
++static DEVICE_ATTR(update_fw, 0664, update_fw_show,
++				update_fw_store);
++
++static ssize_t force_update_fw_store(struct device *dev,
++				struct device_attribute *attr,
++				const char *buf, size_t size)
++{
++/*	struct mms_ts_data *data = dev_get_drvdata(dev); */
++
++	return size;
++}
++
++static DEVICE_ATTR(force_update_fw, 0664, update_fw_show,
++				force_update_fw_store);
++
++static ssize_t fw_name_show(struct device *dev,
++				struct device_attribute *attr, char *buf)
++{
++/*	struct mms_ts_data *data = dev_get_drvdata(dev); */
++
++	return snprintf(buf, 8, "%s\n", "N/A\n");
++}
++
++static ssize_t fw_name_store(struct device *dev,
++				struct device_attribute *attr,
++				const char *buf, size_t size)
++{
++/*	struct mms_ts_data *data = dev_get_drvdata(dev); */
++
++	return size;
++}
++
++static DEVICE_ATTR(fw_name, 0664, fw_name_show, fw_name_store);
++
++static ssize_t ts_info_show(struct device *dev,
++			    struct device_attribute *attr, char *buf)
++{
++	struct mms_ts_data *data = dev_get_drvdata(dev);
++
++	return snprintf(buf, TS_INFO_MAX_LEN, "%s\n", data->ts_info);
++}
++
++static DEVICE_ATTR(ts_info, 0444, ts_info_show, NULL);
++
++static ssize_t ts_mt_protocol_type_show(struct device *dev,
++					struct device_attribute *attr,
++					char *buf)
++{
++	return snprintf(buf, 16, "%s\n", "MT Protocal B");
++}
++
++static DEVICE_ATTR(mt_protocol_type, 0664, ts_mt_protocol_type_show, NULL);
++
++static ssize_t ts_enable_store(struct device *dev,
++			       struct device_attribute *attr,
++			       const char *buf, size_t size)
++{
++	struct mms_ts_data *data = dev_get_drvdata(dev);
++	unsigned long val;
++	int rc;
++
++	if (size > 2)
++		return -EINVAL;
++
++	rc = kstrtoul(buf, 10, &val);
++	if (rc != 0)
++		return rc;
++
++	if (val) {
++		data->enable = true;
++		ts_resume(&data->client->dev);
++	} else {
++		data->enable = false;
++		ts_suspend(&data->client->dev);
++	}
++
++	return size;
++}
++
++static ssize_t ts_enable_show(struct device *dev,
++			      struct device_attribute *attr, char *buf)
++{
++	struct mms_ts_data *data = dev_get_drvdata(dev);
++
++	if (data->suspended) {
++		dev_info(&data->client->dev, "Already in suspend state\n");
++		return snprintf(buf, 4, "%s\n", "0");
++	}
++
++	return snprintf(buf, 4, "%s\n", data->enable ? "1" : "0");
++}
++
++static DEVICE_ATTR(enable, 0664, ts_enable_show, ts_enable_store);
++
++static int debug_dump_info(struct seq_file *m, void *v)
++{
++	struct mms_ts_data *data = m->private;
++
++	seq_printf(m, "%s\n", data->ts_info);
++
++	return 0;
++}
++
++static int debugfs_dump_info_open(struct inode *inode, struct file *file)
++{
++	return single_open(file, debug_dump_info, inode->i_private);
++}
++
++static const struct file_operations debug_dump_info_fops = {
++	.owner = THIS_MODULE,
++	.open = debugfs_dump_info_open,
++	.read = seq_read,
++	.release = single_release,
++};
++
++static int debug_suspend_set(void *_data, u64 val)
++{
++	struct mms_ts_data *data = _data;
++
++	mutex_lock(&data->input_dev->mutex);
++
++	if (val)
++		ts_suspend(&data->client->dev);
++	else
++		ts_resume(&data->client->dev);
++
++	mutex_unlock(&data->input_dev->mutex);
++
++	return 0;
++}
++
++static int debug_suspend_get(void *_data, u64 *val)
++{
++	struct mms_ts_data *data = _data;
++
++	mutex_lock(&data->input_dev->mutex);
++	*val = data->suspended;
++	mutex_unlock(&data->input_dev->mutex);
++
++	return 0;
++}
++
++DEFINE_SIMPLE_ATTRIBUTE(debug_suspend_fops, debug_suspend_get,
++			debug_suspend_set, "%lld\n");
++
++static bool debug_addr_is_valid(int addr)
++{
++	if (addr < 0 || addr > 0xFF) {
++		pr_err("mms reg address is invalid: 0x%x\n", addr);
++		return false;
++	}
++
++	return true;
++}
++
++static int debug_data_set(void *_data, u64 val)
++{
++	struct mms_ts_data *data = _data;
++
++	mutex_lock(&data->input_dev->mutex);
++
++	if (debug_addr_is_valid(data->addr))
++		dev_info(&data->client->dev,
++			 "Writing into registers not supported\n");
++
++	mutex_unlock(&data->input_dev->mutex);
++
++	return 0;
++}
++
++static int debug_data_get(void *_data, u64 *val)
++{
++	struct mms_ts_data *data = _data;
++	int rc;
++	u8 reg = 0;
++
++	mutex_lock(&data->input_dev->mutex);
++
++	if (debug_addr_is_valid(data->addr)) {
++		rc = mms_i2c_read(data->client, data->addr, 1, &reg);
++		if (rc < 0)
++			dev_err(&data->client->dev,
++				"read register 0x%x failed (%d)\n",
++				data->addr, rc);
++		else
++			*val = reg;
++	}
++
++	mutex_unlock(&data->input_dev->mutex);
++
++	return 0;
++}
++
++DEFINE_SIMPLE_ATTRIBUTE(debug_data_fops, debug_data_get,
++			debug_data_set, "0x%02llX\n");
++
++static int debug_addr_set(void *_data, u64 val)
++{
++	struct mms_ts_data *data = _data;
++
++	if (debug_addr_is_valid(val)) {
++		mutex_lock(&data->input_dev->mutex);
++		data->addr = val;
++		mutex_unlock(&data->input_dev->mutex);
++	}
++
++	return 0;
++}
++
++static int debug_addr_get(void *_data, u64 *val)
++{
++	struct mms_ts_data *data = _data;
++
++	mutex_lock(&data->input_dev->mutex);
++
++	if (debug_addr_is_valid(data->addr))
++		*val = data->addr;
++
++	mutex_unlock(&data->input_dev->mutex);
++
++	return 0;
++}
++
++DEFINE_SIMPLE_ATTRIBUTE(debug_addr_fops, debug_addr_get,
++			debug_addr_set, "0x%02llX\n");
++
++#ifdef CONFIG_FB
++static int fb_notifier_callback(struct notifier_block *self,
++				unsigned long event, void *data)
++{
++	struct fb_event *evdata = data;
++	int *blank;
++	struct mms_ts_data *ts =
++	    container_of(self, struct mms_ts_data, fb_notif);
++
++	if (evdata && evdata->data && event == FB_EVENT_BLANK &&
++	    ts && ts->client) {
++		blank = evdata->data;
++		if (*blank == FB_BLANK_UNBLANK)
++			ts_resume(&ts->client->dev);
++		else if (*blank == FB_BLANK_POWERDOWN)
++			ts_suspend(&ts->client->dev);
++	}
++
++	return 0;
++}
++#endif
++
++static int ts_parse_dt(struct device *dev, struct mms_ts_data *ts)
++{
++	struct device_node *np = dev->of_node;
++	u32 tempval;
++	int rc;
++
++	GPIO_I2C_INT =
++	    of_get_named_gpio_flags(np, "melfas,irq-gpio", 0, &tempval);
++	if (GPIO_I2C_INT < 0)
++		return -EINVAL;
++	ts->pdata->fw_vkey_support = of_property_read_bool(np,
++		"melfas,fw-vkey-support");
++	rc = of_property_read_u32(np, "melfas,max_touches", &tempval);
++	if (!rc)
++		ts->pdata->num_max_touches = tempval;
++	else
++		return -EINVAL;
++
++	rc = of_property_read_u32(np, "melfas,panel-id", &tempval);
++	if (!rc)
++		ts->pdata->panel_id = tempval;
++	else
++		return -EINVAL;
++
++	return 0;
++}
++
++static int mms_ts_probe(struct i2c_client *client,
++			const struct i2c_device_id *id)
++{
++	char idbuf, read_buffer;
++	struct dentry *temp;
++	int i, err;
++	int ret = 0;
++	struct mms_tsi_platform_data *pdata;
++	tsp_enabled = true;
++	global_i2c_client = client;
++
++	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
++		dev_err(&global_i2c_client->dev, "%s: need I2C_FUNC_I2C\n",
++			__func__);
++		return -ENODEV;
++	}
++	pdata = devm_kzalloc(&client->dev,
++			     sizeof(struct mms_tsi_platform_data), GFP_KERNEL);
++	if (!pdata) {
++		dev_err(&global_i2c_client->dev,
++			"Failed to allocate memory\n");
++		return -ENOMEM;
++	}
++
++	ts = kmalloc(sizeof(struct mms_ts_data), GFP_KERNEL);
++	if (ts == NULL) {
++		dev_err(&global_i2c_client->dev,
++			"%s: failed to create a state of mms-ts\n",
++		       __func__);
++		return -ENOMEM;
++	}
++
++	ts->pdata = pdata;
++
++	ret = ts_parse_dt(&client->dev, ts);
++	if (ret < 0) {
++		dev_err(&global_i2c_client->dev, "DT parsing failed\n");
++		return -EINVAL;
++	}
++
++	ret = ts_power_init(1);
++	if (ret) {
++		dev_err(&global_i2c_client->dev, "power init failed\n");
++		goto err_power_init;
++	}
++
++	ret = ts_power_enable(1);
++	msleep(60);
++	ret = ts_power_enable(0);
++	msleep(60);
++	ret = ts_power_enable(1);
++	msleep(60);
++
++	if (ret) {
++		dev_err(&global_i2c_client->dev, "power on failed\n");
++		goto err_power_on;
++	}
++
++	ts->client = client;
++	i2c_set_clientdata(client, ts);
++	dev_err(&global_i2c_client->dev,
++		"%s: i2c_master_send() [%d], Add[%d]\n", __func__, ret,
++		ts->client->addr);
++
++	for (i = 0; i < DOWNLOAD_RETRY_CNT; i++) {
++		ret = MFS_ISC_update();
++		if (ret < 0) {
++			dev_err(&global_i2c_client->dev,
++			       "NO need to download binary_data [%d]\n", ret);
++		} else {
++			if (!ret)
++				dev_err(&global_i2c_client->dev,
++				       "mcsdl_download_binary_data : [%d]\n",
++				       ret);
++			else
++				dev_err(&global_i2c_client->dev,
++				       "SET Download Fail - error code [%d]\n",
++				       ret);
++			break;
++		}
++	}
++
++	ts->input_dev = input_allocate_device();
++	if (!ts->input_dev) {
++		dev_err(&global_i2c_client->dev, "%s: Not enough memory\n",
++			__func__);
++		return -ENOMEM;
++	}
++	ts->input_dev->name = "sec_touchscreen";
++	ts->input_dev->evbit[0] = BIT_MASK(EV_ABS) | BIT_MASK(EV_KEY);
++	ts->input_dev->keybit[BIT_WORD(KEY_MENU)] |= BIT_MASK(KEY_MENU);
++	ts->input_dev->keybit[BIT_WORD(KEY_HOME)] |= BIT_MASK(KEY_HOME);
++	ts->input_dev->keybit[BIT_WORD(KEY_BACK)] |= BIT_MASK(KEY_BACK);
++	ts->input_dev->keybit[BIT_WORD(KEY_SEARCH)] |= BIT_MASK(KEY_SEARCH);
++	input_mt_init_slots(ts->input_dev, MELFAS_MAX_TOUCH, 0);
++	input_set_abs_params(ts->input_dev, ABS_MT_POSITION_X,
++			     0, TS_MAX_X_COORD, 0, 0);
++	input_set_abs_params(ts->input_dev, ABS_MT_POSITION_Y,
++			     0, TS_MAX_Y_COORD, 0, 0);
++	input_set_abs_params(ts->input_dev, ABS_MT_TOUCH_MAJOR,
++			     0, TS_MAX_Z_TOUCH, 0, 0);
++	input_set_abs_params(ts->input_dev, ABS_MT_TRACKING_ID,
++			     0, MELFAS_MAX_TOUCH - 1, 0, 0);
++	input_set_abs_params(ts->input_dev, ABS_MT_WIDTH_MAJOR,
++			     0, TS_MAX_W_TOUCH, 0, 0);
++	__set_bit(EV_LED, ts->input_dev->evbit);
++	__set_bit(LED_MISC, ts->input_dev->ledbit);
++	__set_bit(INPUT_PROP_DIRECT, ts->input_dev->propbit);
++	ret = input_register_device(ts->input_dev);
++	if (ret) {
++		dev_err(&global_i2c_client->dev,
++			"%s: Failed to register device\n", __func__);
++		ret = -ENOMEM;
++		goto err_input_register_device_failed;
++	}
++#if TOUCH_BOOSTER
++	mutex_init(&ts->dvfs_lock);
++	INIT_DELAYED_WORK(&ts->work_dvfs_off, set_dvfs_off);
++	INIT_DELAYED_WORK(&ts->work_dvfs_chg, change_dvfs_lock);
++	ts->dvfs_lock_status = false;
++#endif
++
++/* gpio configure */
++	if (gpio_is_valid(GPIO_I2C_INT)) {
++		ret = gpio_request(GPIO_I2C_INT, "melfas_irq-gpio");
++		if (ret) {
++			dev_err(&global_i2c_client->dev,
++				"unable to request gpio [%d]\n",
++				ts->client->irq);
++			goto err_irq_gpio_req;
++		}
++
++		ret = gpio_direction_input(GPIO_I2C_INT);
++		if (ret) {
++			dev_err(&global_i2c_client->dev,
++			       "unable to set direction for gpio [%d]\n",
++			       ts->client->irq);
++			goto err_irq_gpio_dir;
++		}
++	} else {
++		dev_err(&global_i2c_client->dev, "irq gpio not provided\n");
++		goto err_irq_gpio_req;
++	}
++
++	ts->client->irq = gpio_to_irq(GPIO_I2C_INT);
++
++	ret = mms_i2c_read(client, PANEL_ID_ADDR, 1, &idbuf);
++	if (ret < 0) {
++		dev_err(&global_i2c_client->dev, "failed to detect touch panel");
++		goto err_detect_id;
++	} else {
++		if (idbuf == ts->pdata->panel_id) {
++			dev_info(&global_i2c_client->dev,
++			       "detect touch panel success, panel id = 0x%x\n",
++			       idbuf);
++		} else {
++			dev_err(&global_i2c_client->dev,
++				"failed to detect touch panel, 0x%x\n", idbuf);
++			goto err_detect_id;
++		}
++	}
++
++	if (ts->client->irq) {
++#if DEBUG_PRINT
++		dev_err(&global_i2c_client->dev,
++			"%s: trying to request irq: %s-%d\n", __func__,
++		       ts->client->name, ts->client->irq);
++#endif
++
++		ret = request_threaded_irq(client->irq, NULL,
++						mms_ts_irq_handler,
++					 IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
++					 ts->client->name, ts);
++		if (ret > 0) {
++			dev_err(&global_i2c_client->dev,
++				"%s: Can't allocate irq %d, ret %d\n",
++				__func__, ts->client->irq, ret);
++			return -EBUSY;
++		}
++	}
++	for (i = 0; i < MELFAS_MAX_TOUCH; i++)	/* _SUPPORT_MULTITOUCH_ */
++		g_Mtouch_info[i].strength = -1;
++
++
++	err = device_create_file(&client->dev, &dev_attr_fw_name);
++	if (err) {
++		dev_err(&global_i2c_client->dev, "sys file creation failed\n");
++		goto free_fw_name;
++	}
++
++	err = device_create_file(&client->dev, &dev_attr_update_fw);
++	if (err) {
++		dev_err(&global_i2c_client->dev, "sys file creation failed\n");
++		goto free_update_fw;
++	}
++
++	err = device_create_file(&client->dev, &dev_attr_force_update_fw);
++	if (err) {
++		dev_err(&global_i2c_client->dev, "sys file creation failed\n");
++		goto free_force_update_fw;
++	}
++
++	err = device_create_file(&client->dev, &dev_attr_ts_info);
++	if (err) {
++		dev_err(&global_i2c_client->dev, "sys file creation failed\n");
++		goto err_free_info;
++	}
++
++	err = device_create_file(&client->dev, &dev_attr_mt_protocol_type);
++	if (err) {
++		dev_err(&global_i2c_client->dev, "sys file creation failed\n");
++		goto err_free_type;
++	}
++
++	err = device_create_file(&client->dev, &dev_attr_enable);
++	if (err) {
++		dev_err(&global_i2c_client->dev, "sys file creation failed\n");
++		goto err_free_enable;
++	}
++
++	ts->dir = debugfs_create_dir(DEBUG_DIR_NAME, NULL);
++	if (ts->dir == NULL || IS_ERR(ts->dir)) {
++		pr_err("debugfs_create_dir failed(%ld)\n", PTR_ERR(ts->dir));
++		err = PTR_ERR(ts->dir);
++		goto err_create_debug;
++	}
++
++	temp = debugfs_create_file("addr", S_IRUSR | S_IWUSR, ts->dir, ts,
++				   &debug_addr_fops);
++	if (temp == NULL || IS_ERR(temp)) {
++		pr_err("debugfs_create_file failed: rc=%ld\n", PTR_ERR(temp));
++		err = PTR_ERR(temp);
++		goto err_create_debug_dir;
++	}
++
++	temp = debugfs_create_file("data", S_IRUSR | S_IWUSR, ts->dir, ts,
++				   &debug_data_fops);
++	if (temp == NULL || IS_ERR(temp)) {
++		pr_err("debugfs_create_file failed: rc=%ld\n", PTR_ERR(temp));
++		err = PTR_ERR(temp);
++		goto err_create_debug_dir;
++	}
++
++	temp = debugfs_create_file("suspend", S_IRUSR | S_IWUSR, ts->dir,
++				   ts, &debug_suspend_fops);
++	if (temp == NULL || IS_ERR(temp)) {
++		pr_err("debugfs_create_file failed: rc=%ld\n", PTR_ERR(temp));
++		err = PTR_ERR(temp);
++		goto err_create_debug_dir;
++	}
++
++	temp = debugfs_create_file("dump_info", S_IRUSR | S_IWUSR, ts->dir,
++				   ts, &debug_dump_info_fops);
++	if (temp == NULL || IS_ERR(temp)) {
++		pr_err("debugfs_create_file failed: rc=%ld\n", PTR_ERR(temp));
++		err = PTR_ERR(temp);
++		goto err_create_debug_dir;
++	}
++
++	ts->ts_info = devm_kzalloc(&client->dev, TS_INFO_MAX_LEN, GFP_KERNEL);
++	if (!ts->ts_info) {
++		dev_err(&global_i2c_client->dev, "Not enough memory\n");
++		goto err_create_debug_dir;
++	}
++
++	mms_fw_i2c_read(FIRMWARE_VERSION_ADDR, &read_buffer, 1);
++	ts->fw_ver = read_buffer;
++	STORE_TS_INFO(ts->ts_info, ts->pdata->num_max_touches, ts->fw_ver,
++		      ts->pdata->fw_vkey_support ? "yes" : "no");
++
++	ts->enable = true;
++#ifdef CONFIG_FB
++	ts->suspended = false;
++	ts->fb_notif.notifier_call = fb_notifier_callback;
++	ret = fb_register_client(&ts->fb_notif);
++
++	if (ret)
++		dev_err(&global_i2c_client->dev,
++			"Unable to register fb_notifier: %d\n",	ret);
++#endif
++
++#ifdef CONFIG_HAS_EARLYSUSPEND
++	dev_err(&global_i2c_client->dev, "%s: register earlysuspend.\n",
++		__func__);
++	ts->early_suspend.level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN + 1;
++	ts->early_suspend.suspend = mms_ts_early_suspend;
++	ts->early_suspend.resume = mms_ts_late_resume;
++	register_early_suspend(&ts->early_suspend);
++#endif
++	return 0;
++
++err_create_debug_dir:
++	debugfs_remove_recursive(ts->dir);
++err_create_debug:
++	device_remove_file(&client->dev, &dev_attr_enable);
++err_free_enable:
++	device_remove_file(&client->dev, &dev_attr_mt_protocol_type);
++err_free_type:
++	device_remove_file(&client->dev, &dev_attr_ts_info);
++err_free_info:
++	device_remove_file(&client->dev, &dev_attr_force_update_fw);
++free_force_update_fw:
++	device_remove_file(&client->dev, &dev_attr_update_fw);
++free_update_fw:
++	device_remove_file(&client->dev, &dev_attr_fw_name);
++free_fw_name:
++	free_irq(client->irq, ts);
++err_detect_id:
++err_irq_gpio_dir:
++	if (gpio_is_valid(GPIO_I2C_INT))
++		gpio_free(GPIO_I2C_INT);
++err_irq_gpio_req:
++	dev_err(&global_i2c_client->dev,
++		"mms-ts: err_input_register_device failed\n");
++	input_free_device(ts->input_dev);
++err_input_register_device_failed:
++	ts_power_enable(false);
++err_power_on:
++	ts_power_init(false);
++err_power_init:
++	kfree(ts);
++	return ret;
++}
++
++static int mms_ts_remove(struct i2c_client *client)
++{
++	struct mms_ts_data *ts = i2c_get_clientdata(client);
++
++	debugfs_remove_recursive(ts->dir);
++	device_remove_file(&client->dev, &dev_attr_enable);
++	device_remove_file(&client->dev, &dev_attr_mt_protocol_type);
++	device_remove_file(&client->dev, &dev_attr_ts_info);
++	device_remove_file(&client->dev, &dev_attr_force_update_fw);
++	device_remove_file(&client->dev, &dev_attr_update_fw);
++	device_remove_file(&client->dev, &dev_attr_fw_name);
++#if defined(CONFIG_HAS_EARLYSUSPEND)
++	____unregister_early_suspend(&ts->early_suspend);
++#endif
++
++	free_irq(client->irq, ts);
++	if (gpio_is_valid(GPIO_I2C_INT))
++		gpio_free(GPIO_I2C_INT);
++	input_unregister_device(ts->input_dev);
++	ts_power_init(false);
++	ts_power_enable(false);
++	kfree(ts);
++
++	return 0;
++}
++
++#ifdef CONFIG_HAS_EARLYSUSPEND
++static void mms_ts_early_suspend(struct early_suspend *h)
++{
++	struct mms_ts_data *ts;
++	ts = container_of(h, struct mms_ts_data, early_suspend);
++	ts_suspend(&ts->client->dev);
++}
++
++static void mms_ts_late_resume(struct early_suspend *h)
++{
++	struct mms_ts_data *ts;
++	ts = container_of(h, struct mms_ts_data, early_suspend);
++	ts_resume(&ts->client->dev);
++}
++#endif
++static const struct i2c_device_id mms_ts_id[] = {
++	{"mms_ts", 0},
++	{}
++};
++
++#ifdef CONFIG_OF
++static struct of_device_id melfas_match_table[] = {
++	{.compatible = "melfas,mms_ts",},
++	{},
++};
++#else
++#define melfas_match_table NULL
++#endif
++
++static struct i2c_driver mms_ts_driver = {
++	.driver = {
++		   .name = "mms_ts",
++		   .of_match_table = melfas_match_table,
++#ifdef CONFIG_PM
++		   .pm = &ts_pm_ops,
++#endif
++		   },
++	.id_table = mms_ts_id,
++	.probe = mms_ts_probe,
++	.remove = mms_ts_remove,
++};
++
++static int __init mms_ts_init(void)
++{
++	return i2c_add_driver(&mms_ts_driver);
++}
++
++static void __exit mms_ts_exit(void)
++{
++	i2c_del_driver(&mms_ts_driver);
++}
++
++MODULE_DESCRIPTION("Driver for Melfas MTSI Touchscreen Controller");
++MODULE_AUTHOR("MinSang, Kim <kimms@melfas.com>");
++MODULE_VERSION("0.1");
++MODULE_LICENSE("GPL");
++module_init(mms_ts_init);
++module_exit(mms_ts_exit);
+diff --git a/include/linux/input/mms134s_ts.h b/include/linux/input/mms134s_ts.h
+new file mode 100644
+index 0000000..6a214ba
+--- /dev/null
++++ b/include/linux/input/mms134s_ts.h
+@@ -0,0 +1,46 @@
++/*
++ * include/linux/mms134s_ts.h - platform data structure for MMS Series sensor
++ *
++ * Copyright (C) 2014-2015 Melfas, Inc.
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++
++#ifndef _LINUX_MELFAS_TS_H
++#define _LINUX_MELFAS_TS_H
++#undef TA_DETECTION
++
++#define MELFAS_TS_NAME "mms_ts"
++	struct mms_version {
++	uint8_t tsp_revision;
++	uint8_t hardware;
++	uint8_t compatibility;
++	uint8_t core;
++	uint8_t private;
++	uint8_t public;
++	uint8_t product_code;
++};
++	struct mms_tsi_platform_data {
++	u32 num_max_touches;
++	u32 panel_id;
++	bool fw_vkey_support;
++	int x_size;
++	int y_size;
++	struct melfas_version *version;
++	int (*power) (int on);
++	void (*gpio) (void);
++#ifdef TA_DETECTION
++	void (*register_cb) (void *);
++	void (*read_ta_status) (void *);
++#endif
++};
++
++#endif	/* _LINUX_MELFAS_TS_H */
+-- 
+1.9.1
+

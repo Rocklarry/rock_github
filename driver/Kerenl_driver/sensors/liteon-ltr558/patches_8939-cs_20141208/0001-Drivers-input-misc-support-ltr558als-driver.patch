@@ -1,0 +1,1788 @@
+From afc70f160d391c50eee4588bcff7408dce42be60 Mon Sep 17 00:00:00 2001
+From: lizc1023 <lizc1023@thundersoft.com>
+Date: Mon, 8 Dec 2014 13:33:33 +0800
+Subject: [PATCH 1/3] Drivers:input:misc: support ltr558als driver
+
+Driver support ltr558als
+
+Change-Id: Ie208be483c3312ebc715a3a6da425aac8269f036
+Signed-off-by: Li Zhanchao <lizc1023@thundersoft.com>
+---
+ .../devicetree/bindings/input/misc/ltr558als.txt   |   27 +
+ drivers/input/misc/Kconfig                         |   10 +
+ drivers/input/misc/Makefile                        |    2 +-
+ drivers/input/misc/ltr558als.c                     | 1596 ++++++++++++++++++++
+ include/linux/input/ltr558als.h                    |   91 ++
+ 5 files changed, 1725 insertions(+), 1 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/input/misc/ltr558als.txt
+ create mode 100644 drivers/input/misc/ltr558als.c
+ create mode 100644 include/linux/input/ltr558als.h
+
+diff --git a/Documentation/devicetree/bindings/input/misc/ltr558als.txt b/Documentation/devicetree/bindings/input/misc/ltr558als.txt
+new file mode 100644
+index 0000000..1b4962f
+--- /dev/null
++++ b/Documentation/devicetree/bindings/input/misc/ltr558als.txt
+@@ -0,0 +1,27 @@
++Liteon ltr558 L/P sensor
++
++Required properties:
++
++ - compatible		: Should be "liteon,ltr558".
++ - reg			: i2c slave address of the device.
++ - interrupt-parent	: Parent of interrupt.
++ - interrupts		: L/P sample interrupt to indicate new data ready.
++ - liteon,intr		: The gpio pin for the interrupt.
++ - liteon,highthr	: The threshold adc value for proximity sensor to trigger close  interrupt.
++ - liteon,lowthr	: The threshold adc value for proximity sensor to trigger away interrupt.
++ - liteon,als_delay : The polling time of light sensor.
++Example:
++	&i2c_0 { /* BLSP1 QUP2 */
++		liteon@23 {
++			compatible = "liteon,ltr558";
++			reg = <0x23>;
++			pinctrl-names = "default";
++			pinctrl-0 = <&ltr558_default>;
++			interrupt-parent = <&msm_gpio>;
++			interrupts = <113 0x2>;
++			liteon,intr = <&msm_gpio 113 0x2>;
++			liteon,highthr = <800>;
++			liteon,lowthr = <300>;
++			liteon,als_delay = <10>;
++		};
++	};
+diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
+index b358471..e6337df 100644
+--- a/drivers/input/misc/Kconfig
++++ b/drivers/input/misc/Kconfig
+@@ -819,5 +819,15 @@ config SENSORS_BMI058
+ 	 If you say yes here, you get support for Bosch Sensortec's
+ 	 sensor driver of BMI058.
+ 
++config SENSORS_LTR558
++	tristate "LTR558 light/proximity sensor support"
++	depends on I2C
++	default n
++	help
++	 Say Y here you want to enable for the LTR558 light/proximity
++	 sensor driver.
++	 To compile this driver as a module, choose M here: the
++	 module will be called LTR558.
++
+ endif
+ 
+diff --git a/drivers/input/misc/Makefile b/drivers/input/misc/Makefile
+index 139a4fb..f1743b3 100644
+--- a/drivers/input/misc/Makefile
++++ b/drivers/input/misc/Makefile
+@@ -73,7 +73,7 @@ obj-$(CONFIG_SENSORS_AKM8963)		+= akm8963.o
+ obj-$(CONFIG_SENSORS_AKM09911)		+= akm09911.o
+ obj-$(CONFIG_SENSORS_LIS3DH)		+= lis3dh_acc.o
+ obj-$(CONFIG_SENSORS_BMA2X2)	+= bstclass.o
+-
++obj-$(CONFIG_SENSORS_LTR558)	+= ltr558als.o
+ obj-$(CONFIG_SENSORS_BMA2X2)	+= bma2x2.o
+ 
+ ifeq ($(CONFIG_SENSORS_BMA2X2_ENABLE_INT1),y)
+diff --git a/drivers/input/misc/ltr558als.c b/drivers/input/misc/ltr558als.c
+new file mode 100644
+index 0000000..3edf8c1
+--- /dev/null
++++ b/drivers/input/misc/ltr558als.c
+@@ -0,0 +1,1596 @@
++/* ltr558.c
++ * LTR-On LTR-558 Proxmity and Light sensor driver
++ *
++ * Copyright (C) 2011-2014 Lite-On Technology Corp (Singapore)
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++ /*
++  *  2011-05-01 Lite-On created base driver.
++  */
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <linux/slab.h>
++#include <linux/i2c.h>
++#include <linux/interrupt.h>
++#include <linux/sysfs.h>
++#include <linux/delay.h>
++#include <linux/platform_device.h>
++#include <linux/err.h>
++#include <linux/input.h>
++#include <linux/jiffies.h>
++#include <mach/gpio.h>
++#include <linux/mutex.h>
++#include <linux/ctype.h>
++#include <linux/pm_runtime.h>
++#include <linux/device.h>
++#include <linux/input/ltr558als.h>
++#include <linux/irq.h>
++#include <linux/sensors.h>
++#include <linux/delay.h>
++#include <linux/regulator/consumer.h>
++#include <linux/wakelock.h>
++
++#define LTR558_DRV_NAME		"ltr558"
++#define LTR558_MANUFAC_ID	0x05
++
++#define VENDOR_NAME		"lite-on"
++#define SENSOR_NAME		"ltr558als"
++#define DRIVER_VERSION		"1.0"
++
++#define STATE_CHANGED_ALS_ON	(1 << 0)
++#define STATE_CHANGED_ALS_OFF	(1 << 1)
++#define STATE_CHANGED_PS_ON	(1 << 2)
++#define STATE_CHANGED_PS_OFF	(1 << 3)
++#define STATE_CHANGED_ERROR	(1 << 4)
++
++/* ltr558 polling rate in ms */
++#define LTR558_LS_MIN_POLL_DELAY	1
++#define LTR558_LS_MAX_POLL_DELAY	1000
++
++/* whether disable light or not at phone
++  * calling while the automatic backlight is on.
++  * the default value is 1.
++  */
++#define SUPPORT_AUTO_BACKLIGHT 1
++
++static int ltr558_enable_als_sensor(struct i2c_client *client, int enable);
++
++struct ltr558_data {
++
++	struct i2c_client *client;
++	struct ltr558_platform_data *platform_data;
++	/*struct input_dev *input;*/
++	struct input_dev *als_input_dev;
++	struct input_dev *ps_input_dev;
++	struct sensors_classdev als_cdev;
++	struct sensors_classdev ps_cdev;
++	struct wake_lock ps_wake_lock;
++	atomic_t als_delay;
++
++	/* interrupt type is level-style */
++	struct mutex lockw;
++	struct mutex lock_ps;
++	struct mutex lock_als;
++	struct delayed_work workw;
++	struct delayed_work works;
++	struct delayed_work work_als;
++	struct kobject *debugfs;
++
++	/* regulator data */
++	bool power_on;
++	struct regulator *vdd;
++	struct regulator *vio;
++	bool power_enabled;
++
++	u8 ps_open_state;
++	u8 als_open_state;
++	u8 enable_als_state;
++	u8 enable_ps_state;
++	u8 mag;
++
++	u16 irq;
++	u16 intr_gpio;
++
++	u32 chg_state;
++	u32 ps_state;
++	u32 last_lux;
++	u32 meas_cycle;
++};
++
++static struct sensors_classdev sensors_light_cdev = {
++	.name = "ltr558_light",
++	.vendor = "liteon",
++	.version = 1,
++	.handle = SENSORS_LIGHT_HANDLE,
++	.type = SENSOR_TYPE_LIGHT,
++	.max_range = "30000",
++	.resolution = "0.0125",
++	.sensor_power = "0.20",
++	.min_delay = 1000, /* in microseconds */
++	.fifo_reserved_event_count = 0,
++	.fifo_max_event_count = 0,
++	.enabled = 0,
++	.delay_msec = 100,
++	.sensors_enable = NULL,
++	.sensors_poll_delay = NULL,
++};
++
++static struct sensors_classdev sensors_proximity_cdev = {
++	.name = "ltr558_proximity",
++	.vendor = "liteon",
++	.version = 1,
++	.handle = SENSORS_PROXIMITY_HANDLE,
++	.type = SENSOR_TYPE_PROXIMITY,
++	.max_range = "5",
++	.resolution = "5.0",
++	.sensor_power = "3",
++	.min_delay = 1000, /* in microseconds */
++	.fifo_reserved_event_count = 0,
++	.fifo_max_event_count = 0,
++	.enabled = 0,
++	.delay_msec = 100,
++	.sensors_enable = NULL,
++	.sensors_poll_delay = NULL,
++};
++
++
++struct ltr558_reg {
++	const char *name;
++	u8 addr;
++	u16 defval;
++	u16 curval;
++};
++
++static  struct ltr558_reg reg_tbl[] = {
++	{
++		.name   = "ALS_CONTR",
++		.addr   = 0x80,
++		.defval = 0x00,
++		.curval = 0x03,
++	},
++	{
++		.name = "PS_CONTR",
++		.addr = 0x81,
++		.defval = 0x00,
++		.curval = 0x03,
++	},
++	{
++		.name = "ALS_PS_STATUS",
++		.addr = 0x8c,
++		.defval = 0x00,
++		.curval = 0x00,
++	},
++	{
++		.name = "INTERRUPT",
++		.addr = 0x8f,
++		.defval = 0x08,
++		.curval = 0x03,
++	},
++	{
++		.name = "PS_LED",
++		.addr = 0x82,
++		.defval = 0x6b,
++		.curval = 0x6b,
++	},
++	{
++		.name = "PS_N_PULSES",
++		.addr = 0x83,
++		.defval = 0x08,
++		.curval = 0x08,
++	},
++	{
++		.name = "PS_MEAS_RATE",
++		.addr = 0x84,
++		.defval = 0x02,
++		.curval = 0x02,
++	},
++	{
++		.name = "ALS_MEAS_RATE",
++		.addr = 0x85,
++		.defval = 0x03,
++		.curval = 0x03,
++	},
++	{
++		.name = "MANUFACTURER_ID",
++		.addr = 0x87,
++		.defval = 0x05,
++		.curval = 0x05,
++	},
++	{
++		.name = "INTERRUPT_PERSIST",
++		.addr = 0x9e,
++		.defval = 0x00,
++		.curval = 0x23,
++	},
++	{
++		.name = "PS_THRES_LOW",
++		.addr = 0x92,
++		.defval = 0x0000,
++		.curval = 0x0000,
++	},
++	{
++		.name = "PS_THRES_UP",
++		.addr = 0x90,
++		.defval = 0x07ff,
++		.curval = 0x0000,
++	},
++	{
++		.name = "ALS_THRES_LOW",
++		.addr = 0x99,
++		.defval = 0x0000,
++		.curval = 0x0000,
++	},
++	{
++		.name = "ALS_THRES_UP",
++		.addr = 0x97,
++		.defval = 0xffff,
++		.curval = 0x0000,
++	},
++	{
++		.name = "ALS_DATA_CH0",
++		.addr = 0x8a,
++		.defval = 0x0000,
++		.curval = 0x0000,
++	},
++	{
++		.name = "ALS_DATA_CH1",
++		.addr = 0x88,
++		.defval = 0x0000,
++		.curval = 0x0000,
++	},
++	{
++		.name = "PS_DATA",
++		.addr = 0x8d,
++		.defval = 0x0000,
++		.curval = 0x0000,
++	},
++};
++
++static int ltr558_device_init(struct ltr558_data *data);
++static struct ltr558_data *g_ltr558_data;
++
++static int ltr558_regulator_configure(struct ltr558_data *data, bool on)
++{
++	int rc;
++
++	if (!on) {
++
++		if (regulator_count_voltages(data->vdd) > 0)
++			regulator_set_voltage(data->vdd, 0,
++				LTR558_VDD_MAX_UV);
++
++		regulator_put(data->vdd);
++
++		if (regulator_count_voltages(data->vio) > 0)
++			regulator_set_voltage(data->vio, 0,
++				LTR558_VIO_MAX_UV);
++
++		regulator_put(data->vio);
++	} else {
++		data->vdd = regulator_get(&data->client->dev, "vdd");
++		if (IS_ERR(data->vdd)) {
++			rc = PTR_ERR(data->vdd);
++			dev_err(&data->client->dev,
++				"Regulator get failed vdd rc=%d\n", rc);
++			return rc;
++		}
++
++		if (regulator_count_voltages(data->vdd) > 0) {
++			rc = regulator_set_voltage(data->vdd,
++				LTR558_VDD_MIN_UV, LTR558_VDD_MAX_UV);
++			if (rc) {
++				dev_err(&data->client->dev,
++					"Regulator set failed vdd rc=%d\n",
++					rc);
++				goto reg_vdd_put;
++			}
++		}
++
++		data->vio = regulator_get(&data->client->dev, "vio");
++		if (IS_ERR(data->vio)) {
++			rc = PTR_ERR(data->vio);
++			dev_err(&data->client->dev,
++				"Regulator get failed vio rc=%d\n", rc);
++			goto reg_vdd_set;
++		}
++
++		if (regulator_count_voltages(data->vio) > 0) {
++			rc = regulator_set_voltage(data->vio,
++				LTR558_VIO_MIN_UV, LTR558_VIO_MAX_UV);
++			if (rc) {
++				dev_err(&data->client->dev,
++				"Regulator set failed vio rc=%d\n", rc);
++				goto reg_vio_put;
++			}
++		}
++	}
++
++	return 0;
++reg_vio_put:
++	regulator_put(data->vio);
++
++reg_vdd_set:
++	if (regulator_count_voltages(data->vdd) > 0)
++		regulator_set_voltage(data->vdd, 0, LTR558_VDD_MAX_UV);
++reg_vdd_put:
++	regulator_put(data->vdd);
++	return rc;
++}
++
++
++static int ltr558_regulator_power_on(struct ltr558_data *data, bool on)
++{
++	int rc = 0;
++
++	if (!on) {
++		rc = regulator_disable(data->vdd);
++		if (rc) {
++			dev_err(&data->client->dev,
++				"Regulator vdd disable failed rc=%d\n", rc);
++			return rc;
++		}
++
++		rc = regulator_disable(data->vio);
++		if (rc) {
++			dev_err(&data->client->dev,
++				"Regulator vio disable failed rc=%d\n", rc);
++			rc = regulator_enable(data->vdd);
++			dev_err(&data->client->dev,
++					"Regulator vio re-enabled rc=%d\n", rc);
++			/*
++			 * Successfully re-enable regulator.
++			 * Enter poweron delay and returns error.
++			 */
++			if (!rc) {
++				rc = -EBUSY;
++				goto enable_delay;
++			}
++		}
++		return rc;
++	} else {
++		rc = regulator_enable(data->vdd);
++		if (rc) {
++			dev_err(&data->client->dev,
++				"Regulator vdd enable failed rc=%d\n", rc);
++			return rc;
++		}
++
++		rc = regulator_enable(data->vio);
++		if (rc) {
++			dev_err(&data->client->dev,
++				"Regulator vio enable failed rc=%d\n", rc);
++			regulator_disable(data->vdd);
++			return rc;
++		}
++	}
++
++enable_delay:
++	msleep(130);
++	dev_dbg(&data->client->dev,
++		"Sensor regulator power on =%d\n", on);
++	return rc;
++}
++
++
++static int ltr558_platform_hw_power_on(bool on)
++{
++	struct ltr558_data *data;
++	int err = 0;
++
++	if (g_ltr558_data == NULL)
++		return -ENODEV;
++
++	data = g_ltr558_data;
++	if (data->power_on != on) {
++		err = ltr558_regulator_power_on(data, on);
++		if (err)
++			dev_err(&data->client->dev,
++					"Can't configure regulator!\n");
++		else
++			data->power_on = on;
++	}
++
++	return err;
++}
++
++
++static int ltr558_platform_hw_init(void)
++{
++	struct i2c_client *client;
++	struct ltr558_data *data;
++	int error;
++
++	if (g_ltr558_data == NULL)
++		return -ENODEV;
++
++	data = g_ltr558_data;
++	client = data->client;
++
++	error = ltr558_regulator_configure(data, true);
++	if (error < 0) {
++		dev_err(&client->dev, "unable to configure regulator\n");
++		return error;
++	}
++
++	return 0;
++}
++
++
++static void ltr558_platform_hw_exit(void)
++{
++	struct ltr558_data *data = g_ltr558_data;
++
++	if (data == NULL)
++		return;
++
++	ltr558_regulator_configure(data, false);
++
++}
++
++static int ltr558_i2c_read_reg(u8 regnum, struct ltr558_data *data)
++{
++	return i2c_smbus_read_byte_data(data->client, regnum);
++}
++
++static int ltr558_i2c_write_reg(u8 regnum, u8 value, struct ltr558_data *data)
++{
++	int writeerror;
++
++	writeerror =
++	    i2c_smbus_write_byte_data(data->client, regnum, value);
++	if (writeerror < 0)
++		return writeerror;
++	else
++		return 0;
++}
++
++static void ltr558_set_ps_threshold(u8 addr,
++	u16 value, struct ltr558_data *data)
++{
++	ltr558_i2c_write_reg(addr, (value & 0xff), data);
++	ltr558_i2c_write_reg(addr+1, (value >> 8), data);
++}
++
++/*
++ *  Proximity Sensor Configure
++ */
++static int ltr558_ps_enable(int on, struct ltr558_data *data)
++{
++	int ret;
++
++	if (1 == on) {
++		ret = ltr558_i2c_write_reg(LTR558_PS_CONTR,
++			reg_tbl[1].curval, data);
++		ret |= ltr558_i2c_write_reg(LTR558_INTERRUPT_PERSIST,
++			0x03, data);
++		ret |= ltr558_i2c_write_reg(LTR558_PS_THRES_UP_0,
++			0x00, data);
++		ret |= ltr558_i2c_write_reg(LTR558_PS_THRES_UP_1,
++			0x00, data);
++		data->ps_state = 2;
++		/*mdelay(WAKEUP_DELAY);*/
++	} else {
++		ret = ltr558_i2c_write_reg(LTR558_PS_CONTR,
++			MODE_PS_StdBy, data);
++	}
++
++	input_report_abs(data->ps_input_dev, ABS_DISTANCE, 1);
++	input_sync(data->ps_input_dev);
++
++	return ret;
++}
++
++static int ltr558_ps_read(struct ltr558_data *data)
++{
++	int psval_lo, psval_hi, psdata;
++
++	psval_lo = ltr558_i2c_read_reg(LTR558_PS_DATA_0, data);
++	if (psval_lo < 0) {
++		psdata = psval_lo;
++		goto out;
++	}
++
++	psval_hi = ltr558_i2c_read_reg(LTR558_PS_DATA_1, data);
++	if (psval_hi < 0) {
++		psdata = psval_hi;
++		goto out;
++	}
++
++	psdata = ((psval_hi & 7) << 8) + psval_lo;
++ out:
++	return psdata;
++}
++
++/*
++ * Absent Light Sensor Congfig
++ */
++static int ltr558_als_enable(int on, struct ltr558_data *data)
++{
++	int error;
++
++	if (0 == on) {
++		error = ltr558_i2c_write_reg(LTR558_ALS_CONTR,
++			MODE_ALS_StdBy, data);
++
++	} else {
++		error = ltr558_i2c_write_reg(LTR558_ALS_CONTR,
++			reg_tbl[0].curval, data);
++		/*mdelay(WAKEUP_DELAY);*/
++		error |= ltr558_i2c_read_reg(LTR558_ALS_DATA_CH0_1,
++		data);
++	}
++
++	return error;
++}
++
++static int ltr558_als_start(struct ltr558_data *data)
++{
++	if (data->als_open_state == 1)
++		return 0;
++
++	data->als_open_state = 1;
++	data->chg_state |= STATE_CHANGED_ALS_ON;
++	schedule_delayed_work(&data->works, 0);
++	return 0;
++}
++
++static int ltr558_als_stop(struct ltr558_data *data)
++{
++	if (data->als_open_state == 0)
++		return 0;
++	data->als_open_state = 0;
++	data->chg_state |= STATE_CHANGED_ALS_OFF;
++	schedule_delayed_work(&data->works, 0);
++	return 0;
++}
++
++static int ltr558_ps_start(struct ltr558_data *data)
++{
++	if (data->ps_open_state == 1)
++		return 0;
++	data->ps_open_state = 1;
++	data->chg_state |= STATE_CHANGED_PS_ON;
++	schedule_delayed_work(&data->works, 0);
++	return 0;
++}
++
++static int ltr558_ps_stop(struct ltr558_data *data)
++{
++	if (data->ps_open_state == 0)
++		return 0;
++	data->ps_open_state = 0;
++	data->chg_state |= STATE_CHANGED_PS_OFF;
++	schedule_delayed_work(&data->works, 0);
++	return 0;
++}
++
++static int ltr558_als_read(struct ltr558_data *data)
++{
++	int alsval_ch0_lo, alsval_ch0_hi, alsval_ch0;
++	int alsval_ch1_lo, alsval_ch1_hi, alsval_ch1;
++	int luxdata;
++	int ch1_co, ch0_co, ratio;
++
++	alsval_ch1_lo = ltr558_i2c_read_reg(LTR558_ALS_DATA_CH1_0, data);
++	alsval_ch1_hi = ltr558_i2c_read_reg(LTR558_ALS_DATA_CH1_1, data);
++	if (alsval_ch1_lo < 0 || alsval_ch1_hi < 0)
++		return -EINVAL;
++	alsval_ch1 = (alsval_ch1_hi << 8) + alsval_ch1_lo;
++
++	alsval_ch0_lo = ltr558_i2c_read_reg(LTR558_ALS_DATA_CH0_0, data);
++	alsval_ch0_hi = ltr558_i2c_read_reg(LTR558_ALS_DATA_CH0_1, data);
++	if (alsval_ch0_lo < 0 || alsval_ch0_hi < 0)
++		return -EINVAL;
++	alsval_ch0 = (alsval_ch0_hi << 8) + alsval_ch0_lo;
++
++	if ((alsval_ch0 | alsval_ch1) == 0)
++		return -EINVAL;
++
++	ratio = alsval_ch1 * 1000 / (alsval_ch1 + alsval_ch0);
++	if (ratio < 450) {
++		ch0_co = 17743;
++		ch1_co = -11059;
++	} else if ((ratio >= 450) && (ratio < 640)) {
++		ch0_co = 37725;
++		ch1_co = 13363;
++	} else if ((ratio >= 640) && (ratio < 850)) {
++		ch0_co = 16900;
++		ch1_co = 1690;
++	} else if (ratio >= 850) {
++		ch0_co = 0;
++		ch1_co = 0;
++	}
++	luxdata = (alsval_ch0 * ch0_co - alsval_ch1 * ch1_co) / 10000;
++
++	return luxdata;
++}
++
++static void ltr558_state_work(struct work_struct *work)
++{
++	int res;
++	struct ltr558_data *data = container_of((struct delayed_work *)work,
++			struct ltr558_data, works);
++
++	mutex_lock(&data->lockw);
++
++	if (data->chg_state & STATE_CHANGED_ALS_ON) {
++		res = ltr558_als_enable(1, data);
++		if (res)
++			goto error_exit;
++		else
++			data->chg_state &= ~STATE_CHANGED_ALS_ON;
++	}
++
++	if (data->chg_state & STATE_CHANGED_ALS_OFF) {
++		res = ltr558_als_enable(0, data);
++		if (res)
++			goto error_exit;
++		else
++			data->chg_state &= ~STATE_CHANGED_ALS_OFF;
++	}
++
++	if (data->chg_state & STATE_CHANGED_PS_ON) {
++		res = ltr558_ps_enable(1, data);
++		if (res)
++			goto error_exit;
++		else
++			data->chg_state &= ~STATE_CHANGED_PS_ON;
++	}
++
++	if (data->chg_state & STATE_CHANGED_PS_OFF) {
++		res = ltr558_ps_enable(0, data);
++		if (res)
++			goto error_exit;
++		else
++			data->chg_state &= ~STATE_CHANGED_PS_OFF;
++	}
++
++	mutex_unlock(&data->lockw);
++	return;
++
++error_exit:
++	schedule_delayed_work(&data->works,
++		msecs_to_jiffies(atomic_read(&data->als_delay)));
++	mutex_unlock(&data->lockw);
++}
++
++static void ltr558_work_func(struct work_struct *work)
++{
++	int als_ps_status;
++	int tmp_data;
++	int ps_changed = 1;
++	int tmp;
++	struct ltr558_data *data = container_of((struct delayed_work *)work,
++			struct ltr558_data, workw);
++
++	mutex_lock(&data->lockw);
++
++	als_ps_status = ltr558_i2c_read_reg(LTR558_ALS_PS_STATUS, data);
++	if (als_ps_status < 0)
++		goto workout;
++	/* Here should check data status,ignore interrupt status. */
++	/* Bit 0: PS Data
++	 * Bit 1: PS interrupt
++	 * Bit 2: ASL Data
++	 * Bit 3: ASL interrupt
++	 * Bit 4: ASL Gain
++	 * 0: ALS measurement data is in dynamic range 2 (2 to 64k lux)
++	 * 1: ALS measurement data is in dynamic range 1 (0.01 to 320 lux)
++	 */
++	if ((data->ps_open_state == 1) && (als_ps_status & 0x02)) {
++		tmp_data = ltr558_ps_read(data);
++		if (data->ps_state == 2)
++			ltr558_i2c_write_reg(LTR558_INTERRUPT_PERSIST,
++			0x13, data);
++
++		if ((tmp_data >= PS_DETECTED_THRES) && (data->ps_state < 4)) {
++			tmp_data = data->ps_state;
++			data->ps_state = 1;
++			data->mag ^= 0x06;
++			data->ps_state = data->mag & 0x0c;
++			ltr558_set_ps_threshold(LTR558_PS_THRES_LOW_0,
++				PS_UNDETECTED_THRES, data);
++			ltr558_set_ps_threshold(LTR558_PS_THRES_UP_0,
++				0x07ff, data);
++		} else if (((tmp_data <= PS_UNDETECTED_THRES)
++				&& (data->ps_state > 2)) ||
++				(data->ps_state == 2)) {
++			ltr558_set_ps_threshold(LTR558_PS_THRES_LOW_0,
++				0, data);
++			ltr558_set_ps_threshold(LTR558_PS_THRES_UP_0,
++				PS_DETECTED_THRES, data);
++			data->mag ^= 0x01;
++			data->ps_state = data->mag & 0x01;
++		} else {
++			ps_changed = 0;
++		}
++		/*tmp = (data->ps_state > 2) ? 0 : 1;*/
++		tmp = (data->ps_state <= 2) ? 1 : 0;
++		if (ps_changed) {
++			input_report_abs(data->ps_input_dev,
++					ABS_DISTANCE,
++					tmp);
++			input_sync(data->ps_input_dev);
++			wake_lock_timeout(&data->ps_wake_lock, HZ);
++		}
++	}
++
++	if ((data->als_open_state == 1) && (als_ps_status & 0x04)) {
++		tmp_data = ltr558_als_read(data);
++		if (tmp_data > 10000)
++			tmp_data = 10000;
++		if ((tmp_data >= 0) && (tmp_data != data->last_lux)) {
++			data->last_lux = tmp_data;
++			input_report_abs(data->als_input_dev,
++					ABS_MISC,
++					tmp_data);
++			input_sync(data->als_input_dev);
++		}
++	}
++ workout:
++	enable_irq(data->irq);
++	mutex_unlock(&data->lockw);
++}
++
++static void ltr558_als_work_func(struct work_struct *work)
++{
++	int tmp_data;
++	struct ltr558_data *data = container_of((struct delayed_work *)work,
++			struct ltr558_data, work_als);
++
++	tmp_data = ltr558_als_read(data);
++	if (tmp_data > 10000)
++		tmp_data = 10000;
++	if ((tmp_data >= 0) && (tmp_data != data->last_lux)) {
++		data->last_lux = tmp_data;
++		input_report_abs(data->als_input_dev,
++				ABS_MISC, tmp_data);
++		input_sync(data->als_input_dev);
++	}
++
++	schedule_delayed_work(&data->work_als,
++		msecs_to_jiffies(atomic_read(&data->als_delay)));
++}
++static irqreturn_t ltr558_irq_handler(int irq, void *arg)
++{
++	struct ltr558_data *data = (struct ltr558_data *)arg;
++
++	if (NULL == data)
++		return IRQ_HANDLED;
++	disable_irq_nosync(data->irq);
++	schedule_delayed_work(&data->workw, 0);
++	return IRQ_HANDLED;
++}
++
++static int ltr558_gpio_irq(struct ltr558_data *data)
++{
++	int ret;
++
++	ret = request_irq(data->irq, ltr558_irq_handler,
++			IRQ_TYPE_LEVEL_LOW, LTR558_DRV_NAME, data);
++
++	if (ret) {
++		pr_info("%s: LTR-558ALS request irq failed.\n",
++		       __func__);
++		gpio_free(data->intr_gpio);
++		return ret;
++	}
++
++	return 0;
++}
++
++static void ltr558_gpio_irq_free(struct ltr558_data *data)
++{
++	free_irq(data->irq, data);
++	gpio_free(data->intr_gpio);
++}
++
++/*
++ * Sys File system support
++ */
++static ssize_t ltr558_show_enable_ps(struct device *dev,
++				     struct device_attribute *attr, char *buf)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	struct ltr558_data *data = i2c_get_clientdata(client);
++
++	return snprintf(buf, sizeof(buf), "%u\n", data->ps_open_state);
++}
++
++static ssize_t ltr558_store_enable_ps(struct device *dev,
++				      struct device_attribute *attr,
++				      const char *buf, size_t size)
++{
++	/* If proximity work,then ALS must be enable */
++	unsigned long val;
++	/*char *after;*/
++	unsigned long after = 0;
++	ssize_t count;
++	struct i2c_client *client = to_i2c_client(dev);
++	struct ltr558_data *data = i2c_get_clientdata(client);
++
++	val = kstrtoul(buf, 10, &after);
++
++	mutex_lock(&data->lockw);
++	if (1 == val)
++		ltr558_ps_start(data);
++	else if (0 == val)
++		ltr558_ps_stop(data);
++	else
++		count = -EINVAL;
++
++	mutex_unlock(&data->lockw);
++
++	return count;
++}
++
++static ssize_t ltr558_show_enable_als(struct device *dev,
++				      struct device_attribute *attr, char *buf)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	struct ltr558_data *data = i2c_get_clientdata(client);
++
++	return snprintf(buf, sizeof(buf), "%u\n", data->als_open_state);
++}
++
++static ssize_t ltr558_store_enable_als(struct device *dev,
++				       struct device_attribute *attr,
++				       const char *buf, size_t size)
++{
++	/* If proximity work,then ALS must be enable */
++	unsigned long val;
++	/*char *after;*/
++	unsigned long after = 0;
++	ssize_t count;
++	struct i2c_client *client = to_i2c_client(dev);
++	struct ltr558_data *data = i2c_get_clientdata(client);
++
++	val = kstrtoul(buf, 10, &after);
++
++	mutex_lock(&data->lockw);
++	if (1 == val)
++		ltr558_als_start(data);
++	else if (0 == val)
++		ltr558_als_stop(data);
++	else
++		count = -EINVAL;
++
++	mutex_unlock(&data->lockw);
++	return count;
++}
++
++static ssize_t ltr558_driver_info_show(struct device *dev,
++				struct device_attribute *attr, char *buf)
++{
++	return snprintf(buf, sizeof(buf), "Chip: %s %s\nVersion: %s\n",
++			VENDOR_NAME, SENSOR_NAME, DRIVER_VERSION);
++}
++
++static ssize_t ltr558_show_debug_regs(struct device *dev,
++				      struct device_attribute *attr, char *buf)
++{
++	u8 val, high, low;
++	int i;
++	char *after;
++	int tmp;
++	struct i2c_client *client = to_i2c_client(dev);
++	struct ltr558_data *data = i2c_get_clientdata(client);
++	after = buf;
++
++	after += snprintf(after, sizeof(after),
++		"%-17s%5s%14s%16s\n", "Register Name",
++		"address", "default", "current");
++	for (i = 0; i < sizeof(reg_tbl)/sizeof(reg_tbl[0]); i++) {
++		if (reg_tbl[i].name == NULL || reg_tbl[i].addr == 0)
++			break;
++		if (i < 10) {
++			val = ltr558_i2c_read_reg(reg_tbl[i].addr, data);
++			after += snprintf(after, sizeof(after),
++				"%-20s0x%02x\t  0x%02x\t\t  0x%02x\n",
++				reg_tbl[i].name, reg_tbl[i].addr,
++				reg_tbl[i].defval, val);
++		} else {
++			low = ltr558_i2c_read_reg(reg_tbl[i].addr, data);
++			high = ltr558_i2c_read_reg(reg_tbl[i].addr+1, data);
++			after += snprintf(after, sizeof(after),
++				"%-20s0x%02x\t0x%04x\t\t0x%04x\n",
++				reg_tbl[i].name, reg_tbl[i].addr,
++				reg_tbl[i].defval, (high << 8) + low);
++		}
++	}
++	after += snprintf(after, sizeof(after),
++		"\nYou can echo '0xaa=0xbb' to set the value 0xbb to the register of address 0xaa.\n ");
++	tmp = after - buf;
++
++	return tmp;
++}
++
++static ssize_t ltr558_store_debug_regs(struct device *dev,
++				       struct device_attribute *attr,
++				       const char *buf, size_t size)
++{
++	/* If proximity work,then ALS must be enable */
++	char *after, direct;
++	unsigned long af = 0;
++	u8 addr, val;
++	int tmp;
++	struct i2c_client *client = to_i2c_client(dev);
++	struct ltr558_data *data = i2c_get_clientdata(client);
++
++	addr = kstrtoul(buf, 16, &af);
++	after = (char *)buf;
++	direct = *after;
++	val = kstrtoul((after+1), 16, &af);
++
++	if (!((addr >= 0x80 && addr <= 0x93)
++		|| (addr >= 0x97 && addr <= 0x9e)))
++		return -EINVAL;
++
++	mutex_lock(&data->lockw);
++	if (direct == '=')
++		ltr558_i2c_write_reg(addr, val, data);
++	else
++		pr_info("%s: register(0x%02x) is: 0x%02x\n", __func__,
++		addr, ltr558_i2c_read_reg(addr, data));
++	mutex_unlock(&data->lockw);
++	tmp = after - buf;
++
++	return tmp;
++}
++
++static ssize_t ltr558_show_adc_data(struct device *dev,
++		struct device_attribute *attr, char *buf)
++{
++	u8 high, low;
++	char *after;
++	int tmp;
++	struct i2c_client *client = to_i2c_client(dev);
++	struct ltr558_data *data = i2c_get_clientdata(client);
++	after = buf;
++
++	low = ltr558_i2c_read_reg(LTR558_PS_DATA_0, data);
++	high = ltr558_i2c_read_reg(LTR558_PS_DATA_1, data);
++	if (low < 0 || high < 0)
++		after += snprintf(after, sizeof(after),
++		"Failed to read PS adc data.\n");
++	else
++		after += snprintf(after, sizeof(after),
++		"%d\n", (high << 8) + low);
++	tmp = after - buf;
++
++	return tmp;
++}
++
++static DEVICE_ATTR(debug_regs, S_IRUGO | S_IWUSR,
++	ltr558_show_debug_regs,
++	ltr558_store_debug_regs);
++static DEVICE_ATTR(enable_als, S_IRUGO | S_IWUSR,
++	ltr558_show_enable_als,
++	ltr558_store_enable_als);
++static DEVICE_ATTR(enable_ps, S_IRUGO | S_IWUSR,
++	ltr558_show_enable_ps,
++	ltr558_store_enable_ps);
++static DEVICE_ATTR(info, S_IRUGO, ltr558_driver_info_show, NULL);
++static DEVICE_ATTR(raw_adc, S_IRUGO, ltr558_show_adc_data, NULL);
++
++static struct attribute *ltr558_attributes[] = {
++	&dev_attr_enable_ps.attr,
++	&dev_attr_info.attr,
++	&dev_attr_enable_als.attr,
++	&dev_attr_debug_regs.attr,
++	&dev_attr_raw_adc.attr,
++	NULL,
++};
++
++static const struct attribute_group ltr558_attr_group = {
++	.attrs = ltr558_attributes,
++};
++
++static int ltr558_suspend(struct device *dev)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	struct ltr558_data *data = i2c_get_clientdata(client);
++
++	pr_info("%s:LTR558ALS_resume\n", __func__);
++
++	/*
++	  * Save sensor state and disable them,
++	  * this is to ensure internal state flags are set correctly.
++	  * device will power off after both sensors are disabled.
++	  * P sensor will not be disabled because it  is a wakeup sensor.
++	*/
++	data->enable_als_state = data->als_open_state;
++	data->enable_ps_state = data->ps_open_state;
++
++#if SUPPORT_AUTO_BACKLIGHT
++	if (data->enable_als_state == 1)
++		ltr558_enable_als_sensor(data->client, 0);
++#endif
++
++	return 0;
++}
++
++static int ltr558_resume(struct device *dev)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	struct ltr558_data *data = i2c_get_clientdata(client);
++
++	pr_info("%s:LTR558ALS_resume\n", __func__);
++
++	/*
++	  * Save sensor state and disable them,
++	  * this is to ensure internal state flags are set correctly.
++	  * device will power off after both sensors are disabled.
++	  * P sensor will not be disabled because it  is a wakeup sensor.
++	*/
++	data->enable_als_state = data->als_open_state;
++	data->enable_ps_state = data->ps_open_state;
++
++#if SUPPORT_AUTO_BACKLIGHT
++	if (data->enable_als_state == 0)
++		ltr558_enable_als_sensor(data->client, 1);
++#endif
++
++	return 0;
++}
++
++int ltr558_device_init(struct ltr558_data *data)
++{
++	int retval = 0;
++	int i;
++
++	ltr558_i2c_write_reg(LTR558_ALS_CONTR, 0x04, data);
++	/*mdelay(WAKEUP_DELAY);*/
++	for (i = 2; i < sizeof(reg_tbl)/sizeof(reg_tbl[0]); i++) {
++		if (reg_tbl[i].name == NULL || reg_tbl[i].addr == 0)
++			break;
++		if (reg_tbl[i].defval != reg_tbl[i].curval) {
++			if (i < 10) {
++				retval = ltr558_i2c_write_reg(
++					reg_tbl[i].addr,
++					reg_tbl[i].curval, data);
++			} else {
++				retval = ltr558_i2c_write_reg(
++					reg_tbl[i].addr,
++					reg_tbl[i].curval & 0xff, data);
++				retval = ltr558_i2c_write_reg(
++					reg_tbl[i].addr + 1,
++					reg_tbl[i].curval >> 8, data);
++			}
++		}
++	}
++	return retval;
++}
++
++static int als_input_init(struct ltr558_data *ltr558)
++{
++	int ret;
++
++	ltr558->als_input_dev = input_allocate_device();
++	if (!ltr558->als_input_dev) {
++		dev_err(&ltr558->client->dev,
++		"%s: ALS Input Allocate Device Fail...\n", __func__);
++		return -ENOMEM;
++	}
++	ltr558->als_input_dev->name = "light";
++	set_bit(EV_ABS, ltr558->als_input_dev->evbit);
++	input_set_abs_params(ltr558->als_input_dev, ABS_MISC,
++		ALS_MIN_MEASURE_VAL, ALS_MAX_MEASURE_VAL, 0, 0);
++
++	ret = input_register_device(ltr558->als_input_dev);
++	if (ret < 0) {
++		dev_err(&ltr558->client->dev,
++			"%s: ALS Register Input Device Fail...\n", __func__);
++		goto err_als_register_input_device;
++	}
++
++	return ret;
++
++err_als_register_input_device:
++	input_free_device(ltr558->als_input_dev);
++
++	return ret;
++}
++
++static int ps_input_init(struct ltr558_data *ltr558)
++	{
++	int ret;
++
++	ltr558->ps_input_dev = input_allocate_device();
++	if (!ltr558->ps_input_dev) {
++		dev_err(&ltr558->client->dev,
++		"%s: PS Input Allocate Device Fail...\n", __func__);
++		return -ENOMEM;
++	}
++	ltr558->ps_input_dev->name = "proximity";
++	set_bit(EV_ABS, ltr558->ps_input_dev->evbit);
++	input_set_abs_params(ltr558->ps_input_dev,
++		ABS_DISTANCE, PS_MIN_MEASURE_VAL,
++		PS_MAX_MEASURE_VAL, 0, 0);
++
++	ret = input_register_device(ltr558->ps_input_dev);
++	if (ret < 0) {
++		dev_err(&ltr558->client->dev,
++		"%s: PS Register Input Device Fail...\n", __func__);
++		goto err_ps_register_input_device;
++	}
++
++	return ret;
++
++err_ps_register_input_device:
++	input_free_device(ltr558->ps_input_dev);
++
++	return ret;
++}
++
++static int ltr558_enable_ps_sensor(struct i2c_client *client, int enable)
++{
++	int ret = 0;
++	struct ltr558_data *data = i2c_get_clientdata(client);
++	struct ltr558_platform_data *pdata = data->platform_data;
++
++	pr_info("LTR558 enable PS sensor -> %d\n", enable);
++	if ((enable != 0) && (enable != 1)) {
++		pr_info("%s: enable ps sensor=%d\n", __func__, enable);
++		return enable;
++	}
++
++	if (enable == 1) {
++		if ((data->als_open_state == 0) &&
++			(data->ps_open_state == 0)) {
++			/* Power on and initalize the device */
++			if (pdata->power_on)
++				pdata->power_on(true);
++
++			ret = ltr558_device_init(data);
++			if (ret) {
++				pr_info("%s: LTR-558ALS device resume init failed.\n",
++					__func__);
++				goto error;
++			}
++		}
++
++
++		ltr558_ps_enable(1, data);
++		if (data->ps_open_state == 1)
++			return 0;
++		mutex_lock(&data->lock_ps);
++		data->ps_open_state = 1;
++		data->chg_state |= STATE_CHANGED_PS_ON;
++		mutex_unlock(&data->lock_ps);
++		enable_irq(data->irq);
++		enable_irq_wake(data->irq);
++	} else {
++		ltr558_ps_enable(0, data);
++		if (data->ps_open_state == 0)
++			return 0;
++		mutex_lock(&data->lock_ps);
++		data->ps_open_state = 0;
++		data->chg_state |= STATE_CHANGED_PS_OFF;
++		mutex_unlock(&data->lock_ps);
++		disable_irq_wake(data->irq);
++		disable_irq(data->irq);
++	}
++
++	/* Vote off  regulators if both light and prox sensor are off */
++	if ((data->als_open_state == 0) &&
++		(data->ps_open_state == 0) &&
++		(pdata->power_on))
++		pdata->power_on(false);
++
++	return 0;
++
++error:
++	return 0;
++
++}
++static int ltr558_enable_als_sensor(struct i2c_client *client, int enable)
++{
++	int ret = 0;
++	struct ltr558_data *data = i2c_get_clientdata(client);
++	struct ltr558_platform_data *pdata = data->platform_data;
++
++	pr_info("LTR558 enable ALS sensor -> %d\n", enable);
++	if ((enable != 0) && (enable != 1)) {
++		pr_info("%s: enable als sensor=%d\n", __func__, enable);
++		return enable;
++	}
++
++	if (enable == 1) {
++		if ((data->als_open_state == 0) &&
++			(data->ps_open_state == 0)) {
++			/* Power on and initalize the device */
++			if (pdata->power_on)
++				pdata->power_on(true);
++
++			ret = ltr558_device_init(data);
++			if (ret) {
++				pr_info("%s: LTR-558ALS device resume init failed.\n",
++					__func__);
++				goto error;
++			}
++		}
++
++		ltr558_als_enable(1, data);
++
++		if (data->als_open_state == 1)
++			return 0;
++		mutex_lock(&data->lock_als);
++		data->als_open_state = 1;
++		data->chg_state |= STATE_CHANGED_ALS_ON;
++		mutex_unlock(&data->lock_als);
++		schedule_delayed_work(&data->work_als, msecs_to_jiffies(10));
++	} else {
++		ltr558_als_enable(0, data);
++
++		if (data->als_open_state == 0)
++			return 0;
++		mutex_lock(&data->lock_als);
++		data->als_open_state = 0;
++		data->chg_state |= STATE_CHANGED_ALS_OFF;
++		mutex_unlock(&data->lock_als);
++		cancel_delayed_work_sync(&data->work_als);
++	}
++
++	/* Vote off  regulators if both light and prox sensor are off */
++	if ((data->als_open_state == 0) &&
++		(data->ps_open_state == 0) &&
++		(pdata->power_on))
++		pdata->power_on(false);
++
++	return 0;
++
++error:
++	return 0;
++}
++
++
++static int ltr558_als_set_enable(struct sensors_classdev *sensors_cdev,
++	unsigned int enable)
++{
++	struct ltr558_data *data = container_of(sensors_cdev,
++			struct ltr558_data, als_cdev);
++
++	if ((enable != 0) && (enable != 1)) {
++		pr_err("%s: invalid value(%d)\n", __func__, enable);
++		return -EINVAL;
++	}
++
++	return ltr558_enable_als_sensor(data->client, enable);
++}
++
++static int ltr558_als_poll_delay_set(struct sensors_classdev *sensors_cdev,
++		unsigned int delay_msec)
++{
++	struct ltr558_data *data = container_of(sensors_cdev,
++			struct ltr558_data, als_cdev);
++
++	if ((delay_msec < LTR558_LS_MIN_POLL_DELAY) ||
++			(delay_msec > LTR558_LS_MAX_POLL_DELAY))
++		return -EINVAL;
++
++	atomic_set(&data->als_delay, delay_msec);
++
++	return 0;
++}
++
++static int ltr558_ps_set_enable(struct sensors_classdev *sensors_cdev,
++	unsigned int enable)
++{
++	struct ltr558_data *data = container_of(sensors_cdev,
++			struct ltr558_data, ps_cdev);
++
++	if ((enable != 0) && (enable != 1)) {
++		pr_err("%s: invalid value(%d)\n", __func__, enable);
++		return -EINVAL;
++	}
++
++	return ltr558_enable_ps_sensor(data->client, enable);
++}
++
++#ifdef CONFIG_OF
++static int ltr558_parse_dt(struct device *dev,
++				struct ltr558_platform_data *pdata)
++{
++	struct device_node *np = dev->of_node;
++	u32 temp_val;
++	int rc;
++
++	/* set functions of platform data */
++	pdata->init = ltr558_platform_hw_init;
++	pdata->exit = ltr558_platform_hw_exit;
++	pdata->power_on = ltr558_platform_hw_power_on;
++
++	rc = of_property_read_u32(np, "liteon,intr", &temp_val);
++	if (rc && (rc != -EINVAL)) {
++		pr_info("%s: Unable to read intr\n",
++			__func__);
++		return rc;
++	} else {
++		pdata->intr = temp_val;
++	}
++
++	rc = of_property_read_u32(np, "liteon,als_delay", &temp_val);
++	if (rc && (rc != -EINVAL)) {
++		pr_info("%s: Unable to read intr\n",
++			__func__);
++		return rc;
++	} else {
++		atomic_set(&pdata->als_delay, (u8)temp_val);
++	}
++
++	return 0;
++}
++#else
++static int ltr558_parse_dt(struct device *dev,
++				struct ltr558_platform_data *pdata)
++{
++	return -ENODEV;
++}
++#endif /* !CONFIG_OF */
++
++int ltr558_probe(struct i2c_client *client, const struct i2c_device_id *id)
++{
++	int ret = 0;
++	struct ltr558_platform_data *pdata;
++	struct ltr558_data *data;
++
++	/* Return 1 if adapter supports everything we need, 0 if not. */
++	if (!i2c_check_functionality
++		(client->adapter,
++		I2C_FUNC_SMBUS_WRITE_BYTE | I2C_FUNC_SMBUS_READ_BYTE_DATA)) {
++		pr_info(
++		       "%s: LTR-558ALS functionality check failed.\n",
++		       __func__);
++		ret = -EIO;
++		goto error;
++	}
++
++	/* data memory allocation */
++	data = kzalloc(sizeof(struct ltr558_data), GFP_KERNEL);
++	if (NULL == data) {
++		pr_info("%s: LTR-558ALS kzalloc failed.\n", __func__);
++		ret = -ENOMEM;
++		goto error;
++	}
++
++	pdata = kzalloc(sizeof(struct ltr558_platform_data), GFP_KERNEL);
++	if (!pdata) {
++		pr_info(
++			"%s: failed to allocate memory for platfrom data\n",
++			__func__);
++		return -ENOMEM;
++	}
++
++	if (client->dev.of_node) {
++		memset(pdata, 0 , sizeof(*pdata));
++		ret = ltr558_parse_dt(&client->dev, pdata);
++		if (ret) {
++			pr_info(
++				"%s: Unable to parse platfrom data err=%d\n",
++				__func__, ret);
++			return ret;
++		}
++	} else {
++		if (client->dev.platform_data)
++			pdata = client->dev.platform_data;
++		else {
++			pr_info(
++				"%s: platform data is NULL; exiting\n",
++				__func__);
++			return -EINVAL;
++		}
++	}
++
++	g_ltr558_data = data;
++	data->client = client;
++	data->platform_data = pdata;
++	data->intr_gpio = pdata->intr;
++	data->als_delay = pdata->als_delay;
++	data->irq = client->irq;
++	data->meas_cycle = 500;
++	data->mag = 0x08;
++	data->platform_data = pdata;
++	pr_info("%s: int gpio is %d, irq is %d", __func__,
++		data->intr_gpio, data->irq);
++
++	/* h/w initialization */
++	if (pdata->init)
++		ret = pdata->init();
++
++	if (pdata->power_on)
++		ret = pdata->power_on(true);
++
++	i2c_set_clientdata(client, data);
++
++	ret = ltr558_device_init(data);
++	if (ret) {
++		pr_info("%s: LTR-558ALS device init failed.\n",
++		       __func__);
++		goto out;
++	}
++
++	/* Setup the input subsystem for the ALS */
++	ret = als_input_init(data);
++	if (ret < 0) {
++		pr_info("%s: ALS Setup Fail...\n", __func__);
++		goto out;
++	}
++
++	/* Setup the input subsystem for the PS */
++	ret = ps_input_init(data);
++	if (ret < 0) {
++		pr_info("%s: PS Setup Fail...\n", __func__);
++		goto exit_unregister_als_input_dev;
++	}
++
++	ret = ltr558_i2c_read_reg(LTR558_MANUFACTURER_ID, data);
++	if (ret != LTR558_MANUFAC_ID) {
++		pr_info(
++			"%s: LTR-558ALS the manufacture id is not match.\n",
++			__func__);
++		ret = -EINVAL;
++		goto exit_unregister_ps_input_dev;
++	}
++
++	ret = ltr558_gpio_irq(data);
++	if (ret) {
++		pr_info("%s: LTR-558ALS gpio_irq failed.\n",
++		       __func__);
++		goto exit_unregister_ps_input_dev;
++	}
++
++	wake_lock_init(&(data->ps_wake_lock), WAKE_LOCK_SUSPEND,
++		"proximity_input");
++	INIT_DELAYED_WORK(&data->work_als, ltr558_als_work_func);
++	INIT_DELAYED_WORK(&data->workw, ltr558_work_func);
++	INIT_DELAYED_WORK(&data->works, ltr558_state_work);
++	mutex_init(&data->lockw);
++	mutex_init(&data->lock_als);
++	mutex_init(&data->lock_ps);
++
++	ret = sysfs_create_group(&data->als_input_dev->dev.kobj,
++			&ltr558_attr_group);
++	if (ret)
++		goto free_irq;
++	ret = sysfs_create_group(&data->ps_input_dev->dev.kobj,
++			&ltr558_attr_group);
++	if (ret)
++		goto err_als_sysfs_create_group;
++
++	/* Register to sensors class */
++	data->als_cdev = sensors_light_cdev;
++	data->als_cdev.sensors_enable = ltr558_als_set_enable;
++	data->als_cdev.sensors_poll_delay = ltr558_als_poll_delay_set;
++
++	data->ps_cdev = sensors_proximity_cdev;
++	data->ps_cdev.sensors_enable = ltr558_ps_set_enable;
++	data->ps_cdev.sensors_poll_delay = NULL,
++
++	ret = sensors_classdev_register(&client->dev, &data->als_cdev);
++	if (ret) {
++		pr_err("%s: Unable to register to sensors class: %d\n",
++				__func__, ret);
++		goto err_ps_sysfs_create_group;
++	}
++
++	ret = sensors_classdev_register(&client->dev, &data->ps_cdev);
++	if (ret) {
++		pr_err("%s: Unable to register to sensors class: %d\n",
++			       __func__, ret);
++		goto remove_als_cdev;
++	}
++
++	if (pdata->power_on)
++		ret = pdata->power_on(false);
++
++	dev_dbg(&data->client->dev, "%s: probe complete\n", __func__);
++
++	return ret;
++
++remove_als_cdev:
++	sensors_classdev_unregister(&data->als_cdev);
++err_ps_sysfs_create_group:
++	sysfs_remove_group(&data->ps_input_dev->dev.kobj,
++		&ltr558_attr_group);
++err_als_sysfs_create_group:
++	sysfs_remove_group(&data->als_input_dev->dev.kobj,
++		&ltr558_attr_group);
++free_irq:
++	wake_lock_destroy(&(data->ps_wake_lock));
++	ltr558_gpio_irq_free(data);
++exit_unregister_ps_input_dev:
++	input_unregister_device(data->ps_input_dev);
++exit_unregister_als_input_dev:
++	input_unregister_device(data->als_input_dev);
++out:
++	kfree(data);
++error:
++	return ret;
++}
++
++static int ltr558_remove(struct i2c_client *client)
++{
++	struct ltr558_data *data = i2c_get_clientdata(client);
++
++	if (g_ltr558_data == NULL)
++		return 0;
++
++	ltr558_ps_enable(0, data);
++	ltr558_als_enable(0, data);
++	free_irq(data->irq, data);
++	gpio_free(data->intr_gpio);
++	sysfs_remove_group(&data->als_input_dev->dev.kobj,
++			&ltr558_attr_group);
++	sysfs_remove_group(&data->ps_input_dev->dev.kobj,
++			&ltr558_attr_group);
++	cancel_delayed_work_sync(&data->workw);
++	cancel_delayed_work_sync(&data->works);
++	input_unregister_device(data->als_input_dev);
++	input_unregister_device(data->ps_input_dev);
++	input_free_device(data->als_input_dev);
++	input_free_device(data->ps_input_dev);
++	kfree(data);
++	g_ltr558_data = NULL;
++
++	return 0;
++}
++
++static void ltr558_shutdown(struct i2c_client *client)
++{
++	ltr558_remove(client);
++}
++
++static struct i2c_device_id ltr558_id[] = {
++	{"ltr558", 0},
++	{}
++};
++
++static struct of_device_id ltr558_match_table[] = {
++	{ .compatible = "liteon,ltr558", },
++	{ },
++};
++
++MODULE_DEVICE_TABLE(i2c, ltr558_id);
++static SIMPLE_DEV_PM_OPS(ltr558_pm_ops, ltr558_suspend, ltr558_resume);
++static struct i2c_driver ltr558_driver = {
++	.driver = {
++		   .name = LTR558_DRV_NAME,
++		   .owner = THIS_MODULE,
++		   .of_match_table = ltr558_match_table,
++		   .pm = &ltr558_pm_ops,
++	},
++	.probe = ltr558_probe,
++	.remove = ltr558_remove,
++	.id_table = ltr558_id,
++	.shutdown = ltr558_shutdown,
++};
++
++static int ltr558_driver_init(void)
++{
++	pr_devel("Driver ltr5580 init.\n");
++	return i2c_add_driver(&ltr558_driver);
++};
++
++static void ltr558_driver_exit(void)
++{
++	pr_info("Unload ltr558 module...\n");
++	i2c_del_driver(&ltr558_driver);
++}
++
++module_init(ltr558_driver_init);
++module_exit(ltr558_driver_exit);
++MODULE_AUTHOR("Lite-On Technology Corp.");
++MODULE_DESCRIPTION("Lite-On LTR-558 Proximity and Light Sensor Driver");
++MODULE_LICENSE("GPL v2");
++MODULE_VERSION("1.0");
+diff --git a/include/linux/input/ltr558als.h b/include/linux/input/ltr558als.h
+new file mode 100644
+index 0000000..20b9bac
+--- /dev/null
++++ b/include/linux/input/ltr558als.h
+@@ -0,0 +1,91 @@
++/* Lite-On LTR-558ALS Linux Driver
++*
++* Copyright (C) 2011-2014 Lite-On Technology Corp (Singapore)
++*
++* This software is licensed under the terms of the GNU General Public
++* License version 2, as published by the Free Software Foundation, and
++* may be copied, distributed, and modified under those terms.
++*
++* This program is distributed in the hope that it will be useful, but
++* WITHOUT ANY WARRANTY; without even the implied warranty of
++* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the
++* GNU General Public License for more details.
++*
++*/
++#ifndef _LTR558_H
++#define _LTR558_H
++
++struct ltr558_platform_data {
++	atomic_t als_delay;
++	int intr;
++	int (*init)(void);
++	void (*exit)(void);
++	int (*power_on)(bool);
++};
++
++/* LTR-558 Registers */
++#define LTR558_ALS_CONTR		0x80
++#define LTR558_PS_CONTR			0x81
++#define LTR558_PS_LED			0x82
++#define LTR558_PS_N_PULSES		0x83
++#define LTR558_PS_MEAS_RATE		0x84
++#define LTR558_ALS_MEAS_RATE		0x85
++#define LTR558_MANUFACTURER_ID		0x87
++
++#define LTR558_INTERRUPT		0x8F
++#define LTR558_PS_THRES_UP_0		0x90
++#define LTR558_PS_THRES_UP_1		0x91
++#define LTR558_PS_THRES_LOW_0		0x92
++#define LTR558_PS_THRES_LOW_1		0x93
++
++#define LTR558_ALS_THRES_UP_0		0x97
++#define LTR558_ALS_THRES_UP_1		0x98
++#define LTR558_ALS_THRES_LOW_0		0x99
++#define LTR558_ALS_THRES_LOW_1		0x9A
++#define LTR558_INTERRUPT_PERSIST	0x9E
++
++/* 558's Read Only Registers */
++#define LTR558_ALS_DATA_CH1_0		0x88
++#define LTR558_ALS_DATA_CH1_1		0x89
++#define LTR558_ALS_DATA_CH0_0		0x8A
++#define LTR558_ALS_DATA_CH0_1		0x8B
++#define LTR558_ALS_PS_STATUS		0x8C
++#define LTR558_PS_DATA_0		0x8D
++#define LTR558_PS_DATA_1		0x8E
++
++/* Basic Operating Modes */
++#define MODE_ALS_ON_Range1		0x0B
++#define MODE_ALS_ON_Range2		0x03
++#define MODE_ALS_StdBy			0x00
++#define MODE_PS_ON_Gain1		0x03
++#define MODE_PS_ON_Gain2		0x07
++#define MODE_PS_ON_Gain4		0x0B
++#define MODE_PS_ON_Gain8		0x0C
++#define MODE_PS_StdBy			0x00
++
++#define PS_RANGE1			1
++#define PS_RANGE2			2
++#define PS_RANGE4			4
++#define PS_RANGE8			8
++#define ALS_RANGE1_320			1
++#define ALS_RANGE2_64K			2
++
++#define PS_DETECTED_THRES		0x00E0
++#define PS_UNDETECTED_THRES		0x0028
++
++/* Power On response time in ms */
++#define PON_DELAY			100
++#define WAKEUP_DELAY			10
++
++#define ALS_MIN_MEASURE_VAL	0
++#define ALS_MAX_MEASURE_VAL	65535
++#define PS_MIN_MEASURE_VAL	0
++#define PS_MAX_MEASURE_VAL	2047
++
++/*VDD 2.375V-3.46V VIO 1.8V +-5%*/
++#define LTR558_VDD_MIN_UV	1710000
++#define LTR558_VDD_MAX_UV	3600000
++#define LTR558_VIO_MIN_UV	1800000
++#define LTR558_VIO_MAX_UV	1800000
++
++#endif
+-- 
+1.7.4.1
+

@@ -1,0 +1,70 @@
+From 4ea793ccb8ace40b89666f5da386d7661cabdf94 Mon Sep 17 00:00:00 2001
+From: Yukun Wan <wanyk0402@thundersoft.com>
+Date: Sun, 4 Jan 2015 15:54:18 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support lis3dh devicetree
+
+Devicetree support lis3dh
+
+Change-Id: I2f44e4d557f3df562ceac1c71aba5d6d53e74b61
+Signed-off-by: Yukun Wan <wanyk0402@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8909-qrd-skuc.dtsi | 36 ++++++++++++++++++++++++++++
+ 1 file changed, 36 insertions(+)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8909-qrd-skuc.dtsi b/arch/arm/boot/dts/qcom/msm8909-qrd-skuc.dtsi
+index 8030789..7216bd3 100644
+--- a/arch/arm/boot/dts/qcom/msm8909-qrd-skuc.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8909-qrd-skuc.dtsi
+@@ -53,6 +53,21 @@
+ 			bias-pull-up;
+ 		};
+ 	};
++
++	lis3dh_int_pin {
++		qcom,pins = <&gp 94>;
++		qcom,pin-func = <0>;
++		qcom,num-grp-pins = <1>;
++		label = "lis3dh-irq";
++		lis3dh_default: lis3dh_default {
++			drive-strength = <6>;
++			bias-pull-up;
++		};
++		lis3dh_sleep: lis3dh_sleep {
++			drive-strength = <2>;
++			bias-pull-down;
++		};
++	};
+ };
+ 
+ &soc {
+@@ -130,6 +145,27 @@
+ 			bosch,gpio-int1 = <&msm_gpio 96 0x2002>;
+ 			bosch,gpio-int2 = <&msm_gpio 65 0x2002>;
+ 		};
++
++		st@19 {
++			compatible = "st,lis3dh";
++			reg = <0x19>;
++			pinctrl-names = "lis3dh_default","lis3dh_sleep";
++			pinctrl-0 = <&lis3dh_default>;
++			pinctrl-1 = <&lis3dh_sleep>;
++			interrupt-parent = <&msm_gpio>;
++			vdd-supply = <&pm8909_l17>;
++			vddio-supply = <&pm8909_l6>;
++			st,min-interval = <5>;
++			st,init-interval = <200>;
++			st,axis-map-x = <0>;
++			st,axis-map-y = <1>;
++			st,axis-map-z = <2>;
++			st,g-range = <2>;
++			st,gpio-int1 = <&msm_gpio 94 0x2002>;
++			st,negate-x;
++			st,negate-y;
++		};
++
+ 	};
+ 
+ 	gen-vkeys {
+-- 
+2.2.1
+

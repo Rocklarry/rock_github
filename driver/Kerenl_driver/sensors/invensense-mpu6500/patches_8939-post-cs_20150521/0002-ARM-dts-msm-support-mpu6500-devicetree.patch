@@ -1,0 +1,52 @@
+From ad5ff37790f7d3e9f23e45db898fd1448a5826b2 Mon Sep 17 00:00:00 2001
+From: chenx <chenxiang0527@thundersoft.com>
+Date: Thu, 21 May 2015 17:35:49 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support mpu6500 devicetree
+
+Devicetree support mpu6500
+
+Change-Id: Ie88cf872a19b61d98d36015a2506a11636928f59
+Signed-off-by: Xiang Chen <chenxiang0527@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi |   15 ++++++++++++++-
+ 1 file changed, 14 insertions(+), 1 deletion(-)
+ mode change 100755 => 100644 arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+
+diff --git a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+old mode 100755
+new mode 100644
+index 1039722..0488b89
+--- a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+@@ -61,7 +61,7 @@
+ };
+ 
+ &i2c_0 { /* BLSP1 QUP2 */
+-	avago@39 { /* Ambient light and proximity sensor */
++/*	avago@39 { // Ambient light and proximity sensor
+ 		compatible = "avago,apds9930";
+ 		reg = <0x39>;
+ 		pinctrl-names = "default","sleep";
+@@ -81,6 +81,19 @@
+ 		avago,als-D = <129>;
+ 		avago,ga-value = <560>;
+ 	};
++*/
++	 mpu6500@69{
++		compatible = "invn,mpu6500";
++		reg = <0x69>;
++		interrupt-parent = <&msm_gpio>;
++		interrupts = <113 0x2>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++		invn,gpio-int = <&msm_gpio 113 0x2>;
++		invn,gyro_poll_ms = <200>;
++		invn,accel_poll_ms = <200>;
++		invn,place = "Portrait Up Back Side";
++	};
+ 
+ 	bosch@18 { /* Accelerometer sensor */
+ 		compatible = "bosch,bma2x2";
+-- 
+1.7.9.5
+

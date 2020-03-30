@@ -1,0 +1,38 @@
+From 65b32deed6f0377f99875b83a8707aaf59d8115a Mon Sep 17 00:00:00 2001
+From: Zhang Zhenzhen <zhangzz6687@thundersoft.com>
+Date: Wed, 9 Apr 2014 14:41:54 +0800
+Subject: [PATCH 2/3] ARM:config: support ctp truly ct4f0340 hx8527d48
+
+Add CTP TRULY@CT4F0340@HX8527-D48 config
+
+Change-Id: I743ff7e8d2078b42e5b141901a0bab34983b1551
+Signed-off-by: Zhenzhen Zhang <zhangzz6687@thundersoft.com>
+---
+ arch/arm/configs/msm8226_defconfig | 11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
+
+diff --git a/arch/arm/configs/msm8226_defconfig b/arch/arm/configs/msm8226_defconfig
+index f4ee78d..be94752 100644
+--- a/arch/arm/configs/msm8226_defconfig
++++ b/arch/arm/configs/msm8226_defconfig
+@@ -258,11 +258,12 @@ CONFIG_INPUT_JOYSTICK=y
+ CONFIG_JOYSTICK_XPAD=y
+ CONFIG_INPUT_TOUCHSCREEN=y
+ CONFIG_TOUCHSCREEN_ATMEL_MXT=y
+-CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI4=y
+-CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_RMI4_DEV=y
+-CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE=y
+-CONFIG_TOUCHSCREEN_FT5X06=y
+-CONFIG_TOUCHSCREEN_GEN_VKEYS=y
++#CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI4=y
++#CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_RMI4_DEV=y
++#CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE=y
++#CONFIG_TOUCHSCREEN_FT5X06=y
++CONFIG_TOUCHSCREEN_HIMAX8526=y
++#CONFIG_TOUCHSCREEN_GEN_VKEYS=y
+ CONFIG_INPUT_MISC=y
+ CONFIG_INPUT_UINPUT=y
+ CONFIG_INPUT_GPIO=m
+-- 
+1.8.3.1
+

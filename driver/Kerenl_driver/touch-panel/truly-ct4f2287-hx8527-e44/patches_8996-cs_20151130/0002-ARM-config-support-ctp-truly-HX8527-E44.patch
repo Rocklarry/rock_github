@@ -1,0 +1,28 @@
+From 62aa17f05d9a5e2f251ca410456e6baf3991ea66 Mon Sep 17 00:00:00 2001
+From: maoyq0504 <maoyq0504@thundersoft.com>
+Date: Mon, 30 Nov 2015 15:29:00 +0800
+Subject: [PATCH 2/3] ARM:config: support ctp truly HX8527-E44
+
+Add CTP TRULY@CT4F2287@HX8527-E44 config
+
+Change-Id: I4c503625e7eabdc64135f583266c57eccb376256
+Signed-off-by: Yuanqiu Mao <maoyq0504@thundersoft.com>
+---
+ arch/arm64/configs/msm_defconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm64/configs/msm_defconfig b/arch/arm64/configs/msm_defconfig
+index fffa901..e291311 100644
+--- a/arch/arm64/configs/msm_defconfig
++++ b/arch/arm64/configs/msm_defconfig
+@@ -286,6 +286,7 @@ CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_CORE_v21=y
+ CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_RMI_DEV_v21=y
+ CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE_v21=y
+ CONFIG_TOUCHSCREEN_ATMEL_MXT=y
++CONFIG_TOUCHSCREEN_HIMAX=y
+ CONFIG_TOUCHSCREEN_ATMEL_MAXTOUCH_TS=y
+ CONFIG_SECURE_TOUCH=y
+ CONFIG_TOUCHSCREEN_GEN_VKEYS=y
+-- 
+1.9.1
+

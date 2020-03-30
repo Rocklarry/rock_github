@@ -1,0 +1,62 @@
+From 9e636b5301ca85efe0aa57b84e8b45a0e2c34ee8 Mon Sep 17 00:00:00 2001
+From: yangzh <yangzh0324@thundersoft.com>
+Date: Tue, 29 Jul 2014 13:23:18 +0800
+Subject: [PATCH 1/2] ARM:dts:msm: support ctp synaptics s3203
+
+Add TRULY@OGS5.0@S3203 device tree
+
+Signed-off-by: yangzh <yangzh0324@thundersoft.com>
+
+Change-Id: Ia40fbda5819494af9b8cbfe48f3921f467c239d8
+---
+ arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi |   23 +++++++++++++++++++++--
+ 1 file changed, 21 insertions(+), 2 deletions(-)
+ mode change 100755 => 100644 arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+
+diff --git a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+old mode 100755
+new mode 100644
+index e9902b8..a7ad5e4
+--- a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+@@ -189,16 +189,35 @@
+ 			focaltech,fw-auto-cal;
+ 			focaltech,ignore-id-check;
+ 		};
++		
++		synaptics@22 {
++			compatible = "synaptics,rmi4";
++			reg = <0x22>;
++			interrupt-parent = <&msm_gpio>;
++			interrupts = <13 0x2008>;
++			vdd-supply = <&pm8916_l17>;
++			vcc_i2c-supply = <&pm8916_l6>;
++			synaptics,display-coords = <0 0 1230 2227>;
++			synaptics,panel-coords = <0 0 1230 2377>;
++			synaptics,irq-gpio = <&msm_gpio 13 0x2008>;
++			synaptics,reset-gpio = <&msm_gpio 12 0x0>;
++			synaptics,button-map = <158 102 139>;
++			synaptics,fw-image-name = "PR1468813.img";
++			synaptics,i2c-pull-up;
++			synaptics,power-down;
++			synaptics,disable-gpios;
++			synaptics,fw-vkey-support;
++		};
+ 	};
+ 
+ 	gen-vkeys {
+ 		compatible = "qcom,gen-vkeys";
+-		label = "ft5x06_ts";
++		label = "synaptics_rmi4_i2c";
+ 		qcom,disp-maxx = <1080>;
+ 		qcom,disp-maxy = <1920>;
+ 		qcom,panel-maxx = <1080>;
+ 		qcom,panel-maxy = <2098>;
+-		qcom,key-codes = <139 172 158>;
++		qcom,key-codes = <158 172 139>;
+ 		qcom,y-offset = <0>;
+ 	};
+ 
+-- 
+1.7.9.5
+

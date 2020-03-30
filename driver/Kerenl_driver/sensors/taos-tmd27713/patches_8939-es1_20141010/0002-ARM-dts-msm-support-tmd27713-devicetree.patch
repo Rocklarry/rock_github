@@ -1,0 +1,83 @@
+From b92a9fb6aa96723713f855e3b2810b0a7b3cbbf3 Mon Sep 17 00:00:00 2001
+From: longxw <longxw0410@thundersoft.com>
+Date: Tue, 28 Oct 2014 17:07:02 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support tmd27713 devicetree
+
+Devicetree support tmd27713
+
+Change-Id: I00929fac18e57db26d57e704284c7940fbf4a28d
+Signed-off-by: Xiang Chen <chenxiang0527@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi |   42 ++++++++++++++++++--------
+ 1 file changed, 29 insertions(+), 13 deletions(-)
+ mode change 100755 => 100644 arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+
+diff --git a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+old mode 100755
+new mode 100644
+index e9902b8..4237250
+--- a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+@@ -58,30 +58,46 @@
+ 			bias-pull-down;
+ 		};
+ 	};
++
++	tmd27713_int_pin {
++		qcom,pins = <&gp 113>;
++		qcom,pin-func = <0>;
++		qcom,num-grp-pins = <1>;
++		label = "tmd27713-irq";
++		tmd27713_default: tmd27713_default {
++			drive-strength = <6>;
++			bias-pull-up;
++		};
++		tmd27713_sleep: tmd27713_sleep {
++			drive-strength = <2>;
++			bias-pull-down;
++		};
++	};
+ };
+ 
+ &i2c_0 { /* BLSP1 QUP2 */
+-	avago@39 { /* Ambient light and proximity sensor */
+-		compatible = "avago,apds9930";
++	taos@39 {
++		compatible = "taos,tmd27713";
+ 		reg = <0x39>;
+ 		pinctrl-names = "default","sleep";
+-		pinctrl-0 = <&apds99xx_default>;
+-		pinctrl-1 = <&apds99xx_sleep>;
++		pinctrl-0 = <&tmd27713_default>;
++		pinctrl-1 = <&tmd27713_sleep>;
+ 		interrupt-parent = <&msm_gpio>;
+ 		interrupts = <113 0x2002>;
+ 		vdd-supply = <&pm8916_l17>;
+ 		vio-supply = <&pm8916_l6>;
+-		avago,irq-gpio = <&msm_gpio 113 0x2002>;
+-		avago,ps-threshold = <600>;
+-		avago,ps-hysteresis-threshold = <500>;
+-		avago,ps-pulse = <8>;
+-		avago,ps-pgain = <0>;
+-		avago,als-B = <223>;
+-		avago,als-C = <70>;
+-		avago,als-D = <142>;
+-		avago,ga-value = <48>;
++		taos,irq-gpio = <&msm_gpio 113 0x2002>;
++		taos,ps-threshold = <600>;
++		taos,ps-hysteresis-threshold = <500>;
++		taos,ps-pulse = <8>;
++		taos,ps-pgain = <0>;
++		taos,als-B = <186>;
++		taos,als-C = <75>;
++		taos,als-D = <129>;
++		taos,ga-value = <98>;
+ 	};
+ 
++
+ 	bosch@18 { /* Accelerometer sensor */
+ 		compatible = "bosch,bma2x2";
+ 		reg = <0x18>;
+-- 
+1.7.9.5
+

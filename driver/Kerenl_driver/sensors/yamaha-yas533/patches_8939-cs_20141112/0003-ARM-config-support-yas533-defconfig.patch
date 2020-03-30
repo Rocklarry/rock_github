@@ -1,0 +1,31 @@
+From 2454371e7783fe8aff7adc9f3b662c2abc6cbcea Mon Sep 17 00:00:00 2001
+From: chenqingfeng <chenqf0228@thundersoft.com>
+Date: Wed, 12 Nov 2014 16:35:42 +0800
+Subject: [PATCH 3/3] ARM:config: support yas533 defconfig
+
+Defconfig support yas533
+
+Change-Id: I95546f30c544b93245354a7bcb7449827c097f75
+Signed-off-by: Qingfeng Chen <chenqf0228@thundersoft.com>
+---
+ arch/arm/configs/msm8916_defconfig |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/configs/msm8916_defconfig b/arch/arm/configs/msm8916_defconfig
+index c476b05..254429c 100644
+--- a/arch/arm/configs/msm8916_defconfig
++++ b/arch/arm/configs/msm8916_defconfig
+@@ -267,8 +267,9 @@ CONFIG_INPUT_GPIO=m
+ CONFIG_SENSORS_LIS3DH=y
+ CONFIG_SENSORS_MPU6050=y
+ CONFIG_SENSORS_AKM09911=y
++CONFIG_SENSORS_YAS533=y
+ CONFIG_SENSORS_BMA2X2=y
+-CONFIG_SENSORS_MMC3416X=y
++#CONFIG_SENSORS_MMC3416X=y
+ CONFIG_SENSORS_AKM8963=y
+ CONFIG_SERIAL_MSM_HSL=y
+ CONFIG_SERIAL_MSM_HSL_CONSOLE=y
+-- 
+1.7.9.5
+

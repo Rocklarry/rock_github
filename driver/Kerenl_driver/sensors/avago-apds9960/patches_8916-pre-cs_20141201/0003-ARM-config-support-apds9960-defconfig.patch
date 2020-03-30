@@ -1,0 +1,30 @@
+From dbdd7d3b72297c0ea0122c25905203439cca6dc7 Mon Sep 17 00:00:00 2001
+From: chenx <chenxiang0527@thundersoft.com>
+Date: Mon, 1 Dec 2014 16:30:55 +0800
+Subject: [PATCH 3/3] ARM:config: support apds9960 defconfig
+
+Defconfig support apds9960
+
+Change-Id: Iccba4dc9271f7712554c82b925dd1c5b994e3e56
+Signed-off-by: Xiang Chen <chenxiang0527@thundersoft.com>
+---
+ arch/arm/configs/msm8916_defconfig |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/configs/msm8916_defconfig b/arch/arm/configs/msm8916_defconfig
+index 3d19788..8ced65e 100644
+--- a/arch/arm/configs/msm8916_defconfig
++++ b/arch/arm/configs/msm8916_defconfig
+@@ -213,7 +213,8 @@ CONFIG_CMA=y
+ CONFIG_CMA_SIZE_MBYTES=8
+ CONFIG_BLK_DEV_LOOP=y
+ CONFIG_BLK_DEV_RAM=y
+-CONFIG_APDS9930=y
++#CONFIG_APDS9930=y
++CONFIG_SENSORS_APDS9960=y
+ CONFIG_QSEECOM=y
+ CONFIG_SCSI=y
+ CONFIG_SCSI_TGT=y
+-- 
+1.7.9.5
+

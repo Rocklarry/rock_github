@@ -1,0 +1,73 @@
+From a1dcd58e48a7d2b3e5ffbfbbb8b9ea76eb2139e9 Mon Sep 17 00:00:00 2001
+From: Yukun Wan <wanyk0402@thundersoft.com>
+Date: Tue, 10 Mar 2015 19:17:09 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support ltr559 devicetree
+
+Devicetree support ltr559
+
+Change-Id: If426634938febb5d345c6b345b32110d3be79603
+Signed-off-by: Yukun Wan <wanyk0402@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi | 32 +++++++++++++++++++++++++++-
+ 1 file changed, 31 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi b/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
+index 5bb6734..f3e4ff8 100644
+--- a/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
+@@ -72,6 +72,21 @@
+ 		};
+ 	};
+ 
++	ltr559_int_pin {
++		qcom,pins = <&gp 113>;
++		qcom,pin-func = <0>;
++		qcom,num-grp-pins = <1>;
++		label = "ltr559-irq";
++		ltr559_default: ltr559_default {
++			drive-strength = <6>;
++			bias-pull-up;
++		};
++		ltr559_sleep: ltr559_sleep {
++			drive-strength = <2>;
++			bias-pull-down;
++		};
++	};
++
+ };
+ 
+ &i2c_0 { /* BLSP1 QUP2 */
+@@ -87,7 +102,7 @@
+ 		akm,gpio_rstn = <&msm_gpio 36 0x0>;
+ 		akm,auto-report;
+ 	};
+-
++/*
+ 	avago@39 {
+ 		compatible = "avago,apds9930";
+ 		reg = <0x39>;
+@@ -108,6 +123,21 @@
+ 		avago,als-D = <129>;
+ 		avago,ga-value = <98>;
+ 	};
++*/
++	liteon@23 {
++		compatible = "liteon,ltr559";
++		reg = <0x23>;
++		pinctrl-names = "default","sleep";
++		pinctrl-0 = <&ltr559_default>;
++		pinctrl-1 = <&ltr559_sleep>;
++		interrupt-parent = <&msm_gpio>;
++		interrupts = <113 0x2>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++		liteon,intr = <&msm_gpio 113 0x2>;
++		liteon,highthr = <800>;
++		liteon,lowthr = <300>;
++	};
+ 
+ 	st@18 {
+ 		compatible = "st,lis3dh";
+-- 
+2.2.2
+

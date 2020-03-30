@@ -1,0 +1,46 @@
+From ea16fd9a3d5cc6235c06fda739a27c78c4a7e30d Mon Sep 17 00:00:00 2001
+From: Yukun Wan <wanyk0402@thundersoft.com>
+Date: Wed, 1 Apr 2015 10:56:37 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support qmc6983 devicetree
+
+Devicetree support qmc6983
+
+Change-Id: Id4de5f75f859d39693e5fbf7415d630d794049e3
+Signed-off-by: Yukun Wan <wanyk0402@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi | 12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi b/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
+index 5bb6734..aadadf7 100644
+--- a/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
+@@ -75,7 +75,7 @@
+ };
+ 
+ &i2c_0 { /* BLSP1 QUP2 */
+-	akm@c {
++	/*akm@c {
+ 		compatible = "ak,ak09911";
+ 		reg = <0x0c>;
+ 		pinctrl-names = "default","sleep";
+@@ -86,6 +86,16 @@
+ 		akm,layout = <0x3>;
+ 		akm,gpio_rstn = <&msm_gpio 36 0x0>;
+ 		akm,auto-report;
++	};*/
++
++	qst@2c { /* Magnetic field sensor */
++		compatible = "qst,qmc6983";
++		reg = <0x2c>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++		qst,dir = "obverse-x-axis-forward";
++		qst,auto-report;
++		qst,delay_ms = <10>;
+ 	};
+ 
+ 	avago@39 {
+-- 
+2.2.2
+

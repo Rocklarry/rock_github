@@ -1,0 +1,203 @@
+From 4d8dd9913710e7d157150e4f3237b8bbbcab5ebc Mon Sep 17 00:00:00 2001
+From: liu ying <liuying0704@thundersoft.com>
+Date: Sat, 14 Jan 2017 11:38:06 +0800
+Subject: [PATCH] ARM: dts: msm: Add s5k3m3 camera dtsi
+
+Add s5k3m3 devicetree description for msm8998
+Change-Id: I319d1b8d49043a851fe77b90c56a05c2357bd546
+Signed-off-by: liu ying <liuying0704@thundersoft.com>
+---
+ .../boot/dts/qcom/msm8998-camera-sensor-mtp.dtsi   |  4 +-
+ .../msm/camera_v2/sensor/actuator/msm_actuator.c   | 63 ++++++++++++++++++++--
+ include/uapi/media/msm_camera.h                    |  3 +-
+ include/uapi/media/msm_camsensor_sdk.h             |  1 +
+ 4 files changed, 65 insertions(+), 6 deletions(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8998-camera-sensor-mtp.dtsi b/arch/arm/boot/dts/qcom/msm8998-camera-sensor-mtp.dtsi
+index 0bd9ab4..b0b73a5 100644
+--- a/arch/arm/boot/dts/qcom/msm8998-camera-sensor-mtp.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8998-camera-sensor-mtp.dtsi
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (c) 2016, The Linux Foundation. All rights reserved.
++ * Copyright (c) 2016-2017, The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 and
+@@ -75,7 +75,7 @@
+ 		pinctrl-names = "cam_default", "cam_suspend";
+ 		pinctrl-0 = <&cam_actuator_vaf_active>;
+ 		pinctrl-1 = <&cam_actuator_vaf_suspend>;
+-		status = "disabled";
++		status = "ok";
+ 	};
+
+ 	eeprom0: qcom,eeprom@0 {
+diff --git a/drivers/media/platform/msm/camera_v2/sensor/actuator/msm_actuator.c b/drivers/media/platform/msm/camera_v2/sensor/actuator/msm_actuator.c
+index b413bf3..5d7a045 100644
+--- a/drivers/media/platform/msm/camera_v2/sensor/actuator/msm_actuator.c
++++ b/drivers/media/platform/msm/camera_v2/sensor/actuator/msm_actuator.c
+@@ -1,4 +1,4 @@
+-/* Copyright (c) 2011-2016, The Linux Foundation. All rights reserved.
++/* Copyright (c) 2011-2017, The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 and
+@@ -87,8 +87,9 @@ static void msm_actuator_parse_i2c_params(struct msm_actuator_ctrl_t *a_ctrl,
+ 	uint32_t hw_dword = hw_params;
+ 	uint16_t i2c_byte1 = 0, i2c_byte2 = 0;
+ 	uint16_t value = 0;
+-	uint32_t size = 0, i = 0;
++	uint32_t size = 0, i = 0, rc = 0;
+ 	struct msm_camera_i2c_reg_array *i2c_tbl = NULL;
++	struct msm_camera_i2c_seq_reg_array *reg_setting = NULL;
+ 	CDBG("Enter\n");
+
+ 	if (a_ctrl == NULL) {
+@@ -100,6 +101,42 @@ static void msm_actuator_parse_i2c_params(struct msm_actuator_ctrl_t *a_ctrl,
+ 	write_arr = a_ctrl->reg_tbl;
+ 	i2c_tbl = a_ctrl->i2c_reg_tbl;
+
++	if (write_arr[i].reg_write_type == MSM_ACTUATOR_WRITE_DWORD) {
++		value = (next_lens_position <<
++		write_arr[i].data_shift) |
++		((hw_dword & write_arr[i].hw_mask) >>
++		write_arr[i].hw_shift);
++		reg_setting = kzalloc(sizeof(
++		struct msm_camera_i2c_seq_reg_array), GFP_KERNEL);
++		if (!reg_setting)
++			return;
++
++		reg_setting->reg_addr = write_arr[i].reg_addr;
++		reg_setting->reg_data[0] = (uint8_t)
++			((value &
++			0xFF000000) >> 24);
++		reg_setting->reg_data[1] = (uint8_t)
++			((value &
++			0x00FF0000) >> 16);
++		reg_setting->reg_data[2] = (uint8_t)
++			((value &
++			0x0000FF00) >> 8);
++		reg_setting->reg_data[3] = (uint8_t)
++			(value & 0x000000FF);
++
++		reg_setting->reg_data_size = 4;
++		rc = a_ctrl->i2c_client.i2c_func_tbl->
++			i2c_write_seq(&a_ctrl->i2c_client,
++			reg_setting->reg_addr,
++			reg_setting->reg_data,
++			reg_setting->reg_data_size);
++		a_ctrl->i2c_tbl_index = 0;
++		kfree(reg_setting);
++		reg_setting = NULL;
++		if (rc < 0)
++			return;
++		return;
++	}
+ 	for (i = 0; i < size; i++) {
+ 		if (write_arr[i].reg_write_type == MSM_ACTUATOR_WRITE_DAC) {
+ 			value = (next_lens_position <<
+@@ -555,6 +592,7 @@ static int32_t msm_actuator_move_focus(
+ {
+ 	int32_t rc = 0;
+ 	struct damping_params_t *ringing_params_kernel = NULL;
++	struct msm_actuator_reg_params_t *write_arr = NULL;
+ 	int8_t sign_dir = move_params->sign_dir;
+ 	uint16_t step_boundary = 0;
+ 	uint16_t target_step_pos = 0;
+@@ -653,6 +691,11 @@ static int32_t msm_actuator_move_focus(
+ 	reg_setting.reg_setting = a_ctrl->i2c_reg_tbl;
+ 	reg_setting.data_type = a_ctrl->i2c_data_type;
+ 	reg_setting.size = a_ctrl->i2c_tbl_index;
++	write_arr = a_ctrl->reg_tbl;
++	if (write_arr[0].reg_write_type == MSM_ACTUATOR_WRITE_DWORD) {
++		a_ctrl->i2c_tbl_index = 0;
++		return 0;
++	}
+ 	rc = a_ctrl->i2c_client.i2c_func_tbl->i2c_write_table_w_microdelay(
+ 		&a_ctrl->i2c_client, &reg_setting);
+ 	if (rc < 0) {
+@@ -787,6 +830,7 @@ static int32_t msm_actuator_park_lens(struct msm_actuator_ctrl_t *a_ctrl)
+ 	int32_t rc = 0;
+ 	uint16_t next_lens_pos = 0;
+ 	struct msm_camera_i2c_reg_setting reg_setting;
++	struct msm_actuator_reg_params_t *write_arr = NULL;
+
+ 	a_ctrl->i2c_tbl_index = 0;
+ 	if ((a_ctrl->curr_step_pos > a_ctrl->total_steps) ||
+@@ -834,6 +878,12 @@ static int32_t msm_actuator_park_lens(struct msm_actuator_ctrl_t *a_ctrl)
+ 		reg_setting.reg_setting = a_ctrl->i2c_reg_tbl;
+ 		reg_setting.size = a_ctrl->i2c_tbl_index;
+ 		reg_setting.data_type = a_ctrl->i2c_data_type;
++		write_arr = a_ctrl->reg_tbl;
++		if (write_arr[0].reg_write_type == MSM_ACTUATOR_WRITE_DWORD) {
++			a_ctrl->i2c_tbl_index = 0;
++			rc = 0;
++			continue;
++		}
+
+ 		rc = a_ctrl->i2c_client.i2c_func_tbl->
+ 			i2c_write_table_w_microdelay(
+@@ -1149,6 +1199,7 @@ static int32_t msm_actuator_set_position(
+ 	uint16_t delay;
+ 	uint32_t hw_params = 0;
+ 	struct msm_camera_i2c_reg_setting reg_setting;
++	struct msm_actuator_reg_params_t *write_arr = NULL;
+ 	CDBG("%s Enter %d\n", __func__, __LINE__);
+ 	if (set_pos->number_of_steps <= 0 ||
+ 		set_pos->number_of_steps > MAX_NUMBER_OF_STEPS) {
+@@ -1179,7 +1230,12 @@ static int32_t msm_actuator_set_position(
+ 		reg_setting.reg_setting = a_ctrl->i2c_reg_tbl;
+ 		reg_setting.size = a_ctrl->i2c_tbl_index;
+ 		reg_setting.data_type = a_ctrl->i2c_data_type;
+-
++		write_arr = a_ctrl->reg_tbl;
++		if (write_arr[0].reg_write_type == MSM_ACTUATOR_WRITE_DWORD) {
++			a_ctrl->i2c_tbl_index = 0;
++			rc = 0;
++			continue;
++		}
+ 		rc = a_ctrl->i2c_client.i2c_func_tbl->
+ 			i2c_write_table_w_microdelay(
+ 			&a_ctrl->i2c_client, &reg_setting);
+@@ -1495,6 +1551,7 @@ static struct msm_camera_i2c_fn_t msm_sensor_cci_func_tbl = {
+ 	.i2c_read = msm_camera_cci_i2c_read,
+ 	.i2c_read_seq = msm_camera_cci_i2c_read_seq,
+ 	.i2c_write = msm_camera_cci_i2c_write,
++	.i2c_write_seq = msm_camera_cci_i2c_write_seq,
+ 	.i2c_write_table = msm_camera_cci_i2c_write_table,
+ 	.i2c_write_seq_table = msm_camera_cci_i2c_write_seq_table,
+ 	.i2c_write_table_w_microdelay =
+diff --git a/include/uapi/media/msm_camera.h b/include/uapi/media/msm_camera.h
+index 10ee4b7..7b29574 100644
+--- a/include/uapi/media/msm_camera.h
++++ b/include/uapi/media/msm_camera.h
+@@ -1,4 +1,4 @@
+-/* Copyright (c) 2009-2012, 2014-2016 The Linux Foundation. All rights reserved.
++/* Copyright (c) 2009-2012, 2014-2017 The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 and
+@@ -1715,6 +1715,7 @@ enum msm_actuator_write_type {
+ 	MSM_ACTUATOR_WRITE_DIR_REG,
+ 	MSM_ACTUATOR_POLL,
+ 	MSM_ACTUATOR_READ_WRITE,
++	MSM_ACTUATOR_WRITE_DWORD,
+ };
+
+ struct msm_actuator_reg_params_t {
+diff --git a/include/uapi/media/msm_camsensor_sdk.h b/include/uapi/media/msm_camsensor_sdk.h
+index ad0825e..dd88a14 100644
+--- a/include/uapi/media/msm_camsensor_sdk.h
++++ b/include/uapi/media/msm_camsensor_sdk.h
+@@ -162,6 +162,7 @@ enum msm_actuator_write_type {
+ 	MSM_ACTUATOR_WRITE_DIR_REG,
+ 	MSM_ACTUATOR_POLL,
+ 	MSM_ACTUATOR_READ_WRITE,
++	MSM_ACTUATOR_WRITE_DWORD,
+ };
+
+ enum msm_actuator_i2c_operation {
+--
+1.9.1
+

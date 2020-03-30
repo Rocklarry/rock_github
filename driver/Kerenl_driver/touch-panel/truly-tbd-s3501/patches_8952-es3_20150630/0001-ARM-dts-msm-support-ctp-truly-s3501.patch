@@ -1,0 +1,98 @@
+From 0fa8b611cdd91d9372c101ccd12cdae46c95efed Mon Sep 17 00:00:00 2001
+From: maoyq0504 <maoyq0504@thundersoft.com>
+Date: Tue, 30 Jun 2015 14:40:39 +0800
+Subject: [PATCH 1/2] ARM:dts:msm: support ctp truly s3501
+
+Add CTP TRULY@TBD@S3501 device tree
+
+Change-Id: If671fe8fb14cf1e2111bf168606a21b40be80f58
+Signed-off-by: Yuanqiu Mao <maoyq0504@thundersoft.com>
+---
+ .../input/touchscreen/synaptics_i2c_rmi4.txt       | 30 ++++++++++------------
+ arch/arm/boot/dts/qcom/msm8952-qrd-skum.dtsi       | 14 +++++-----
+ 2 files changed, 21 insertions(+), 23 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/input/touchscreen/synaptics_i2c_rmi4.txt b/Documentation/devicetree/bindings/input/touchscreen/synaptics_i2c_rmi4.txt
+index 469baa4..abe0bee 100644
+--- a/Documentation/devicetree/bindings/input/touchscreen/synaptics_i2c_rmi4.txt
++++ b/Documentation/devicetree/bindings/input/touchscreen/synaptics_i2c_rmi4.txt
+@@ -75,26 +75,22 @@ Example:
+ 			compatible = "synaptics,rmi4"
+ 			reg = <0x20>;
+ 			interrupt-parent = <&msmgpio>;
+-			interrupts = <17 0x2>;
+-			vdd-supply = <&pm8226_l19>;
+-			vcc_i2c-supply = <&pm8226_lvs1>;
++			interrupts = <65 0x2008>;
++			vdd-supply = <&pm8950_l17>;
++			vcc_i2c-supply = <&pm8950_l6>;
+ 			pinctrl-names = "pmx_ts_active","pmx_ts_suspend","pmx_ts_release";
+ 			pinctrl-0 = <&ts_int_active &ts_reset_active>;
+ 			pinctrl-1 = <&ts_int_suspend &ts_reset_suspend>;
+-			pinctrl-1 = <&ts_release>;
+-			synaptics,reset-gpio = <&msmgpio 16 0x00>;
+-			synaptics,irq-gpio = <&msmgpio 17 0x00>;
++			pinctrl-2 = <&ts_release>;
++			synaptics,display-coords = <0 0 1440 2560>;
++			synaptics,panel-coords = <0 0 1440 2700>;
++			synaptics,reset-gpio = <&msmgpio 64 0x00>;
++			synaptics,irq-gpio = <&msmgpio 65 0x2008>;
++			synaptics,fw-image-name = "PR1468813.img";
+ 			synaptics,i2c-pull-up;
+-			synaptics,modify-reso;
+-			synaptics,detect-device;
+-			synaptics,device1 {
+-				synaptics,package-id = <3202>;
+-				synaptics,button-map = <139 172 158>;
+-			};
+-			synaptics,device2 {
+-				synaptics,package-id = <3408>;
+-				synaptics,display-coords = <0 0 1079 1919>;
+-				synaptics,panel-coords = <0 0 1079 2084>;
+-			};
++			synaptics,power-down;
++			synaptics,button-map = <139 172 158>;
++			synaptics,max_touches = <10>;
++			synaptics,disable-gpios;
+ 		};
+ 	};
+diff --git a/arch/arm/boot/dts/qcom/msm8952-qrd-skum.dtsi b/arch/arm/boot/dts/qcom/msm8952-qrd-skum.dtsi
+index 889fa0f..f1905b8 100644
+--- a/arch/arm/boot/dts/qcom/msm8952-qrd-skum.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8952-qrd-skum.dtsi
+@@ -46,13 +46,15 @@
+ 		pinctrl-0 = <&ts_int_active &ts_reset_active>;
+ 		pinctrl-1 = <&ts_int_suspend &ts_reset_suspend>;
+ 		pinctrl-2 = <&ts_release>;
+-		synaptics,display-coords = <0 0 1079 1919>;
+-		synaptics,panel-coords = <0 0 1079 2084>;
++		synaptics,display-coords = <0 0 1440 2560>;
++		synaptics,panel-coords = <0 0 1440 2600>;
+ 		synaptics,irq-gpio = <&msm_gpio 65 0x2008>;
+ 		synaptics,reset-gpio = <&msm_gpio 64 0x0>;
++		synaptics,fw-image-name = "PR1468813.img";
+ 		synaptics,i2c-pull-up;
+ 		synaptics,power-down;
+ 		synaptics,disable-gpios;
++		synaptics,max_touches = <10>;
+ 		synaptics,button-map = <139 172 158>;
+ 	};
+ };
+@@ -61,10 +63,10 @@
+ 	gen-vkeys {
+ 		compatible = "qcom,gen-vkeys";
+ 		label = "synaptics_rmi4_i2c";
+-		qcom,disp-maxx = <1079>;
+-		qcom,disp-maxy = <1919>;
+-		qcom,panel-maxx = <1079>;
+-		qcom,panel-maxy = <2084>;
++		qcom,disp-maxx = <1440>;
++		qcom,disp-maxy = <2560>;
++		qcom,panel-maxx = <1440>;
++		qcom,panel-maxy = <2600>;
+ 		qcom,key-codes = <139 172 158>;
+ 	};
+ 
+-- 
+1.9.1
+

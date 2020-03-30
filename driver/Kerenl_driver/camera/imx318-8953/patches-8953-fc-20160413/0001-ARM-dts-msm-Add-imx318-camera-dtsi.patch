@@ -1,0 +1,46 @@
+From 61df744e7b68e626049db4ccdad28f2060130464 Mon Sep 17 00:00:00 2001
+From: dengyx0326 <dengyx0326@thundersoft.com>
+Date: Wed, 13 Apr 2016 14:40:59 +0800
+Subject: [PATCH] ARM: dts: msm: Add imx318 camera dtsi
+
+Add imx318 devicetree description for msm8953
+Change-Id: I964d67a0237914a40f01150e86d9a2ca552a4734
+Signed-off-by: YiXuan Deng <dengyx0326@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8953-camera.dtsi | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8953-camera.dtsi b/arch/arm/boot/dts/qcom/msm8953-camera.dtsi
+index c51c50c..217a966 100644
+--- a/arch/arm/boot/dts/qcom/msm8953-camera.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8953-camera.dtsi
+@@ -212,7 +212,7 @@
+ 			"camss_csi_vfe0_clk", "vfe1_clk_src",
+ 			"camss_vfe_vfe1_clk", "camss_csi_vfe1_clk";
+ 		qcom,clock-rates = <61540000 0 0 0
+-			200000000 0 0 0
++			320000000 0 0 0
+ 			200000000 0 0 0
+ 			200000000 0 0 0
+ 			0 0 0
+@@ -273,7 +273,7 @@
+ 			0xcccc1111	0xcccc1111
+ 			0xcccc1111	0xcccc1111
+ 			0xcccc1111	0x00000110>;
+-		max-clk-nominal = <320000000>;
++		max-clk-nominal = <410000000>;
+ 		max-clk-turbo = <465000000>;
+ 	};
+ 
+@@ -323,7 +323,7 @@
+ 			0xcccc1111	0xcccc1111
+ 			0xcccc1111	0xcccc1111
+ 			0xcccc1111	0x00000110>;
+-		max-clk-nominal = <320000000>;
++		max-clk-nominal = <410000000>;
+ 		max-clk-turbo = <465000000>;
+ 	};
+ 
+-- 
+1.9.1
+

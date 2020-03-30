@@ -1,0 +1,42 @@
+From b429fd08e97c2f50230de7ee4b030296e2110754 Mon Sep 17 00:00:00 2001
+From: shilz0708 <shilz0708@thundersoft.com>
+Date: Tue, 11 Mar 2014 13:48:52 +0800
+Subject: [PATCH 2/2] ARM:dts:msm:add lis3dh devicetree
+
+Support lis3dh devicetree
+
+Change-Id: Ib9397ec7e1835355cb397e83621091b25edf9660
+Signed-off-by: Xiaolong Wang <wangxl0104@thundersoft.com>
+---
+ arch/arm/boot/dts/msm8610-qrd.dtsi |   15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
+
+diff --git a/arch/arm/boot/dts/msm8610-qrd.dtsi b/arch/arm/boot/dts/msm8610-qrd.dtsi
+index 14bfbb8..8d20fb2 100644
+--- a/arch/arm/boot/dts/msm8610-qrd.dtsi
++++ b/arch/arm/boot/dts/msm8610-qrd.dtsi
+@@ -91,6 +91,21 @@
+ 			kionix,negate-z;
+ 			kionix,res-12bit;
+ 		};
++		lis3dh@18 {
++			compatible = "ST Micro,lis3dh_acc";
++			reg = <0x18>;
++			vdd-supply = <&pm8110_l19>;
++			vddio-supply = <&pm8110_l6>;
++			lis3dh,min_interval = <10>;
++			lis3dh,poll_interval = <200>;
++			lis3dh,g_range = <2>;
++			lis3dh,axis_map_x = <1>;
++			lis3dh,axis_map_y = <0>;
++			lis3dh,axis_map_z = <2>;
++			lis3dh,negate_x = <0>;
++			lis3dh,negate_y = <0>;
++			lis3dh,negate_z = <1>;
++		};
+ 	};
+ 
+ 	flashlight {
+-- 
+1.7.9.5
+

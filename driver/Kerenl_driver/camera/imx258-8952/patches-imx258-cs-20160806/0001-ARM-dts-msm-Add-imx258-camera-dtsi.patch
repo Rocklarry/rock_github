@@ -1,0 +1,60 @@
+From 7ec584beeb6d0f4658154ae1a16e756ad18e9b40 Mon Sep 17 00:00:00 2001
+From: Wei Ding <weiding@qti.qualcomm.com>
+Date: Tue, 15 Dec 2015 10:32:47 +0800
+Subject: [PATCH] ARM: dts: msm: Add imx258 camera dtsi
+
+Add imx258 devicetree description for msm8952
+Change-Id: Ibb641af3d600ed6c09fd6074c69bda4b8a8ec1be
+Signed-off-by: Wei Ding <weiding@qti.qualcomm.com>
+---
+ arch/arm/boot/dts/qcom/msm8952-camera-sensor-qrd.dtsi | 2 +-
+ arch/arm/boot/dts/qcom/msm8952-camera.dtsi            | 6 +++---
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8952-camera-sensor-qrd.dtsi b/arch/arm/boot/dts/qcom/msm8952-camera-sensor-qrd.dtsi
+index f155ef5..00d4c41 100644
+--- a/arch/arm/boot/dts/qcom/msm8952-camera-sensor-qrd.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8952-camera-sensor-qrd.dtsi
+@@ -190,7 +190,7 @@
+ 		cell-index = <0>;
+ 		compatible = "qcom,camera";
+ 		reg = <0x0>;
+-		qcom,special-support-sensors = "ov13850_q13v06k";
++		qcom,special-support-sensors = "ov13850_q13v06k","imx258_8952";
+ 		qcom,csiphy-sd-index = <0>;
+ 		qcom,csid-sd-index = <0>;
+ 		qcom,mount-angle = <90>;
+diff --git a/arch/arm/boot/dts/qcom/msm8952-camera.dtsi b/arch/arm/boot/dts/qcom/msm8952-camera.dtsi
+index 4dd033f..9952c34 100644
+--- a/arch/arm/boot/dts/qcom/msm8952-camera.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8952-camera.dtsi
+@@ -35,7 +35,7 @@
+ 			"csiphy_timer_src_clk", "csiphy_timer_clk",
+ 			"camss_ahb_src", "csi_phy_clk",
+ 			"camss_ahb_clk";
+-		qcom,clock-rates = <0 61540000 160000000 0 0 0 0>;
++		qcom,clock-rates = <0 61540000 266700000 0 0 0 0>;
+ 	};
+ 
+ 	qcom,csiphy@1b0b000 {
+@@ -81,7 +81,7 @@
+ 			"ispif_ahb_clk", "csi_ahb_clk", "csi_src_clk",
+ 			"csi_clk",  "csi_pix_clk",
+ 			"csi_rdi_clk", "camss_ahb_clk";
+-		qcom,clock-rates = <0 61540000 0 160000000 0 0 0 0>;
++		qcom,clock-rates = <0 61540000 0 320000000 0 0 0 0>;
+ 	};
+ 
+ 	qcom,csid@1b08400 {
+@@ -172,7 +172,7 @@
+ 			"vfe0_clk_src", "camss_vfe_vfe0_clk", "camss_csi_vfe0_clk",
+ 			"vfe1_clk_src", "camss_vfe_vfe1_clk", "camss_csi_vfe1_clk";
+ 		qcom,clock-rates = "61540000",
+-			"160000000", "0", "0", "0",
++			"320000000", "0", "0", "0",
+ 			"160000000", "0", "0", "0",
+ 			"160000000", "0", "0", "0",
+ 			"0", "0", "0",
+-- 
+1.9.1
+

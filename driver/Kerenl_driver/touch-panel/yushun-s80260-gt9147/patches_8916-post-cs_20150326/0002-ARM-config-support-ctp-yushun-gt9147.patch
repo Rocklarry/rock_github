@@ -1,0 +1,31 @@
+From a14c665c3c58321d2bd4713cdd9af585a36c595b Mon Sep 17 00:00:00 2001
+From: yanqy <yanqy0911@thundersoft.com>
+Date: Tue, 24 Mar 2015 17:40:46 +0800
+Subject: [PATCH 2/3] ARM:config: support ctp yushun gt9147
+
+Add CTP IHV-YUSHUN@S80260@GT9147 config
+
+Change-Id: I9fa4fe8bae4e28b5e1f3eb5d5454cb6c63a1962f
+Signed-off-by: Qiyang Yan <yanqy0911@thundersoft.com>
+---
+ arch/arm/configs/msm8916_defconfig |    4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/arch/arm/configs/msm8916_defconfig b/arch/arm/configs/msm8916_defconfig
+index 08fd762..1ebf644 100644
+--- a/arch/arm/configs/msm8916_defconfig
++++ b/arch/arm/configs/msm8916_defconfig
+@@ -258,6 +258,10 @@ CONFIG_TOUCHSCREEN_GEN_VKEYS=y
+ CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI4=y
+ CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_RMI4_DEV=y
+ CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE=y
++CONFIG_TOUCHSCREEN_GT9XX=y
++CONFIG_GT9XX_TOUCHPANEL_DRIVER=y
++CONFIG_GT9XX_TOUCHPANEL_UPDATE=y
++CONFIG_GT9XX_TOUCHPANEL_DEBUG=y
+ CONFIG_INPUT_MISC=y
+ CONFIG_INPUT_UINPUT=y
+ CONFIG_INPUT_GPIO=m
+-- 
+1.7.9.5
+

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="rgb_text_size">9sp</dimen>
+    <dimen name="btn_text_size">9sp</dimen>
+    <dimen name="camera_image_review_size">100dp</dimen>
+</resources>

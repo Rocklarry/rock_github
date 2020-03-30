@@ -1,0 +1,30 @@
+From 6c0930a8563bd282d406add72fad3bd48205e4bb Mon Sep 17 00:00:00 2001
+From: chenqingfeng <chenqf0228@thundersoft.com>
+Date: Wed, 26 Nov 2014 17:29:57 +0800
+Subject: [PATCH 3/3] ARM:config: support cm36686 defconfig
+
+Defconfig support cm36686
+
+Change-Id: Ib904949dc29aba8d519e4d71ad6d1fa621bfa410
+Signed-off-by: Qingfeng Chen <chenqf0228@thundersoft.com>
+---
+ arch/arm/configs/msm8916_defconfig |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/configs/msm8916_defconfig b/arch/arm/configs/msm8916_defconfig
+index c476b05..232788c 100644
+--- a/arch/arm/configs/msm8916_defconfig
++++ b/arch/arm/configs/msm8916_defconfig
+@@ -214,7 +214,8 @@ CONFIG_CMA=y
+ CONFIG_CMA_SIZE_MBYTES=8
+ CONFIG_BLK_DEV_LOOP=y
+ CONFIG_BLK_DEV_RAM=y
+-CONFIG_APDS9930=y
++#CONFIG_APDS9930=y
++CONFIG_SENSORS_CM36686=y
+ CONFIG_QSEECOM=y
+ CONFIG_SCSI=y
+ CONFIG_SCSI_TGT=y
+-- 
+1.7.9.5
+

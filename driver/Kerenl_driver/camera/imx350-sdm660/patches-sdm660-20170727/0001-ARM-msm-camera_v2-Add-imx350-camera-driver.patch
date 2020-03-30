@@ -1,0 +1,134 @@
+From b234f8ea2d324bf705079bf81c828746badd0dfe Mon Sep 17 00:00:00 2001
+From: wuyu <wuyu0704@thundersoft.com>
+Date: Wed, 26 Jul 2017 19:44:04 +0800
+Subject: [PATCH] ARM: msm: camera_v2: Add imx350 camera driver
+
+Add imx350 af driver for sdm660
+
+Change-Id: I027d504d633b73c0019837a035f56cbb166f66d0
+Signed-off-by: wuyu <wuyu0704@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/sdm660-camera.dtsi          |  4 +-
+ .../msm/camera_v2/sensor/actuator/msm_actuator.c   | 71 +++++++++++++++++++++-
+ include/uapi/media/msm_camsensor_sdk.h             |  1 +
+ 3 files changed, 73 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm/boot/dts/qcom/sdm660-camera.dtsi b/arch/arm/boot/dts/qcom/sdm660-camera.dtsi
+index 8ad33a5..fe0acf2 100644
+--- a/arch/arm/boot/dts/qcom/sdm660-camera.dtsi
++++ b/arch/arm/boot/dts/qcom/sdm660-camera.dtsi
+@@ -55,8 +55,8 @@
+ 			"csiphy_timer_src_clk", "csiphy_timer_clk",
+ 			"camss_ispif_ahb_clk", "csiphy_clk_src", "csiphy_clk",
+ 			"csiphy_ahb2crif";
+-		qcom,clock-rates = <0 0 0 0 0 0 310000000 0 0 269333333 0
+-			0 200000000 0 0>;
++		qcom,clock-rates = <0 0 0 0 0 0 310000000 0 0 310000000 0
++			0 310000000 0 0>;
+ 		status = "ok";
+ 	};
+
+diff --git a/drivers/media/platform/msm/camera_v2/sensor/actuator/msm_actuator.c b/drivers/media/platform/msm/camera_v2/sensor/actuator/msm_actuator.c
+index cd48f87..510bd4f 100644
+--- a/drivers/media/platform/msm/camera_v2/sensor/actuator/msm_actuator.c
++++ b/drivers/media/platform/msm/camera_v2/sensor/actuator/msm_actuator.c
+@@ -162,7 +162,7 @@ static int msm_actuator_bivcm_handle_i2c_ops(
+ 	uint16_t value = 0, reg_data = 0;
+ 	uint32_t size = a_ctrl->reg_tbl_size, i = 0;
+ 	int32_t rc = 0;
+-	struct msm_camera_i2c_reg_array i2c_tbl;
++	struct msm_camera_i2c_reg_array i2c_tbl, i2c_tb2, i2c_tb3, i2c_tb4;
+ 	struct msm_camera_i2c_reg_setting reg_setting;
+ 	enum msm_camera_i2c_reg_addr_type save_addr_type =
+ 		a_ctrl->i2c_client.addr_type;
+@@ -342,6 +342,75 @@ static int msm_actuator_bivcm_handle_i2c_ops(
+ 				return rc;
+ 			}
+ 			break;
++		case MSM_ACTUATOR_WRITE_DAC_FOR_BU64760GWZ:
++			value = (next_lens_position <<
++			write_arr[i].data_shift) |
++			((hw_dword & write_arr[i].hw_mask) >>
++			write_arr[i].hw_shift);
++			if (write_arr[i].reg_addr != 0xFFFF) {
++				i2c_byte1 = write_arr[i].reg_addr;
++				i2c_byte2 = value;
++			} else {
++				i2c_byte1 = (value & 0xFF00) >> 8;
++				i2c_byte2 = value & 0xFF;
++			}
++			i2c_tb2.reg_addr = 0xf0;
++			i2c_tb2.reg_data = 0x90;
++			i2c_tb2.delay = 0;
++			a_ctrl->i2c_tbl_index++;
++
++			reg_setting.reg_setting = &i2c_tb2;
++			reg_setting.data_type = MSM_CAMERA_I2C_BYTE_DATA;
++			rc = a_ctrl->i2c_client.
++				i2c_func_tbl->i2c_write_table_w_microdelay(
++				&a_ctrl->i2c_client, &reg_setting);
++			if (rc < 0) {
++				pr_err("i2c write error:%d\n", rc);
++				return rc;
++			}
++			i2c_tb3.reg_addr = 0xf1;
++			i2c_tb3.reg_data = 0x00;
++			i2c_tb3.delay = 0;
++			a_ctrl->i2c_tbl_index++;
++
++			reg_setting.reg_setting = &i2c_tb3;
++			reg_setting.data_type = MSM_CAMERA_I2C_BYTE_DATA;
++			rc = a_ctrl->i2c_client.
++				i2c_func_tbl->i2c_write_table_w_microdelay(
++				&a_ctrl->i2c_client, &reg_setting);
++			if (rc < 0) {
++				pr_err("i2c write error:%d\n", rc);
++				return rc;
++			}
++			i2c_tb4.reg_addr = 0xf2;
++			i2c_tb4.reg_data = ((value & 0xff00) >> 8);
++			i2c_tb4.delay = 0;
++			a_ctrl->i2c_tbl_index++;
++
++			reg_setting.reg_setting = &i2c_tb4;
++			reg_setting.data_type = MSM_CAMERA_I2C_BYTE_DATA;
++			rc = a_ctrl->i2c_client.
++				i2c_func_tbl->i2c_write_table_w_microdelay(
++				&a_ctrl->i2c_client, &reg_setting);
++			if (rc < 0) {
++				pr_err("i2c write error:%d\n", rc);
++				return rc;
++			}
++			i2c_tbl.reg_addr = 0xf3;
++			i2c_tbl.reg_data = (value & 0x00ff);
++			i2c_tbl.delay = delay;
++			a_ctrl->i2c_tbl_index++;
++
++			reg_setting.reg_setting = &i2c_tbl;
++			reg_setting.data_type = MSM_CAMERA_I2C_BYTE_DATA;
++			rc = a_ctrl->i2c_client.
++				i2c_func_tbl->i2c_write_table_w_microdelay(
++				&a_ctrl->i2c_client, &reg_setting);
++			if (rc < 0) {
++				pr_err("i2c write error:%d\n", rc);
++				return rc;
++			}
++			break;
+ 		default:
+ 			pr_err("%s:%d Invalid selection\n",
+ 				__func__, __LINE__);
+diff --git a/include/uapi/media/msm_camsensor_sdk.h b/include/uapi/media/msm_camsensor_sdk.h
+index ad0825e..52df4ae 100644
+--- a/include/uapi/media/msm_camsensor_sdk.h
++++ b/include/uapi/media/msm_camsensor_sdk.h
+@@ -162,6 +162,7 @@ enum msm_actuator_write_type {
+ 	MSM_ACTUATOR_WRITE_DIR_REG,
+ 	MSM_ACTUATOR_POLL,
+ 	MSM_ACTUATOR_READ_WRITE,
++	MSM_ACTUATOR_WRITE_DAC_FOR_BU64760GWZ,
+ };
+
+ enum msm_actuator_i2c_operation {
+--
+1.9.1
+

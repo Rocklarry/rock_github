@@ -1,0 +1,65 @@
+From 2726d7f366e940e42677b3e10a61e7e485d7df1b Mon Sep 17 00:00:00 2001
+From: Yukun Wan <wanyk0402@thundersoft.com>
+Date: Thu, 11 Dec 2014 19:55:31 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support em30718 devicetree
+
+Devicetree support em30718
+
+Change-Id: I1e20ebf20b739e37b468fcb0dae88ce118eaedbe
+Signed-off-by: Yukun Wan <wanyk0402@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi |   31 ++++++++++++++++++++++++++
+ 1 file changed, 31 insertions(+)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi b/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
+index 9981e42..c9879f6 100644
+--- a/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
+@@ -72,6 +72,21 @@
+ 		};
+ 	};
+ 
++	em3071x_int_pin {
++		qcom,pins = <&gp 113>;
++		qcom,pin-func = <0>;
++		qcom,num-grp-pins = <1>;
++		label = "em3071x-irq";
++		em3071x_default: em3071x_default {
++			drive-strength = <6>;
++			bias-pull-up;
++		};
++		em3071x_sleep: em3071x_sleep {
++			drive-strength = <2>;
++			bias-pull-down;
++		};
++	};
++
+ };
+ 
+ &i2c_0 { /* BLSP1 QUP2 */
+@@ -109,6 +124,22 @@
+ 		avago,ga-value = <98>;
+ 	};
+ 
++	epticore@24 {
++		compatible = "epticore,em3071x";
++		reg = <0x24>;
++		pinctrl-names = "default","sleep";
++		pinctrl-0 = <&em3071x_default>;
++		pinctrl-1 = <&em3071x_sleep>;
++		interrupt-parent = <&msm_gpio>;
++		interrupts = <113 0x2002>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++		epticore,irq-gpio = <&msm_gpio 113 0x2002>;
++		epticore,prox_th_min = <80>;
++		epticore,prox_th_max = <250>;
++		epticore,als_delay = <100>;
++	};
++
+ 	st@18 {
+ 		compatible = "st,lis3dh";
+ 		reg = <0x18>;
+-- 
+1.7.9.5
+

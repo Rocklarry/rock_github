@@ -1,0 +1,28 @@
+From 84f2abc2e600b1b4406d914d619f08ec50b806a6 Mon Sep 17 00:00:00 2001
+From: Zhang Zhenzhen <zhangzz6687@thundersoft.com>
+Date: Wed, 9 Apr 2014 14:03:55 +0800
+Subject: [PATCH 2/3] ARM:config: support ctp actar h040 aw5306
+
+Add CTP ACTAR@H040@AW5306 config
+
+Change-Id: I0e2d595cbcb859f480f66790d6c4f8c3ab46b2ea
+Signed-off-by: Zhenzhen Zhang <zhangzz6687@thundersoft.com>
+---
+ arch/arm/configs/msm8226_defconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm/configs/msm8226_defconfig b/arch/arm/configs/msm8226_defconfig
+index f4ee78d..c7568b5 100644
+--- a/arch/arm/configs/msm8226_defconfig
++++ b/arch/arm/configs/msm8226_defconfig
+@@ -263,6 +263,7 @@ CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_RMI4_DEV=y
+ CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE=y
+ CONFIG_TOUCHSCREEN_FT5X06=y
+ CONFIG_TOUCHSCREEN_GEN_VKEYS=y
++CONFIG_TOUCHSCREEN_AW5306=y
+ CONFIG_INPUT_MISC=y
+ CONFIG_INPUT_UINPUT=y
+ CONFIG_INPUT_GPIO=m
+-- 
+1.8.3.1
+

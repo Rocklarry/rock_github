@@ -1,0 +1,2 @@
+/usr/bin/ar qc libavs_auth.a  CMakeFiles/avs_auth.dir/avs_auth/avs_auth.c.o
+/usr/bin/ranlib libavs_auth.a

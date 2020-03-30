@@ -1,0 +1,38 @@
+From 132cca45a79dda103911a1980172a230632ba8b4 Mon Sep 17 00:00:00 2001
+From: chenqingfeng <chenqf0228@thundersoft.com>
+Date: Thu, 19 Mar 2015 15:38:46 +0800
+Subject: [PATCH 3/3] ARM:config: support kxtj2-1009 defconfig
+
+Defconfig support kxtj2-1009
+
+Change-Id: Id1cf9b3b42668f3ad9b4ad133da1d571e79fa997
+Signed-off-by: Qingfeng Chen <chenqf0228@thundersoft.com>
+---
+ arch/arm64/configs/msm_defconfig |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm64/configs/msm_defconfig b/arch/arm64/configs/msm_defconfig
+index 32c6f91..a6a0abc 100644
+--- a/arch/arm64/configs/msm_defconfig
++++ b/arch/arm64/configs/msm_defconfig
+@@ -251,14 +251,15 @@ CONFIG_TOUCHSCREEN_BU21150=y
+ CONFIG_INPUT_MT_WRAPPER=y
+ CONFIG_INPUT_MISC=y
+ CONFIG_INPUT_HBTP_INPUT=y
+-CONFIG_SENSORS_MPU6050=y
++#CONFIG_SENSORS_MPU6050=y
+ CONFIG_SENSORS_LIS3DH=y
+ CONFIG_INPUT_UINPUT=y
+ CONFIG_INPUT_GPIO=m
+ CONFIG_SENSORS_MMC3416X=y
+ CONFIG_SENSORS_AKM09911=y
+ CONFIG_SENSORS_AKM8963=y
+-CONFIG_SENSORS_BMA2X2=y
++#CONFIG_SENSORS_BMA2X2 is not set
++CONFIG_SENSORS_KIONIX_ACCEL=y
+ # CONFIG_SERIO_I8042 is not set
+ # CONFIG_VT is not set
+ CONFIG_SERIAL_MSM_HS=y
+-- 
+1.7.9.5
+

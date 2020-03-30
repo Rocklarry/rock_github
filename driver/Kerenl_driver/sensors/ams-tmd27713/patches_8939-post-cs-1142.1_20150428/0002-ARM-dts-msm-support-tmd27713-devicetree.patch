@@ -1,0 +1,86 @@
+From 62c5d0ae9c5dd50d63c90784bb1e357b882b651a Mon Sep 17 00:00:00 2001
+From: Yukun Wan <wanyk0402@thundersoft.com>
+Date: Tue, 28 Apr 2015 18:52:17 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support tmd27713 devicetree
+
+Devicetree support tmd27713
+
+Change-Id: I97aa3a1748b68de94e540c9fd61db8975b607507
+Signed-off-by: Yukun Wan <wanyk0402@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi | 56 ++++++++++++++++++----------
+ 1 file changed, 36 insertions(+), 20 deletions(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+index 1039722..03f9eff 100755
+--- a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+@@ -58,29 +58,45 @@
+ 			bias-pull-down;
+ 		};
+ 	};
++
++	tmd27713_int_pin {
++		qcom,pins = <&gp 113>;
++		qcom,pin-func = <0>;
++		qcom,num-grp-pins = <1>;
++		label = "tmd27713-irq";
++		tmd27713_default: tmd27713_default {
++			drive-strength = <6>;
++			bias-pull-up;
++		};
++		tmd27713_sleep: tmd27713_sleep {
++			drive-strength = <2>;
++			bias-pull-down;
++		};
++	};
++
+ };
+ 
+ &i2c_0 { /* BLSP1 QUP2 */
+-	avago@39 { /* Ambient light and proximity sensor */
+-		compatible = "avago,apds9930";
+-		reg = <0x39>;
+-		pinctrl-names = "default","sleep";
+-		pinctrl-0 = <&apds99xx_default>;
+-		pinctrl-1 = <&apds99xx_sleep>;
+-		interrupt-parent = <&msm_gpio>;
+-		interrupts = <113 0x2002>;
+-		vdd-supply = <&pm8916_l17>;
+-		vio-supply = <&pm8916_l6>;
+-		avago,irq-gpio = <&msm_gpio 113 0x2002>;
+-		avago,ps-threshold = <600>;
+-		avago,ps-hysteresis-threshold = <500>;
+-		avago,ps-pulse = <8>;
+-		avago,ps-pgain = <0>;
+-		avago,als-B = <186>;
+-		avago,als-C = <75>;
+-		avago,als-D = <129>;
+-		avago,ga-value = <560>;
+-	};
++     	ams@39 {
++         	compatible = "ams,tmd27713";
++         	reg = <0x39>;
++         	pinctrl-names = "default","sleep";
++         	pinctrl-0 = <&tmd27713_default>;
++         	pinctrl-1 = <&tmd27713_sleep>;
++         	interrupt-parent = <&msm_gpio>;
++        	interrupts = <113 0x2002>;
++         	vdd-supply = <&pm8916_l17>;
++         	vio-supply = <&pm8916_l6>;
++         	ams,irq-gpio = <&msm_gpio 113 0x2002>;
++         	ams,ps-threshold = <600>;
++         	ams,ps-hysteresis-threshold = <500>;
++         	ams,ps-pulse = <8>;
++         	ams,ps-pgain = <0>;
++         	ams,als-B = <186>;
++         	ams,als-C = <75>;
++         	ams,als-D = <129>;
++         	ams,ga-value = <98>;
++     	};
+ 
+ 	bosch@18 { /* Accelerometer sensor */
+ 		compatible = "bosch,bma2x2";
+-- 
+2.2.2
+

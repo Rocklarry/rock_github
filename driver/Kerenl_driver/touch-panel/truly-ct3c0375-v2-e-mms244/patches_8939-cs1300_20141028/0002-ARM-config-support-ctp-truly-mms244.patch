@@ -1,0 +1,28 @@
+From f304bb42a667aa6411ef624a429567523ed9304c Mon Sep 17 00:00:00 2001
+From: yanqy <yanqy0911@thundersoft.com>
+Date: Tue, 28 Oct 2014 14:23:36 +0800
+Subject: [PATCH 2/3] ARM:config: support ctp truly mms244
+
+Add CTP IHV-TRULY@CT3C0375-V2-E@MMS244 config
+
+Change-Id: I94b429fa45a7c3c8718fb3cf8f45110e2676c19d
+Signed-off-by: Qiyang Yan <yanqy0911@thundersoft.com>
+---
+ arch/arm/configs/msm8916_defconfig |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm/configs/msm8916_defconfig b/arch/arm/configs/msm8916_defconfig
+index c476b05..9d22268 100644
+--- a/arch/arm/configs/msm8916_defconfig
++++ b/arch/arm/configs/msm8916_defconfig
+@@ -252,6 +252,7 @@ CONFIG_JOYSTICK_XPAD=y
+ CONFIG_INPUT_TOUCHSCREEN=y
+ CONFIG_TOUCHSCREEN_ATMEL_MXT=y
+ CONFIG_TOUCHSCREEN_FT5X06=y
++CONFIG_TOUCHSCREEN_MMS134S=y
+ CONFIG_TOUCHSCREEN_GEN_VKEYS=y
+ CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI4=y
+ CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_RMI4_DEV=y
+-- 
+1.7.9.5
+

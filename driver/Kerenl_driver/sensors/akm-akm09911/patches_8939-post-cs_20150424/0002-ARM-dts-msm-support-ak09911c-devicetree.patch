@@ -1,0 +1,129 @@
+From a45470c67f567f02e8eb7ded9e50dfadf16e8ae7 Mon Sep 17 00:00:00 2001
+From: Li Zhanchao <lizc1023@thundersoft.com>
+Date: Fri, 24 Apr 2015 10:28:25 +0800
+Subject: [PATCH 2/2] ARM:dts:msm: support ak09911c devicetree
+
+Devicetree support ak09911c
+
+Change-Id: I036c9bdc985ac9bf7c0cc2340301952ddbf34e13
+Signed-off-by: Li Zhanchao <lizc1023@thundersoft.com>
+---
+ .../devicetree/bindings/input/misc/akm09911.txt    | 28 ++++++++---------
+ arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi       | 36 +++++++++++++++++++---
+ 2 files changed, 46 insertions(+), 18 deletions(-)
+ mode change 100755 => 100644 arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+
+diff --git a/Documentation/devicetree/bindings/input/misc/akm09911.txt b/Documentation/devicetree/bindings/input/misc/akm09911.txt
+index eee5a5e..b6f4ae1 100644
+--- a/Documentation/devicetree/bindings/input/misc/akm09911.txt
++++ b/Documentation/devicetree/bindings/input/misc/akm09911.txt
+@@ -3,10 +3,10 @@ AKM AK09911 3-axis electronic compass driver
+ Required properties:
+ 
+  - compatible		: Should be "ak,ak09911" or "akm,akm09911".
+- - reg				: i2c address of the device.
+- - pinctrl-names	: The pinctrl configration names of this sensor driver. Should be "default","reset".
++ - reg			: i2c address of the device.
++ - pinctrl-names	: The pinctrl configration names of this sensor driver. Should be "default","sleep".
+  - pinctrl-0		: The pinctrl node corresponding to "default", should be <&akm_default>.
+- - pinctrl-1		: The pinctrl node corresponding to "reset", should be <&akm_reset>.
++ - pinctrl-1		: The pinctrl node corresponding to "sleep", should be <&akm_sleep>.
+  - vdd-supply		: Analog power supply needed to power up the device.
+  - vio-supply		: Digital IO power supply needed for IO and I2C.
+  - akm,layout		: The layout of the ecompass sensor chip. There are 8
+@@ -27,16 +27,16 @@ Optional properites:
+  - akm,auto-report	: Enable auto-report mode.
+ 
+  Example:
++
+ 	akm@c {
+-			compatible = "ak,ak09911";
+-			reg = <0x0c>;
+-			pinctrl-names = "default","reset";
+-			pinctrl-0 = <&akm_default>;
+-			pinctrl-1 = <&akm_reset>;
+-			vdd-supply = <&pm8110_l19>;
+-			vio-supply = <&pm8110_l14>;
+-			akm,layout = <0x0>;
+-			akm,gpio_rstn = <&msmgpio 82 0x0>;
+-			akm,auto-report;
++		compatible = "ak,ak09911";
++		reg = <0x0c>;
++		pinctrl-names = "default","sleep";
++		pinctrl-0 = <&akm_default>;
++		pinctrl-1 = <&akm_sleep>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++		akm,layout = <0x3>;
++		akm,gpio_rstn = <&msm_gpio 36 0x0>;
++		akm,auto-report;
+ 	};
+-
+diff --git a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+old mode 100755
+new mode 100644
+index 1039722..19579c2
+--- a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+@@ -1,4 +1,4 @@
+-/* Copyright (c) 2014, The Linux Foundation. All rights reserved.
++/* Copyright (c) 2014-2015, The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 and
+@@ -19,6 +19,21 @@
+ };
+ 
+ &tlmm_pinmux {
++	akm_reset_pin {
++		qcom,pins = <&gp 36>;
++		qcom,pin-func = <0>;
++		qcom,num-grp-pins = <1>;
++		label = "akm_reset_pin";
++		akm_default: akm_default {
++			drive-strength = <6>;
++			bias-pull-up;
++		};
++		akm_sleep: akm_sleep {
++			drive-strength = <2>;
++			bias-pull-down;
++		};
++	};
++
+ 	bma2x2_int1_pin {
+ 		qcom,pins = <&gp 112>;
+ 		qcom,num-grp-pins = <1>;
+@@ -98,14 +113,27 @@
+ 		bosch,gpio-int2 = <&msm_gpio 114 0x2002>;
+ 	};
+ 
+-	memsic@30 { /* Magnetic field sensor */
+-		compatible = "memsic,mmc3416x";
++	akm@c {
++		compatible = "ak,ak09911";
++		reg = <0x0c>;
++		pinctrl-names = "default","sleep";
++		pinctrl-0 = <&akm_default>;
++		pinctrl-1 = <&akm_sleep>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++		akm,layout = <0x3>;
++		akm,gpio_rstn = <&msm_gpio 36 0x0>;
++		akm,auto-report;
++	};
++
++/*	memsic@30 { /* Magnetic field sensor */
++/*		compatible = "memsic,mmc3416x";
+ 		reg = <0x30>;
+ 		vdd-supply = <&pm8916_l17>;
+ 		vio-supply = <&pm8916_l6>;
+ 		memsic,dir = "obverse-x-axis-forward";
+ 		memsic,auto-report;
+-	};
++	};*/
+ 
+ 	mpu6050@68 { /* Gyroscope and accelerometer sensor combo */
+ 		compatible = "invn,mpu6050";
+-- 
+1.9.1
+

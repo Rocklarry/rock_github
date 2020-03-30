@@ -1,0 +1,38 @@
+From 349cc5888d67ea0036202034190cabb4870c0bdc Mon Sep 17 00:00:00 2001
+From: Zhenzhen Zhang <zhangzz6687@thundersoft.com>
+Date: Fri, 18 Apr 2014 15:44:31 +0800
+Subject: [PATCH 2/3] ARM:config: support ctp toptouch gsl2682
+
+Add CTP toptouch gsl2682
+
+Change-Id: I5111300bbf29f3400223cc61aa0ef9e125059963
+Signed-off-by: Zhenzhen Zhang <zhangzz6687@thundersoft.com>
+---
+ arch/arm/configs/msm8610_defconfig | 11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
+
+diff --git a/arch/arm/configs/msm8610_defconfig b/arch/arm/configs/msm8610_defconfig
+index 02db2f2..6ab5f53 100644
+--- a/arch/arm/configs/msm8610_defconfig
++++ b/arch/arm/configs/msm8610_defconfig
+@@ -232,11 +232,12 @@ CONFIG_INPUT_EVBUG=m
+ CONFIG_KEYBOARD_GPIO=y
+ CONFIG_INPUT_TOUCHSCREEN=y
+ CONFIG_TOUCHSCREEN_ATMEL_MXT=y
+-CONFIG_TOUCHSCREEN_FT5X06=y
+-CONFIG_TOUCHSCREEN_GEN_VKEYS=y
+-CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI4=y
+-CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_RMI4_DEV=y
+-CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE=y
++#CONFIG_TOUCHSCREEN_FT5X06=y
++#CONFIG_TOUCHSCREEN_GEN_VKEYS=y
++#CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI4=y
++#CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_RMI4_DEV=y
++#CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE=y
++CONFIG_TOUCHSCREEN_GSL1680=y
+ CONFIG_TOUCHSCREEN_GT9XX=y
+ CONFIG_GT9XX_TOUCHPANEL_DRIVER=y
+ CONFIG_INPUT_MISC=y
+-- 
+1.8.3.1
+

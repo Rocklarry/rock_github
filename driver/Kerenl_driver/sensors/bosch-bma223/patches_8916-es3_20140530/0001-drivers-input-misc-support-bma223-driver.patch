@@ -1,0 +1,37 @@
+From c984ef78693ede0cbf35d1f9ab2c6840a1651147 Mon Sep 17 00:00:00 2001
+From: Ran Gu <guran1128@thundersoft.com>
+Date: Thu, 29 May 2014 16:59:01 +0800
+Subject: [PATCH] drivers:input:misc:support bma223 driver
+
+Driver support of bma223
+
+Change-Id: I88d98ef825cd1c401407745c279e4376b9df4fa3
+Signed-off-by: Ran Gu <guran1128@thundersoft.com>
+---
+ drivers/input/misc/bma2x2.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/input/misc/bma2x2.c b/drivers/input/misc/bma2x2.c
+index d4105b6..a86cb81 100644
+--- a/drivers/input/misc/bma2x2.c
++++ b/drivers/input/misc/bma2x2.c
+@@ -1,6 +1,6 @@
+ /*!
+  * @section LICENSE
+- * (C) Copyright 2013 Bosch Sensortec GmbH All Rights Reserved
++ * (C) Copyright 2013-2014 Bosch Sensortec GmbH All Rights Reserved
+  *
+  * This software program is licensed subject to the GNU General
+  * Public License (GPL).Version 2,June 1991,
+@@ -73,7 +73,7 @@
+ #define SLOPE_X_INDEX               5
+ #define SLOPE_Y_INDEX               6
+ #define SLOPE_Z_INDEX               7
+-#define BMA2X2_MAX_DELAY            200
++#define BMA2X2_MAX_DELAY            400
+ #define BMA2X2_RANGE_SET            3  /* +/- 2G */
+ #define BMA2X2_BW_SET               12 /* 125HZ  */
+ 
+-- 
+1.7.4.1
+

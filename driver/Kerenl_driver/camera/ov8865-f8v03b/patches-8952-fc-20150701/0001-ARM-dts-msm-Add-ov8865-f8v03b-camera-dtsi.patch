@@ -1,0 +1,30 @@
+From a8cac6a672f63ca1f2e3cb1d899acb5f2e4d8dcc Mon Sep 17 00:00:00 2001
+From: Wei Ding <weiding@qti.qualcomm.com>
+Date: Tue, 30 Jun 2015 17:48:30 +0800
+Subject: [PATCH] ARM: dts: msm: Add ov8865 f8v03b camera dtsi.
+
+Change-Id: Icba6123fc30be67fe788c14937b78ebe142d5e87
+Signed-off-by: Wei Ding <weiding@qti.qualcomm.com>
+---
+ .../boot/dts/qcom/msm8952-camera-sensor-qrd.dtsi   |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+ mode change 100644 => 100755 arch/arm/boot/dts/qcom/msm8952-camera-sensor-qrd.dtsi
+
+diff --git a/arch/arm/boot/dts/qcom/msm8952-camera-sensor-qrd.dtsi b/arch/arm/boot/dts/qcom/msm8952-camera-sensor-qrd.dtsi
+old mode 100644
+new mode 100755
+index 51d9172..ae2731f
+--- a/arch/arm/boot/dts/qcom/msm8952-camera-sensor-qrd.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8952-camera-sensor-qrd.dtsi
+@@ -185,7 +185,7 @@
+ 		cell-index = <0>;
+ 		compatible = "qcom,camera";
+ 		reg = <0x0>;
+-		qcom,special-support-sensors = "ov13850_q13v06k";
++		qcom,special-support-sensors = "ov8865_f8v03b";
+ 		qcom,csiphy-sd-index = <0>;
+ 		qcom,csid-sd-index = <0>;
+ 		qcom,mount-angle = <90>;
+-- 
+1.7.9.5
+

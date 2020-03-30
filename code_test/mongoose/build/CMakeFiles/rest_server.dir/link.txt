@@ -1,0 +1,1 @@
+/usr/bin/cc   -rdynamic CMakeFiles/rest_server.dir/server/server.c.o  -o rest_server libavs_auth.a libnetwork.a libssdp.a libmongoose.a -lpthread 

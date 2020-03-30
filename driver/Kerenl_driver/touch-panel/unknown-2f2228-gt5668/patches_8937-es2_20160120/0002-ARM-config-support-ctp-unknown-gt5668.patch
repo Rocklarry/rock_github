@@ -1,0 +1,37 @@
+From c09048bd9bb725dbd3d118fa3a5c99bcde3bf3ba Mon Sep 17 00:00:00 2001
+From: maoyq0504 <maoyq0504@thundersoft.com>
+Date: Wed, 20 Jan 2016 18:11:03 +0800
+Subject: [PATCH 2/3] ARM:config: support ctp unknown gt5668
+
+Add CTP IHV-UNKNOWN@2F2228@GT5668 config
+
+Change-Id: Ia48fcf11cb5c1d7ecf0fb37a76f7b26ea2bfe4a6
+Signed-off-by: Yuanqiu Mao <maoyq0504@thundersoft.com>
+---
+ arch/arm64/configs/msm8937_defconfig | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm64/configs/msm8937_defconfig b/arch/arm64/configs/msm8937_defconfig
+index ceb3fea..4ba3e1b 100644
+--- a/arch/arm64/configs/msm8937_defconfig
++++ b/arch/arm64/configs/msm8937_defconfig
+@@ -281,11 +281,15 @@ CONFIG_INPUT_TABLET=y
+ CONFIG_INPUT_TOUCHSCREEN=y
+ CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_CORE_v21=y
+ CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_RMI_DEV_v21=y
+-CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE_v21=y
++#CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE_v21=y
+ CONFIG_TOUCHSCREEN_ATMEL_MXT=y
+ CONFIG_TOUCHSCREEN_GEN_VKEYS=y
+ CONFIG_TOUCHSCREEN_FT5X06=y
+ CONFIG_TOUCHSCREEN_MAXIM_STI=y
++CONFIG_TOUCHSCREEN_GT9XX=y
++CONFIG_GT9XX_TOUCHPANEL_DRIVER=y
++CONFIG_GT9XX_TOUCHPANEL_UPDATE=y
++CONFIG_GT9XX_TOUCHPANEL_DEBUG=y
+ CONFIG_INPUT_MISC=y
+ CONFIG_INPUT_HBTP_INPUT=y
+ CONFIG_INPUT_KEYCHORD=y
+-- 
+1.9.1
+

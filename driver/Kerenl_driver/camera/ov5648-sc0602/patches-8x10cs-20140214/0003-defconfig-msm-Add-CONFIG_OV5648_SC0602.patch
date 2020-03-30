@@ -1,0 +1,28 @@
+From 779880d53cb5136e592acc83212bfa1eed723dd8 Mon Sep 17 00:00:00 2001
+From: Lin Zhang <zhanglin0425@thundersoft.com>
+Date: Fri, 14 Feb 2014 14:10:49 +0800
+Subject: [PATCH 3/3] defconfig: msm: Add CONFIG_OV5648_SC0602
+
+Add CONFIG_OV5648_SC0602=y to the defconfig file of msm8610
+
+Change-Id: If753c9ed598ef207591b2ae39a14b26e57574dba
+Signed-off-by: Lin Zhang <zhanglin0425@thundersoft.com>
+---
+ arch/arm/configs/msm8610_defconfig |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/configs/msm8610_defconfig b/arch/arm/configs/msm8610_defconfig
+index 1ca7ed6..9f6b7be 100644
+--- a/arch/arm/configs/msm8610_defconfig
++++ b/arch/arm/configs/msm8610_defconfig
+@@ -328,6 +328,7 @@ CONFIG_MSM_ISPIF=y
+ CONFIG_MSM_ISPIF_V1=y
+ CONFIG_MSMB_CAMERA=y
+ CONFIG_MSM_CSI22_HEADER=y
++CONFIG_OV5648_SC0602=y
+ CONFIG_OV9724=y
+ CONFIG_SP1628=y
+ CONFIG_GC0339=y
+-- 
+1.7.4.1
+

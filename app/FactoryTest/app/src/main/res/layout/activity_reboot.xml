@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context="com.a3nod.lenovo.sparrowfactory.RebootActivity">
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Reboot test"
+        android:textSize="32sp"/>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/reboot_times"
+            />
+        <Spinner
+            android:id="@+id/sp_reboot_times"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1">
+        </Spinner>
+    </LinearLayout>
+    <TextView
+        android:id="@+id/tv_reboot_test_status"
+        android:layout_width="wrap_content"
+        android:layout_height="300dp"
+        android:textSize="32sp"/>
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="reboot start"
+        android:onClick="reboot"
+        />
+</LinearLayout>

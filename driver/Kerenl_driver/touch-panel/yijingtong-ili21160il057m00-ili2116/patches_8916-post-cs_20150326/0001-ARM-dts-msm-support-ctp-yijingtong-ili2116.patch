@@ -1,0 +1,98 @@
+From beb510ea18efff54c6f802f2a3c614381ac50d3c Mon Sep 17 00:00:00 2001
+From: yanqy <yanqy0911@thundersoft.com>
+Date: Wed, 25 Mar 2015 10:33:08 +0800
+Subject: [PATCH 1/3] ARM:dts:msm: support ctp yijingtong ili2116
+
+Add CTP IHV-YIJINGTONG@ILI21160IL057M00@ILI2116 device tree
+
+Change-Id: I296293e7a46bde327444897f2ca208c10cd97ee3
+Signed-off-by: Qiyang Yan <yanqy0911@thundersoft.com>
+---
+ .../bindings/input/touchscreen/ilitek-ts.txt       |   37 ++++++++++++++++++++
+ arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi       |   15 ++++++--
+ 2 files changed, 50 insertions(+), 2 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/input/touchscreen/ilitek-ts.txt
+
+diff --git a/Documentation/devicetree/bindings/input/touchscreen/ilitek-ts.txt b/Documentation/devicetree/bindings/input/touchscreen/ilitek-ts.txt
+new file mode 100644
+index 0000000..f5b39ed
+--- /dev/null
++++ b/Documentation/devicetree/bindings/input/touchscreen/ilitek-ts.txt
+@@ -0,0 +1,37 @@
++ilitek touch controller
++
++The ilitek controller is connected to host processor
++via i2c. The controller generates interrupts when the
++user touches the panel. The host controller is expected
++to read the touch coordinates over i2c and pass the coordinates
++to the rest of the system.
++
++Required properties:
++
++ - compatible		: should be "ilitek,ili2116"
++ - reg			: i2c slave address of the device
++ - interrupt-parent	: parent of interrupt
++ - interrupts		: touch sample interrupt to indicate presense or release
++				of fingers on the panel.
++ - vdd-supply		: Power supply needed to power up the device
++ - vcc_i2c-supply	: Power source required to power up i2c bus
++ - ilitek,irq-gpio	: irq gpio which is to provide interrupts to host,
++				same as "interrupts" node. It will also
++				contain active low or active high information.
++ - ilitek,reset-gpio	: reset gpio to control the reset of chip
++ - ilitek,fw_vkey_support : to support the virtual keys
++
++Example:
++	i2c@78b9000 { /* BLSP1 QUP5 */
++		mstar@41 {
++			compatible = "ilitek,ili2116";
++			reg = <0x41>;
++			interrupt-parent = <&msm_gpio>;
++			interrupts = <13 0x2008>;
++			ilitek,irq-gpio = <&msm_gpio 13 0x2008>;
++			ilitek,reset-gpio = <&msm_gpio 12 0x0>;
++			ilitek,fw_vkey_support;
++			vdd-supply = <&pm8916_l17>;
++			vcc_i2c-supply = <&pm8916_l16>;
++		};
++	};
+diff --git a/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi b/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
+index 5bb6734..580fede 100644
+--- a/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
+@@ -299,6 +299,17 @@
+ 			synaptics,disable-gpios;
+ 			synaptics,fw-image-name = "PR1601177-s3207_8916_qrd_00430000.img";
+ 		};
++		ilitek@41 {
++			compatible = "ilitek,ili2116";
++			reg = <0x41>;
++			interrupt-parent = <&msm_gpio>;
++			interrupts = <13 0x2008>;
++			ilitek,irq-gpio = <&msm_gpio 13 0x2008>;
++			ilitek,reset-gpio = <&msm_gpio 12 0x0>;
++			ilitek,fw_vkey_support;
++			vdd-supply = <&pm8916_l17>;
++			vcc_i2c-supply = <&pm8916_l16>;
++		};
+ 	};
+ 
+ 	vdd_vreg: vdd_vreg {
+@@ -309,12 +320,12 @@
+ 
+ 	gen-vkeys {
+ 		compatible = "qcom,gen-vkeys";
+-		label = "synaptics_rmi4_i2c";
++		label = "ili2116";
+ 		qcom,disp-maxx = <720>;
+ 		qcom,disp-maxy = <1280>;
+ 		qcom,panel-maxx = <720>;
+ 		qcom,panel-maxy = <1369>;
+-		qcom,key-codes = <158 172 139>;
++		qcom,key-codes = <139 158>;
+ 	};
+ };
+ 
+-- 
+1.7.9.5
+

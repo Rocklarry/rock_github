@@ -1,0 +1,2153 @@
+From 0e8bd275ebd73b2d1b127d56505950485a8ff888 Mon Sep 17 00:00:00 2001
+From: Yukun Wan <wanyk0402@thundersoft.com>
+Date: Thu, 11 Dec 2014 19:55:09 +0800
+Subject: [PATCH 1/3] drivers:input:misc: support em30718 driver
+
+Driver support em30718
+
+Change-Id: I44a6e21bc96055691423d5d30c8651e83df869cc
+Signed-off-by: Yukun Wan <wanyk0402@thundersoft.com>
+---
+ .../devicetree/bindings/input/misc/em30718.txt     |   32 +
+ drivers/input/misc/Kconfig                         |   11 +
+ drivers/input/misc/Makefile                        |    1 +
+ drivers/input/misc/em30718.c                       | 1966 ++++++++++++++++++++
+ drivers/input/misc/em30718.h                       |   79 +
+ 5 files changed, 2089 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/input/misc/em30718.txt
+ create mode 100644 drivers/input/misc/em30718.c
+ create mode 100644 drivers/input/misc/em30718.h
+
+diff --git a/Documentation/devicetree/bindings/input/misc/em30718.txt b/Documentation/devicetree/bindings/input/misc/em30718.txt
+new file mode 100644
+index 0000000..c80d9ba
+--- /dev/null
++++ b/Documentation/devicetree/bindings/input/misc/em30718.txt
+@@ -0,0 +1,32 @@
++Epticore em30718 L/P sensor
++
++Required properties:
++
++ - compatible		: Should be "epticore,em3071x".
++ - reg				: i2c slave address of the device.
++ - interrupt-parent	: Parent of interrupt.
++ - interrupts		: L/P sample interrupt to indicate new data ready.
++ - vdd-supply		: Power supply needed to power up the device.
++ - vio-supply		: IO power supply needed for IO and I2C.
++ - epticore,irq-gpio	: The gpio pin for the interrupt.
++ - epticore,prox_th_min	: The threshold adc value for proximity sensor to trigger close  interrupt.
++ - epticore,prox_th_max: The threshold adc value for proximity sensor to trigger away interrupt.
++ - epticore,als_delay	: The interval polling time for light sensor.
++
++Example:
++
++	epticore@24 {
++		compatible = "epticore,em3071x";
++		reg = <0x24>;
++		pinctrl-names = "default","sleep";
++		pinctrl-0 = <&em3071x_default>;
++		pinctrl-1 = <&em3071x_sleep>;
++		interrupt-parent = <&msm_gpio>;
++		interrupts = <113 0x2002>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++		epticore,irq-gpio = <&msm_gpio 113 0x2002>;
++		epticore,prox_th_min = <80>;
++		epticore,prox_th_max = <250>;
++		epticore,als_delay = <100>;
++	};
+\ No newline at end of file
+diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
+index b358471..0481948 100644
+--- a/drivers/input/misc/Kconfig
++++ b/drivers/input/misc/Kconfig
+@@ -734,6 +734,17 @@ config SENSORS_MMC3416X
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called mmc3416x.
+ 
++config SENSORS_EM30718
++	tristate "EM30718 proximity and light sensor"
++	depends on I2C
++	default n
++	help
++	  Say Y here to enable the EM30718 Proximity
++	  Sensor with Ambient Light Sensor.
++
++	  To compile this driver as a module, choose M here: the
++	  module will be called em30718.
++
+ config SENSORS_AKM09911
+ 	tristate "AKM09911 3-axis electronic compass sensor driver"
+ 	depends on I2C
+diff --git a/drivers/input/misc/Makefile b/drivers/input/misc/Makefile
+index 139a4fb..f530b66 100644
+--- a/drivers/input/misc/Makefile
++++ b/drivers/input/misc/Makefile
+@@ -65,6 +65,7 @@ obj-$(CONFIG_INPUT_YEALINK)		+= yealink.o
+ obj-$(CONFIG_BMP18X)			+= bmp18x-core.o
+ obj-$(CONFIG_BMP18X_I2C)		+= bmp18x-i2c.o
+ obj-$(CONFIG_SENSORS_MMC3416X)		+= mmc3416x.o
++obj-$(CONFIG_SENSORS_EM30718)		+= em30718.o
+ obj-$(CONFIG_SENSORS_MMA8X5X)	  	+= mma8x5x.o
+ obj-$(CONFIG_SENSORS_STK3X1X)		+= stk3x1x.o
+ obj-$(CONFIG_SENSORS_CAPELLA_CM36283)	+= cm36283.o
+diff --git a/drivers/input/misc/em30718.c b/drivers/input/misc/em30718.c
+new file mode 100644
+index 0000000..6378160
+--- /dev/null
++++ b/drivers/input/misc/em30718.c
+@@ -0,0 +1,1966 @@
++/*****************************************************************************
++* Copyright 2009-2014 Broadcom Corporation.  All rights reserved.
++*
++* Unless you and Broadcom execute a separate written software license
++* agreement governing use of this software, this software is licensed to you
++* under the terms of the GNU General Public License version 2, available at
++* http://www.broadcom.com/licenses/GPLv2.php (the "GPL").
++*
++* Notwithstanding the above, under no circumstances may you combine this
++* software in any way with any other Broadcom software provided under a
++* license other than the GPL, without Broadcom's express prior written
++* consent.
++*****************************************************************************/
++/*
++ * Ambient Light and Proximity Sensor Driver
++ *
++ * This device controller is a slave on the I2C bus and is assigned an
++ * address. This driver sets up the SOC as a I2C master and reads the slave
++ * address to prox and als information.
++ *
++ * The driver uses the Linux input subsystem. User can access the touchscreen
++ * data through the /dev/input/eventX node
++ *
++ */
++#include <linux/interrupt.h>
++#include <linux/delay.h>
++#include <linux/kernel.h>
++#include <linux/fs.h>
++#include <linux/cdev.h>
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/slab.h>
++#include <linux/i2c.h>
++#include <linux/hwmon.h>
++#include <linux/timer.h>
++#include <linux/uaccess.h>
++#include <linux/errno.h>
++#include <linux/delay.h>
++#include <linux/irq.h>
++#include <linux/gpio.h>
++#include <linux/of_gpio.h>
++#include <linux/input.h>
++#include <linux/miscdevice.h>
++#include <linux/wakelock.h>
++#ifdef CONFIG_HAS_EARLYSUSPEND
++#include <linux/earlysuspend.h>
++#endif
++#include <linux/of.h>
++#include <linux/of_fdt.h>
++#include <linux/of_platform.h>
++#include <linux/sensors.h>
++#include <linux/regulator/consumer.h>
++#include "em30718.h"
++
++#define LOG_LEVEL_ERROR         (1U<<0)
++#define LOG_LEVEL_INFO          (1U<<0)
++#define LOG_LEVEL_DEBUG         (1U<<1)
++#define LOG_LEVEL_FLOW          (1U<<2)
++
++#define EM3071X_POLL_MODE
++
++#define EM3071X_INT_GPIO	113
++#define EM3071X_TAG        "[EM3071X]"
++
++#define EM3071X_DEVICE_NAME             "em3071x"
++#define EM3071X_DEVICE_ID                "em3071x"
++#define EM3071X_ID_NAME_SIZE             10
++
++#define EM3071X_MAX_NUM_DEVICES           3
++#define EM3071X_MAX_DEVICE_REGS            10
++
++#define EM3071X_CFG_REG             0x1
++#define EM3071X_PROX_EN_BIT    0x80
++#define EM3071X_PROX_SLP_BIT   0x40
++#define EM3071X_PROX_DR_BIT    0x38
++#define EM3071X_ALS_EN_BIT     0x04
++#define EM3071X_ALS_RANGE_BIT  0x02
++#define EM3071X_ALSIR_MODE_BIT 0x00
++#define EM3071X_SENSOR_All_Off 0x00
++#define EM3071X_ALS_ON (EM3071X_ALS_EN_BIT\
++	| EM3071X_ALS_RANGE_BIT | EM3071X_ALSIR_MODE_BIT)
++#define EM3071X_ALS_MASK (EM3071X_ALS_EN_BIT\
++	| EM3071X_ALS_RANGE_BIT | EM3071X_ALSIR_MODE_BIT)
++
++#define EM3071X_PROX_MASK (EM3071X_PROX_EN_BIT\
++	| EM3071X_PROX_SLP_BIT | EM3071X_PROX_DR_BIT)
++
++#define EM3071X_PROX_ON         (0xB0)
++ #define EM3071X_INT_REG               0x2
++#define EM3071X_INT_PROX_BIT      0x80
++#define EM3071X_INT_PROX_PRST_BIT 0x60
++#define EM3071X_INT_ALS_BIT       0x08
++#define EM3071X_INT_ALS_PRST_BIT  0x06
++#define EM3071X_INT_CTRL_BIT      0x01
++#define EM3071X_INT_All_OFF       0x00
++#define EM3071X_ALS_INT_ON         (0x00)
++#define EM3071X_ALS_INT_MASK       (0x0E)
++#define EM3071X_PROX_INT_ON        (0x20)
++#define EM3071X_PROX_INT_MASK      (0xE0)
++#define EM3071X_PROX_TH_L         0x3
++#define EM3071X_PROX_TH_H        0x4
++#define EM3071X_ALSIR_TH_L         0x5
++#define EM3071X_ALSIR_TH_HL      0x6
++#define EM3071X_ALSIR_TH_H        0x7
++#define EM3071X_PROX_DATA        0x8
++#define EM3071X_ALSIR_DATA_L   0x9
++#define EM3071X_ALSIR_DATA_H   0xa
++#define       EM3071X_MAX_LUX                          65535000
++#define EM3071X_FILTER_DEPTH            3
++#define THRES_LO_TO_HI_RATIO  (4/5)
++static int debug_mask = LOG_LEVEL_ERROR;
++
++/* em30718 polling rate in ms */
++#define EM30718_LS_MIN_POLL_DELAY	1
++#define EM30718_LS_MAX_POLL_DELAY	1000
++
++module_param_named(debug_mask, debug_mask, int,
++S_IRUGO | S_IWUSR | S_IWGRP);
++
++static const struct of_device_id em3071x_of_match[] = {
++	{.compatible = "epticore,em3071x",},
++	{},
++}
++
++MODULE_DEVICE_TABLE(of, em3071x_of_match);
++static int em30718_enable_als_sensor(struct i2c_client *client, int val);
++static int em30718_enable_ps_sensor(struct i2c_client *client, int val);
++static int em3071x_probe(struct i2c_client *clientp,
++	const struct i2c_device_id *idp);
++static int em3071x_remove(struct i2c_client *client);
++static int em3071x_open(struct inode *inode, struct file *file);
++static int em3071x_release(struct inode *inode, struct file *file);
++static long em3071x_ioctl(struct file *file, unsigned int cmd,
++	unsigned long arg);
++static int em3071x_read(struct file *file, char *buf, size_t count,
++	loff_t *ppos);
++static int em3071x_write(struct file *file, const char *buf, size_t count,
++	loff_t *ppos);
++static loff_t em3071x_llseek(struct file *file, loff_t offset, int orig);
++static int em30718_init_reg(struct i2c_client *client);
++#ifdef EM3071X_POLL_MODE
++/*static struct timer_list prox_poll_timer;*/
++#endif
++
++#ifdef CONFIG_HAS_EARLYSUSPEND
++static void em3071x_early_suspend(struct early_suspend *handler);
++static void em3071x_late_resume(struct early_suspend *handler);
++#endif
++
++static int prv_em3071x_get_lux(void);
++static int prv_em3071x_device_name(unsigned char *bufp, char **device_name);
++static int prv_em3071x_prox_poll(struct em3071x_prox_info_s *prxp);
++static void em30718_report_ps_value(int mask);
++static void em30718_report_als_value(int mask);
++static int em3071x_suspend(struct device *dev);
++static int em3071x_resume(struct device *dev);
++
++static int prv_em3071x_ctrl_lp(int mask);
++static int light_on;
++static int prox_on;
++
++enum em3071x_chip_type_e {
++	TSL29026 = 0,
++	TMD2771,
++	EM30718,
++};
++
++struct em3071x_alsprox_data_s {
++	struct input_dev *input_dev;
++};
++
++static struct em3071x_alsprox_data_s *light;
++static struct em3071x_alsprox_data_s *proximity;
++static dev_t em3071x_device_number;
++struct class *em3071x_class;
++
++static struct i2c_device_id em3071x_idt[] = {
++	{EM3071X_DEVICE_ID, 0},
++	{}
++};
++
++MODULE_DEVICE_TABLE(i2c, em3071x_idt);
++
++static const struct dev_pm_ops em30718_pm_ops = {
++	.suspend	= em3071x_suspend,
++	.resume	= em3071x_resume,
++};
++
++struct i2c_client *em3071x_my_clientp;
++struct i2c_client *em3071x_bad_clientp[EM3071X_MAX_NUM_DEVICES];
++static struct i2c_driver em3071x_driver = {
++	.driver = {
++		.owner = THIS_MODULE,
++		.name = "em3071x",
++		.of_match_table = em3071x_of_match,
++		.pm = &em30718_pm_ops,
++	},
++	.id_table = em3071x_idt,
++	.probe = em3071x_probe,
++	.remove = em3071x_remove,
++/*
++#ifndef CONFIG_HAS_EARLYSUSPEND
++   .suspend = em3071x_suspend,
++   .resume    = em3071x_resume,
++#endif
++*/
++};
++
++struct em3071x_intr_data_t {
++	int int_gpio;
++	int irq;
++};
++
++struct em3071x_data_t {
++	struct i2c_client *client;
++	struct device *dev;
++	struct cdev cdev;
++	unsigned int addr;
++	char em3071x_id;
++	char em3071x_name[EM3071X_ID_NAME_SIZE];
++	struct mutex update_lock;
++	struct wake_lock em3071x_wake_lock;
++	struct wake_lock ps_wake_lock;
++	struct em3071x_pdata_t *platform_data;
++
++	/* regulator data */
++	bool power_on;
++	struct regulator *vdd;
++	struct regulator *vio;
++	bool power_enabled;
++	int irq;
++	atomic_t als_delay;
++	/* control flag from HAL */
++	unsigned int enable_ps_sensor;
++	unsigned int enable_als_sensor;
++
++	/* save sensor enabling state for resume */
++	unsigned int als_enable_state;
++
++#ifdef EM3071X_POLL_MODE
++	struct delayed_work prox_poll_work;
++	/*struct delayed_work ps_work;*/
++#endif
++
++	struct sensors_classdev als_cdev;
++	struct sensors_classdev ps_cdev;
++
++	char valid;
++	unsigned long last_updated;
++	struct em3071x_intr_data_t *pdata;
++	struct work_struct em3071x_work;
++
++#ifdef CONFIG_HAS_EARLYSUSPEND
++	struct early_suspend         early_suspend;
++#endif
++
++	enum em3071x_chip_type_e chip_type;
++	struct mutex proximity_calibrating;
++};
++
++static struct em3071x_data_t *em3071x_data_tp;
++
++static const struct file_operations ISL_fops = {
++	.owner = THIS_MODULE,
++	.open = em3071x_open,
++	.release = em3071x_release,
++	.read = em3071x_read,
++	.write = em3071x_write,
++	.llseek = em3071x_llseek,
++	.unlocked_ioctl = em3071x_ioctl,
++
++};
++
++struct em3071x_cfg_s *em3071x_cfgp;
++static u32 calibrate_target_param = 300000;
++static u16 als_time_param = 27;
++static u16 scale_factor_param = 1;
++static u8 filter_history_param = 3;
++static u8 filter_count_param = 1;
++static u8 gain_param = 1;
++static u16 gain_trim_param = 25;
++static u16 prox_threshold_hi_param = 250;
++static u16 prox_threshold_lo_param = 80;
++static u8 prox_int_time_param = 0xF6;
++static u8 prox_adc_time_param = 0xFF;
++static u8 prox_wait_time_param = 0xFF;
++static u8 prox_intr_filter_param = 0x00;
++static u8 prox_pulse_cnt_param = 0x10;
++static u8 prox_gain_param = 0x20;
++static u16 als_intr_threshold_hi_param;
++static u16 als_intr_threshold_lo_param;
++int g_em3071x_lux;
++
++struct em3071x_prox_info_s em3071x_prox_cal_info[20];
++struct em3071x_prox_info_s em3071x_prox_cur_info;
++struct em3071x_prox_info_s *em3071x_prox_cur_infop =
++	&em3071x_prox_cur_info;
++static int device_released;
++static u16 sat_als;
++static u16 sat_prox;
++int isPsensorLocked;
++
++struct time_scale_factor {
++	u16 numerator;
++	u16 denominator;
++	u16 saturation;
++};
++
++struct time_scale_factor ISL_TritonTime = { 1, 0, 0 };
++struct time_scale_factor *ISL_lux_timep = &ISL_TritonTime;
++static int lux_history[EM3071X_FILTER_DEPTH] = {
++	-ENODATA,
++	-ENODATA,
++	-ENODATA
++};
++struct em3071x_prox_data_t {
++	u16 ratio;
++	u16 hi;
++	u16 lo;
++};
++
++struct em3071x_prox_data_t em3071x_prox_data[] = {
++	{1, 50, 20},
++	{3, 20, 16},
++	{6, 18, 14},
++	{10, 16, 16},
++	{0, 0, 0}
++};
++struct em3071x_prox_data_t *em3071x_prox_tablep =
++	em3071x_prox_data;
++
++static struct sensors_classdev sensors_light_cdev = {
++	.name = "em30718-light",
++	.vendor = "epticore",
++	.version = 1,
++	.handle = SENSORS_LIGHT_HANDLE,
++	.type = SENSOR_TYPE_LIGHT,
++	.max_range = "60000",
++	.resolution = "0.0125",
++	.sensor_power = "0.20",
++	.min_delay = 0, /* in microseconds */
++	.fifo_reserved_event_count = 0,
++	.fifo_max_event_count = 0,
++	.enabled = 0,
++	.delay_msec = 100,
++	.sensors_enable = NULL,
++	.sensors_poll_delay = NULL,
++};
++
++static struct sensors_classdev sensors_proximity_cdev = {
++	.name = "em30718-proximity",
++	.vendor = "epticore",
++	.version = 1,
++	.handle = SENSORS_PROXIMITY_HANDLE,
++	.type = SENSOR_TYPE_PROXIMITY,
++	.max_range = "5",
++	.resolution = "5.0",
++	.sensor_power = "3",
++	.min_delay = 0, /* in microseconds */
++	.fifo_reserved_event_count = 0,
++	.fifo_max_event_count = 0,
++	.enabled = 0,
++	.delay_msec = 100,
++	.sensors_enable = NULL,
++	.sensors_poll_delay = NULL,
++};
++
++static int em30718_power_ctl(struct em3071x_data_t *sensor, bool on)
++{
++	int rc = 0;
++
++	if (on && (!sensor->power_enabled)) {
++		rc = regulator_enable(sensor->vdd);
++		if (rc) {
++			dev_err(&sensor->client->dev,
++				"Regulator vdd enable failed rc=%d\n", rc);
++			return rc;
++		}
++
++		rc = regulator_enable(sensor->vio);
++		if (rc) {
++			dev_err(&sensor->client->dev,
++				"Regulator vio enable failed rc=%d\n", rc);
++			regulator_disable(sensor->vdd);
++			return rc;
++		}
++
++		sensor->power_enabled = true;
++	} else if (!on && (sensor->power_enabled)) {
++		rc = regulator_disable(sensor->vdd);
++		if (rc) {
++			dev_err(&sensor->client->dev,
++				"Regulator vdd disable failed rc=%d\n", rc);
++			return rc;
++		}
++
++		rc = regulator_disable(sensor->vio);
++		if (rc) {
++			dev_err(&sensor->client->dev,
++				"Regulator vio disable failed rc=%d\n", rc);
++			if (regulator_enable(sensor->vdd) ||
++					regulator_enable(sensor->vio))
++				return -EIO;
++		}
++
++		sensor->power_enabled = false;
++	} else {
++		dev_warn(&sensor->client->dev,
++				"Ignore power status change from %d to %d\n",
++				on, sensor->power_enabled);
++	}
++	return rc;
++}
++
++static int em30718_power_init(struct em3071x_data_t *sensor)
++{
++	int ret = 0;
++
++	sensor->vdd = regulator_get(&sensor->client->dev, "vdd");
++	if (IS_ERR(sensor->vdd)) {
++		ret = PTR_ERR(sensor->vdd);
++		dev_err(&sensor->client->dev,
++			"Regulator get failed vdd ret=%d\n", ret);
++		return ret;
++	}
++
++	if (regulator_count_voltages(sensor->vdd) > 0) {
++		ret = regulator_set_voltage(sensor->vdd, EM30718_VDD_MIN_UV,
++					   EM30718_VDD_MAX_UV);
++		if (ret) {
++			dev_err(&sensor->client->dev,
++				"Regulator set_vtg failed vdd ret=%d\n", ret);
++			goto reg_vdd_put;
++		}
++	}
++
++	sensor->vio = regulator_get(&sensor->client->dev, "vio");
++	if (IS_ERR(sensor->vio)) {
++		ret = PTR_ERR(sensor->vio);
++		dev_err(&sensor->client->dev,
++			"Regulator get failed vio ret=%d\n", ret);
++		goto reg_vdd_set_vtg;
++	}
++
++	if (regulator_count_voltages(sensor->vio) > 0) {
++		ret = regulator_set_voltage(sensor->vio,
++				EM30718_VIO_MIN_UV,
++				EM30718_VIO_MAX_UV);
++		if (ret) {
++			dev_err(&sensor->client->dev,
++			"Regulator set_vtg failed vio ret=%d\n", ret);
++			goto reg_vio_put;
++		}
++	}
++
++	return 0;
++
++reg_vio_put:
++	regulator_put(sensor->vio);
++reg_vdd_set_vtg:
++	if (regulator_count_voltages(sensor->vdd) > 0)
++		regulator_set_voltage(sensor->vdd, 0,
++		EM30718_VDD_MAX_UV);
++reg_vdd_put:
++	regulator_put(sensor->vdd);
++	return ret;
++}
++
++static int em30718_power_deinit(struct em3071x_data_t *sensor)
++{
++	int ret = 0;
++	if (regulator_count_voltages(sensor->vdd) > 0)
++		regulator_set_voltage(sensor->vdd, 0,
++		EM30718_VDD_MAX_UV);
++	regulator_put(sensor->vdd);
++	return ret;
++}
++
++static irqreturn_t em3071x_interrupt(int irq, void *data)
++{
++	pr_info("em3071x: em3071x_interrupt\n");
++
++	disable_irq_nosync(em3071x_data_tp->irq);
++	schedule_work(&em3071x_data_tp->em3071x_work);
++	return IRQ_HANDLED;
++}
++
++static void prv_em3071x_work_func(struct work_struct *w)
++{
++	int ret = 0;
++	u16 status = 0;
++	s32 status2 = 0;
++	s32 status3 = 0;
++	status = i2c_smbus_read_word_data(em3071x_data_tp->client,
++		EM3071X_INT_REG);
++	if (status < 0)
++		goto exit;
++
++	status2 = i2c_smbus_read_word_data(em3071x_data_tp->client,
++		EM3071X_PROX_TH_L);
++	status3 = i2c_smbus_read_word_data(em3071x_data_tp->client,
++		EM3071X_PROX_TH_H);
++	pr_info("before write reg_int   reg3=%x, reg4=%x\n", status2, status3);
++
++	status = status & (~EM3071X_INT_PROX_BIT);
++
++	ret = i2c_smbus_write_byte_data(em3071x_data_tp->client,
++		EM3071X_INT_REG, 0);
++	pr_info("em3071x: data %d, hi=%d, lo=%d\n",
++		em3071x_prox_cur_infop->prox_data,
++		em3071x_cfgp->prox_threshold_hi,
++		em3071x_cfgp->prox_threshold_lo);
++
++	status = i2c_smbus_read_word_data(em3071x_data_tp->client,
++		EM3071X_INT_REG);
++	if (status < 0)
++		goto exit;
++
++	ret = prv_em3071x_prox_poll(em3071x_prox_cur_infop);
++	if (ret < 0)
++		pr_info("get prox poll failed\n");
++
++	if (em3071x_prox_cur_infop->prox_data >
++		em3071x_cfgp->prox_threshold_hi)
++		em3071x_prox_cur_infop->prox_event = 1;
++	else if ((em3071x_prox_cur_infop->prox_data <
++		em3071x_cfgp->prox_threshold_lo))
++		em3071x_prox_cur_infop->prox_event = 0;
++
++	/*prv_em3071x_report_value(1);*/
++	em30718_report_ps_value(1);
++
++exit:
++/*	ret = i2c_smbus_write_byte_data(em3071x_data_tp->client,
++		EM3071X_INT_REG, status);
++	if (ret  < 0)
++		pr_info("EM3071X:failed in clear ps interrupt\n");
++*/
++	enable_irq(em3071x_data_tp->irq);
++}
++
++static void em30718_report_ps_value(int mask)
++{
++	struct em3071x_prox_info_s *val = em3071x_prox_cur_infop;
++	int dist;
++
++	if (mask == 1) {
++		if (val->prox_data > em3071x_cfgp->prox_threshold_hi)
++			dist = 0;
++		else if (val->prox_data < em3071x_cfgp->prox_threshold_lo)
++			dist = 1;
++		input_report_abs(proximity->input_dev, ABS_DISTANCE, dist);
++		input_sync(proximity->input_dev);
++		/*wake_lock_timeout(&em3071x_data_tp->ps_wake_lock, HZ);*/
++	}
++}
++
++static void em30718_report_als_value(int mask)
++{
++	int lux_val = g_em3071x_lux;
++
++	if (mask == 0) {
++		input_report_abs(light->input_dev, ABS_MISC, lux_val/2);
++		input_sync(light->input_dev);
++	}
++}
++
++static int __init em3071x_init(void)
++{
++	int ret = 0;
++
++	ret = alloc_chrdev_region(&em3071x_device_number,
++		0, EM3071X_MAX_NUM_DEVICES, EM3071X_DEVICE_NAME);
++	if (ret  < 0) {
++		pr_info("alloc region err\n");
++		return ret;
++	}
++	em3071x_class = class_create(THIS_MODULE,
++		EM3071X_DEVICE_NAME);
++	em3071x_data_tp = kmalloc(sizeof(struct em3071x_data_t),
++		GFP_KERNEL);
++	if (!em3071x_data_tp) {
++		pr_info("kmalloc for struct em3071x_data_t\n");
++		return -ENOMEM;
++	}
++
++	memset(em3071x_data_tp, 0, sizeof(struct em3071x_data_t));
++	cdev_init(&em3071x_data_tp->cdev, &ISL_fops);
++	em3071x_data_tp->cdev.owner = THIS_MODULE;
++	ret = cdev_add(&em3071x_data_tp->cdev,
++		em3071x_device_number, 2);
++	if (ret < 0) {
++		pr_info("cdev_add() failed\n");
++		return ret;
++	}
++	ret = i2c_add_driver(&em3071x_driver);
++	if (ret) {
++		pr_info("i2c_add_driver() failed %d\n", ret);
++		return ret;
++	}
++
++	pr_info("em3071x_init finish\n");
++
++	return ret;
++}
++
++static void __exit em3071x_exit(void)
++{
++	i2c_del_driver(&em3071x_driver);
++	unregister_chrdev_region(em3071x_device_number,
++		EM3071X_MAX_NUM_DEVICES);
++	device_destroy(em3071x_class,
++		MKDEV(MAJOR(em3071x_device_number), 0));
++	cdev_del(&em3071x_data_tp->cdev);
++	class_destroy(em3071x_class);
++	mutex_destroy(&em3071x_data_tp->proximity_calibrating);
++	kfree(em3071x_data_tp);
++}
++
++static ssize_t als_enable_store(struct device *dev,
++	struct device_attribute *attr, const char *buf, size_t count)
++{
++	int enable;
++	int ret;
++
++	ret = kstrtoint(buf, 0, &enable);
++
++	pr_info("als_enable_store:light=%d ret=%d\n", enable, ret);
++	if (ret)
++		return ret;
++
++	if (enable) {
++		if (light_on)
++			pr_info("%s:als_enable_store:light already on.\n",
++			__func__);
++		else {
++			ret = prv_em3071x_ctrl_lp(0x10);
++			if (ret >= 0) {
++				light_on = 1;
++				pr_info("als_enable_store:als on lux=%d\n",
++					g_em3071x_lux);
++			}
++		}
++	} else {
++		if (light_on == 0) {
++			pr_info("%s:als_enable_store:light already off.\n",
++				__func__);
++		} else {
++			ret = prv_em3071x_ctrl_lp(0x20);
++			if (ret >= 0) {
++				light_on = 0;
++				pr_info("%s:als_enable_store:als off.\n",
++					__func__);
++			}
++		}
++	}
++
++	return count;
++}
++
++static DEVICE_ATTR(als_enable, 0644, NULL, als_enable_store);
++
++static ssize_t prox_enable_store(struct device *dev,
++	struct device_attribute *attr, const char *buf, size_t count)
++{
++	int enable;
++	int ret;
++
++	ret = kstrtoint(buf, 0, &enable);
++	if (ret)
++		return ret;
++	if (enable) {
++		if (prox_on) {
++			pr_info("prox_enable_store: prox already on.\n");
++		} else {
++			em3071x_prox_cur_infop->prox_event = 0;
++			em3071x_prox_cur_infop->prox_clear = 0;
++			em3071x_prox_cur_infop->prox_data = 0;
++			ret = prv_em3071x_ctrl_lp(0x01);
++			if (ret >= 0) {
++				prox_on = 1;
++				pr_info("prox_enable_store prox on\n");
++			}
++		}
++	} else {
++		ret = prv_em3071x_ctrl_lp(0x02);
++		if (ret >= 0) {
++			prox_on = 0;
++			pr_info("prox_enable_store prox off\n");
++		}
++	}
++	return count;
++}
++
++static DEVICE_ATTR(prox_enable, 0664, NULL,
++	prox_enable_store);
++
++ssize_t em3071x_ps_val_show(struct device *dev,
++	struct device_attribute *attr, char *buf)
++{
++	u16 ps_val = 0;
++
++	ps_val = i2c_smbus_read_word_data(em3071x_data_tp->client,
++		EM3071X_PROX_DATA);
++	ps_val &= 0x00FF;
++
++	return snprintf(buf, PAGE_SIZE, "%d\n", ps_val);
++}
++static DEVICE_ATTR(ps_val, 0664, em3071x_ps_val_show, NULL);
++ssize_t em3071x_als_val_show(struct device *dev,
++	struct device_attribute *attr, char *buf)
++{
++	u16 als_val = prv_em3071x_get_lux();
++
++	return snprintf(buf, PAGE_SIZE, "%d\n", als_val);
++}
++
++ssize_t em3071x_dump_allreg_show(struct device *dev,
++	struct device_attribute *attr, char *buf)
++{
++	u16 val = 0;
++	int i = 0;
++	char buf1[50]  = {0};
++	char buf_temp[900]  = {0};
++	for (i = 0; i < 0x0F; i++) {
++		val = i2c_smbus_read_word_data(em3071x_data_tp->client, i);
++		memset(buf1, 0, 50);
++		snprintf(buf1, PAGE_SIZE, "reg:%d  val:0x%x\n", i, val);
++		strlcat(buf_temp, buf1, sizeof(buf_temp));
++	}
++
++	return snprintf(buf, PAGE_SIZE, "%s\n", buf_temp);
++}
++
++
++static DEVICE_ATTR(als_val, 0664, em3071x_als_val_show,
++	NULL);
++static DEVICE_ATTR(allreg, 0664, em3071x_dump_allreg_show,
++	NULL);
++
++static struct attribute *em3071x_ctrl_attr[] = {
++	&dev_attr_als_enable.attr,
++	&dev_attr_prox_enable.attr,
++	&dev_attr_ps_val.attr,
++	&dev_attr_als_val.attr,
++	&dev_attr_allreg.attr,
++	NULL,
++};
++static struct attribute_group em3071x_ctrl_attr_grp = {
++	.attrs = em3071x_ctrl_attr,
++};
++
++#ifdef EM3071X_POLL_MODE
++static void em3071x_prox_poll_work_f(struct work_struct *work)
++{
++	g_em3071x_lux = prv_em3071x_get_lux();
++	i2c_smbus_write_byte_data(em3071x_data_tp->client,
++		EM3071X_INT_REG, 0);
++	if (g_em3071x_lux < 0)
++		g_em3071x_lux = 0;
++
++	/*prv_em3071x_report_value(0);*/
++	em30718_report_als_value(0);
++	schedule_delayed_work(&em3071x_data_tp->prox_poll_work,
++		msecs_to_jiffies(atomic_read(&em3071x_data_tp->als_delay)));
++}
++#endif
++
++static int em3071x_suspend(struct device *dev)
++{
++	struct em3071x_pdata_t *pdata;
++	struct em3071x_data_t *data;
++	int rc;
++
++	data = dev_get_drvdata(dev);
++	pdata = data->platform_data;
++
++	/*
++	  * Save sensor state and disable them,
++	  * this is to ensure internal state flags are set correctly.
++	  * device will power off after both sensors are disabled.
++	  * P sensor will not be disabled because it  is a wakeup sensor.
++	*/
++	data->als_enable_state = data->enable_als_sensor;
++
++	if (data->als_enable_state) {
++		rc = em30718_enable_als_sensor(data->client, 0);
++		if (rc)
++			dev_err(&data->client->dev,
++				"Disable light sensor fail! rc=%d\n", rc);
++	}
++
++	return 0;
++}
++
++static int em3071x_resume(struct device *dev)
++{
++	struct em3071x_pdata_t *pdata;
++	struct em3071x_data_t *data;
++	int rc;
++
++	data = dev_get_drvdata(dev);
++	pdata = data->platform_data;
++
++	/* Resume L sensor state as P sensor does not disable */
++	if (data->als_enable_state) {
++		rc = em30718_enable_als_sensor(data->client, 1);
++		if (rc)
++			dev_err(&data->client->dev,
++				"Disable light sensor fail! rc=%d\n", rc);
++	}
++
++	return 0;
++}
++
++#ifdef CONFIG_HAS_EARLYSUSPEND
++static void em3071x_early_suspend(struct early_suspend *handler)
++{
++	struct em3071x_data_t *em3071x_data;
++	em3071x_data = container_of(handler, struct em3071x_data_t,
++		early_suspend);
++	em3071x_suspend(em3071x_data->client, PMSG_SUSPEND);
++}
++
++static void em3071x_late_resume(struct early_suspend *handler)
++{
++	struct em3071x_data_t *em3071x_data;
++
++	em3071x_data = container_of(handler, struct em3071x_data_t,
++		early_suspend);
++	em3071x_resume(em3071x_data->client);
++}
++#endif
++
++static int em30718_enable_als_sensor(struct i2c_client *client, int val)
++{
++	struct em3071x_data_t *data = i2c_get_clientdata(client);
++	int ret;
++
++	pr_debug("%s: val=%d\n", __func__, val);
++
++	if ((val != 0) && (val != 1)) {
++		pr_err("%s: invalid value (val = %d)\n", __func__, val);
++		return -EINVAL;
++	}
++
++	if (val) {
++		if ((data->enable_als_sensor == 0) &&
++			(data->enable_ps_sensor == 0)) {
++			/*Power on and initalize the device*/
++			ret = em30718_power_ctl(data, true);
++			pr_info("%s:11Power on em30718\n", __func__);
++			if (ret < 0) {
++				dev_err(&data->client->dev,
++						"Failed to power up em30718\n");
++				goto exit;
++			}
++			ret = em30718_init_reg(data->client);
++			if (ret < 0) {
++				dev_err(&data->client->dev,
++						"Failed to power up em30718\n");
++				goto exit;
++			}
++		}
++		if (light_on) {
++			pr_info("als_enable_store:light already on.\n");
++		} else {
++			ret = prv_em3071x_ctrl_lp(0x10);
++			if (ret >= 0) {
++				data->enable_als_sensor = 1;
++				light_on = 1;
++				schedule_delayed_work(&data->prox_poll_work,
++					msecs_to_jiffies(
++					atomic_read(&data->als_delay)));
++				pr_info("als_enable_store:als on lux=%d\n",
++					g_em3071x_lux);
++			}
++		}
++	} else {
++		if (light_on == 0) {
++			pr_info("als_enable_store:light already off\n");
++		} else {
++			ret = prv_em3071x_ctrl_lp(0x20);
++			if (ret >= 0) {
++				data->enable_als_sensor = 0;
++				light_on = 0;
++				cancel_delayed_work_sync(&data->prox_poll_work);
++				pr_info("als_enable_store:als off\n");
++			}
++		}
++	}
++
++	/* Vote off  regulators if both light and prox sensor are off */
++	if ((data->enable_als_sensor == 0) &&
++			(data->enable_ps_sensor == 0) &&
++		(data->power_enabled)) {
++		ret = em30718_power_ctl(data, false);
++		pr_info("%s:11Power off em30718\n", __func__);
++		if (ret < 0)
++			dev_err(&data->client->dev, "Power off em30718 failed\n");
++	}
++
++exit:
++	return 0;
++}
++
++static int em30718_enable_ps_sensor(struct i2c_client *client, int val)
++{
++	struct em3071x_data_t *data = i2c_get_clientdata(client);
++	int ret;
++
++	pr_debug("%s: val=%d\n", __func__, val);
++
++	if ((val != 0) && (val != 1)) {
++		pr_err("%s: invalid value (val = %d)\n", __func__, val);
++		return -EINVAL;
++	}
++
++	if (val) {
++		if ((data->enable_als_sensor == 0) &&
++			(data->enable_ps_sensor == 0)) {
++			/*Power on and initalize the device*/
++			ret = em30718_power_ctl(data, true);
++			pr_info("%s:22Power on em30718\n", __func__);
++			if (ret < 0) {
++				dev_err(&data->client->dev,
++						"Failed to power up em30718\n");
++				goto exit;
++			}
++			ret = em30718_init_reg(data->client);
++			if (ret < 0) {
++				dev_err(&data->client->dev,
++						"Failed to power up em30718\n");
++				goto exit;
++			}
++		}
++		if (prox_on)
++			pr_info("prox_enable_store: prox already on.\n");
++		else {
++			em3071x_prox_cur_infop->prox_event = 0;
++			em3071x_prox_cur_infop->prox_clear = 0;
++			em3071x_prox_cur_infop->prox_data = 0;
++			ret = prv_em3071x_ctrl_lp(0x01);
++			if (ret >= 0) {
++				data->enable_ps_sensor = 1;
++				prox_on = 1;
++				pr_info("prox_enable_store prox on\n");
++			}
++			enable_irq_wake(data->irq);
++		}
++	} else {
++		ret = prv_em3071x_ctrl_lp(0x02);
++		if (ret >= 0) {
++			data->enable_ps_sensor = 0;
++			prox_on = 0;
++			pr_info("prox_enable_store prox off\n");
++		}
++		disable_irq_wake(data->irq);
++
++	}
++
++	if (data->enable_als_sensor == 1) {
++		ret = prv_em3071x_ctrl_lp(0x10);
++		if (ret >= 0)
++			pr_info("als_enable_store:als on lux=%d\n",
++			g_em3071x_lux);
++	}
++
++	/* Vote off  regulators if both light and prox sensor are off */
++	if ((data->enable_als_sensor == 0) &&
++			(data->enable_ps_sensor == 0) &&
++		(data->power_enabled)) {
++		ret = em30718_power_ctl(data, false);
++		pr_info("%s:22Power off em30718\n", __func__);
++		if (ret < 0) {
++			dev_err(&data->client->dev, "Power off em30718 failed\n");
++			goto exit;
++		}
++	}
++
++exit:
++	return 0;
++}
++
++static int em3071x_als_set_enable(struct sensors_classdev *sensors_cdev,
++		unsigned int enable)
++{
++	struct em3071x_data_t *data = container_of(sensors_cdev,
++		struct em3071x_data_t, als_cdev);
++
++	if ((enable != 0) && (enable != 1)) {
++		pr_err("%s: invalid value(%d)\n", __func__, enable);
++		return -EINVAL;
++	}
++
++	return em30718_enable_als_sensor(data->client, enable);
++}
++
++static int em3071x_ps_set_enable(struct sensors_classdev *sensors_cdev,
++		unsigned int enable)
++{
++	struct em3071x_data_t *data = container_of(sensors_cdev,
++		struct em3071x_data_t, ps_cdev);
++
++	if ((enable != 0) && (enable != 1)) {
++		pr_err("%s: invalid value(%d)\n", __func__, enable);
++		return -EINVAL;
++	}
++
++	return em30718_enable_ps_sensor(data->client, enable);
++}
++
++static int em3071x_als_poll_delay(struct sensors_classdev *sensors_cdev,
++		unsigned int delay_msec)
++{
++	struct em3071x_data_t *data = container_of(sensors_cdev,
++		struct em3071x_data_t, als_cdev);
++
++	if ((delay_msec < EM30718_LS_MIN_POLL_DELAY) ||
++			(delay_msec > EM30718_LS_MAX_POLL_DELAY))
++		return -EINVAL;
++
++	atomic_set(&data->als_delay, delay_msec);
++
++	return 0;
++}
++
++/*
++ * Initialization function
++ */
++static int em30718_init_reg(struct i2c_client *client)
++{
++	int i, ret;
++	u8 arry[] = {0xaf, 0x00, 0x00, 0xff, 0x00, 0xf0, 0xff};
++	struct em3071x_data_t *data = i2c_get_clientdata(client);
++	for (i = 0; i < 7; i++) {
++		ret = i2c_smbus_write_byte_data(data->client,
++			EM3071X_CFG_REG+i, arry[i]);
++		if (ret < 0) {
++			pr_info("control reg failed in em3071x_probe()\n");
++			return ret;
++		}
++	}
++
++	return 0;
++}
++
++static int em30718_parse_dt(struct device *dev,
++		struct em3071x_pdata_t *pdata) {
++	struct device_node *np = dev->of_node;
++	unsigned int tmp;
++	int rc = 0;
++
++	rc = of_get_named_gpio_flags(dev->of_node,
++			"epticore,irq-gpio", 0, NULL);
++	if (rc < 0) {
++		dev_err(dev, "Unable to read irq gpio\n");
++		return rc;
++	}
++	pdata->irq_gpio = rc;
++
++	rc = of_property_read_u32(np, "epticore,prox_th_min", &tmp);
++	if (rc) {
++		dev_err(dev, "Unable to read ps threshold\n");
++		return rc;
++	}
++	pdata->prox_threshold_min = tmp;
++
++	rc = of_property_read_u32(np, "epticore,prox_th_max", &tmp);
++	if (rc) {
++		dev_err(dev, "Unable to read ps threshold\n");
++		return rc;
++	}
++	pdata->prox_threshold_max = tmp;
++
++	rc = of_property_read_u32(np, "epticore,als_delay", &tmp);
++	if (rc && (rc != -EINVAL)) {
++		pr_info("%s: Unable to read intr\n",
++			__func__);
++		return rc;
++	} else {
++		atomic_set(&pdata->als_delay, (u8)tmp);
++	}
++	return 0;
++}
++
++static int em3071x_probe(struct i2c_client *clientp,
++	const struct i2c_device_id *idp)
++{
++	int ret;
++	int i;
++	struct i2c_adapter *adapter = to_i2c_adapter(clientp->dev.parent);
++	struct em3071x_pdata_t *pdata;
++	struct em3071x_data_t *data;
++	unsigned char buf[EM3071X_MAX_DEVICE_REGS];
++	char *device_name;
++	int regE = 0;
++	int regF = 0;
++	/*u8 arry[] = {0xbf,0x00,0x00,0xff,0x00,0xf0,0xff};*/
++
++	pr_debug("%s\n", __func__);
++
++	if (!i2c_check_functionality(adapter, I2C_FUNC_SMBUS_BYTE)) {
++		ret = -EIO;
++		goto exit;
++	}
++
++	if (clientp->dev.of_node) {
++		pdata = devm_kzalloc(&clientp->dev,
++				sizeof(struct em3071x_pdata_t),
++				GFP_KERNEL);
++		if (!pdata) {
++			dev_err(&clientp->dev, "Failed to allocate memory\n");
++			return -ENOMEM;
++		}
++
++		clientp->dev.platform_data = pdata;
++		ret = em30718_parse_dt(&clientp->dev, pdata);
++		if (ret) {
++			pr_err("%s: sensor_parse_dt() err\n", __func__);
++			return ret;
++		}
++	} else {
++		pdata = clientp->dev.platform_data;
++		if (!pdata) {
++			dev_err(&clientp->dev, "No platform data\n");
++			return -ENODEV;
++		}
++	}
++
++	data = kzalloc(sizeof(struct em3071x_data_t), GFP_KERNEL);
++	if (!data) {
++		dev_err(&clientp->dev, "Failed to allocate memory\n");
++		ret = -ENOMEM;
++		goto exit;
++	}
++	em3071x_data_tp = data;
++
++	light_on = 0;
++	prox_on = 0;
++	isPsensorLocked = 0;
++	als_intr_threshold_hi_param = 0;
++	als_intr_threshold_lo_param = 0;
++	g_em3071x_lux = 0;
++	device_released = 0;
++	sat_als = 0;
++	sat_prox = 0;
++	ret = 0;
++	i = 0;
++
++	data->platform_data = pdata;
++	data->dev = &clientp->dev;
++	data->client = clientp;
++	i2c_set_clientdata(clientp, data);
++	data->als_delay = pdata->als_delay;
++
++	ret = em30718_power_init(data);
++	if (ret) {
++		dev_err(&clientp->dev, "Failed to init regulator\n");
++		goto out;
++	}
++	data->power_enabled = false;
++	ret = em30718_power_ctl(data, true);
++	if (ret) {
++		dev_err(&clientp->dev, "Failed to power on device\n");
++		goto err_deinit_regulator;
++	}
++
++	ret = i2c_smbus_read_word_data(clientp, 0x0);
++	if (ret < 0)
++		pr_info("[em3071x] : read chip id 0x%x(0x31)\n", ret);
++
++	/* Initialize the APDS993X chip */
++	ret = em30718_init_reg(clientp);
++	if (ret) {
++		pr_err("%s: Failed to init em30718\n", __func__);
++		goto err_power_off_device;
++	}
++
++	for (i = 0; i < EM3071X_MAX_DEVICE_REGS; i++) {
++		buf[i] = i2c_smbus_read_word_data(data->client, i+1);
++		pr_info("  0x%x:0x%x ", i+1, buf[i]);
++	}
++
++	regE = i2c_smbus_read_word_data(data->client, 0x0e);
++	pr_info("regE:0x%x\n", regE);
++	regE = i2c_smbus_read_word_data(data->client, 0x0f);
++	pr_info("regF:0x%x\n", regF);
++
++	ret = prv_em3071x_device_name(buf, &device_name);
++	if (ret  == 0)
++		pr_info("chip id that was read found mismatched)\n");
++
++	if (strcmp(device_name, EM3071X_DEVICE_ID))
++		pr_info("chip id that was read does not match expected\n");
++	else
++		pr_info("%s that was read matches expected id\n", device_name);
++
++	wake_lock_init(&data->em3071x_wake_lock, WAKE_LOCK_SUSPEND,
++		"em3071x-wake-lock");
++	wake_lock_init(&(data->ps_wake_lock), WAKE_LOCK_SUSPEND,
++		"proximity_input");
++	device_create(em3071x_class, NULL,
++		MKDEV(MAJOR(em3071x_device_number), 0),
++		&em3071x_driver, "dev_lightsensor");
++	device_create(em3071x_class, NULL,
++		MKDEV(MAJOR(em3071x_device_number), 1),
++		&em3071x_driver, "dev_proximity");
++
++	/* turn off als/ps sensors */
++	ret = i2c_smbus_write_byte_data(data->client,
++		EM3071X_CFG_REG, EM3071X_SENSOR_All_Off);
++	if (ret < 0) {
++		pr_info("control reg failed in em3071x_probe()\n");
++		return ret;
++	}
++
++	ret = i2c_smbus_write_byte_data(data->client,
++		EM3071X_INT_REG, EM3071X_INT_All_OFF);
++	if (ret < 0) {
++		pr_info("control reg failed in em3071x_probe()\n");
++		return ret;
++	}
++
++	mutex_init(&data->proximity_calibrating);
++
++	INIT_WORK(&data->em3071x_work,
++		prv_em3071x_work_func);
++
++	pr_info("EM3071X use gpio %d\n", clientp->irq);
++
++	data->irq =  clientp->irq = gpio_to_irq(pdata->irq_gpio);
++	if (clientp->irq > 0) {
++		ret =  request_irq(data->irq, em3071x_interrupt,
++			IRQF_TRIGGER_FALLING, data->em3071x_name,
++			em3071x_prox_cur_infop);
++		if (ret) {
++			pr_info("EM3071X request interrupt failed\n");
++			return ret;
++		}
++	}
++
++	strlcpy(clientp->name, EM3071X_DEVICE_ID, I2C_NAME_SIZE);
++	strlcpy(data->em3071x_name, EM3071X_DEVICE_ID,
++		EM3071X_ID_NAME_SIZE);
++
++	data->valid = 0;
++	mutex_init(&data->update_lock);
++
++	em3071x_cfgp = kmalloc(sizeof(struct em3071x_cfg_s),
++		GFP_KERNEL);
++
++	if (!em3071x_cfgp) {
++		pr_info("kmalloc for struct em3071x_cfg_s failed)\n");
++		return -ENOMEM;
++	}
++
++	prox_threshold_hi_param = pdata->prox_threshold_max;
++	prox_threshold_lo_param = pdata->prox_threshold_min;
++	em3071x_cfgp->calibrate_target = calibrate_target_param;
++	em3071x_cfgp->als_time = als_time_param;
++	em3071x_cfgp->scale_factor = scale_factor_param;
++	em3071x_cfgp->gain_trim = gain_trim_param;
++	em3071x_cfgp->filter_history = filter_history_param;
++	em3071x_cfgp->filter_count = filter_count_param;
++	em3071x_cfgp->gain = gain_param;
++	em3071x_cfgp->prox_threshold_hi = prox_threshold_hi_param;
++	em3071x_cfgp->prox_threshold_lo = prox_threshold_lo_param;
++	em3071x_cfgp->prox_int_time = prox_int_time_param;
++	em3071x_cfgp->prox_adc_time = prox_adc_time_param;
++	em3071x_cfgp->prox_wait_time = prox_wait_time_param;
++	em3071x_cfgp->prox_intr_filter = prox_intr_filter_param;
++	em3071x_cfgp->prox_config = 0;
++	em3071x_cfgp->prox_pulse_cnt = prox_pulse_cnt_param;
++	em3071x_cfgp->prox_gain = prox_gain_param;
++
++	sat_als = 0xFFF;
++	sat_prox = 0xFF;
++
++	light = kzalloc(sizeof(struct em3071x_alsprox_data_s),
++		GFP_KERNEL);
++	if (!light) {
++		ret = -ENOMEM;
++		goto err_free_irq;
++	}
++
++	light->input_dev = input_allocate_device();
++	if (!light->input_dev) {
++		ret = -ENOMEM;
++		pr_info("Failed to allocate light input device\n");
++		goto exit_alloc_data_failed;
++	}
++	/* lux */
++	set_bit(EV_ABS, light->input_dev->evbit);
++	input_set_abs_params(light->input_dev, ABS_MISC, 0,
++		4095, 0, 0);
++	light->input_dev->name = "light";
++	ret = input_register_device(light->input_dev);
++	if (ret) {
++		pr_info("Unable to register input device: %s\n",
++			light->input_dev->name);
++		goto exit_input_dev_alloc_failed;
++	}
++
++	proximity = kzalloc(sizeof(struct em3071x_alsprox_data_s),
++		GFP_KERNEL);
++	if (!proximity) {
++		ret = -ENOMEM;
++		goto exit_input_register_device_failed;
++	}
++	proximity->input_dev = input_allocate_device();
++	if (!proximity->input_dev) {
++		ret = -ENOMEM;
++		pr_info("Failed to allocate prox input device\n");
++		goto exit_alloc_data_failed;
++	}
++	/* prox */
++	set_bit(EV_ABS, proximity->input_dev->evbit);
++	input_set_abs_params(proximity->input_dev, ABS_DISTANCE,
++		0, 1025, 0, 0);
++	proximity->input_dev->name = "proximity";
++
++	ret = input_register_device(proximity->input_dev);
++	if (ret) {
++		pr_info("Unable to register input device: %s\n",
++			proximity->input_dev->name);
++		goto exit_input_dev_alloc_failed;
++	}
++
++	/* Register to sensors class */
++	data->als_cdev = sensors_light_cdev;
++	data->als_cdev.sensors_enable = em3071x_als_set_enable;
++	data->als_cdev.sensors_poll_delay = em3071x_als_poll_delay;
++	data->ps_cdev = sensors_proximity_cdev;
++	data->ps_cdev.sensors_enable = em3071x_ps_set_enable;
++	data->ps_cdev.sensors_poll_delay = NULL;
++
++	ret = sensors_classdev_register(&clientp->dev, &data->als_cdev);
++	if (ret) {
++		pr_info("%s: Unable to register to sensors class: %d\n",
++				__func__, ret);
++		goto exit_input_register_device_failed;
++	}
++
++	ret = sensors_classdev_register(&clientp->dev, &data->ps_cdev);
++	if (ret) {
++		pr_info("%s: Unable to register to sensors class: %d\n",
++			       __func__, ret);
++		goto exit_input_register_device_failed;
++	}
++
++#ifdef EM3071X_POLL_MODE
++	INIT_DELAYED_WORK(&data->prox_poll_work,
++		em3071x_prox_poll_work_f);
++	/*INIT_DELAYED_WORK(&data->ps_work,  em30718_ps_work);*/
++	/*setup_timer(&prox_poll_timer, em3071x_poll_timer_func, (long)data);*/
++#endif
++
++	ret = sysfs_create_group(&clientp->dev.kobj,
++	&em3071x_ctrl_attr_grp);
++	if (0 != ret) {
++		goto exit_input_register_device_failed;
++		pr_info("sysfs create debug node fail, ret: %d\n", ret);
++	}
++
++#ifdef CONFIG_HAS_EARLYSUSPEND
++	data->early_suspend.level =
++		EARLY_SUSPEND_LEVEL_BLANK_SCREEN + 1;
++	data->early_suspend.suspend = em3071x_early_suspend;
++	data->early_suspend.resume = em3071x_late_resume;
++	register_early_suspend(&data->early_suspend);
++#endif
++
++	ret = em30718_power_ctl(data, false);
++	if (ret) {
++		dev_err(&clientp->dev,
++				"Power off em3071x failed\n");
++		goto exit_remove_sysfs_group;
++	}
++	pr_info("em3071x is probe ok---\n");
++
++	return ret;
++
++exit_remove_sysfs_group:
++	sysfs_remove_group(&clientp->dev.kobj,
++		&em3071x_ctrl_attr_grp);
++exit_input_register_device_failed:
++	sysfs_remove_group(&clientp->dev.kobj,
++		&em3071x_ctrl_attr_grp);
++	if (light->input_dev)
++		input_free_device(light->input_dev);
++	if (proximity->input_dev)
++		input_free_device(proximity->input_dev);
++exit_input_dev_alloc_failed:
++exit_alloc_data_failed:
++	kfree(light);
++	kfree(proximity);
++err_free_irq:
++	if (clientp->irq > 0)
++		free_irq(clientp->irq, data);
++err_power_off_device:
++	em30718_power_ctl(data, false);
++err_deinit_regulator:
++	em30718_power_deinit(data);
++out:
++	kfree(data);
++exit:
++	return ret;
++}
++
++static int  em3071x_remove(struct i2c_client *client)
++{
++	int ret = 0;
++	sysfs_remove_group(&client->dev.kobj,
++		&em3071x_ctrl_attr_grp);
++/*
++#ifdef EM3071X_POLL_MODE
++   del_timer(&prox_poll_timer);
++#endif
++*/
++	return ret;
++}
++
++static int em3071x_open(struct inode *inode, struct file *file)
++{
++	struct em3071x_data_t *em3071x_data_tp;
++	int ret = 0;
++	device_released = 0;
++
++	em3071x_data_tp = container_of(inode->i_cdev,
++		struct em3071x_data_t, cdev);
++	ret = strcmp(em3071x_data_tp->em3071x_name,
++		EM3071X_DEVICE_ID);
++	if (ret != 0) {
++		pr_info("device name incorrect, get %s\n",
++			em3071x_data_tp->em3071x_name);
++		ret = -ENODEV;
++	}
++	pr_info("device name correct, get %s\n",
++		em3071x_data_tp->em3071x_name);
++	return ret;
++}
++
++static int em3071x_release(struct inode *inode, struct file *file)
++{
++	struct em3071x_data_t *em3071x_data_tp;
++	int ret = 0;
++	device_released = 1;
++	prox_on = 0;
++
++	em3071x_data_tp = container_of(inode->i_cdev,
++		struct em3071x_data_t, cdev);
++	ret = strcmp(em3071x_data_tp->em3071x_name,
++		EM3071X_DEVICE_ID);
++	if (ret != 0) {
++		pr_info("device name incorrect, get %s\n",
++			em3071x_data_tp->em3071x_name);
++		ret = -ENODEV;
++	}
++
++	return ret;
++}
++
++static int em3071x_read(struct file *file, char *buf,
++	size_t count, loff_t *ppos)
++{
++	struct em3071x_data_t *em3071x_data_tp;
++	u8 i = 0, xfrd = 0, reg = 0;
++	u8 my_buf[EM3071X_MAX_DEVICE_REGS];
++	int ret = 0;
++
++	if ((*ppos < 0) || (*ppos >= EM3071X_MAX_DEVICE_REGS) ||
++		(count > EM3071X_MAX_DEVICE_REGS)) {
++		pr_info("reg limit check failed in em3071x_read()\n");
++		return -EINVAL;
++	}
++	reg = (u8)*ppos;
++	em3071x_data_tp = container_of(file->f_dentry->d_inode->i_cdev,
++		struct em3071x_data_t, cdev);
++	while (xfrd < count) {
++		my_buf[i++] = i2c_smbus_read_word_data(em3071x_data_tp->client,
++			reg);
++		reg++;
++		xfrd++;
++	}
++
++	ret = copy_to_user(buf, my_buf, xfrd);
++	if (ret) {
++		pr_info("copy_to_user failed in em3071x_read()\n");
++		return -ENODATA;
++	}
++	return (int)xfrd;
++
++}
++
++static int em3071x_write(struct file *file, const char *buf,
++	size_t count, loff_t *ppos)
++{
++	struct em3071x_data_t *em3071x_data_tp;
++	u8 i = 0, xfrd = 0, reg = 0;
++	u8 my_buf[EM3071X_MAX_DEVICE_REGS];
++	int ret = 0;
++
++	if ((*ppos < 0) || (*ppos >= EM3071X_MAX_DEVICE_REGS) ||
++		((*ppos + count) > EM3071X_MAX_DEVICE_REGS)) {
++		pr_info("reg limit check failed in em3071x_write()\n");
++		return -EINVAL;
++	}
++
++	reg = (u8)*ppos;
++	ret = copy_from_user(my_buf, buf, count);
++	if (ret) {
++		pr_info("ISL: copy_to_user failed in em3071x_write()\n");
++		return -ENODATA;
++	}
++
++	em3071x_data_tp = container_of(file->f_dentry->d_inode->i_cdev,
++		struct em3071x_data_t, cdev);
++
++	while (xfrd < count) {
++		ret = i2c_smbus_write_byte_data(em3071x_data_tp->client,
++			reg, my_buf[i++]);
++		if (ret  < 0) {
++			pr_info("i2c_smbus_write_byte_data failed\n");
++			return ret;
++		}
++		reg++;
++		xfrd++;
++	}
++
++	return (int)xfrd;
++}
++
++static loff_t em3071x_llseek(struct file *file, loff_t offset, int orig)
++{
++	int ret = 0;
++	loff_t new_pos = 0;
++
++	if ((offset >= EM3071X_MAX_DEVICE_REGS) ||
++		(orig < 0) || (orig > 1))
++		return -EINVAL;
++	switch (orig) {
++	case 0:
++		new_pos = offset;
++		break;
++	case 1:
++		new_pos = file->f_pos + offset;
++		break;
++	default:
++		return -EINVAL;
++		break;
++	}
++
++	if ((new_pos < 0) || (new_pos >= EM3071X_MAX_DEVICE_REGS)
++		|| (ret < 0))
++		return -EINVAL;
++
++	file->f_pos = new_pos;
++	return new_pos;
++}
++
++/*prv_em3071x_ctrl_lp, mask values' indication*/
++/* 10 : light on */
++/* 01 : prox on */
++/* 20 : light off */
++/* 02 : prox off */
++static int prv_em3071x_ctrl_lp(int mask)
++{
++	u8 ret = 0, reg_val = 0;
++
++	if (mask == 0x10) {/*10 : light on */
++		if (prox_on) {
++			i2c_smbus_write_byte_data(em3071x_data_tp->client,
++				0x02, 0);
++			i2c_smbus_write_byte_data(em3071x_data_tp->client,
++				0x03, prox_threshold_lo_param);
++			i2c_smbus_write_byte_data(em3071x_data_tp->client,
++				0x04, prox_threshold_hi_param);
++			i2c_smbus_write_byte_data(em3071x_data_tp->client,
++				0x0F, 0x00);
++			i2c_smbus_write_byte_data(em3071x_data_tp->client,
++				0x05, 0x00);
++			i2c_smbus_write_byte_data(em3071x_data_tp->client,
++				0x06, 0xF0);
++			i2c_smbus_write_byte_data(em3071x_data_tp->client,
++				0x07, 0xFF);
++			i2c_smbus_write_byte_data(em3071x_data_tp->client,
++				0x01, 0xAF);
++			/*i2c_smbus_write_byte_data(em3071x_data_tp->client,
++				0x01, 0xB6);*/
++		} else {
++			reg_val = i2c_smbus_read_word_data(
++				em3071x_data_tp->client,
++				EM3071X_INT_REG);
++			if (reg_val < 0)
++				return reg_val;
++
++			reg_val = (reg_val & (~EM3071X_ALS_INT_MASK))
++				|EM3071X_ALS_INT_ON;
++
++			ret = i2c_smbus_write_byte_data(
++				em3071x_data_tp->client,
++				EM3071X_INT_REG, reg_val);
++			if (ret < 0)
++				return ret;
++
++			reg_val = i2c_smbus_read_word_data(
++				em3071x_data_tp->client,
++				EM3071X_CFG_REG);
++			if (reg_val < 0)
++				return reg_val;
++
++			reg_val = (reg_val & (~EM3071X_ALS_MASK)) |
++				EM3071X_ALS_ON;
++
++			ret = i2c_smbus_write_byte_data(em3071x_data_tp->client,
++				EM3071X_CFG_REG, reg_val);
++			if (ret  < 0)
++				return ret;
++
++			/*mod_timer(&prox_poll_timer, jiffies + HZ / 1000);*/
++		}
++	}
++
++	if (mask == 0x01) {/*01 : prox on */
++		input_report_abs(proximity->input_dev, ABS_DISTANCE, 1);
++		input_sync(proximity->input_dev);
++		if (light_on) {
++			i2c_smbus_write_byte_data(em3071x_data_tp->client,
++				0x02, 0);
++			i2c_smbus_write_byte_data(em3071x_data_tp->client,
++				0x03, prox_threshold_lo_param);
++			i2c_smbus_write_byte_data(em3071x_data_tp->client,
++				0x04, prox_threshold_hi_param);
++			i2c_smbus_write_byte_data(em3071x_data_tp->client,
++				0x0F, 0x00);
++			i2c_smbus_write_byte_data(em3071x_data_tp->client,
++				0x05, 0x00);
++			i2c_smbus_write_byte_data(em3071x_data_tp->client,
++				0x06, 0xF0);
++			i2c_smbus_write_byte_data(em3071x_data_tp->client,
++				0x07, 0xFF);
++			i2c_smbus_write_byte_data(em3071x_data_tp->client,
++				0x01, 0xAF);
++			/*i2c_smbus_write_byte_data(em3071x_data_tp->client,
++				0x01, 0xB6);*/
++		} else {
++			reg_val = i2c_smbus_read_word_data(
++				em3071x_data_tp->client,
++				EM3071X_INT_REG);
++			if (reg_val < 0)
++				return reg_val;
++
++			reg_val =  (reg_val & (~(EM3071X_PROX_INT_MASK)));
++			ret = i2c_smbus_write_byte_data(
++				em3071x_data_tp->client,
++				EM3071X_INT_REG, reg_val);
++			if (ret < 0)
++				return ret;
++
++			reg_val = em3071x_cfgp->prox_threshold_lo &
++				0x00FF;
++			ret = i2c_smbus_write_byte_data(
++				em3071x_data_tp->client,
++				EM3071X_PROX_TH_L, reg_val);
++			if (ret < 0)
++				return ret;
++
++			reg_val = em3071x_cfgp->prox_threshold_hi & 0x00FF;
++			ret = i2c_smbus_write_byte_data(
++				em3071x_data_tp->client,
++				EM3071X_PROX_TH_H, reg_val);
++			if (ret < 0)
++				return ret;
++			reg_val = i2c_smbus_read_word_data(
++				em3071x_data_tp->client,
++				EM3071X_PROX_TH_L);
++			reg_val = i2c_smbus_read_word_data(
++				em3071x_data_tp->client,
++				EM3071X_PROX_TH_H);
++			reg_val = i2c_smbus_read_word_data(
++				em3071x_data_tp->client,
++				EM3071X_CFG_REG);
++			if (reg_val < 0)
++				return reg_val;
++			reg_val = (reg_val & (~EM3071X_PROX_MASK)) |
++				EM3071X_PROX_ON;
++			ret = i2c_smbus_write_byte_data(em3071x_data_tp->client,
++				EM3071X_CFG_REG, reg_val);
++			if (ret < 0)
++				return ret;
++
++			if (isPsensorLocked == 0) {
++				wake_lock(&em3071x_data_tp->em3071x_wake_lock);
++				isPsensorLocked = 1;
++			}
++		}
++	}
++
++	if (mask == 0x20) {/*20 : light off */
++		reg_val = (reg_val & (~EM3071X_ALS_INT_MASK));
++		ret = i2c_smbus_write_byte_data(em3071x_data_tp->client,
++			EM3071X_INT_REG, reg_val);
++		if (ret < 0)
++			return ret;
++		reg_val = i2c_smbus_read_word_data(em3071x_data_tp->client,
++			EM3071X_CFG_REG);
++		if (reg_val < 0)
++			return reg_val;
++		reg_val = (reg_val & (~EM3071X_ALS_MASK));
++		ret = i2c_smbus_write_byte_data(em3071x_data_tp->client,
++			EM3071X_CFG_REG, reg_val);
++		if (ret < 0)
++			return ret;
++
++		/*del_timer(&prox_poll_timer);*/
++	}
++
++	if (mask == 0x02) {/*02 : prox off */
++		reg_val = i2c_smbus_read_word_data(em3071x_data_tp->client,
++			EM3071X_CFG_REG);
++		if (reg_val < 0)
++			return reg_val;
++
++		reg_val = (reg_val & (~EM3071X_PROX_MASK));
++		ret = i2c_smbus_write_byte_data(em3071x_data_tp->client,
++			EM3071X_CFG_REG, reg_val);
++		if (ret < 0)
++			return ret;
++		reg_val = i2c_smbus_read_word_data(em3071x_data_tp->client,
++			EM3071X_INT_REG);
++		if (reg_val < 0)
++			return reg_val;
++
++		reg_val = (reg_val & (~EM3071X_PROX_INT_MASK));
++		ret = i2c_smbus_write_byte_data(em3071x_data_tp->client,
++			EM3071X_INT_REG, reg_val);
++		if (ret < 0)
++			return ret;
++		if (isPsensorLocked == 1) {
++			wake_unlock(&em3071x_data_tp->em3071x_wake_lock);
++			isPsensorLocked = 0;
++		}
++	}
++
++	return ret;
++}
++
++static long em3071x_ioctl(struct file *file, unsigned int cmd,
++	unsigned long arg)
++{
++	int prox_sum = 0, prox_mean = 0, prox_max = 0;
++	int ret = 0, i = 0;
++	u8 reg_val = 0;
++	u16 ratio;
++	void __user *argp = (void __user *)arg;
++	u8 enable;
++	struct em3071x_prox_data_t *prox_pt;
++
++	switch (cmd) {
++	case IOCTL_SET_ALS_ENABLE:
++		if (copy_from_user(&enable, argp, 1))
++			return -EFAULT;
++		if (enable) {
++			if (light_on)
++				break;
++			ret = prv_em3071x_ctrl_lp(0x10);
++			if (ret >= 0)
++				light_on = 1;
++		} else {
++			for (i = 0; i < EM3071X_FILTER_DEPTH; i++)
++				lux_history[i] = -ENODATA;
++			ret = prv_em3071x_ctrl_lp(0x20);
++			if (ret >= 0)
++				light_on = 0;
++		}
++		break;
++
++	case EM3071X_IOCTL_ALS_CALIBRATE:
++		break;
++
++	case EM3071X_IOCTL_CONFIG_GET:
++		ret = copy_to_user((struct em3071x_cfg_s *)arg, em3071x_cfgp,
++			sizeof(struct em3071x_cfg_s));
++		if (ret)
++			return -ENODATA;
++		return ret;
++		break;
++
++	case EM3071X_IOCTL_CONFIG_SET:
++		ret = copy_from_user(em3071x_cfgp, (struct em3071x_cfg_s *)arg,
++			sizeof(struct em3071x_cfg_s));
++		if (ret) {
++			pr_info("copy_from_user failed in ioctl config_set\n");
++			return -ENODATA;
++		}
++		return ret;
++		break;
++
++	case IOCTL_SET_PS_ENABLE:
++		if (copy_from_user(&enable, argp, 1))
++			return -EFAULT;
++		if (enable) {
++			if (prox_on)
++				break;
++			em3071x_prox_cur_infop->prox_event = 0;
++			em3071x_prox_cur_infop->prox_clear = 0;
++			em3071x_prox_cur_infop->prox_data = 0;
++			ret = prv_em3071x_ctrl_lp(0x01);
++			if (ret >= 0)
++				prox_on = 1;
++			break;
++		} else {
++			ret = prv_em3071x_ctrl_lp(0x02);
++			if (ret >= 0)
++				prox_on = 0;
++			return ret;
++			break;
++		}
++
++	case EM3071X_IOCTL_PROX_DATA:
++		ret = copy_to_user((struct em3071x_prox_info_s *)arg,
++			em3071x_prox_cur_infop,
++			sizeof(struct em3071x_prox_info_s));
++		if (ret)
++			return -ENODATA;
++		break;
++
++	case EM3071X_IOCTL_PROX_EVENT:
++		return em3071x_prox_cur_infop->prox_event;
++		break;
++
++	case EM3071X_IOCTL_PROX_GET_ENABLED:
++		return put_user(prox_on, (unsigned long __user *)arg);
++		break;
++
++	case EM3071X_IOCTL_ALS_GET_ENABLED:
++		return put_user(light_on, (unsigned long __user *)arg);
++		break;
++
++	case EM3071X_IOCTL_PROX_CALIBRATE:
++		if (!prox_on)
++			return -EPERM;
++
++		mutex_lock(&em3071x_data_tp->proximity_calibrating);
++		prox_sum = 0;
++		prox_max = 0;
++		for (i = 0; i < 20; i++) {
++			ret = prv_em3071x_prox_poll(&em3071x_prox_cal_info[i]);
++			if (ret  < 0) {
++				mutex_unlock(&em3071x_data_tp
++					->proximity_calibrating);
++				return ret;
++			}
++			prox_sum += em3071x_prox_cal_info[i].prox_data;
++			if (em3071x_prox_cal_info[i].prox_data > prox_max)
++				prox_max = em3071x_prox_cal_info[i].prox_data;
++			msleep(100);
++		}
++		prox_mean = prox_sum / 20;
++		ratio = 10 * prox_mean / sat_prox;
++		for (prox_pt = em3071x_prox_tablep; prox_pt->ratio
++			&& prox_pt->ratio <= ratio; prox_pt++) {
++			if (!prox_pt->ratio)
++				return -EPERM;
++		}
++		em3071x_cfgp->prox_threshold_hi =
++			(prox_mean * prox_pt->hi) / 10;
++		if (em3071x_cfgp->prox_threshold_hi <= ((sat_prox * 3) / 100))
++			em3071x_cfgp->prox_threshold_hi =
++				((sat_prox * 8) / 100);
++
++		em3071x_cfgp->prox_threshold_lo =
++			em3071x_cfgp->prox_threshold_hi *
++			THRES_LO_TO_HI_RATIO;
++		reg_val = 0;
++		ret = i2c_smbus_write_byte_data(em3071x_data_tp->client,
++			EM3071X_PROX_TH_L, reg_val);
++		if (ret < 0)
++			return ret;
++		reg_val = em3071x_cfgp->prox_threshold_hi & 0x00FF;
++		ret = i2c_smbus_write_byte_data(em3071x_data_tp->client,
++			EM3071X_PROX_TH_H, reg_val);
++		if (ret < 0)
++			return ret;
++		mutex_unlock(&em3071x_data_tp->proximity_calibrating);
++		break;
++
++	default:
++		return -EINVAL;
++		break;
++	}
++
++	return ret;
++}
++
++static int prv_em3071x_get_lux(void)
++{
++	u16 raw_clear = 0, reg_val = 0;
++	u32 lux = 0;
++	int ret = 0;
++	u8 chdata[2];
++
++	chdata[0] = i2c_smbus_read_word_data(em3071x_data_tp->client,
++		EM3071X_ALSIR_DATA_L);
++	chdata[1] = i2c_smbus_read_word_data(em3071x_data_tp->client,
++		EM3071X_ALSIR_DATA_H);
++	raw_clear = ((chdata[1] & 0xF) << 8) | chdata[0];
++	/*pr_info("prv_em3071x_get_lux raw_clear :luxh=%x\n", chdata[1]);
++	pr_info("prv_em3071x_get_lux raw_clear :luxl=%x\n", chdata[0]);
++	pr_info("prv_em3071x_get_lux raw_clear :lux=%d\n", raw_clear);*/
++
++	als_intr_threshold_hi_param = raw_clear + raw_clear / 5;
++	als_intr_threshold_lo_param = raw_clear - raw_clear / 5;
++	reg_val = 0;
++	ret = i2c_smbus_write_byte_data(em3071x_data_tp->client,
++		EM3071X_ALSIR_TH_L, reg_val);
++	if (ret < 0)
++		return ret;
++	reg_val =  0xf0;
++
++	ret = i2c_smbus_write_byte_data(em3071x_data_tp->client,
++		EM3071X_ALSIR_TH_HL, reg_val);
++	if (ret < 0)
++		return ret;
++
++	reg_val = 0xff;
++	ret = i2c_smbus_write_byte_data(em3071x_data_tp->client,
++		EM3071X_ALSIR_TH_H, reg_val);
++
++	if (ret < 0)
++		return ret;
++
++	if (raw_clear > 4095)
++		raw_clear = 4095;
++	lux = raw_clear;
++
++	return lux;
++}
++
++static int prv_em3071x_device_name(unsigned char *bufp, char **device_name)
++{
++	em3071x_data_tp->chip_type = EM30718;
++	*device_name = "em3071x";
++
++	return 1;
++}
++
++static int prv_em3071x_prox_poll(struct em3071x_prox_info_s *prxp)
++{
++	u8 prox_data;
++
++	prox_data = i2c_smbus_read_word_data(em3071x_data_tp->client,
++		EM3071X_PROX_DATA);
++	prox_data &= 0x00FF;
++	prxp->prox_data = prox_data;
++
++	return prox_data;
++}
++
++MODULE_AUTHOR("Broadcom");
++MODULE_DESCRIPTION("isl Ambient Light and Proximity Sensor Driver");
++MODULE_LICENSE("GPL");
++
++module_init(em3071x_init);
++module_exit(em3071x_exit);
+diff --git a/drivers/input/misc/em30718.h b/drivers/input/misc/em30718.h
+new file mode 100644
+index 0000000..e1eedb9
+--- /dev/null
++++ b/drivers/input/misc/em30718.h
+@@ -0,0 +1,79 @@
++/******************************************************************************
++ * em30718.h - Linux kernel module for intersil ambient light sensor
++ *                   and proximity sensor
++ *
++ *
++ ********************************************************/
++
++#ifndef __EM3071X_COMMON_H__
++#define __EM3071X_COMMON_H__
++
++#define EM3071X_IOCTL_MAGIC	0XCF
++#define EM3071X_IOCTL_ALS_ON	_IO(EM3071X_IOCTL_MAGIC, 1)
++#define EM3071X_IOCTL_ALS_OFF	_IO(EM3071X_IOCTL_MAGIC, 2)
++#define EM3071X_IOCTL_ALS_DATA	_IOR(EM3071X_IOCTL_MAGIC, 3, short)
++#define EM3071X_IOCTL_ALS_CALIBRATE	_IO(EM3071X_IOCTL_MAGIC, 4)
++#define EM3071X_IOCTL_CONFIG_GET	_IOR(EM3071X_IOCTL_MAGIC, 5, \
++						struct em3071x_cfg_s)
++#define EM3071X_IOCTL_CONFIG_SET	_IOW(EM3071X_IOCTL_MAGIC, \
++						6, struct em3071x_cfg_s)
++#define EM3071X_IOCTL_PROX_ON	_IO(EM3071X_IOCTL_MAGIC, 7)
++#define EM3071X_IOCTL_PROX_OFF	_IO(EM3071X_IOCTL_MAGIC, 8)
++#define EM3071X_IOCTL_PROX_DATA	_IOR(EM3071X_IOCTL_MAGIC, \
++						9, struct em3071x_prox_info_s)
++#define EM3071X_IOCTL_PROX_EVENT	_IO(EM3071X_IOCTL_MAGIC, 10)
++#define EM3071X_IOCTL_PROX_CALIBRATE		_IO(EM3071X_IOCTL_MAGIC, 11)
++#define EM3071X_IOCTL_PROX_GET_ENABLED	_IOR(EM3071X_IOCTL_MAGIC, \
++						12, int*)
++#define EM3071X_IOCTL_ALS_GET_ENABLED		_IOR(EM3071X_IOCTL_MAGIC, \
++						13, int*)
++#define IOCTL_PS_ALS		'X'
++#define IOCTL_SET_PS_ENABLE		_IOW(IOCTL_PS_ALS, 0x01, char)
++#define IOCTL_SET_ALS_ENABLE	_IOW(IOCTL_PS_ALS, 0x04, char)
++#define u32 unsigned int
++#define u16 unsigned short
++#define u8  unsigned char
++
++/* POWER SUPPLY VOLTAGE RANGE */
++#define EM30718_VDD_MIN_UV	2000000
++#define EM30718_VDD_MAX_UV	3300000
++#define EM30718_VIO_MIN_UV	1750000
++#define EM30718_VIO_MAX_UV	1950000
++
++struct em3071x_cfg_s {
++	u32 calibrate_target;
++	u16 als_time;
++	u16 scale_factor;
++	u16 gain_trim;
++	u8 filter_history;
++	u8 filter_count;
++	u8 gain;
++	u16 prox_threshold_hi;
++	u16 prox_threshold_lo;
++	u8 prox_int_time;
++	u8 prox_adc_time;
++	u8 prox_wait_time;
++	u8 prox_intr_filter;
++	u8 prox_config;
++	u8 prox_pulse_cnt;
++	u8 prox_gain;
++
++};
++
++struct em3071x_prox_info_s {
++	u16 prox_clear;
++	u16 prox_data;
++	int prox_event;
++};
++
++struct em3071x_pdata_t {
++	unsigned int irq_gpio;
++	unsigned int prox_threshold_max;
++	unsigned int prox_threshold_min;
++	int (*init)(void);
++	void (*exit)(void);
++	int (*power_on)(bool);
++	atomic_t als_delay;
++};
++
++#endif
+-- 
+1.7.9.5
+

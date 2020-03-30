@@ -1,0 +1,28 @@
+From 21d157046fc29e8c46b848b48d44c2a1c5a7884c Mon Sep 17 00:00:00 2001
+From: Yukun Wan <wanyk0402@thundersoft.com>
+Date: Mon, 23 Mar 2015 14:51:55 +0800
+Subject: [PATCH 3/3] ARM:config: support emc30718 defconfig
+
+Defconfig support emc30718
+
+Change-Id: Ib15e1f6d5fac88682c0c22f3f0b289c1bb3455ee
+Signed-off-by: Yukun Wan <wanyk0402@thundersoft.com>
+---
+ arch/arm/configs/msm8916_defconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm/configs/msm8916_defconfig b/arch/arm/configs/msm8916_defconfig
+index 08fd762..b1bad38 100644
+--- a/arch/arm/configs/msm8916_defconfig
++++ b/arch/arm/configs/msm8916_defconfig
+@@ -263,6 +263,7 @@ CONFIG_INPUT_UINPUT=y
+ CONFIG_INPUT_GPIO=m
+ CONFIG_SENSORS_LIS3DH=y
+ CONFIG_SENSORS_MPU6050=y
++CONFIG_SENSORS_EM30718=y
+ CONFIG_SENSORS_AKM09911=y
+ CONFIG_SENSORS_BMA2X2=y
+ CONFIG_SENSORS_MMC3416X=y
+-- 
+2.2.2
+

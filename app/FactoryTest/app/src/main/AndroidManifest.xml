@@ -1,0 +1,408 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.a3nod.lenovo.sparrowfactory"
+    >
+
+    <!-- android:sharedUserId="android.uid.system" -->
+    <!-- Needed to setup bluetooth A2DP -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.BLUETOOTH" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <uses-feature android:name="android.hardware.camera" />
+    <uses-feature android:name="android.hardware.camera.autofocus" />
+    <uses-feature android:name="android.hardware.camera.flash" />
+
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.DISABLE_KEYGUARD" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="com.google.android.things.permission.MANAGE_SENSOR_DRIVERS" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="com.qualcomm.permission.USE_QCRIL_MSG_TUNNEL" />
+
+    <!--<uses-permission android:name="android.permission.REBOOT" />-->
+    <!--<uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" />-->
+    <!--<uses-permission android:name="android.permission.WRITE_SETTINGS" />-->
+    <!--<uses-permission android:name="android.permission.DEVICE_POWER" />-->
+    <uses-permission android:name="android.permission.MOUNT_UNMOUNT_FILESYSTEMS" />
+    <uses-permission android:name="android.permission.WRITE_MEDIA_STORAGE" />
+
+
+    <!--访问GPIO总线端口，需要打开相关的权限-->
+    <uses-permission android:name="com.google.android.things.permission.REBOOT"/>
+    <uses-permission android:name="com.google.android.things.permission.USE_PERIPHERAL_IO" />
+
+    <!--&lt;!&ndash;注册用户驱动&ndash;&gt;-->
+    <uses-permission android:name="com.google.android.things.permission.MANAGE_INPUT_DRIVERS" />
+
+
+    <application
+        android:name=".SparrowApplication"
+        android:allowBackup="false"
+        android:screenOrientation="landscape"
+        android:theme="@style/AppTheme">
+        <uses-library android:name="com.google.android.things" />
+
+        <activity
+            android:name=".NavigationActivity"
+            android:configChanges="orientation|keyboardHidden"
+            android:screenOrientation="landscape">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.HOME" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".mmi.MainActivity"
+            android:screenOrientation="landscape">
+            <intent-filter>
+                <action android:name="hello.MainActivity" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".mmi.lcd.LcdActivity"
+            android:screenOrientation="landscape">
+            <intent-filter>
+                <action android:name="lcd.action" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".mmi.button.ButtonActivity"
+            android:screenOrientation="landscape">
+            <intent-filter>
+                <action android:name="button.action" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".mmi.sensor.MyGVSensorActivity"
+            android:screenOrientation="landscape">
+            <intent-filter>
+                <action android:name="gv_sensor.action" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".mmi.camera.TestActivity"
+            android:screenOrientation="landscape">
+            <intent-filter>
+                <action android:name="hello.testActivity" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".mmi.tp.TPTestActivity"
+            android:screenOrientation="landscape">
+            <intent-filter>
+                <action android:name="hello.TPTestActivity" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".mmi.multipoint.MultPointActivity"
+            android:screenOrientation="landscape">
+            <intent-filter>
+                <action android:name="hello.MultPointActivity" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".mmi.speaker.SpeakerActivity"
+            android:screenOrientation="landscape">
+            <intent-filter>
+                <action android:name="hello.SpeakerActivity" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <!-- <activity android:name=".mmi.speaker.SpeakerTestActivity"> -->
+        <!-- <intent-filter> -->
+        <!-- <action android:name="hello.SpeakerTestActivity"/> -->
+
+
+        <!-- <category android:name="android.intent.category.DEFAULT"/> -->
+        <!-- </intent-filter> -->
+        <!-- </activity> -->
+        <activity android:name=".mmi.backlight.BackLightActivity"
+            android:screenOrientation="landscape">
+            <intent-filter>
+                <action android:name="backlight.action" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".mmi.sensor.PSensorActivity"
+            android:screenOrientation="landscape">
+            <intent-filter>
+                <action android:name="p_sensor.action" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".mmi.sensor.LightSensorActivity"
+            android:screenOrientation="landscape">
+            <intent-filter>
+                <action android:name="l_sensor.action" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".mmi.wifi.WifiActivity"
+            android:screenOrientation="landscape">
+            <intent-filter>
+                <action android:name="wifi.action" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".mmi.bluetooth.BluetoothActivity"
+            android:screenOrientation="landscape">
+            <intent-filter>
+                <action android:name="hello.BluetoothActivity" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".mmi.result.ResultActivity"
+            android:screenOrientation="landscape">
+            <intent-filter>
+                <action android:name="hello.ResultActivity" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+        <!-- runin manifest -->
+        <activity android:name=".runin.RuninMainActivity"
+            android:screenOrientation="landscape"/>
+        <activity android:name=".runin.RuninActivity"
+            android:screenOrientation="landscape"/>
+        <activity android:name=".runin.cpu.CPUTestActivity"
+            android:screenOrientation="landscape"/>
+        <activity android:name=".runin.memory.MemoryTestActivity"
+            android:screenOrientation="landscape"/>
+        <activity android:name=".runin.emmc.EMMCTestActivity"
+            android:screenOrientation="landscape"/>
+        <activity android:name=".runin.mic.MicActivity"
+            android:screenOrientation="landscape"/>
+        <activity android:name=".runin.camera.CameraTestActivity"
+            android:launchMode="singleInstance"
+            android:screenOrientation="landscape">
+            <intent-filter>
+                <action android:name="runin.camera.CameraTestActivity"></action>
+            </intent-filter>
+        </activity>
+        <activity android:name=".runin.audio.AudioTestActivity"
+            android:screenOrientation="landscape">
+            <intent-filter>
+                <action android:name="audio_test"></action>
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".runin.lcd.LCDTestActivity"
+            android:screenOrientation="landscape"/>
+        <activity android:name=".runin.video.VideoTestActivity"
+            android:screenOrientation="landscape"/>
+        <activity android:name=".runin.threedimensional.ThreeDimensionalActivity"
+            android:screenOrientation="landscape"/>
+        <activity android:name=".runin.twodimensional.TwoDimensionalActivity"
+            android:screenOrientation="landscape"/>
+        <activity android:name=".runin.reboot.RebootTestActivity"
+            android:screenOrientation="landscape"/>
+        <activity android:name=".runin.report.ReportActivity"
+            android:screenOrientation="landscape"/>
+        <activity android:name=".TemperatureActivity"
+            android:screenOrientation="landscape"/>
+        <!-- pcba manifest -->
+
+        <activity android:name=".pcba.PcbaTestActivity"
+            android:screenOrientation="landscape">
+            <intent-filter>
+                <action android:name="hello.PcbaTestActivity" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".pcba.PcbaLcdActivity"
+            android:screenOrientation="landscape">
+            <intent-filter>
+                <action android:name="pcba_lcd" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".pcba.PcbaButtonActivity"
+            android:screenOrientation="landscape">
+            <intent-filter>
+                <action android:name="pcba_button" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".pcba.PcbaTpActivity"
+            android:screenOrientation="landscape">
+            <intent-filter>
+                <action android:name="pcba_tp" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".pcba.PCBADataCheckTestActivity"
+            android:screenOrientation="landscape">
+            <intent-filter>
+                <action android:name="pcba.datacheck.action" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".mmi.datacheck.DataCheckTestActivity"
+            android:screenOrientation="landscape">
+            <intent-filter>
+                <action android:name="datacheck.action" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".pcba.PCBAGSensorActivity"
+            android:screenOrientation="landscape">
+            <intent-filter>
+                <action android:name="hello.PCBAGSensorActivity" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".pcba.PCBAPSensorActivity"
+            android:screenOrientation="landscape">
+            <intent-filter>
+                <action android:name="hello.PCBAPSensorActivity" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".pcba.PCBALSensorActivity"
+            android:screenOrientation="landscape">
+            <intent-filter>
+                <action android:name="hello.PCBALSensorActivity" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".pcba.PCBAMicTestActivity"
+            android:screenOrientation="landscape">
+            <intent-filter>
+                <action android:name="pcba_mic" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".pcba.PCBASpeakerTestActivity"
+            android:screenOrientation="landscape">
+            <intent-filter>
+                <action android:name="pcba_speaker" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".pcba.PCBACameraTestActivity"
+            android:screenOrientation="landscape">
+            <intent-filter>
+                <action android:name="pcba_camera" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+        <service
+            android:name=".runin.RuninService"
+            android:enabled="true"
+            android:exported="false" />
+        <service
+            android:name=".interact.ConnectManagerService"
+            android:enabled="true"
+            android:exported="false" />
+
+        <receiver
+            android:name=".runin.BootupReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+        <receiver android:name=".PCMessageReceiver">
+            <intent-filter>
+                <action android:name="com.pcba_test" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="com.sparrow.camera.take_picture" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="com.mmi.test" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="com.write.sn" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="action_start_runin" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="action_stop_runin" />
+            </intent-filter>
+        </receiver>
+
+        <service android:name=".driver.AccelerometerService" />
+        <service android:name=".driver.ProximityService" />
+
+        <activity android:name=".GetPhotoActivity" />
+        <activity android:name=".RebootActivity" />
+        <activity android:name=".TremoloActivity" />
+        <activity android:name=".runin.EngineeringModeActivity" />
+        <activity android:name=".MoreActivity" />
+        <activity android:name=".ShowSNActivity" />
+        <activity android:name=".runin.FailActivity" />
+        <activity
+            android:name=".pcba.PCBABaseActivity"
+            android:label="@string/title_activity_pcbabase"
+            android:screenOrientation="landscape"/>
+        <activity android:name=".BackLightTestActivity"
+            android:screenOrientation="landscape"/>
+        <activity android:name=".ShowRGBActivity"
+            android:screenOrientation="landscape">
+            <intent-filter>
+                <action android:name="rgb.sensor.action" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".pcba.PCBARGBActivity"
+            android:screenOrientation="landscape">
+            <intent-filter>
+                <action android:name="pcbargb.sensor.action" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".facecamera.CameraActivity"
+            android:screenOrientation="landscape"/>
+    </application>
+
+</manifest>

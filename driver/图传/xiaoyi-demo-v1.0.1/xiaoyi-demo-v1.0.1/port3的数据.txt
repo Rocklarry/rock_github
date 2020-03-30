@@ -1,0 +1,7 @@
+index£º    bitrate
+1:           600Kbps
+2:           1.2Mbps
+3:           2.4Mbps
+8:           5.0Mbps
+11:         7.5Mbps
+13:         10Mbps

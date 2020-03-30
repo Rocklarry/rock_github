@@ -1,0 +1,129 @@
+From c386afa0af204e2150f006a17b6f8f725c5269ef Mon Sep 17 00:00:00 2001
+From: Li Zhanchao <lizc1023@thundersoft.com>
+Date: Mon, 26 Jan 2015 13:17:32 +0800
+Subject: [PATCH 1/3] ARM:dts:msm: support ctp djn hx8526-d32
+
+Add CTP IHV-DJN@AW980@HX8526-D32 device tree
+
+Change-Id: I1172acd11e560ffd67a459a42e2d81d36cbf6b67
+Signed-off-by: Li Zhanchao <lizc1023@thundersoft.com>
+---
+ .../bindings/input/touchscreen/himax8526.txt       |   55 ++++++++++++++++++++
+ .../devicetree/bindings/vendor-prefixes.txt        |    1 +
+ arch/arm/boot/dts/qcom/msm8909-qrd-skue.dtsi       |   22 +++++++-
+ 3 files changed, 77 insertions(+), 1 deletion(-)
+ create mode 100644 Documentation/devicetree/bindings/input/touchscreen/himax8526.txt
+
+diff --git a/Documentation/devicetree/bindings/input/touchscreen/himax8526.txt b/Documentation/devicetree/bindings/input/touchscreen/himax8526.txt
+new file mode 100644
+index 0000000..c632d8a
+--- /dev/null
++++ b/Documentation/devicetree/bindings/input/touchscreen/himax8526.txt
+@@ -0,0 +1,55 @@
++Himax touch controller
++
++The himax controller is connected to host processor
++via i2c. The controller generates interrupts when the
++user touches the panel. The host controller is expected
++to read the touch coordinates over i2c and pass the coordinates
++to the rest of the system.
++
++Required properties:
++
++ - compatible		: should be "himax,hx8526-d32"
++ - reg			: i2c slave address of the device
++ - interrupt-parent	: parent of interrupt
++ - interrupts		: touch sample interrupt to indicate presense or release
++				of fingers on the panel.
++ - vdd-supply		: Power supply needed to power up the device
++ - vcc_i2c-supply	: Power source required to power up i2c bus
++ - himax,irq-gpio	: irq gpio which is to provide interrupts to host,
++				same as "interrupts" node. It will also
++				contain active low or active high information.
++ - himax,reset-gpio	: reset gpio to control the reset of chip
++ - himax,num-max-touches	 : maximum number of touches supported
++
++Optional properties:
++
++ - himax,name	: name of the controller
++ - himax,i2c-pull-up : to specify pull up is required
++ - himax,reg-en	: regulator enable or not
++ - himax,button-map : button map of key codes. The number
++ - himax,virtual_key	: specify if virtual keys are supported through firmware
++				of key codes depend on panel
++ - himax,x-max	: display coordinates in pixels, max x value
++ - himax,y-max	: display coordinates in pixels, max y value
++
++Example:
++	i2c@78b9000{
++		himax@4a {
++			compatible = "himax,hx8526-d32";
++			reg = <0x4a>;
++			interrupt-parent = <&msm_gpio>;
++			interrupts = <13 0x2008>;
++			vdd-supply = <&pm8909_l17>;
++			vcc_i2c-supply = <&pm8909_l6>;
++			himax,name = "hx8526";
++			himax,reset-gpio = <&msm_gpio 12 0x00>;
++			himax,irq-gpio = <&msm_gpio 13 0x00>;
++			himax,virtual_key;
++			himax,i2c-pull-up;
++			himax,reg-en;
++			himax,button-map = <139 172 158>;
++			himax,num-max-touches = <5>;
++			himax,x-max = <480>;
++			himax,y-max = <854>;
++		};
++	};
+diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
+index e3c6b1e..ead89a5 100644
+--- a/Documentation/devicetree/bindings/vendor-prefixes.txt
++++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+@@ -32,6 +32,7 @@ GEFanuc	GE Fanuc Intelligent Platforms Embedded Systems, Inc.
+ goodix	Goodix. Ltd.
+ gef	GE Fanuc Intelligent Platforms Embedded Systems, Inc.
+ hp	Hewlett Packard
++himax	Himax Technologies,Inc.
+ ibm	International Business Machines (IBM)
+ idt	Integrated Device Technologies, Inc.
+ img	Imagination Technologies Ltd.
+diff --git a/arch/arm/boot/dts/qcom/msm8909-qrd-skue.dtsi b/arch/arm/boot/dts/qcom/msm8909-qrd-skue.dtsi
+index cd313a1..964bb62 100755
+--- a/arch/arm/boot/dts/qcom/msm8909-qrd-skue.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8909-qrd-skue.dtsi
+@@ -92,11 +92,31 @@
+ 			focaltech,fw-auto-cal;
+ 			focaltech,ignore-id-check;
+ 		};
++
++		himax@4a {
++			compatible = "himax,hx8526-d32";
++			reg = <0x4a>;
++			interrupt-parent = <&msm_gpio>;
++			interrupts = <13 0x2008>;
++			vdd-supply = <&pm8909_l17>;
++			vcc_i2c-supply = <&pm8909_l6>;
++			himax,name = "hx8526-d32";
++			himax,reset-gpio = <&msm_gpio 12 0x00>;
++			himax,irq-gpio = <&msm_gpio 13 0x00>;
++			himax,virtual_key;
++			himax,i2c-pull-up;
++			himax,reg-en;
++			himax,button-map = <139 172 158>;
++			himax,num-max-touches = <5>;
++			himax,x-max = <480>;
++			himax,y-max = <854>;
++		};
++
+ 	};
+ 
+ 	gen-vkeys {
+ 		compatible = "qcom,gen-vkeys";
+-		label = "ft5x06_ts";
++		label = "himax8526";
+ 		qcom,disp-maxx = <480>;
+ 		qcom,disp-maxy = <854>;
+ 		qcom,panel-maxx = <480>;
+-- 
+1.7.9.5
+

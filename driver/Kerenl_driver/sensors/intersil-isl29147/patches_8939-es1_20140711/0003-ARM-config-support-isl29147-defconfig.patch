@@ -1,0 +1,30 @@
+From 5ced217646ef4b81d4b67a4dbe7926e374503a7e Mon Sep 17 00:00:00 2001
+From: chenqingfeng <chenqf0228@thundersoft.com>
+Date: Fri, 11 Jul 2014 11:21:48 +0800
+Subject: [PATCH 3/3] ARM:config: support isl29147 defconfig
+
+Defconfig support isl29147
+
+Change-Id: I54b87e923c277b6d0ff56f461fe1ad9e00ca5913
+Signed-off-by: Qingfeng Chen <chenqf0228@thundersoft.com>
+---
+ arch/arm/configs/msm8916_defconfig |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/configs/msm8916_defconfig b/arch/arm/configs/msm8916_defconfig
+index 9fb4f3c..45c4097 100644
+--- a/arch/arm/configs/msm8916_defconfig
++++ b/arch/arm/configs/msm8916_defconfig
+@@ -215,7 +215,8 @@ CONFIG_CMA=y
+ CONFIG_CMA_SIZE_MBYTES=8
+ CONFIG_BLK_DEV_LOOP=y
+ CONFIG_BLK_DEV_RAM=y
+-CONFIG_APDS9930=y
++#CONFIG_APDS9930 is not set
++CONFIG_INTERSIL_ISL29147=y
+ CONFIG_QSEECOM=y
+ CONFIG_SCSI=y
+ CONFIG_SCSI_TGT=y
+-- 
+1.7.9.5
+

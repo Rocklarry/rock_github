@@ -1,0 +1,51 @@
+From f94823f1465324d0c94d112f1900ba8f66af395b Mon Sep 17 00:00:00 2001
+From: chenx <chenxiang0527@thundersoft.com>
+Date: Mon, 10 Nov 2014 14:58:29 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support kxtik-1004 devicetree
+
+Devicetree support kxtik-1004
+
+Change-Id: Ief86031bc2e65eb218514f61de90ca3a028e853e
+Signed-off-by: Xiang Chen <chenxiang0527@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi |   17 ++++++++++++++++-
+ 1 file changed, 16 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi b/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
+index 9981e42..d1bf836 100644
+--- a/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
+@@ -87,7 +87,7 @@
+ 		akm,gpio_rstn = <&msm_gpio 36 0x0>;
+ 		akm,auto-report;
+ 	};
+-
++/*
+ 	avago@39 {
+ 		compatible = "avago,apds9930";
+ 		reg = <0x39>;
+@@ -128,6 +128,21 @@
+ 		st,negate-x;
+ 		st,negate-y;
+ 	};
++*/
++	kionix@f {
++		compatible = "kionix,kxtik-1004";
++		reg = <0x0f>;
++		interrupt-parent = <&msm_gpio>;
++		interrupts = <113 0x2002>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++		kionix,min_interval = <5>;
++		kionix,poll_interval = <100>;
++		kionix,accel_direction = <1>;
++		kionix,accel_irq_use_drdy = <0>;
++		kionix,accel_res = <12>;
++		kionix,accel_g_range = <2>;
++	};
+ 
+ 	tps65132@3e {
+ 		compatible = "ti,tps65132";
+-- 
+1.7.9.5
+

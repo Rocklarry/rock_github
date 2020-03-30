@@ -1,0 +1,203 @@
+From 06d91b73ede5cd06f59c6bb50b83673a2ac82059 Mon Sep 17 00:00:00 2001
+From: yanqy <yanqy0911@thundersoft.com>
+Date: Mon, 16 Mar 2015 09:29:23 +0800
+Subject: [PATCH 1/2] ARM:dts:msm: support ctp truly ft5446dqs
+
+Add CTP IHV-TRULY@CT4F0892@FT5446DQS device tree
+
+Change-Id: I0c0d34198a48fbab7767e7b7bc2d915f9d6ee4b8
+Signed-off-by: Qiyang Yan <yanqy0911@thundersoft.com>
+---
+ .../bindings/input/touchscreen/ft5x06-ts.txt       |   57 +++++++++-----------
+ arch/arm/boot/dts/qcom/msm8929-qrd-skulb.dts       |    3 +-
+ arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi       |   13 ++---
+ arch/arm/boot/dts/qcom/msm8939-qrd-skul.dtsi       |    6 +--
+ 4 files changed, 38 insertions(+), 41 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/input/touchscreen/ft5x06-ts.txt b/Documentation/devicetree/bindings/input/touchscreen/ft5x06-ts.txt
+index ca9b4f1..2a12f89 100644
+--- a/Documentation/devicetree/bindings/input/touchscreen/ft5x06-ts.txt
++++ b/Documentation/devicetree/bindings/input/touchscreen/ft5x06-ts.txt
+@@ -48,57 +48,52 @@ Required properties:
+ 
+ Optional properties:
+ 
+- - focaltech,name	: name of the controller
+- - focaltech,i2c-pull-up : to specify pull up is required
+- - focaltech,no-force-update : to specify force update is allowed
+- - focaltech,button-map : button map of key codes. The number
++ - focaltech,name		: name of the controller
++ - focaltech,i2c-pull-up	: to specify pull up is required
++ - focaltech,no-force-update	: to specify force update is allowed
++ - focaltech,button-map		: button map of key codes. The number
+  - focaltech,fw-vkey-support	: specify if virtual keys are supported through firmware
+ 				of key codes depend on panel
+  - focaltech,fw-auto-cal	: specify whether calibration is needed after firmware upgrade
+- - focaltech,fw-vkey-support	: specify if virtual keys are supported through firmware
+- - focaltech,ignore-id-check : specify ignore family-id check
+- - focaltech,panel-coords : panel coordinates for the chip in pixels.
++ - focaltech,ignore-id-check	: specify ignore family-id check
++ - focaltech,panel-coords	: panel coordinates for the chip in pixels.
+ 				It is a four tuple consisting of min x,
+ 				min y, max x and max y values
+- - focaltech,fw-name	: specify the firmware file name
+- - focaltech,psensor-support	: specify whether support the proximity sensor
+- - focaltech,gesture-support	: specify whether support gesture feature
++ - focaltech,fw-name		: specify the firmware file name
+ 
+ Example:
+-	i2c@f9923000{
+-		focaltech@38{
++	i2c@78b9000 {
++		focaltech@38 {
+ 			compatible = "focaltech,5x06";
+ 			reg = <0x38>;
+-			interrupt-parent = <&msmgpio>;
+-			interrupts = <1 0x2>;
+-			vdd-supply = <&pm8110_l19>;
+-			vcc_i2c-supply = <&pm8110_l14>;
+-			pinctrl-names = "pmx_ts_active","pmx_ts_suspend","pmx_ts_release";
++			interrupt-parent = <&msm_gpio>;
++			interrupts = <13 0x2008>;
++			vdd-supply = <&pm8916_l17>;
++			vcc_i2c-supply = <&pm8916_l16>;
++			/* pins used by touchscreen */
++			pinctrl-names = "pmx_ts_active","pmx_ts_suspend";
+ 			pinctrl-0 = <&ts_int_active &ts_reset_active>;
+ 			pinctrl-1 = <&ts_int_suspend &ts_reset_suspend>;
+-			pinctrl-2 = <&ts_release>;
+-			focaltech,name = "ft6x06";
+-			focaltech,family-id = <0x06>;
+-			focaltech,reset-gpio = <&msmgpio 0 0x00>;
+-			focaltech,irq-gpio = <&msmgpio 1 0x00>;
+-			focaltech,display-coords = <0 0 480 800>;
+-			focaltech,panel-coords = <0 0 480 800>;
++			focaltech,name = "ft5446dqs";
++			focaltech,family-id = <0x55>;
++			focaltech,reset-gpio = <&msm_gpio 12 0x0>;
++			focaltech,irq-gpio = <&msm_gpio 13 0x2008>;
++			focaltech,display-coords = <0 0 720 1280>;
++			focaltech,panel-coords = <0 0 720 1400>;
+ 			focaltech,button-map= <139 102 158>;
+ 			focaltech,no-force-update;
+ 			focaltech,i2c-pull-up;
+ 			focaltech,group-id = <1>;
+-			focaltech,hard-reset-delay = <20>;
+-			focaltech,soft-reset-delay = <150>;
+-			focaltech,num-max-touches = <2>;
+-			focaltech,fw-name = "ft_8610_qrd_fw.bin";
+-			focaltech,fw-delay-aa-ms = <100>;
++			focaltech,hard-reset-delay-ms = <20>;
++			focaltech,soft-reset-delay-ms = <200>;
++			focaltech,num-max-touches = <5>;
++			focaltech,fw-delay-aa-ms = <30>;
+ 			focaltech,fw-delay-55-ms = <30>;
+ 			focaltech,fw-upgrade-id1 = <0x79>;
+ 			focaltech,fw-upgrade-id2 = <0x08>;
+ 			focaltech,fw-delay-readid-ms = <10>;
+ 			focaltech,fw-delay-era-flsh-ms = <2000>;
+ 			focaltech,fw-auto-cal;
+-			focaltech,psensor-support;
+-			focaltech,gesture-support;
++			focaltech,fw-vkey-support;
+ 		};
+ 	};
+diff --git a/arch/arm/boot/dts/qcom/msm8929-qrd-skulb.dts b/arch/arm/boot/dts/qcom/msm8929-qrd-skulb.dts
+index 485797a..efb2e8c 100644
+--- a/arch/arm/boot/dts/qcom/msm8929-qrd-skulb.dts
++++ b/arch/arm/boot/dts/qcom/msm8929-qrd-skulb.dts
+@@ -80,6 +80,7 @@
+ };
+ 
+ &i2c_5 {
++/*
+ 	focaltech@38 {
+ 		compatible = "focaltech,5x06";
+ 		reg = <0x38>;
+@@ -87,7 +88,6 @@
+ 		interrupts = <13 0x2>;
+ 		vdd-supply = <&pm8916_l17>;
+ 		vcc_i2c-supply = <&pm8916_l6>;
+-		/* pins used by touchscreen */
+ 		pinctrl-names = "pmx_ts_active","pmx_ts_suspend","pmx_ts_release";
+ 		pinctrl-0 = <&ts_int_active &ts_reset_active>;
+ 		pinctrl-1 = <&ts_int_suspend &ts_reset_suspend>;
+@@ -114,6 +114,7 @@
+ 		focaltech,fw-auto-cal;
+ 		focaltech,ignore-id-check;
+ 	};
++*/
+ };
+ 
+ &soc {
+diff --git a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+index bd81985..defcbfe 100644
+--- a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+@@ -27,12 +27,12 @@
+ 			pinctrl-0 = <&ts_int_active &ts_reset_active>;
+ 			pinctrl-1 = <&ts_int_suspend &ts_reset_suspend>;
+ 			pinctrl-2 = <&ts_release>;
+-			focaltech,name = "ft5336";
+-			focaltech,family-id = <0x14>;
++			focaltech,name = "ft5446dqs";
++			focaltech,family-id = <0x55>;
+ 			focaltech,reset-gpio = <&msm_gpio 12 0x0>;
+ 			focaltech,irq-gpio = <&msm_gpio 13 0x2008>;
+-			focaltech,display-coords = <0 0 1080 1920>;
+-			focaltech,panel-coords = <0 0 1080 2098>;
++			focaltech,display-coords = <0 0 720 1280>;
++			focaltech,panel-coords = <0 0 720 1400>;
+ 			focaltech,button-map= <139 102 158>;
+ 			focaltech,no-force-update;
+ 			focaltech,i2c-pull-up;
+@@ -42,12 +42,13 @@
+ 			focaltech,num-max-touches = <5>;
+ 			focaltech,fw-delay-aa-ms = <30>;
+ 			focaltech,fw-delay-55-ms = <30>;
+-			focaltech,fw-upgrade-id1 = <0x11>;
+-			focaltech,fw-upgrade-id2 = <0x11>;
++			focaltech,fw-upgrade-id1 = <0x79>;
++			focaltech,fw-upgrade-id2 = <0x08>;
+ 			focaltech,fw-delay-readid-ms = <10>;
+ 			focaltech,fw-delay-era-flsh-ms = <2000>;
+ 			focaltech,fw-auto-cal;
+ 			focaltech,ignore-id-check;
++			focaltech,fw-vkey-support;
+ 		};
+ 	};
+ 
+diff --git a/arch/arm/boot/dts/qcom/msm8939-qrd-skul.dtsi b/arch/arm/boot/dts/qcom/msm8939-qrd-skul.dtsi
+index d217188..50b1ef4 100644
+--- a/arch/arm/boot/dts/qcom/msm8939-qrd-skul.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8939-qrd-skul.dtsi
+@@ -15,7 +15,8 @@
+ #include "dsi-panel-r61318-hd-video.dtsi"
+ 
+ &soc {
+-	i2c@78b9000 { /* BLSP1 QUP5 */
++/*
++	i2c@78b9000 {
+ 		focaltech@38 {
+ 			compatible = "focaltech,5x06";
+ 			reg = <0x38>;
+@@ -23,7 +24,6 @@
+ 			interrupts = <13 0x2>;
+ 			vdd-supply = <&pm8916_l17>;
+ 			vcc_i2c-supply = <&pm8916_l6>;
+-			/* pins used by touchscreen */
+ 			pinctrl-names = "pmx_ts_active","pmx_ts_suspend","pmx_ts_release";
+ 			pinctrl-0 = <&ts_int_active &ts_reset_active>;
+ 			pinctrl-1 = <&ts_int_suspend &ts_reset_suspend>;
+@@ -51,7 +51,7 @@
+ 			focaltech,ignore-id-check;
+ 		};
+ 	};
+-
++*/
+ 	gen-vkeys {
+ 		compatible = "qcom,gen-vkeys";
+ 		label = "ft5x06_ts";
+-- 
+1.7.9.5
+

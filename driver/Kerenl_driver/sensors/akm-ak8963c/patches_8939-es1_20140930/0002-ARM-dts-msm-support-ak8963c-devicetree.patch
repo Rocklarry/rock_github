@@ -1,0 +1,72 @@
+From d0b1fbd75739ffba56ad26d2c03d5ce987f95963 Mon Sep 17 00:00:00 2001
+From: chenqingfeng <chenqf0228@thundersoft.com>
+Date: Mon, 29 Sep 2014 17:07:54 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support ak8963c devicetree
+
+Devicetree support ak8963c
+
+Change-Id: Ideaf2e1ac20bb9f3352e76ec60a00b2f9b66b450
+Signed-off-by: Qingfeng Chen <chenqf0228@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi |   31 +++++++++++++++++++++++++-
+ 1 file changed, 30 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+index e9902b8..52aad24 100755
+--- a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+@@ -47,6 +47,21 @@
+ 		};
+ 	};
+ 
++	akm_reset_pin {
++		qcom,pins = <&gp 36>;
++		qcom,pin-func = <0>;
++		qcom,num-grp-pins = <1>;
++		label = "akm_reset_pin";
++		akm_default: akm_default {
++			drive-strength = <6>;
++			bias-pull-up;
++		};
++		akm_sleep: akm_sleep {
++			drive-strength = <2>;
++			bias-pull-down;
++		};
++	};
++
+ 	tps65132-en-pin {
+ 		qcom,pins = <&gp 97>, <&gp 98>;
+ 		qcom,num-grp-pins = <2>;
+@@ -107,6 +122,19 @@
+ 		memsic,auto-report;
+ 	};
+ 
++	akm@c {
++		compatible = "ak,ak8963";
++		reg = <0x0c>;
++		pinctrl-names = "ak8963_default","ak8963_sleep";
++		pinctrl-0 = <&akm_default>;
++		pinctrl-1 = <&akm_sleep>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++		ak,layout = <0x3>;
++		ak,gpio-rstn = <&msm_gpio 36 0x0>;
++		ak,auto-report;
++	};
++
+ 	mpu6050@68 { /* Gyroscope and accelerometer sensor combo */
+ 		compatible = "invn,mpu6050";
+ 		reg = <0x68>;
+@@ -119,7 +147,8 @@
+ 		vlogic-supply = <&pm8916_l16>;
+ 		vi2c-supply = <&pm8916_l6>;
+ 		invn,gpio-int = <&msm_gpio 115 0x2002>;
+-		invn,place = "Portrait Down Back Side";
++		/*invn,place = "Portrait Down Back Side";*/
++		invn,place = "Landscape Left Back Side";
+ 	};
+ 
+ 	tps65132@3e {
+-- 
+1.7.9.5
+

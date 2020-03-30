@@ -1,0 +1,72 @@
+From 32a69d4a1d6c4bc8426c81324b79bec63346ca85 Mon Sep 17 00:00:00 2001
+From: Yukun Wan <wanyk0402@thundersoft.com>
+Date: Mon, 23 Mar 2015 13:18:32 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support rpr0521c devicetree
+
+Devicetree support rpr0521c
+
+Change-Id: I093031627bf9da12c66a11de26c600fdf03caf94
+Signed-off-by: Yukun Wan <wanyk0402@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi | 31 +++++++++++++++++++++++++++-
+ 1 file changed, 30 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi b/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
+index 5bb6734..8a172d2 100644
+--- a/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
+@@ -72,6 +72,20 @@
+ 		};
+ 	};
+ 
++	rpr0521c_int_pin {
++		qcom,pins = <&gp 113>;
++		qcom,pin-func = <0>;
++		qcom,num-grp-pins = <1>;
++		label = "rpr0521c-irq";
++		rpr0521c_default: rpr0521c_default {
++			drive-strength = <6>;
++			bias-pull-up;
++		};
++		rpr0521c_sleep: rpr0521c_sleep {
++			drive-strength = <2>;
++			bias-pull-down;
++		};
++	};
+ };
+ 
+ &i2c_0 { /* BLSP1 QUP2 */
+@@ -88,7 +102,7 @@
+ 		akm,auto-report;
+ 	};
+ 
+-	avago@39 {
++	/*avago@39 {
+ 		compatible = "avago,apds9930";
+ 		reg = <0x39>;
+ 		pinctrl-names = "default","sleep";
+@@ -107,6 +121,21 @@
+ 		avago,als-C = <75>;
+ 		avago,als-D = <129>;
+ 		avago,ga-value = <98>;
++	};*/
++
++	rohm@38 { /* Ambient light and proximity sensor */
++		compatible = "rohm,rpr0521c";
++		reg = <0x38>;
++		pinctrl-names = "default","sleep";
++		pinctrl-0 = <&rpr0521c_default>;
++		pinctrl-1 = <&rpr0521c_sleep>;
++		interrupt-parent = <&msm_gpio>;
++		interrupts = <113 0x2002>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++		rpr0521c,irq-gpio = <&msm_gpio 113 0x2002>;
++		rpr0521c,prox_th_min = <50>;
++		rpr0521c,prox_th_max = <150>;
+ 	};
+ 
+ 	st@18 {
+-- 
+2.2.2
+

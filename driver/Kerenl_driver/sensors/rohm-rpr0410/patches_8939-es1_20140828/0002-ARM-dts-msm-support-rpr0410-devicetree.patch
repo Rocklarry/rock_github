@@ -1,0 +1,75 @@
+From 5cb06946ade5d67d0f5565c2b10947bb44175539 Mon Sep 17 00:00:00 2001
+From: chenqingfeng <chenqf0228@thundersoft.com>
+Date: Fri, 24 Oct 2014 20:01:58 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support rpr0410 devicetree
+
+Devicetree support rpr0410
+
+Change-Id: Id9b8d1d21326d6be5cda671b211ae395fed9c615
+Signed-off-by: Qingfeng Chen <chenqf0228@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi |   34 ++++++++++++++++++++++++--
+ 1 file changed, 32 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+index e9902b8..fccec86 100755
+--- a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+@@ -47,6 +47,21 @@
+ 		};
+ 	};
+ 
++	rpr0410_int_pin {
++		qcom,pins = <&gp 113>;
++		qcom,pin-func = <0>;
++		qcom,num-grp-pins = <1>;
++		label = "rpr0410-irq";
++		rpr0410_default: rpr0410_default {
++			drive-strength = <6>;
++			bias-pull-up;
++		};
++		rpr0410_sleep: rpr0410_sleep {
++			drive-strength = <2>;
++			bias-pull-down;
++		};
++	};
++
+ 	tps65132-en-pin {
+ 		qcom,pins = <&gp 97>, <&gp 98>;
+ 		qcom,num-grp-pins = <2>;
+@@ -61,8 +76,8 @@
+ };
+ 
+ &i2c_0 { /* BLSP1 QUP2 */
+-	avago@39 { /* Ambient light and proximity sensor */
+-		compatible = "avago,apds9930";
++/*	avago@39 { /* Ambient light and proximity sensor */
++/*		compatible = "avago,apds9930";
+ 		reg = <0x39>;
+ 		pinctrl-names = "default","sleep";
+ 		pinctrl-0 = <&apds99xx_default>;
+@@ -80,6 +95,21 @@
+ 		avago,als-C = <70>;
+ 		avago,als-D = <142>;
+ 		avago,ga-value = <48>;
++	}; */
++
++	rohm@39 { /* Ambient light and proximity sensor */
++		compatible = "rohm,rpr0410";
++		reg = <0x39>;
++		pinctrl-names = "default","sleep";
++		pinctrl-0 = <&rpr0410_default>;
++		pinctrl-1 = <&rpr0410_sleep>;
++		interrupt-parent = <&msm_gpio>;
++		interrupts = <113 0x2002>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++		rohm,irq-gpio = <&msm_gpio 113 0x2002>;
++		rohm,prox_th_min = <46>;
++		rohm,prox_th_max = <80>;
+ 	};
+ 
+ 	bosch@18 { /* Accelerometer sensor */
+-- 
+1.7.9.5
+

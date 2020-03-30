@@ -1,0 +1,32 @@
+From ab68b331409db582a0647301b4f8fa144a7b361b Mon Sep 17 00:00:00 2001
+From: Zhenzhen Zhang <zhangzz6687@thundersoft.com>
+Date: Wed, 9 Apr 2014 15:30:54 +0800
+Subject: [PATCH 2/3] ARM:config: support ctp mms134s
+
+Add CTP ILJIN-DISPLAY@BH1333@MMS134S config
+
+Change-Id: Iedfae60aaf790339fdd7951c421cd5ed9b023319
+Signed-off-by: Zhenzhen Zhang <zhangzz6687@thundersoft.com>
+---
+ arch/arm/configs/msm8610_defconfig | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/configs/msm8610_defconfig b/arch/arm/configs/msm8610_defconfig
+index 02db2f2..969af8b 100644
+--- a/arch/arm/configs/msm8610_defconfig
++++ b/arch/arm/configs/msm8610_defconfig
+@@ -232,8 +232,9 @@ CONFIG_INPUT_EVBUG=m
+ CONFIG_KEYBOARD_GPIO=y
+ CONFIG_INPUT_TOUCHSCREEN=y
+ CONFIG_TOUCHSCREEN_ATMEL_MXT=y
+-CONFIG_TOUCHSCREEN_FT5X06=y
+-CONFIG_TOUCHSCREEN_GEN_VKEYS=y
++#CONFIG_TOUCHSCREEN_FT5X06=y
++#CONFIG_TOUCHSCREEN_GEN_VKEYS=y
++CONFIG_TOUCHSCREEN_MELFAS=y
+ CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI4=y
+ CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_RMI4_DEV=y
+ CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE=y
+-- 
+1.8.3.1
+

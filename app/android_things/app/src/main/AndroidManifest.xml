@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.example.android_things">
+
+    <uses-permission android:name="android.permission.BLUETOOTH" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+    <uses-permission android:name="com.google.android.things.permission.USE_PERIPHERAL_IO" />
+    <uses-permission android:name="com.google.android.things.permission.MANAGE_INPUT_DRIVERS" />
+    <uses-permission android:name="com.google.android.things.permission.MANAGE_SENSOR_DRIVERS" />
+
+    <application
+        android:label="@string/app_name">
+
+
+        <activity android:name=".Gpio_test"></activity>
+
+
+        <activity android:name=".Io_list" />
+        <activity android:name=".L_sensor" />
+
+        <service
+            android:name=".driver.ProximityService"
+            android:enabled="true"
+            android:exported="true" />
+
+        <activity android:name=".P_sensor" />
+        <activity android:name=".BT_test" />
+
+        <uses-library android:name="com.google.android.things" />
+
+        <activity android:name=".MainActivity"
+            android:screenOrientation="landscape">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- Launch activity automatically on boot, and re-launch if the app terminates. -->
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.HOME" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+    </application>
+
+</manifest>

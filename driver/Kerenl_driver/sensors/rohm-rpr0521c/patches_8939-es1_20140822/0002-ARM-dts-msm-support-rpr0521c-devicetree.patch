@@ -1,0 +1,75 @@
+From 4a5d8778a00084c5bf6774408d84a7bad5fafd67 Mon Sep 17 00:00:00 2001
+From: chenqingfeng <chenqf0228@thundersoft.com>
+Date: Mon, 27 Oct 2014 10:57:43 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support rpr0521c devicetree
+
+Devicetree support rpr0521c
+
+Change-Id: Ib485465e36b69cd7d35e24e0f86e028fe01a88a8
+Signed-off-by: Qingfeng Chen <chenqf0228@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi |   34 ++++++++++++++++++++++++--
+ 1 file changed, 32 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+index e9902b8..083c4ea 100755
+--- a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+@@ -47,6 +47,21 @@
+ 		};
+ 	};
+ 
++	rpr0521c_int_pin {
++		qcom,pins = <&gp 113>;
++		qcom,pin-func = <0>;
++		qcom,num-grp-pins = <1>;
++		label = "rpr0521c-irq";
++		rpr0521c_default: rpr0521c_default {
++			drive-strength = <6>;
++			bias-pull-up;
++		};
++		rpr0521c_sleep: rpr0521c_sleep {
++			drive-strength = <2>;
++			bias-pull-down;
++		};
++	};
++
+ 	tps65132-en-pin {
+ 		qcom,pins = <&gp 97>, <&gp 98>;
+ 		qcom,num-grp-pins = <2>;
+@@ -61,8 +76,8 @@
+ };
+ 
+ &i2c_0 { /* BLSP1 QUP2 */
+-	avago@39 { /* Ambient light and proximity sensor */
+-		compatible = "avago,apds9930";
++/*	avago@39 { /* Ambient light and proximity sensor */
++/*		compatible = "avago,apds9930";
+ 		reg = <0x39>;
+ 		pinctrl-names = "default","sleep";
+ 		pinctrl-0 = <&apds99xx_default>;
+@@ -81,6 +96,21 @@
+ 		avago,als-D = <142>;
+ 		avago,ga-value = <48>;
+ 	};
++*/
++	rohm@38 { /* Ambient light and proximity sensor */
++		compatible = "rohm,rpr0521c";
++		reg = <0x38>;
++		pinctrl-names = "default","sleep";
++		pinctrl-0 = <&rpr0521c_default>;
++		pinctrl-1 = <&rpr0521c_sleep>;
++		interrupt-parent = <&msm_gpio>;
++		interrupts = <113 0x2002>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++		rpr0521c,irq-gpio = <&msm_gpio 113 0x2002>;
++		rpr0521c,prox_th_min = <50>;
++		rpr0521c,prox_th_max = <150>;
++	};
+ 
+ 	bosch@18 { /* Accelerometer sensor */
+ 		compatible = "bosch,bma2x2";
+-- 
+1.7.9.5
+

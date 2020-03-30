@@ -1,0 +1,40 @@
+From b90cf0df43d0c33f6eac8497b64d1789879ae271 Mon Sep 17 00:00:00 2001
+From: chenqingfeng <chenqf0228@thundersoft.com>
+Date: Thu, 28 Aug 2014 19:27:48 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support apds9900 devicetree
+
+Devicetree support apds9900
+
+Change-Id: If73c32f36dc59ab6326f8a0bd22b35563d90c307
+Signed-off-by: Qingfeng Chen <chenqf0228@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+index e9902b8..b4fe9a3 100755
+--- a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+@@ -62,7 +62,7 @@
+ 
+ &i2c_0 { /* BLSP1 QUP2 */
+ 	avago@39 { /* Ambient light and proximity sensor */
+-		compatible = "avago,apds9930";
++		compatible = "avago,apds990x";
+ 		reg = <0x39>;
+ 		pinctrl-names = "default","sleep";
+ 		pinctrl-0 = <&apds99xx_default>;
+@@ -72,8 +72,8 @@
+ 		vdd-supply = <&pm8916_l17>;
+ 		vio-supply = <&pm8916_l6>;
+ 		avago,irq-gpio = <&msm_gpio 113 0x2002>;
+-		avago,ps-threshold = <600>;
+-		avago,ps-hysteresis-threshold = <500>;
++		avago,ps-threshold = <800>;
++		avago,ps-hysteresis-threshold = <300>;
+ 		avago,ps-pulse = <8>;
+ 		avago,ps-pgain = <0>;
+ 		avago,als-B = <223>;
+-- 
+1.7.9.5
+

@@ -1,0 +1,31 @@
+From d9f2afffc470ce0fa5ff45d0ada4c76f7f14e2e4 Mon Sep 17 00:00:00 2001
+From: Deng Yequan <dengyq0603@thundersoft.com>
+Date: Mon, 23 Jun 2014 11:40:39 +0800
+Subject: [PATCH 2/3] ARM:config: support ctp truly gt915
+
+Add CTP TRULY@CT3S0114-V1@GT915 config
+
+Change-Id: Ie3bac8e757d828c9b7a7a7474e8bf99665eeac2c
+Signed-off-by: Deng Yequan <dengyq0603@thundersoft.com>
+---
+ arch/arm/configs/msm8916_defconfig | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/arch/arm/configs/msm8916_defconfig b/arch/arm/configs/msm8916_defconfig
+index 3fc5fa2..f8c61fa 100644
+--- a/arch/arm/configs/msm8916_defconfig
++++ b/arch/arm/configs/msm8916_defconfig
+@@ -253,6 +253,10 @@ CONFIG_TOUCHSCREEN_GEN_VKEYS=y
+ CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI4=y
+ CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_RMI4_DEV=y
+ CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE=y
++CONFIG_TOUCHSCREEN_GT9XX=y
++CONFIG_GT9XX_TOUCHPANEL_DRIVER=y
++CONFIG_GT9XX_TOUCHPANEL_UPDATE=y
++CONFIG_GT9XX_TOUCHPANEL_DEBUG=y
+ CONFIG_INPUT_MISC=y
+ CONFIG_INPUT_UINPUT=y
+ CONFIG_INPUT_GPIO=m
+-- 
+1.9.1
+

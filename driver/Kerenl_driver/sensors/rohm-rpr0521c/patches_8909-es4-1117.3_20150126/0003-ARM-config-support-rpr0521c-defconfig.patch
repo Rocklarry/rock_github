@@ -1,0 +1,30 @@
+From ffd06290a71aba26f910561b4718d0deb76a1a07 Mon Sep 17 00:00:00 2001
+From: Yukun Wan <wanyk0402@thundersoft.com>
+Date: Mon, 26 Jan 2015 17:56:50 +0800
+Subject: [PATCH 3/3] ARM:config: support rpr0521c defconfig
+
+Defconfig support rpr0521c
+
+Change-Id: I2dcb6bde52ae3e017e46a14453677676e695661d
+Signed-off-by: Yukun Wan <wanyk0402@thundersoft.com>
+---
+ arch/arm/configs/msm8909-1gb_defconfig | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/configs/msm8909-1gb_defconfig b/arch/arm/configs/msm8909-1gb_defconfig
+index 593dc85..db9baab 100644
+--- a/arch/arm/configs/msm8909-1gb_defconfig
++++ b/arch/arm/configs/msm8909-1gb_defconfig
+@@ -306,7 +306,8 @@ CONFIG_INPUT_UINPUT=y
+ CONFIG_INPUT_GPIO=m
+ CONFIG_SENSORS=y
+ CONFIG_APDS9930=y
+-CONFIG_SENSORS_LTR553=y
++#CONFIG_SENSORS_LTR553 is not set
++CONFIG_SENSORS_RPR0521C=y
+ CONFIG_SENSORS_MPU6050=y
+ CONFIG_SENSORS_MMC3416X=y
+ CONFIG_SENSORS_AKM8963=y
+-- 
+2.2.2
+

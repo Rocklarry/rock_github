@@ -1,0 +1,117 @@
+From b41dfa556e17f7d76088470a3f79feebf590933c Mon Sep 17 00:00:00 2001
+From: maoyq0504 <maoyq0504@thundersoft.com>
+Date: Tue, 25 Aug 2015 10:10:45 +0800
+Subject: [PATCH 1/2] ARM:dts:msm: support ctp truly ft5446dq5
+
+Add CTP TRULY@CT4F0892@FT5446DQS device tree
+
+Change-Id: If2565bf65dd8c7f370a0aff24d4970ddcdb64514
+Signed-off-by: Yuanqiu Mao <maoyq0504@thundersoft.com>
+---
+ .../bindings/input/touchscreen/ft5x06-ts.txt       | 22 ++++++++++------------
+ arch/arm/boot/dts/qcom/msm8976-qrd-skun.dtsi       | 20 +++++++++++++++-----
+ 2 files changed, 25 insertions(+), 17 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/input/touchscreen/ft5x06-ts.txt b/Documentation/devicetree/bindings/input/touchscreen/ft5x06-ts.txt
+index ca9b4f1..6666bd0 100644
+--- a/Documentation/devicetree/bindings/input/touchscreen/ft5x06-ts.txt
++++ b/Documentation/devicetree/bindings/input/touchscreen/ft5x06-ts.txt
+@@ -71,26 +71,25 @@ Example:
+ 			reg = <0x38>;
+ 			interrupt-parent = <&msmgpio>;
+ 			interrupts = <1 0x2>;
+-			vdd-supply = <&pm8110_l19>;
+-			vcc_i2c-supply = <&pm8110_l14>;
++			vdd-supply = <&pm8950_l17>;
++			vcc_i2c-supply = <&pm8950_l6>;
+ 			pinctrl-names = "pmx_ts_active","pmx_ts_suspend","pmx_ts_release";
+ 			pinctrl-0 = <&ts_int_active &ts_reset_active>;
+ 			pinctrl-1 = <&ts_int_suspend &ts_reset_suspend>;
+ 			pinctrl-2 = <&ts_release>;
+-			focaltech,name = "ft6x06";
++			focaltech,name = "ft5446";
+ 			focaltech,family-id = <0x06>;
+-			focaltech,reset-gpio = <&msmgpio 0 0x00>;
+-			focaltech,irq-gpio = <&msmgpio 1 0x00>;
+-			focaltech,display-coords = <0 0 480 800>;
+-			focaltech,panel-coords = <0 0 480 800>;
+-			focaltech,button-map= <139 102 158>;
++			focaltech,reset-gpio = <&msmgpio 64 0x00>;
++			focaltech,irq-gpio = <&msmgpio 65 0x2008>;
++			focaltech,display-coords = <0 0 720 1280>;
++			focaltech,panel-coords = <0 0 720 1400>;
++			focaltech,button-map= <139 172 158>;
+ 			focaltech,no-force-update;
+ 			focaltech,i2c-pull-up;
+ 			focaltech,group-id = <1>;
+ 			focaltech,hard-reset-delay = <20>;
+ 			focaltech,soft-reset-delay = <150>;
+-			focaltech,num-max-touches = <2>;
+-			focaltech,fw-name = "ft_8610_qrd_fw.bin";
++			focaltech,num-max-touches = <5>;
+ 			focaltech,fw-delay-aa-ms = <100>;
+ 			focaltech,fw-delay-55-ms = <30>;
+ 			focaltech,fw-upgrade-id1 = <0x79>;
+@@ -98,7 +97,6 @@ Example:
+ 			focaltech,fw-delay-readid-ms = <10>;
+ 			focaltech,fw-delay-era-flsh-ms = <2000>;
+ 			focaltech,fw-auto-cal;
+-			focaltech,psensor-support;
+-			focaltech,gesture-support;
++			focaltech,fw-vkey-support;
+ 		};
+ 	};
+diff --git a/arch/arm/boot/dts/qcom/msm8976-qrd-skun.dtsi b/arch/arm/boot/dts/qcom/msm8976-qrd-skun.dtsi
+index 276c176..5c6664a 100644
+--- a/arch/arm/boot/dts/qcom/msm8976-qrd-skun.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8976-qrd-skun.dtsi
+@@ -30,15 +30,15 @@
+ 		focaltech,family-id = <0x06>;
+ 		focaltech,reset-gpio = <&msm_gpio 64 0x0>;
+ 		focaltech,irq-gpio = <&msm_gpio 65 0x2008>;
+-		focaltech,display-coords = <0 0 1079 1919>;
+-		focaltech,panel-coords = <0 0 1079 2084>;
+-		focaltech,button-map= <139 102 158>;
++		focaltech,display-coords = <0 0 720 1280>;
++		focaltech,panel-coords = <0 0 72 1400>;
++		focaltech,button-map= <139 172 158>;
+ 		focaltech,no-force-update;
+ 		focaltech,i2c-pull-up;
+ 		focaltech,group-id = <1>;
+ 		focaltech,hard-reset-delay-ms = <20>;
+ 		focaltech,soft-reset-delay-ms = <200>;
+-		focaltech,num-max-touches = <2>;
++		focaltech,num-max-touches = <5>;
+ 		focaltech,fw-delay-aa-ms = <30>;
+ 		focaltech,fw-delay-55-ms = <30>;
+ 		focaltech,fw-upgrade-id1 = <0x79>;
+@@ -46,6 +46,7 @@
+ 		focaltech,fw-delay-readid-ms = <10>;
+ 		focaltech,fw-delay-era-flsh-ms = <2000>;
+ 		focaltech,fw-auto-cal;
++		focaltech,fw-vkey-support;
+ 		focaltech,ignore-id-check;
+ 	};
+ 
+@@ -72,8 +73,17 @@
+ 		synaptics,button-map = <139 172 158>;
+ 	};
+ };
+-
+ &soc {
++	gen-vkeys {
++		compatible = "qcom,gen-vkeys";
++		label = "ft5x06_ts";
++		qcom,disp-maxx = <1080>;
++		qcom,disp-maxy = <1920>;
++		qcom,panel-maxx = <1080>;
++		qcom,panel-maxy = <2098>;
++		qcom,key-codes = <139 172 158>;
++		qcom,y-offset = <0>;
++	};
+ 	gpio_keys {
+ 		compatible = "gpio-keys";
+ 		input-name = "gpio-keys";
+-- 
+1.9.1
+

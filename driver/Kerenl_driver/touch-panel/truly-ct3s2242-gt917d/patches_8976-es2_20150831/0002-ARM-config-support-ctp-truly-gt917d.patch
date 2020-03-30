@@ -1,0 +1,31 @@
+From 89fc21ecbc95c30c26363e4acbd19ad5fe16dc48 Mon Sep 17 00:00:00 2001
+From: maoyq0504 <maoyq0504@thundersoft.com>
+Date: Mon, 24 Aug 2015 14:32:42 +0800
+Subject: [PATCH 2/3] ARM:config: support ctp truly gt917d
+
+Add CTP TRULY@CT3S2242@GT917D config
+
+Change-Id: Ib8040e3a1ce35d14b521bc3ef4e6d2b110293c9d
+Signed-off-by: Yuanqiu Mao <maoyq0504@thundersoft.com>
+---
+ arch/arm64/configs/msm_defconfig | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/arch/arm64/configs/msm_defconfig b/arch/arm64/configs/msm_defconfig
+index 9154c17..d09a843 100644
+--- a/arch/arm64/configs/msm_defconfig
++++ b/arch/arm64/configs/msm_defconfig
+@@ -268,6 +268,10 @@ CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_RMI_DEV_v21=y
+ CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE_v21=y
+ CONFIG_TOUCHSCREEN_ATMEL_MXT=y
+ CONFIG_TOUCHSCREEN_FT5X06=y
++CONFIG_TOUCHSCREEN_GT9XX=y
++CONFIG_GT9XX_TOUCHPANEL_DRIVER=y
++CONFIG_GT9XX_TOUCHPANEL_UPDATE=y
++CONFIG_GT9XX_TOUCHPANEL_DEBUG=y
+ CONFIG_TOUCHSCREEN_MSTAR21XX=y
+ CONFIG_TOUCHSCREEN_GEN_VKEYS=y
+ CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI4=y
+-- 
+1.9.1
+

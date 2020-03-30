@@ -1,0 +1,89 @@
+From 88ac19f701f5df31b7a55c37cf13f2084877995c Mon Sep 17 00:00:00 2001
+From: Wei Ding <weiding@qti.qualcomm.com>
+Date: Tue, 1 Sep 2015 13:46:08 +0800
+Subject: [PATCH] ARM: dts: msm: Add S5K4H8 2lane camera dtsi.
+
+Change-Id: I6606c054aab0cd270bef65a1ed4dd53b647294a7
+Signed-off-by: Wei Ding <weiding@qti.qualcomm.com>
+---
+ .../boot/dts/qcom/msm8952-camera-sensor-qrd.dtsi   | 57 +++++++++++++++++++++-
+ 1 file changed, 56 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8952-camera-sensor-qrd.dtsi b/arch/arm/boot/dts/qcom/msm8952-camera-sensor-qrd.dtsi
+index 4ff5443..537f423 100644
+--- a/arch/arm/boot/dts/qcom/msm8952-camera-sensor-qrd.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8952-camera-sensor-qrd.dtsi
+@@ -33,6 +33,61 @@
+ 		qcom,cam-vreg-max-voltage = <2850000>;
+ 		qcom,cam-vreg-op-mode = <80000>;
+ 	};
++	
++    eeprom2: qcom,eeprom@2{
++		cell-index = <2>;
++		reg = <0x01>;
++		qcom,eeprom-name = "ofilm_s5k4h8";
++		compatible = "qcom,eeprom";
++		qcom,slave-addr = <0x20>;
++		qcom,cci-master = <0>;
++
++		qcom,num-blocks = <2>;
++		qcom,page0 = <1 0x0100 2 0x0100 2 1>;
++		qcom,poll0 = <0 0x0 2 0 1 1>;
++		qcom,mem0 = <0 0x0 2 0 1 0>;
++
++		qcom,page1= <1 0x0A02 2 0x0F 1 1>;
++		qcom,pageen1 = <1 0x0A00 2 0x01 1 1>;
++		qcom,poll1 = <0 0x0 2 0 1 1>;
++		qcom,mem1 = <45 0x0A04 2 0 1 0>;
++
++		cam_vdig-supply = <&pm8950_l23>;
++		cam_vana-supply = <&pm8950_l22>;
++		cam_vio-supply = <&pm8950_l6>;
++		qcom,cam-vreg-name = "cam_vdig", "cam_vio", "cam_vana";
++		qcom,cam-vreg-min-voltage = <1200000 0 2800000>;
++		qcom,cam-vreg-max-voltage = <1200000 0 2800000>;
++		qcom,cam-vreg-op-mode = <105000 0 80000>;
++		pinctrl-names = "cam_default", "cam_suspend";
++		pinctrl-0 = <&cam_sensor_mclk2_default &cam_sensor_front1_default>;
++		pinctrl-1 = <&cam_sensor_mclk2_sleep &cam_sensor_front1_sleep>;
++		gpios = <&msm_gpio 28 0>,
++			<&msm_gpio 40 0>,
++			<&msm_gpio 39 0>;
++		qcom,gpio-reset = <1>;
++		qcom,gpio-standby = <2>;
++		qcom,gpio-req-tbl-num = <0 1 2>;
++		qcom,gpio-req-tbl-flags = <1 0 0>;
++		qcom,gpio-req-tbl-label = "CAMIF_MCLK2",
++					  "CAM_RESET2",
++					  "CAM_STANDBY2";
++		qcom,cam-power-seq-type = "sensor_vreg",
++			"sensor_vreg", "sensor_vreg",
++			"sensor_gpio", "sensor_gpio",
++			"sensor_clk";
++		qcom,cam-power-seq-val = "cam_vana",
++			"cam_vdig","cam_vio",
++			"sensor_gpio_reset",
++			"sensor_gpio_standby",
++			"sensor_cam_mclk";
++		qcom,cam-power-seq-cfg-val = <1 1 1 1 1 24000000>;
++		qcom,cam-power-seq-delay = <10 10 10 10 10 5>;
++
++		clocks = <&clock_gcc clk_mclk2_clk_src>,
++			<&clock_gcc clk_gcc_camss_mclk2_clk>;
++		clock-names = "cam_src_clk", "cam_clk";
++	};
+ 
+ 	eeprom0: qcom,eeprom@0{
+ 		cell-index = <0>;
+@@ -268,7 +323,7 @@
+ 		qcom,csiphy-sd-index = <1>;
+ 		qcom,csid-sd-index = <1>;
+ 		qcom,mount-angle = <90>;
+-		qcom,eeprom-src = <&eeprom1>;
++		qcom,eeprom-src = <&eeprom2>;
+ 		cam_vdig-supply = <&pm8950_l23>;
+ 		cam_vana-supply = <&pm8950_l22>;
+ 		cam_vio-supply = <&pm8950_l6>;
+-- 
+1.9.1
+

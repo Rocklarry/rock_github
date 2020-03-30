@@ -1,0 +1,62 @@
+From 4d454716bc02eb670f784892c2755ef7c6046bc2 Mon Sep 17 00:00:00 2001
+From: chenqingfeng <chenqf0228@thundersoft.com>
+Date: Wed, 20 Aug 2014 13:27:02 +0800
+Subject: [PATCH 2/4] ARM:dts:msm: support l3gd20 devicetree
+
+Devicetree support l3gd20
+
+Change-Id: Ief0127395bf63f1a738732c3dc2d496b139d7d05
+Signed-off-by: Qingfeng Chen <chenqf0228@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi |   28 ++++++++++++++++++++++++++
+ 1 file changed, 28 insertions(+)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+index e9902b8..32d619b 100755
+--- a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+@@ -47,6 +47,20 @@
+ 		};
+ 	};
+ 
++	l3gd20_int1_pin {
++		qcom,pins = <&gp 113>;
++		qcom,num-grp-pins = <1>;
++		label = "l3gd20_int_pin";
++		l3gd20_int1_default: int1_default {
++			drive-strength = <6>;
++			bias-pull-down;
++		};
++		l3gd20_int1_sleep: int1_sleep {
++			drive-strength = <2>;
++			bias-pull-down;
++		};
++   };
++
+ 	tps65132-en-pin {
+ 		qcom,pins = <&gp 97>, <&gp 98>;
+ 		qcom,num-grp-pins = <2>;
+@@ -122,6 +136,20 @@
+ 		invn,place = "Portrait Down Back Side";
+ 	};
+ 
++	st@6b {
++	       compatible = "st,l3gd20";
++	       reg = <0x6b>;
++	       pinctrl-names = "l3gd20_default","l3gd20_sleep";
++	       pinctrl-0 = <&l3gd20_int1_default>;
++	       pinctrl-1 = <&l3gd20_int1_sleep>;
++	       interrupt-parent = <&msm_gpio>;
++	       interrupts = <113 0x2002>;
++	       vdd-supply = <&pm8916_l17>;
++	       vddio-supply = <&pm8916_l6>;
++	       st,gpio-int = <&msm_gpio 113 0x2002>;
++	       st,poll-interval = <200>;
++	};
++
+ 	tps65132@3e {
+ 		compatible = "ti,tps65132";
+ 		reg = <0x3e>;
+-- 
+1.7.9.5
+

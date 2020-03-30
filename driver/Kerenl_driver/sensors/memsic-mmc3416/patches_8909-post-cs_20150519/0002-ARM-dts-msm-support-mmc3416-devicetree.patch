@@ -1,0 +1,39 @@
+From 2ddb9bc4656af365a8d577bdc68483f959680400 Mon Sep 17 00:00:00 2001
+From: zhang shu <zhangshu1009@thundersoft.com>
+Date: Tue, 19 May 2015 14:36:30 +0800
+Subject: [PATCH 2/2] ARM:dts:msm: support mmc3416 devicetree
+
+Devicetree support mmc3416
+
+Change-Id: I02152168d65b136c586482449df90420cadb8668
+Signed-off-by: zhang shu  <zhangshu1009@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8909-qrd-skue.dtsi | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+ mode change 100755 => 100644 arch/arm/boot/dts/qcom/msm8909-qrd-skue.dtsi
+
+diff --git a/arch/arm/boot/dts/qcom/msm8909-qrd-skue.dtsi b/arch/arm/boot/dts/qcom/msm8909-qrd-skue.dtsi
+old mode 100755
+new mode 100644
+index 0ed7e50..aead5a4
+--- a/arch/arm/boot/dts/qcom/msm8909-qrd-skue.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8909-qrd-skue.dtsi
+@@ -192,6 +192,15 @@
+ 			bosch,gpio-int1 = <&msm_gpio 96 0x2002>;
+ 			bosch,gpio-int2 = <&msm_gpio 65 0x2002>;
+ 		};
++		memsic@30 { /* Magnetic field sensor */
++			compatible = "memsic,mmc3416x";
++			reg = <0x30>;
++			vdd-supply = <&pm8909_l17>;
++			vio-supply = <&pm8909_l6>;
++			memsic,dir = "obverse-x-axis-forward";
++			memsic,auto-report;
++			memsic,poll_interval = <100>;
++		};
+ 	};
+ 
+ 	hall {
+-- 
+1.9.1
+

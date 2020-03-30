@@ -1,0 +1,38 @@
+From 0169adb103158bc144fe6037c3fd9ea80f22e474 Mon Sep 17 00:00:00 2001
+From: liuyan <liuyan0429@thundersoft.com>
+Date: Sat, 31 May 2014 15:07:58 +0800
+Subject: [PATCH 2/3]         ARM:config: support ctp hx8526-d32
+
+        Add ctp DIJING@AW980@HX8526-D32 driver
+
+Change-Id: Iaf4a7ab3dad5342a9ef2b1d2e16807c7f308ab9a
+Signed-off-by: Yan Liu <liuyan0429@thundersoft.com>
+---
+ arch/arm/configs/msm8916_defconfig |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
+
+diff --git a/arch/arm/configs/msm8916_defconfig b/arch/arm/configs/msm8916_defconfig
+index adf74a4..4964e76 100644
+--- a/arch/arm/configs/msm8916_defconfig
++++ b/arch/arm/configs/msm8916_defconfig
+@@ -244,11 +244,12 @@ CONFIG_INPUT_JOYSTICK=y
+ CONFIG_JOYSTICK_XPAD=y
+ CONFIG_INPUT_TOUCHSCREEN=y
+ CONFIG_TOUCHSCREEN_ATMEL_MXT=y
+-CONFIG_TOUCHSCREEN_FT5X06=y
+-CONFIG_TOUCHSCREEN_GEN_VKEYS=y
+-CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI4=y
+-CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_RMI4_DEV=y
+-CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE=y
++#CONFIG_TOUCHSCREEN_FT5X06=y
++#CONFIG_TOUCHSCREEN_GEN_VKEYS=y
++#CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI4=y
++#CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_RMI4_DEV=y
++#CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE=y
++CONFIG_TOUCHSCREEN_HIMAX8526=y
+ CONFIG_INPUT_MISC=y
+ CONFIG_INPUT_UINPUT=y
+ CONFIG_INPUT_GPIO=m
+-- 
+1.7.9.5
+

@@ -1,0 +1,79 @@
+From fee862bd3946d8ddd42bb51db4f6d3a024d679d0 Mon Sep 17 00:00:00 2001
+From: yangzh <yangzh0324@thundersoft.com>
+Date: Mon, 21 Jul 2014 17:20:36 +0800
+Subject: [PATCH 1/2] ARM:dts:msm: support ofilm sol050512 ft5406dq9
+
+Add O-FILM@SOL-050-5120@FT5406DQ9 device tree
+
+Signed-off-by: yangzh <yangzh0324@thundersoft.com>
+
+Change-Id: I604405a5bca53a767e890bfe5636c00e885ea03c
+---
+ arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi |   38 ++++++++++++++++++++++++--
+ 1 file changed, 35 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+index e9902b8..07c9ed5 100755
+--- a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+@@ -156,15 +156,15 @@
+ 
+ &soc {
+ 	i2c@78b9000 { /* BLSP1 QUP5 */
+-		focaltech@38 {
++/*		focaltech@38 {
+ 			compatible = "focaltech,5x06";
+ 			reg = <0x38>;
+ 			interrupt-parent = <&msm_gpio>;
+ 			interrupts = <13 0x2008>;
+ 			vdd-supply = <&pm8916_l17>;
+-			vcc_i2c-supply = <&pm8916_l6>;
++			vcc_i2c-supply = <&pm8916_l6>;*/
+ 			/* pins used by touchscreen */
+-			pinctrl-names = "pmx_ts_active","pmx_ts_suspend";
++/*			pinctrl-names = "pmx_ts_active","pmx_ts_suspend";
+ 			pinctrl-0 = <&ts_int_active &ts_reset_active>;
+ 			pinctrl-1 = <&ts_int_suspend &ts_reset_suspend>;
+ 			focaltech,name = "ft5336";
+@@ -188,6 +188,38 @@
+ 			focaltech,fw-delay-era-flsh-ms = <2000>;
+ 			focaltech,fw-auto-cal;
+ 			focaltech,ignore-id-check;
++		};*/
++
++		focaltech@38 {
++			compatible = "focaltech,5x06";
++			reg = <0x38>;
++			interrupt-parent = <&msm_gpio>;
++			interrupts = <13 0x2008>;
++			vdd-supply = <&pm8916_l17>;
++			vcc_i2c-supply = <&pm8916_l6>;
++			focaltech,name = "FT5406DQ9";
++			focaltech,family-id = <0x55>;
++			focaltech,reset-gpio = <&msm_gpio 12 0x0>;
++			focaltech,irq-gpio = <&msm_gpio 13 0x2008>;
++			focaltech,display-coords = <0 0 720 1280>;
++			focaltech,panel-coords = <0 0 720 1380>;
++			focaltech,button-map= <139 172 158>;
++			focaltech,no-force-update;
++			focaltech,i2c-pull-up;
++			focaltech,fw-vkey-support;
++			focaltech,group-id = <1>;
++			focaltech,hard-reset-delay-ms = <20>;
++			focaltech,soft-reset-delay-ms = <150>;
++			focaltech,num-max-touches = <5>;
++			focaltech,fw-name = "ft_8916_qrd_fw.bin";
++			focaltech,fw-delay-aa-ms = <50>;
++			focaltech,fw-delay-55-ms = <30>;
++			focaltech,fw-upgrade-id1 = <0x79>;
++			focaltech,fw-upgrade-id2 = <0x03>;
++			focaltech,fw-delay-readid-ms = <10>;
++			focaltech,fw-delay-era-flsh-ms = <2000>;
++			focaltech,fw-auto-cal;
++			focaltech,ignore-id-check;
+ 		};
+ 	};
+ 
+-- 
+1.7.9.5
+

@@ -1,0 +1,115 @@
+From 7b31ef949f2fc8f4cafad40f909ebc7845e86c30 Mon Sep 17 00:00:00 2001
+From: shilz0708 <shilz0708@thundersoft.com>
+Date: Sun, 26 Jan 2014 11:09:44 +0800
+Subject: [PATCH 2/3] ARM:dts:msm:add mcf-055-1150 devicetree
+
+Support oflim-mcf-055-1150-tma463 devicetree
+
+Change-Id: I644a385cba9f42ab2993776343f57308601e1f78
+Signed-off-by: Longzhen Shi <shilz0708@thundersoft.com>
+---
+ arch/arm/boot/dts/msm8610-qrd.dtsi |   80 +++++++++++++++++++++++++++++++++++-
+ 1 file changed, 79 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/msm8610-qrd.dtsi b/arch/arm/boot/dts/msm8610-qrd.dtsi
+index 9fa0913..e2b0bc2 100644
+--- a/arch/arm/boot/dts/msm8610-qrd.dtsi
++++ b/arch/arm/boot/dts/msm8610-qrd.dtsi
+@@ -28,7 +28,7 @@
+ 
+ &soc {
+ 	i2c@f9923000{
+-		focaltech@38{
++		/*focaltech@38{
+ 			compatible = "focaltech,5x06";
+ 			reg = <0x38>;
+ 			interrupt-parent = <&msmgpio>;
+@@ -55,7 +55,85 @@
+ 			focaltech,fw-upgrade-id2 = <0x08>;
+ 			focaltech,fw-delay-readid-ms = <10>;
+ 			focaltech,fw-delay-era-flsh-ms = <2000>;
++		};*/
++		tsc@1a {
++			compatible = "cy,cyttsp4_i2c_adapter";
++			reg = <0x1a>;
++			/* GPIO 38, high-to-low edge triggered */
++			interrupts = <1 0x2>;
++			interrupt-parent = <&msmgpio>;
++			vdd-supply = <&pm8110_l19>;
++			vcc_i2c-supply = <&pm8110_l14>;
++		cy,adapter_id = "cyttsp4_i2c_adapter";
++
++		cy,core {
++			cy,name = "cyttsp4_core";
++			cy,id = "main_ttsp_core";
++
++			cy,irq_gpio = <1>;
++			cy,rst_gpio = <0>;
++
++			/* Enable cy,max_xfer_len to limit max I2C/SPI transfer length */
++			/* cy,max_xfer_len = <0x100>; */
++
++			/* CY_CORE_FLAG_WAKE_ON_GESTURE */
++			cy,flags = <1>;
++			/* CY_CORE_EWG_TAP_TAP | CY_CORE_EWG_TWO_FINGER_SLIDE */
++			cy,easy_wakeup_gesture = <3>;
++			cy,btn_keys = <158 /* KEY_HOME */
++				       172 /* KEY_MENU */
++				       139 /* KEY_BACK */
++				       217 /* KEY_SEARCH */
++				       114 /* KEY_VOLUMEDOWN */
++				       115 /* KEY_VOLUMEUP */
++				       212 /* KEY_CAMERA */
++				       116>; /* KEY_POWER */
++			cy,btn_keys-tag = <0>;
++
++			cy,mt {
++				cy,name = "cyttsp4_mt";
++
++				cy,inp_dev_name = "cyttsp4_mt";
++				/* CY_MT_FLAG_FLIP | CY_MT_FLAG_INV_X | CY_MT_FLAG_INV_Y */
++				cy,flags = <0x0>;
++				cy,abs =
++					/* ABS_MT_POSITION_X, CY_ABS_MIN_X, CY_ABS_MAX_X, 0, 0 */
++					<0x35 0 540 0 0
++					/* ABS_MT_POSITION_Y, CY_ABS_MIN_Y, CY_ABS_MAX_Y, 0, 0 */
++					0x36 0 960 0 0
++					/* ABS_MT_PRESSURE, CY_ABS_MIN_P, CY_ABS_MAX_P, 0, 0 */
++					0x3a 0 255 0 0
++					/* CY_IGNORE_VALUE, CY_ABS_MIN_W, CY_ABS_MAX_W, 0, 0 */
++					0xffff 0 255 0 0
++					/* ABS_MT_TRACKING_ID, CY_ABS_MIN_T, CY_ABS_MAX_T, 0, 0 */
++					0x39 0 15 0 0
++					/* ABS_MT_TOUCH_MAJOR, 0, 255, 0, 0 */
++					0x30 0 255 0 0
++					/* ABS_MT_TOUCH_MINOR, 0, 255, 0, 0 */
++					0x31 0 255 0 0
++					/* ABS_MT_ORIENTATION, -128, 127, 0, 0 */
++					0x34 0xfffffed7 127 0 0>;
++
++			    cy,vkeys_x = <540>;
++				cy,vkeys_y = <960>;
++				 cy,virtual_keys = /* KeyCode CenterX CenterY Width Height */
++				         /* KEY_BACK */
++				         <158 100 1000 80 70
++				         /* KEY_HOME */
++					 /* < DTS2013081205521 yangzicheng 20130812 begin */
++					 /*modify the key value of KEY_HOME*/
++				         172 280 1000 80 70
++					 /* DTS2013081205521 yangzicheng 20130812 end > */
++				         /* KEY_MENU */
++				         139 450 1000 80 70>;
++			};
++				cy,btn {
++					cy,name = "cyttsp4_btn";
++					cy,inp_dev_name = "cyttsp4_btn";
++					};
++
+ 		};
++ 		};
+ 	};
+ 
+ 	gen-vkeys {
+-- 
+1.7.9.5
+

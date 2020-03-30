@@ -1,0 +1,30 @@
+From b93100468dfde260342365820b2609c6ca307a29 Mon Sep 17 00:00:00 2001
+From: Yukun Wan <wanyk0402@thundersoft.com>
+Date: Mon, 23 Mar 2015 14:16:40 +0800
+Subject: [PATCH 3/3] ARM:config: support cm36283 defconfig
+
+Defconfig support cm36283
+
+Change-Id: I53c6202bd75c110d18b5bc4334654391c603788e
+Signed-off-by: Yukun Wan <wanyk0402@thundersoft.com>
+---
+ arch/arm/configs/msm8916_defconfig | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/configs/msm8916_defconfig b/arch/arm/configs/msm8916_defconfig
+index 08fd762..87eda81 100644
+--- a/arch/arm/configs/msm8916_defconfig
++++ b/arch/arm/configs/msm8916_defconfig
+@@ -213,7 +213,8 @@ CONFIG_CMA=y
+ CONFIG_CMA_SIZE_MBYTES=8
+ CONFIG_BLK_DEV_LOOP=y
+ CONFIG_BLK_DEV_RAM=y
+-CONFIG_APDS9930=y
++#CONFIG_APDS9930 is not set
++CONFIG_SENSORS_CM36283=y
+ CONFIG_QSEECOM=y
+ CONFIG_SCSI=y
+ CONFIG_SCSI_TGT=y
+-- 
+2.2.2
+

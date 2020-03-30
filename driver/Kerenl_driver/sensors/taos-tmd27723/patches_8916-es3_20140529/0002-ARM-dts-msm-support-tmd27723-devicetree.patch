@@ -1,0 +1,83 @@
+From 3675dd1427e4a94d67f1881138029910fb48f317 Mon Sep 17 00:00:00 2001
+From: Ran Gu <guran1128@thundersoft.com>
+Date: Thu, 29 May 2014 16:53:43 +0800
+Subject: [PATCH 2/3] ARM:dts:msm:support tmd27723 devicetree
+
+Devicetree support of tmd27723
+
+Change-Id: I3a08f2ecb427c32a69961e85f7d4a62bdcf183de
+Signed-off-by: Ran Gu <guran1128@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8916-qrd-skui.dtsi |   35 +++++++++++++++++++++++---
+ 1 files changed, 31 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8916-qrd-skui.dtsi b/arch/arm/boot/dts/qcom/msm8916-qrd-skui.dtsi
+index bfbce89..d42d7ca 100644
+--- a/arch/arm/boot/dts/qcom/msm8916-qrd-skui.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8916-qrd-skui.dtsi
+@@ -151,7 +151,18 @@
+ 		};
+ 	};
+ 
+-	apds9930_int_pin {
++	tmd27723_int_pin {
++		qcom,pins = <&gp 113>;
++		qcom,pin-func = <0>;
++		qcom,num-grp-pins = <1>;
++		label = "tmd27723-irq";
++		tmd27723_default: tmd27723_default {
++			drive-strength = <6>;
++			bias-pull-up;
++		};
++	};
++
++/*	apds9930_int_pin {
+ 		qcom,pins = <&gp 113>;
+ 		qcom,pin-func = <0>;
+ 		qcom,num-grp-pins = <1>;
+@@ -161,7 +172,7 @@
+ 			bias-pull-up;
+ 		};
+ 	};
+-
++*/
+ 	bma2x2_int1_pin {
+ 		qcom,pins = <&gp 112>;
+ 		qcom,num-grp-pins = <1>;
+@@ -184,8 +195,23 @@
+ };
+ 
+ &i2c_0 { /* BLSP1 QUP2 */
+-	avago@39 { /* Ambient light and proximity sensor */
+-		compatible = "avago,apds9930";
++	taos@39 {
++		compatible = "taos,tmd27723";
++		reg = <0x39>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&tmd27723_default>;
++		interrupt-parent = <&msm_gpio>;
++		interrupts = <113 0x2>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++		tmd27723,int_gpio = <&msm_gpio 113 0x2>;
++		tmd27723,prox_th_min = <530>;
++		tmd27723,prox_th_max = <900>;
++		tmd27723,als_gate = <10>;
++	};
++
++/*	avago@39 { /* Ambient light and proximity sensor */
++/*		compatible = "avago,apds9930";
+ 		reg = <0x39>;
+ 		pinctrl-names = "default";
+ 		pinctrl-0 = <&apds9930_default>;
+@@ -203,6 +229,7 @@
+ 		avago,als_D = <142>;
+ 		avago,ga_value = <48>;
+ 	};
++*/
+ 	bosch@18 { /* Accelerometer sensor */
+ 		compatible = "bosch,bma2x2";
+ 		reg = <0x18>;
+-- 
+1.7.4.1
+

@@ -1,0 +1,35 @@
+From 32e1d3eb3e16db653ea0f4bd183dd53b5d6baccd Mon Sep 17 00:00:00 2001
+From: Shaosong Zhang <zhangss1028@thundersoft.com>
+Date: Fri, 29 Jan 2016 13:36:09 +0800
+Subject: [PATCH] ARM: dts: msm: Add ov16880 camera dtsi
+
+Add ov16880 devicetree description for msm8952
+Change-Id: I47a9e9f425fffaf922b9f18171e2e9b8c1a81f24
+Signed-off-by: Shaosong Zhang <zhangss1028@thundersoft.com>
+---
+ .../boot/dts/qcom/msm8952-camera-sensor-qrd.dtsi   |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8952-camera-sensor-qrd.dtsi b/arch/arm/boot/dts/qcom/msm8952-camera-sensor-qrd.dtsi
+index f155ef5..01820db 100644
+--- a/arch/arm/boot/dts/qcom/msm8952-camera-sensor-qrd.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8952-camera-sensor-qrd.dtsi
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (c) 2015, The Linux Foundation. All rights reserved.
++ * Copyright (c) 2015-2016, The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 and
+@@ -190,7 +190,7 @@
+ 		cell-index = <0>;
+ 		compatible = "qcom,camera";
+ 		reg = <0x0>;
+-		qcom,special-support-sensors = "ov13850_q13v06k";
++		qcom,special-support-sensors = "ov16880","ov13850_q13v06k";
+ 		qcom,csiphy-sd-index = <0>;
+ 		qcom,csid-sd-index = <0>;
+ 		qcom,mount-angle = <90>;
+-- 
+1.7.9.5
+

@@ -1,0 +1,70 @@
+From 28e353bbe4e38103ad8ff3ad57415b0888feefb0 Mon Sep 17 00:00:00 2001
+From: chenqingfeng <chenqf0228@thundersoft.com>
+Date: Mon, 23 Jun 2014 15:10:10 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support epl2182 devicetree
+
+Devicetree support epl2182
+
+Change-Id: Ie4878dc504d3b865445f16e3dba440d00864cd49
+Signed-off-by: Qingfeng Chen <chenqf0228@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8916-qrd-skui.dtsi |   29 ++++++++++++++++++++++++-
+ 1 files changed, 27 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8916-qrd-skui.dtsi b/arch/arm/boot/dts/qcom/msm8916-qrd-skui.dtsi
+index 81e799b..7490f30 100644
+--- a/arch/arm/boot/dts/qcom/msm8916-qrd-skui.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8916-qrd-skui.dtsi
+@@ -157,6 +157,17 @@
+ 		};
+ 	};
+ 
++	epl2182_int_pin {
++		qcom,pins = <&gp 113>;
++		qcom,pin-func = <0>;
++		qcom,num-grp-pins = <1>;
++		label = "epl2182-irq";
++		epl2182_default: epl2182_default {
++			drive-strength = <6>;
++			bias-pull-up;
++		};
++	};
++
+ 	bma2x2_int1_pin {
+ 		qcom,pins = <&gp 112>;
+ 		qcom,num-grp-pins = <1>;
+@@ -179,8 +190,8 @@
+ };
+ 
+ &i2c_0 { /* BLSP1 QUP2 */
+-	avago@39 { /* Ambient light and proximity sensor */
+-		compatible = "avago,apds9930";
++/*	avago@39 { /* Ambient light and proximity sensor */
++/*		compatible = "avago,apds9930";
+ 		reg = <0x39>;
+ 		pinctrl-names = "default","sleep";
+ 		pinctrl-0 = <&apds99xx_default>;
+@@ -199,6 +210,20 @@
+ 		avago,als-D = <142>;
+ 		avago,ga-value = <48>;
+ 	};
++*/
++	elan@49 { /* Ambient light and proximity sensor */
++		compatible = "elan,epl2182";
++		reg = <0x49>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&epl2182_default>;
++		interrupt-parent = <&msm_gpio>;
++		interrupts = <113 0x2002>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++		epl2182,irq-gpio = <&msm_gpio 113 0x2002>;
++		epl2182,prox_th_min = <500>;
++		epl2182,prox_th_max = <1000>;
++	};
+ 
+ 	bosch@18 { /* Accelerometer sensor */
+ 		compatible = "bosch,bma2x2";
+-- 
+1.7.4.1
+

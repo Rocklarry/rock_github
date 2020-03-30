@@ -1,0 +1,30 @@
+From 3942cdd1e23167040724fee0f277eae2e0b4c514 Mon Sep 17 00:00:00 2001
+From: chenxl0723 <chenxl0723@thundersoft.com>
+Date: Thu, 17 Apr 2014 11:41:49 +0800
+Subject: [PATCH 2/3] ARM:config: support ctp actar h040
+
+Add CTP IHV-ACTAR@H040@AW5306 config
+
+Change-Id: I1f26b8230985e203904dc47531c69925f47351ed
+Signed-off-by: Xuelong Chen <chenxl0723@thundersoft.com>
+---
+ arch/arm/configs/msm8610_defconfig |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/configs/msm8610_defconfig b/arch/arm/configs/msm8610_defconfig
+index 02db2f2..408b267 100644
+--- a/arch/arm/configs/msm8610_defconfig
++++ b/arch/arm/configs/msm8610_defconfig
+@@ -232,7 +232,8 @@ CONFIG_INPUT_EVBUG=m
+ CONFIG_KEYBOARD_GPIO=y
+ CONFIG_INPUT_TOUCHSCREEN=y
+ CONFIG_TOUCHSCREEN_ATMEL_MXT=y
+-CONFIG_TOUCHSCREEN_FT5X06=y
++#CONFIG_TOUCHSCREEN_FT5X06=y
++CONFIG_TOUCHSCREEN_AW5306=y
+ CONFIG_TOUCHSCREEN_GEN_VKEYS=y
+ CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI4=y
+ CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_RMI4_DEV=y
+-- 
+1.7.9.5
+

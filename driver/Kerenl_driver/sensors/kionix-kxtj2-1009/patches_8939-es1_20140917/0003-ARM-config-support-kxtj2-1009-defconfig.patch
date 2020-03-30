@@ -1,0 +1,35 @@
+From 26badaefc7daf23afe94d136530b3cf09ecda7f1 Mon Sep 17 00:00:00 2001
+From: chenqingfeng <chenqf0228@thundersoft.com>
+Date: Wed, 17 Sep 2014 11:11:45 +0800
+Subject: [PATCH 3/3] ARM:config: support kxtj2-1009 defconfig
+
+Defconfig support kxtj2-1009
+
+Change-Id: I5cd1bc690b3e6f97f57c1d89ae19a3f73e2d8376
+Signed-off-by: Qingfeng Chen <chenqf0228@thundersoft.com>
+---
+ arch/arm/configs/msm8916_defconfig |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm/configs/msm8916_defconfig b/arch/arm/configs/msm8916_defconfig
+index 9fb4f3c..063b2a4 100644
+--- a/arch/arm/configs/msm8916_defconfig
++++ b/arch/arm/configs/msm8916_defconfig
+@@ -265,10 +265,11 @@ CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE_v21=y
+ CONFIG_INPUT_MISC=y
+ CONFIG_INPUT_UINPUT=y
+ CONFIG_INPUT_GPIO=m
+-CONFIG_SENSORS_LIS3DH=y
+-CONFIG_SENSORS_MPU6050=y
++CONFIG_SENSORS_LIS3DH is not set
++#CONFIG_SENSORS_MPU6050 is not set
+ CONFIG_SENSORS_AKM09911=y
+-CONFIG_SENSORS_BMA2X2=y
++#CONFIG_SENSORS_BMA2X2 is not set
++CONFIG_SENSORS_KIONIX_ACCEL=y
+ CONFIG_SENSORS_MMC3416X=y
+ CONFIG_SENSORS_AKM8963=y
+ CONFIG_SERIAL_MSM_HSL=y
+-- 
+1.7.9.5
+

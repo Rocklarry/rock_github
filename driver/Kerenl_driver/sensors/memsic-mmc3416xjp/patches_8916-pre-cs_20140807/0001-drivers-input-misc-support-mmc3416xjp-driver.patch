@@ -1,0 +1,79 @@
+From 28cf60fca267d053368a1f722af98629dd0a6d2a Mon Sep 17 00:00:00 2001
+From: Yukun Wan <wanyk0402@thundersoft.com>
+Date: Thu, 7 Aug 2014 15:17:38 +0800
+Subject: [PATCH 1/2] drivers:input:misc: support mmc3416xjp driver
+
+Driver support mmc3416xjp
+
+Change-Id: I8cb3e7e7c2ff8dc6a4b0c4c6382d6369725d6226
+Signed-off-by: Yukun Wan <wanyk0402@thundersoft.com>
+---
+ .../devicetree/bindings/input/misc/mmc3416x.txt    |    4 +++-
+ drivers/input/misc/mmc3416x.c                      |   12 +++++++++++-
+ 2 files changed, 14 insertions(+), 2 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/input/misc/mmc3416x.txt b/Documentation/devicetree/bindings/input/misc/mmc3416x.txt
+index c06266f..65a17dc 100644
+--- a/Documentation/devicetree/bindings/input/misc/mmc3416x.txt
++++ b/Documentation/devicetree/bindings/input/misc/mmc3416x.txt
+@@ -11,7 +11,8 @@ Required properties:
+  - reg			: i2c address of the device.
+  - vdd-supply		: Analog power supply needed to power up the device.
+  - vio-supply		: Digital IO power supply needed for IO and I2C.
+- - memsic,dir		: String value of the direction of the ecompass sensor
++ - memsic,dir		: String value of the direction of the ecompass sensor.
++ - memsic,poll_interval	:The polling time of the ecompass sensor.
+ 	chip. There are 8 patterns of direction:
+ 
+ 
+@@ -53,6 +54,7 @@ Optional properites:
+ 				vio-supply = <&pm8916_l6>;
+ 				memsic,dir = "obverse-x-axis-forward";
+ 				memsic,auto-report;
++				memsic,poll_interval = <100>;
+ 		};
+ 	};
+ 
+diff --git a/drivers/input/misc/mmc3416x.c b/drivers/input/misc/mmc3416x.c
+index 4a2cde7..91aa435 100644
+--- a/drivers/input/misc/mmc3416x.c
++++ b/drivers/input/misc/mmc3416x.c
+@@ -39,6 +39,7 @@
+ #include <linux/regmap.h>
+ #include <linux/sensors.h>
+ #include <asm/uaccess.h>
++#include <linux/of_gpio.h>
+ 
+ #include "mmc3416x.h"
+ 
+@@ -496,9 +497,18 @@ static int mmc3416x_parse_dt(struct i2c_client *client,
+ {
+ 	struct device_node *np = client->dev.of_node;
+ 	const char *tmp;
++	unsigned int temp;
+ 	int rc;
+ 	int i;
+ 
++	/* poll_interval */
++	rc = of_property_read_u32(np, "memsic,poll_interval", &temp);
++	if (rc) {
++		dev_err(&client->dev, "Unable to read poll_interval\n");
++		return rc;
++	}
++	memsic->poll_interval = temp;
++
+ 	rc = of_property_read_string(np, "memsic,dir", &tmp);
+ 
+ 	/* does not have a value or the string is not null-terminated */
+@@ -683,7 +693,7 @@ static int mmc3416x_probe(struct i2c_client *client, const struct i2c_device_id
+ 		goto out_power_set;
+ 	}
+ 
+-	memsic->poll_interval = MMC3416X_DEFAULT_INTERVAL_MS;
++	/* memsic->poll_interval = MMC3416X_DEFAULT_INTERVAL_MS; */
+ 
+ 	dev_info(&client->dev, "mmc3416x successfully probed\n");
+ 
+-- 
+1.7.9.5
+

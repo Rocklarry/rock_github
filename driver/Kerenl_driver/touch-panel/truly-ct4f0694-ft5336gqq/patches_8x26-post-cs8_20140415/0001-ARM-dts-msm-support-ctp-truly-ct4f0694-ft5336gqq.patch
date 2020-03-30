@@ -1,0 +1,65 @@
+From 74b2f7acc98777aaf7aa396095b31bd86f1befce Mon Sep 17 00:00:00 2001
+From: Zhang Zhenzhen <zhangzz6687@thundersoft.com>
+Date: Tue, 15 Apr 2014 10:59:29 +0800
+Subject: [PATCH 1/2] ARM:dts:msm: support ctp truly ct4f0694 ft5336gqq
+
+Add ctp TRULY@CT4F0694@FT5336GQQ device tree
+
+Change-Id: Iaef3323a250d372c76afc88293d0e27839b97994
+Signed-off-by: Zhenzhen Zhang <zhangzz6687@thundersoft.com>
+---
+ arch/arm/boot/dts/msm8226-qrd.dtsi | 23 ++++++++++++-----------
+ 1 file changed, 12 insertions(+), 11 deletions(-)
+
+diff --git a/arch/arm/boot/dts/msm8226-qrd.dtsi b/arch/arm/boot/dts/msm8226-qrd.dtsi
+index 7ff97f6..82e984d 100644
+--- a/arch/arm/boot/dts/msm8226-qrd.dtsi
++++ b/arch/arm/boot/dts/msm8226-qrd.dtsi
+@@ -41,20 +41,21 @@
+ 			interrupts = <17 0x2>;
+ 			vdd-supply = <&pm8226_l19>;
+ 			vcc_i2c-supply = <&pm8226_lvs1>;
+-			focaltech,name = "ft5x06";
+-			focaltech,family-id = <0x55>;
++			focaltech,name = "ft5336gqq";
++			focaltech,family-id = <0x14>;
+ 			focaltech,reset-gpio = <&msmgpio 16 0x00>;
+ 			focaltech,irq-gpio = <&msmgpio 17 0x00>;
+-			focaltech,display-coords = <0 0 1080 1920>;
+-			focaltech,panel-coords = <0 0 1080 2000>;
+-			focaltech,button-map= <139 102 158>;
++			focaltech,display-coords = <0 0 720 1280>;
++			focaltech,panel-coords = <0 0 720 1380>;
++			focaltech,button-map= <139 172 158>;
+ 			focaltech,no-force-update;
+ 			focaltech,i2c-pull-up;
++			focaltech,fw-vkey-support;
+ 			focaltech,group-id = <1>;
+ 			focaltech,hard-reset-delay-ms = <20>;
+ 			focaltech,soft-reset-delay-ms = <150>;
+ 			focaltech,num-max-touches = <5>;
+-			focaltech,fw-name = "ft_8226_qrd_1080p_fw.bin";
++			focaltech,fw-name = "ft_8226_qrd_fw.bin";
+ 			focaltech,fw-delay-aa-ms = <50>;
+ 			focaltech,fw-delay-55-ms = <30>;
+ 			focaltech,fw-upgrade-id1 = <0x79>;
+@@ -67,11 +68,11 @@
+ 	gen-vkeys {
+ 		compatible = "qcom,gen-vkeys";
+ 		label = "ft5x06_ts";
+-		qcom,disp-maxx = <1080>;
+-		qcom,disp-maxy = <1920>;
+-		qcom,panel-maxx = <1080>;
+-		qcom,panel-maxy = <2080>;
+-		qcom,key-codes = <139 102 158>;
++		qcom,disp-maxx = <720>;
++		qcom,disp-maxy = <1280>;
++		qcom,panel-maxx = <720>;
++		qcom,panel-maxy = <1380>;
++		qcom,key-codes = <139 172 158>;
+ 		qcom,y-offset = <0>;
+ 	};
+ 
+-- 
+1.8.3.1
+

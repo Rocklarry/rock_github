@@ -1,0 +1,31 @@
+From ab018a88b7c3dd1a97a710a70ec7c1618240aea7 Mon Sep 17 00:00:00 2001
+From: chenx <chenxiang0527@thundersoft.com>
+Date: Mon, 26 Jan 2015 16:48:00 +0800
+Subject: [PATCH 3/3] ARM:config: support apds9930 defconfig
+
+Defconfig support apds9930
+
+Change-Id: Ic063a2f31b6f25f7b4c5d244c41a289e0fdbc62a
+Signed-off-by: Xiang Chen <chenxiang0527@thundersoft.com>
+---
+ arch/arm/configs/msm8909-1gb_defconfig |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/configs/msm8909-1gb_defconfig b/arch/arm/configs/msm8909-1gb_defconfig
+index 593dc85..076be52 100644
+--- a/arch/arm/configs/msm8909-1gb_defconfig
++++ b/arch/arm/configs/msm8909-1gb_defconfig
+@@ -305,8 +305,8 @@ CONFIG_INPUT_MISC=y
+ CONFIG_INPUT_UINPUT=y
+ CONFIG_INPUT_GPIO=m
+ CONFIG_SENSORS=y
+-CONFIG_APDS9930=y
+-CONFIG_SENSORS_LTR553=y
++CONFIG_SENSORS_APDS9930=y
++#CONFIG_SENSORS_LTR553 is not set
+ CONFIG_SENSORS_MPU6050=y
+ CONFIG_SENSORS_MMC3416X=y
+ CONFIG_SENSORS_AKM8963=y
+-- 
+1.7.9.5
+

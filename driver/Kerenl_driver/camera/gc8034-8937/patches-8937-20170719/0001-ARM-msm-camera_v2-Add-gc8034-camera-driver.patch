@@ -1,0 +1,508 @@
+From 1d6d1ab5fcbf38456ba508f8b56d45c63da25e40 Mon Sep 17 00:00:00 2001
+From: Wu Yu <wuyu0704@thundersoft.com>
+Date: Wed, 19 Jul 2017 10:51:17 +0800
+Subject: [PATCH] ARM: msm: camera_v2: Add gc8034 camera driver
+
+Add gc8034 eeporm driver for msm8937
+
+Change-Id: I4b28545b774b5e783b12e1c87baaf92ab303e7fb
+Signed-off-by: Wu Yu <wuyu0704@thundersoft.com>
+---
+ .../msm/camera_v2/sensor/eeprom/msm_eeprom.c       | 443 ++++++++++++++++++++-
+ include/uapi/media/msm_camsensor_sdk.h             |   1 +
+ 2 files changed, 441 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/media/platform/msm/camera_v2/sensor/eeprom/msm_eeprom.c b/drivers/media/platform/msm/camera_v2/sensor/eeprom/msm_eeprom.c
+index dd2f919..c469aa2 100644
+--- a/drivers/media/platform/msm/camera_v2/sensor/eeprom/msm_eeprom.c
++++ b/drivers/media/platform/msm/camera_v2/sensor/eeprom/msm_eeprom.c
+@@ -1,4 +1,4 @@
+-/* Copyright (c) 2011-2016, The Linux Foundation. All rights reserved.
++/* Copyright (c) 2011-2017, The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 and
+@@ -18,6 +18,16 @@
+ #include "msm_cci.h"
+ #include "msm_eeprom.h"
+
++#define INFO_ROM_START		0x70
++#define INFO_WIDTH			0x08
++#define WB_ROM_START		0x5f
++#define WB_WIDTH			0x04
++#define GOLDEN_ROM_START	0x67
++#define GOLDEN_WIDTH		0x04
++
++#define GC8034_AUTO_DD
++#define GC8034_AUTO_LSC
++
+ #undef CDBG
+ #define CDBG(fmt, args...) pr_debug(fmt, ##args)
+
+@@ -26,6 +36,426 @@ DEFINE_MSM_MUTEX(msm_eeprom_mutex);
+ static struct v4l2_file_operations msm_eeprom_v4l2_subdev_fops;
+ #endif
+
++static uint16_t gc8034_Sensor_ReadReg(
++	struct msm_eeprom_ctrl_t *e_ctrl, uint8_t reg_addr)
++{
++	uint16_t reg_value = 0;
++
++	e_ctrl->i2c_client.i2c_func_tbl->i2c_read(
++				&(e_ctrl->i2c_client),
++				(uint32_t)reg_addr,
++				&reg_value, MSM_CAMERA_I2C_BYTE_DATA);
++	return reg_value;
++}
++
++static void gc8034_Sensor_WriteReg(
++	struct msm_eeprom_ctrl_t *e_ctrl, uint8_t reg_addr, uint8_t reg_value)
++{
++
++	e_ctrl->i2c_client.i2c_func_tbl->i2c_write(
++		&(e_ctrl->i2c_client),
++		(uint32_t)reg_addr,
++		(uint16_t)reg_value, MSM_CAMERA_I2C_BYTE_DATA);
++}
++
++static uint8_t gc8034_read_otp(struct msm_eeprom_ctrl_t *e_ctrl, uint8_t addr)
++{
++	uint8_t value;
++	uint8_t regd4;
++	uint16_t realaddr = addr * 8;
++
++	regd4 = gc8034_Sensor_ReadReg(e_ctrl, 0xd4);
++
++	gc8034_Sensor_WriteReg(e_ctrl, 0xfe, 0x00);
++	gc8034_Sensor_WriteReg(e_ctrl, 0xd4,
++		(regd4&0xfc)+((realaddr>>8)&0x03));
++	gc8034_Sensor_WriteReg(e_ctrl, 0xd5,
++		realaddr&0xff);
++	usleep_range(1000, 2000);
++	gc8034_Sensor_WriteReg(e_ctrl, 0xf3, 0x20);
++	value = gc8034_Sensor_ReadReg(e_ctrl, 0xd7);
++
++	return value;
++}
++
++static void gc8034_read_otp_group(struct msm_eeprom_ctrl_t *e_ctrl,
++	uint8_t addr, uint8_t *buff, int size)
++{
++	uint8_t i;
++	uint8_t regd4, regf4, page;
++	uint16_t realaddr = addr * 8;
++
++	regd4 = gc8034_Sensor_ReadReg(e_ctrl, 0xd4);
++	regf4 = gc8034_Sensor_ReadReg(e_ctrl, 0xf4);
++	page = regd4 & 0x3c;
++	gc8034_Sensor_WriteReg(e_ctrl, 0xfe, 0x00);
++	gc8034_Sensor_WriteReg(e_ctrl, 0xd4,
++		(regd4&0xfc)+((realaddr>>8)&0x03));
++	gc8034_Sensor_WriteReg(e_ctrl, 0xd5,
++		realaddr&0xff);
++	usleep_range(1000, 2000);
++	gc8034_Sensor_WriteReg(e_ctrl, 0xf3, 0x20);
++	gc8034_Sensor_WriteReg(e_ctrl, 0xf4, regf4|0x02);
++	gc8034_Sensor_WriteReg(e_ctrl, 0xf3, 0x80);
++
++	for (i = 0; i < size; i++)
++		buff[i] = gc8034_Sensor_ReadReg(e_ctrl, 0xd7);
++
++	gc8034_Sensor_WriteReg(e_ctrl, 0xf3, 0x00);
++	gc8034_Sensor_WriteReg(e_ctrl, 0xf4, regf4&0xfd);
++}
++
++static void gc8034_select_page_otp(struct msm_eeprom_ctrl_t *e_ctrl,
++	uint8_t otp_select_page)
++{
++	uint8_t page;
++
++	gc8034_Sensor_WriteReg(e_ctrl, 0xfe, 0x00);
++	page = gc8034_Sensor_ReadReg(e_ctrl, 0xd4);
++	page = (page & 0xc3) | (((uint8_t)otp_select_page<<2)&0x3c);
++
++	usleep_range(5000, 6000);
++	gc8034_Sensor_WriteReg(e_ctrl, 0xd4, page);
++}
++
++static void gc8034_read_buffer(struct msm_eeprom_ctrl_t *e_ctrl,
++	uint8_t *memptr)
++{
++	int i = 0, j = 0;
++	uint8_t flag_wb = 0, index = 0, flag_Module = 0;
++	uint8_t flag_chip = 0,  flag_lsc = 0;
++	uint8_t info_flag = 0, wb_flag = 0, wb_golden_flag = 0;
++	uint8_t dd_flag = 0, lsc_flag = 0;
++	uint8_t temp = 0;
++	uint8_t otp_clk = 0, otp_en = 0;
++	uint8_t total_number = 0;
++	uint8_t flag_dd = 0;
++#ifndef GC8034_AUTO_LSC
++	uint8_t regd4 = 0, regf4 = 0, page = 0;
++	uint16_t realaddr = 0;
++	uint8_t lscaddr = 0;
++	uint8_t lsc[99*4] = {0};
++#endif
++
++	e_ctrl->cal_data.num_data = 0;
++	otp_clk = gc8034_Sensor_ReadReg(e_ctrl, 0xf2);
++	otp_en = gc8034_Sensor_ReadReg(e_ctrl, 0xf4);
++	otp_clk = otp_clk | 0x01;
++	otp_en = otp_en | 0x08;
++	usleep_range(5000, 6000);
++	gc8034_Sensor_WriteReg(e_ctrl, 0xf2, otp_clk);
++	gc8034_Sensor_WriteReg(e_ctrl, 0xf4, otp_en);
++
++	CDBG("GC8034_OTP: Enable OTP!\n");
++
++	/* read for info & wb data*/
++	gc8034_select_page_otp(e_ctrl, 9);
++	flag_Module = gc8034_read_otp(e_ctrl, 0x6f);
++	flag_wb = gc8034_read_otp(e_ctrl, 0x5e);
++	CDBG("GC8034_OTP : flag_Module = 0x%x ,flag_wb = 0x%x\n",
++		flag_Module, flag_wb);
++	if (((flag_Module & 0x03) != 0x01)
++		&& ((flag_Module >> 2 & 0x03) != 0x01)) {
++		pr_err("GC8034_OTP_INFO is Empty/Invalid!\n");
++		info_flag = 0;
++		*(memptr++) = info_flag;
++		e_ctrl->cal_data.num_data++;
++	}
++
++	for (index = 0; index < 2; index++) {
++		/* avoid double load */
++		if (!info_flag) {
++			switch ((flag_Module<<(2 * index))&0x0c) {
++			case 0x00:
++				pr_err("GC8034_OTP_INFO group %d is Empty !!\n",
++					index + 1);
++				break;
++			case 0x04:
++				CDBG("GC8034_OTP_INFO group %d is Valid !!\n",
++					index + 1);
++				info_flag = 1;
++				*(memptr++) = info_flag;
++				e_ctrl->cal_data.num_data++;
++				gc8034_read_otp_group(e_ctrl,
++					INFO_ROM_START + index * INFO_WIDTH,
++					memptr, INFO_WIDTH);
++				memptr += INFO_WIDTH;
++				e_ctrl->cal_data.num_data += INFO_WIDTH;
++				break;
++			case 0x08:
++			case 0x0c:
++				pr_err("GC8034_OTP_INFO group %d is Invalid !!\n",
++					index + 1);
++				break;
++			default:
++				break;
++			}
++		}
++	}
++
++	if (((flag_wb & 0x03) != 0x01)
++		&& ((flag_wb >> 2 & 0x03) != 0x01)) {
++		pr_err("GC8034_OTP_WB is Empty/Invalid!\n");
++		wb_flag = 0;
++		*(memptr++) = wb_flag;
++		e_ctrl->cal_data.num_data++;
++	}
++
++	for (index = 0; index < 2; index++) {
++		if (!wb_flag) {
++			switch ((flag_wb<<(2 * index))&0x0c) {
++			case 0x00:
++				pr_err("GC8034_OTP_WB group %d is Empty !!\n",
++					index + 1);
++				break;
++			case 0x04:
++				CDBG("GC8034_OTP_WB group %d is Valid !!\n",
++					index + 1);
++				wb_flag = 1;
++				*(memptr++) = wb_flag;
++				e_ctrl->cal_data.num_data++;
++				gc8034_read_otp_group(e_ctrl,
++					WB_ROM_START + index * WB_WIDTH,
++					memptr, WB_WIDTH);
++				memptr += WB_WIDTH;
++				e_ctrl->cal_data.num_data += WB_WIDTH;
++				break;
++			case 0x08:
++			case 0x0c:
++				pr_err("GC8034_OTP_WB group %d is Invalid !!\n",
++					index + 1);
++				break;
++			default:
++				break;
++			}
++		}
++	}
++
++	if (((flag_wb & 0x30) != 0x10)
++		&& ((flag_wb >> 2 & 0x30) != 0x10)) {
++		pr_err("GC8034_OTP_WB_GOLDEN is Empty/Invalid!\n");
++		wb_golden_flag = 0;
++		*(memptr++) = wb_golden_flag;
++		e_ctrl->cal_data.num_data++;
++	}
++	for (index = 0; index < 2; index++) {
++		if (!wb_golden_flag) {
++			switch ((flag_wb<<(2 * index))&0xc0) {
++			case 0x00:
++				pr_err("GC8034_OTP_GOLDEN group %d is Empty !!\n",
++					index + 1);
++				break;
++			case 0x40:
++				CDBG("GC8034_OTP_GOLDEN group %d is Valid !!\n",
++					index + 1);
++				wb_golden_flag = 1;
++				*(memptr++) = wb_golden_flag;
++				e_ctrl->cal_data.num_data++;
++				gc8034_read_otp_group(e_ctrl,
++					GOLDEN_ROM_START + index * GOLDEN_WIDTH,
++					memptr, GOLDEN_WIDTH);
++				memptr += GOLDEN_WIDTH;
++				e_ctrl->cal_data.num_data += GOLDEN_WIDTH;
++				break;
++			case 0x80:
++			case 0xc0:
++				pr_err("GC8034_OTP_GOLDEN group %d is Invalid !!\n",
++					index + 1);
++				break;
++			default:
++				break;
++			}
++		}
++	}
++
++	/*chip regs (no realize)*/
++	gc8034_select_page_otp(e_ctrl, 2);
++	flag_chip = gc8034_read_otp(e_ctrl, 0x4e);
++	CDBG("flag_chip: 0x%x\n", flag_chip);
++
++	*(memptr++) = flag_chip;
++	e_ctrl->cal_data.num_data++;
++	if (flag_chip == 1) {
++		for (i = 0; i < 5; i++) {
++			temp = gc8034_read_otp(e_ctrl, 0x4f + 5*i);
++			for (j = 0; j < 2; j++) {
++				*(memptr++) = (temp>>(4*j))&0x0b;
++				*(memptr++) = gc8034_read_otp(e_ctrl,
++					0x50+5*i+2*j);
++				*(memptr++) = gc8034_read_otp(e_ctrl,
++					0x50+5*i+2*j+1);
++				e_ctrl->cal_data.num_data += 3;
++			}
++		}
++	} else
++		pr_err("GC8034_OTP_CHIP flag is Empty!\n");
++
++	/* dd total_number */
++	gc8034_select_page_otp(e_ctrl, 0);
++	flag_dd = gc8034_read_otp(e_ctrl, 0x0b);
++	if ((flag_dd & 0x03) != 0x01) {
++		pr_err("GC8034_OTP_DD is Empty/Invalid!\n");
++		dd_flag = 0;
++		*(memptr++) = dd_flag;
++		e_ctrl->cal_data.num_data++;
++	} else {
++		dd_flag = 1;
++		*(memptr++) = dd_flag;
++		e_ctrl->cal_data.num_data++;
++		gc8034_select_page_otp(e_ctrl, 0);
++		total_number = gc8034_read_otp(e_ctrl, 0x0c)
++			+ gc8034_read_otp(e_ctrl, 0x0d);
++		*(memptr++) = total_number;
++		CDBG("dd data: 0x%x\n", *(memptr-1));
++		e_ctrl->cal_data.num_data++;
++	}
++
++#ifndef GC8034_AUTO_DD
++	CDBG("GC8034_OTP_DD : flag_dd = 0x%x\n", flag_dd);
++
++	/* DD */
++	switch (flag_dd & 0x03) {
++	case 0x00:
++		pr_err("GC8034_OTP_DD is Empty !!\n");
++		break;
++	case 0x01:
++		CDBG("GC8034_OTP_DD is Valid!!\n");
++
++		realaddr = 0x0e * 8;
++		regd4 = gc8034_Sensor_ReadReg(e_ctrl, 0xd4);
++		regf4 = gc8034_Sensor_ReadReg(e_ctrl, 0xf4);
++		page = regd4&0x3c;
++		gc8034_Sensor_WriteReg(e_ctrl, 0xfe, 0x00);
++		gc8034_Sensor_WriteReg(e_ctrl, 0xd4,
++			(regd4&0xfc)+((realaddr>>8)&0x03));
++		gc8034_Sensor_WriteReg(e_ctrl, 0xd5,
++			realaddr&0xff);
++		usleep_range(1000, 2000);
++		gc8034_Sensor_WriteReg(e_ctrl, 0xf3, 0x20);
++		gc8034_Sensor_WriteReg(e_ctrl, 0xf4,
++			regf4|0x02);
++		gc8034_Sensor_WriteReg(e_ctrl, 0xf3, 0x80);
++
++		for (i = 0; i < total_number*4; i++) {
++			if ((i + 14)%0x80 == 0) {
++				page += 4;
++				gc8034_Sensor_WriteReg(e_ctrl, 0xf3, 0x00);
++				gc8034_Sensor_WriteReg(e_ctrl, 0xf4,
++					regf4&0xfd);
++				gc8034_Sensor_WriteReg(e_ctrl, 0xd4,
++					(regd4&0xc0)|page);
++				gc8034_Sensor_WriteReg(e_ctrl, 0xd5, 0x00);
++				usleep_range(1000, 2000);
++				gc8034_Sensor_WriteReg(e_ctrl, 0xf3, 0x20);
++				gc8034_Sensor_WriteReg(e_ctrl, 0xf4,
++					regf4|0x02);
++				gc8034_Sensor_WriteReg(e_ctrl, 0xf3, 0x80);
++			}
++			*(memptr++) = gc8034_Sensor_ReadReg(e_ctrl, 0xd7);
++			e_ctrl->cal_data.num_data++;
++		}
++		gc8034_Sensor_WriteReg(e_ctrl, 0xf3, 0x00);
++		gc8034_Sensor_WriteReg(e_ctrl, 0xf4, regf4&0xfd);
++		break;
++	case 0x02:
++	case 0x03:
++		pr_err("GC8034_OTP_DD is Invalid !!\n");
++		break;
++	default:
++		break;
++	}
++#endif
++	/* lsc index */
++	gc8034_select_page_otp(e_ctrl, 3);
++	flag_lsc = gc8034_read_otp(e_ctrl, 0x43);
++	if (((flag_lsc & 0x03) == 0x01)
++		|| ((flag_lsc >> 2 & 0x03) == 0x01)) {
++		lsc_flag = 1;
++		*(memptr++) = lsc_flag;
++		e_ctrl->cal_data.num_data++;
++	} else {
++		pr_err("GC8034_OTP_LSC is Empty/Invalid!\n");
++		lsc_flag = 0;
++		*(memptr++) = lsc_flag;
++		e_ctrl->cal_data.num_data++;
++	}
++	for (index = 0; index < 2; index++) {
++#ifndef GC8034_AUTO_LSC
++		switch ((flag_lsc<<(2 * index))&0x0c) {
++		case 0x00:
++			pr_err("GC8034_OTP_LSC group %d is Empty !\n",
++				index + 1);
++			break;
++		case 0x04:
++			CDBG("GC8034_OTP_LSC group %d is Valid !\n",
++				index + 1);
++			if (index == 0) {
++				gc8034_select_page_otp(e_ctrl, 3);
++				lscaddr = 0x44;
++			} else {
++				gc8034_select_page_otp(e_ctrl, 6);
++				lscaddr = 0x51;
++			}
++
++			realaddr = lscaddr * 8;
++			regd4 = gc8034_Sensor_ReadReg(e_ctrl, 0xd4);
++			regf4 = gc8034_Sensor_ReadReg(e_ctrl, 0xf4);
++			page = regd4 & 0x3c;
++			gc8034_Sensor_WriteReg(e_ctrl, 0xfe, 0x00);
++			gc8034_Sensor_WriteReg(e_ctrl, 0xd4,
++				(regd4&0xfc)+((realaddr>>8)&0x03));
++			gc8034_Sensor_WriteReg(e_ctrl, 0xd5,
++				realaddr&0xff);
++			usleep_range(1000, 2000);
++			gc8034_Sensor_WriteReg(e_ctrl, 0xf3, 0x20);
++			gc8034_Sensor_WriteReg(e_ctrl, 0xf4, regf4|0x02);
++			gc8034_Sensor_WriteReg(e_ctrl, 0xf3, 0x80);
++
++			for (i = 0; i < 99*4; i++) {
++				if (((i + lscaddr)%0x80) == 0) {
++					page += 4;
++					gc8034_Sensor_WriteReg(e_ctrl,
++						0xf3, 0x00);
++					gc8034_Sensor_WriteReg(e_ctrl,
++						0xf4, regf4&0xfd);
++					gc8034_Sensor_WriteReg(e_ctrl,
++						0xd4, (regd4&0xc0)|page);
++					gc8034_Sensor_WriteReg(e_ctrl,
++						0xd5, 0x00);
++					usleep_range(1000, 2000);
++					gc8034_Sensor_WriteReg(e_ctrl,
++						0xf3, 0x20);
++					gc8034_Sensor_WriteReg(e_ctrl,
++						0xf4, regf4|0x02);
++					gc8034_Sensor_WriteReg(e_ctrl,
++						0xf3, 0x80);
++				}
++				lsc[i] = gc8034_Sensor_ReadReg(e_ctrl, 0xd7);
++				*(memptr++) = lsc[i];
++				e_ctrl->cal_data.num_data++;
++			}
++			gc8034_Sensor_WriteReg(e_ctrl, 0xf3, 0x00);
++			gc8034_Sensor_WriteReg(e_ctrl, 0xf4,
++				regf4&0xfd);
++			break;
++		case 0x08:
++		case 0x0c:
++			pr_err("GC8034_OTP_LSC group %d is Invalid !!\n",
++				index + 1);
++			break;
++		default:
++			break;
++		}
++#else
++		if (((flag_lsc<<(2 * index)) & 0x0c) == 0x04) {
++			*(memptr++) = index;
++			e_ctrl->cal_data.num_data++;
++			break;
++		}
++#endif
++	}
++}
++
+ /**
+   * msm_get_read_mem_size - Get the total size for allocation
+   * @eeprom_map_array:	mem map
+@@ -54,8 +484,10 @@ static int msm_get_read_mem_size
+ 			return -EINVAL;
+ 		}
+ 		for (i = 0; i < eeprom_map->memory_map_size; i++) {
+-			if (eeprom_map->mem_settings[i].i2c_operation ==
+-				MSM_CAM_READ) {
++			if ((eeprom_map->mem_settings[i].i2c_operation ==
++				MSM_CAM_READ) ||
++				(eeprom_map->mem_settings[i].i2c_operation ==
++				MSM_CAM_FOR_GC8034)) {
+ 				size += eeprom_map->mem_settings[i].reg_data;
+ 			}
+ 		}
+@@ -406,6 +838,11 @@ static int eeprom_parse_memory_map(struct msm_eeprom_ctrl_t *e_ctrl,
+ 				memptr += eeprom_map->mem_settings[i].reg_data;
+ 			}
+ 			break;
++			case MSM_CAM_FOR_GC8034:
++				gc8034_read_buffer(e_ctrl, memptr);
++				CDBG("memdata_num: %d\n",
++					e_ctrl->cal_data.num_data);
++				break;
+ 			default:
+ 				pr_err("%s: %d Invalid i2c operation LC:%d\n",
+ 					__func__, __LINE__, i);
+diff --git a/include/uapi/media/msm_camsensor_sdk.h b/include/uapi/media/msm_camsensor_sdk.h
+index ad0825e..60462eec 100644
+--- a/include/uapi/media/msm_camsensor_sdk.h
++++ b/include/uapi/media/msm_camsensor_sdk.h
+@@ -240,6 +240,7 @@ enum msm_camera_i2c_operation {
+ 	MSM_CAM_WRITE = 0,
+ 	MSM_CAM_POLL,
+ 	MSM_CAM_READ,
++	MSM_CAM_FOR_GC8034,
+ };
+
+ struct msm_sensor_i2c_sync_params {
+--
+2.2.2
+

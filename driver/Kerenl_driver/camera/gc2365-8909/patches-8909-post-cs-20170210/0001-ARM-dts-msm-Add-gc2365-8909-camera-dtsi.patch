@@ -1,0 +1,36 @@
+From f78f8070d23ebf02b1d2062123047b33c03eef03 Mon Sep 17 00:00:00 2001
+From: Li Zhanchao <lizc1023@thundersoft.com>
+Date: Fri, 10 Feb 2017 09:42:12 +0800
+Subject: [PATCH] ARM: dts: msm: Add gc2365 8909 camera dtsi
+
+Add gc2365 8909 camera dtsi
+
+Change-Id: I15b595480ae18994f7fefef2eac2cae702f39b03
+Signed-off-by: Li Zhanchao <lizc1023@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8909-camera-sensor-skue.dtsi | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8909-camera-sensor-skue.dtsi b/arch/arm/boot/dts/qcom/msm8909-camera-sensor-skue.dtsi
+index 7f7882a..c4ffa91 100644
+--- a/arch/arm/boot/dts/qcom/msm8909-camera-sensor-skue.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8909-camera-sensor-skue.dtsi
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (c) 2014-2015, The Linux Foundation. All rights reserved.
++ * Copyright (c) 2014-2017, The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 and
+@@ -147,7 +147,7 @@
+ 		cell-index = <0>;
+ 		compatible = "qcom,camera";
+ 		reg = <0x2>;
+-		qcom,special-support-sensors="ov5670_30010a3";
++		qcom,special-support-sensors="ov5670_30010a3", "gc2365";
+ 		qcom,eeprom-src = <&eeprom0>;
+ 		qcom,csiphy-sd-index = <0>;
+ 		qcom,csid-sd-index = <0>;
+-- 
+1.9.1
+

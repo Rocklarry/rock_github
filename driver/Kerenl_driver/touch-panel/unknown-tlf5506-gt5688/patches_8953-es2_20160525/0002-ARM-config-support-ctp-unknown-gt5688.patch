@@ -1,0 +1,33 @@
+From ee216d11e7ca9632bb7d1b98c2638b118959c53a Mon Sep 17 00:00:00 2001
+From: Li Zhanchao <lizc1023@thundersoft.com>
+Date: Fri, 20 May 2016 17:22:23 +0800
+Subject: [PATCH 2/3] ARM:config: support ctp unknown gt5688
+
+Add CTP UNKNOWN@TLF5506@GT5688 config
+
+Change-Id: I8b7eedcc0fffb0395bb66d53bd241f31abeaf1b4
+Signed-off-by: Li Zhanchao <lizc1023@thundersoft.com>
+---
+ arch/arm64/configs/msmcortex_defconfig | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm64/configs/msmcortex_defconfig b/arch/arm64/configs/msmcortex_defconfig
+index cf88de2..cd6d738 100644
+--- a/arch/arm64/configs/msmcortex_defconfig
++++ b/arch/arm64/configs/msmcortex_defconfig
+@@ -287,7 +287,11 @@ CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_RMI_DEV_v21=y
+ CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE_v21=y
+ CONFIG_TOUCHSCREEN_ATMEL_MXT=y
+ CONFIG_TOUCHSCREEN_GEN_VKEYS=y
+-CONFIG_TOUCHSCREEN_FT5X06=y
++#CONFIG_TOUCHSCREEN_FT5X06 is not set
++CONFIG_TOUCHSCREEN_GT9XX=y
++CONFIG_GT9XX_TOUCHPANEL_DRIVER=y
++CONFIG_GT9XX_TOUCHPANEL_UPDATE=y
++CONFIG_GT9XX_TOUCHPANEL_DEBUG=y
+ CONFIG_TOUCHSCREEN_MAXIM_STI=y
+ CONFIG_INPUT_MISC=y
+ CONFIG_INPUT_HBTP_INPUT=y
+-- 
+1.9.1
+

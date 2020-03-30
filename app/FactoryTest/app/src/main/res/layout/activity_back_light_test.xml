@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="50dp"
+    tools:context="com.a3nod.lenovo.sparrowfactory.BackLightTestActivity">
+    <SeekBar
+        android:id="@+id/sb_brightness"
+        android:layout_width="match_parent"
+        android:layout_height="100dp"
+        android:max="255"
+        />
+    <TextView
+        android:id="@+id/tv_brightness"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        />
+    <CheckBox
+        android:id="@+id/cb_lock_brightness"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="locked to 190"
+        style="@style/Widget.AppCompat.Button"
+        android:button="@null"
+        />
+</LinearLayout>

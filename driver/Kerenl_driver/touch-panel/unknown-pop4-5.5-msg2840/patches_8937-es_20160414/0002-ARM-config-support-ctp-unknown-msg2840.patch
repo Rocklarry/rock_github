@@ -1,0 +1,30 @@
+From 8bc5837849965d5b0c96780c4e3c7042ff42fd8b Mon Sep 17 00:00:00 2001
+From: Li Zhanchao <lizc1023@thundersoft.com>
+Date: Wed, 13 Apr 2016 10:02:36 +0800
+Subject: [PATCH 2/3] ARM:config: support ctp unknown msg2840
+
+Add CTP UNKNOWN@POP4-5.5@MSG2840 config
+
+Change-Id: I48cc47bd67fcc0aba185ba16f4ff22d397d0f708
+Signed-off-by: Li Zhanchao <lizc1023@thundersoft.com>
+---
+ arch/arm64/configs/msm8937_defconfig | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm64/configs/msm8937_defconfig b/arch/arm64/configs/msm8937_defconfig
+index 280c706..27b3544 100644
+--- a/arch/arm64/configs/msm8937_defconfig
++++ b/arch/arm64/configs/msm8937_defconfig
+@@ -287,7 +287,8 @@ CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_RMI_DEV_v21=y
+ CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE_v21=y
+ CONFIG_TOUCHSCREEN_ATMEL_MXT=y
+ CONFIG_TOUCHSCREEN_GEN_VKEYS=y
+-CONFIG_TOUCHSCREEN_FT5X06=y
++#CONFIG_TOUCHSCREEN_FT5X06 is not set
++CONFIG_TOUCHSCREEN_MSG28XX=y
+ CONFIG_TOUCHSCREEN_MAXIM_STI=y
+ CONFIG_INPUT_MISC=y
+ CONFIG_INPUT_HBTP_INPUT=y
+-- 
+1.9.1
+

@@ -1,0 +1,84 @@
+From 9e13273b9796cb355bdec030b62c25c128054f8b Mon Sep 17 00:00:00 2001
+From: Li Zhanchao <lizc1023@thundersoft.com>
+Date: Fri, 9 Jan 2015 13:09:38 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support tmd27723 devicetree
+
+Devicetree support tmd27723
+
+Change-Id: I70e780eafc786fb0a78c80a8022b48296257e949
+Signed-off-by: Li Zhanchao <lizc1023@thundersoft.com>
+---
+ .../devicetree/bindings/vendor-prefixes.txt        |  1 +
+ arch/arm/boot/dts/qcom/msm8909-qrd-skuc.dtsi       | 37 ++++++++++++++++++++++
+ 2 files changed, 38 insertions(+)
+
+diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
+index 35c0d66..3864441 100644
+--- a/Documentation/devicetree/bindings/vendor-prefixes.txt
++++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+@@ -8,6 +8,7 @@ adi	Analog Devices, Inc.
+ aeroflexgaisler	Aeroflex Gaisler AB
+ ak	Asahi Kasei Corp.
+ amcc	Applied Micro Circuits Corporation (APM, formally AMCC)
++ams	Austriamicrosystems
+ apm	Applied Micro Circuits Corporation (APM)
+ arm	ARM Ltd.
+ atmel	Atmel Corporation
+diff --git a/arch/arm/boot/dts/qcom/msm8909-qrd-skuc.dtsi b/arch/arm/boot/dts/qcom/msm8909-qrd-skuc.dtsi
+index 8030789..81a5fb5 100644
+--- a/arch/arm/boot/dts/qcom/msm8909-qrd-skuc.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8909-qrd-skuc.dtsi
+@@ -53,6 +53,22 @@
+ 			bias-pull-up;
+ 		};
+ 	};
++
++	tmd27723_int_pin {
++		qcom,pins = <&gp 94>;
++		qcom,pin-func = <0>;
++		qcom,num-grp-pins = <1>;
++		label = "tmd27723-irq";
++		tmd27723_default: tmd27723_default {
++			drive-strength = <6>;
++			bias-pull-up;
++		};
++		tmd27723_sleep: tmd27723_sleep {
++			drive-strength = <2>;
++			bias-pull-down;
++		};
++	};
++
+ };
+ 
+ &soc {
+@@ -130,6 +146,27 @@
+ 			bosch,gpio-int1 = <&msm_gpio 96 0x2002>;
+ 			bosch,gpio-int2 = <&msm_gpio 65 0x2002>;
+ 		};
++
++		ams@39 {
++			compatible = "ams,tmd27723";
++			reg = <0x39>;
++			pinctrl-names = "default","sleep";
++			pinctrl-0 = <&tmd27723_default>;
++			pinctrl-1 = <&tmd27723_sleep>;
++			interrupt-parent = <&msm_gpio>;
++			interrupts = <94 0x2002>;
++			vdd-supply = <&pm8909_l17>;
++			vio-supply = <&pm8909_l6>;
++			ams,irq-gpio = <&msm_gpio 94 0x2002>;
++			ams,ps-threshold = <600>;
++			ams,ps-hysteresis-threshold = <500>;
++			ams,ps-pulse = <8>;
++			ams,ps-pgain = <0>;
++			ams,als-B = <186>;
++			ams,als-C = <75>;
++			ams,als-D = <129>;
++			ams,ga-value = <98>;
++		};
+ 	};
+ 
+ 	gen-vkeys {
+-- 
+1.9.1
+

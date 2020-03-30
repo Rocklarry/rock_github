@@ -1,0 +1,34 @@
+From 9379ae975edd1bec0361ed72167468d39826ddff Mon Sep 17 00:00:00 2001
+From: chenx <chenxiang0527@thundersoft.com>
+Date: Wed, 29 Oct 2014 14:55:51 +0800
+Subject: [PATCH 3/3] ARM:config: support yas537 defconfig
+
+Defconfig support yas537
+
+Change-Id: I636f042fa628eb2050bb8afca70675932b94c453
+Signed-off-by: Xiang Chen <chenxiang0527@thundersoft.com>
+---
+ arch/arm/configs/msm8916_defconfig |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/configs/msm8916_defconfig b/arch/arm/configs/msm8916_defconfig
+index 3d19788..c42526b 100644
+--- a/arch/arm/configs/msm8916_defconfig
++++ b/arch/arm/configs/msm8916_defconfig
+@@ -259,10 +259,11 @@ CONFIG_INPUT_MISC=y
+ CONFIG_INPUT_UINPUT=y
+ CONFIG_INPUT_GPIO=m
+ CONFIG_SENSORS_LIS3DH=y
+-CONFIG_SENSORS_MPU6050=y
++#CONFIG_SENSORS_MPU6050=y
+ CONFIG_SENSORS_AKM09911=y
++CONFIG_SENSORS_YAS537=y
+ CONFIG_SENSORS_BMA2X2=y
+-CONFIG_SENSORS_MMC3416X=y
++#CONFIG_SENSORS_MMC3416X=y
+ CONFIG_SENSORS_AKM8963=y
+ CONFIG_SERIAL_MSM_HSL=y
+ CONFIG_SERIAL_MSM_HSL_CONSOLE=y
+-- 
+1.7.9.5
+

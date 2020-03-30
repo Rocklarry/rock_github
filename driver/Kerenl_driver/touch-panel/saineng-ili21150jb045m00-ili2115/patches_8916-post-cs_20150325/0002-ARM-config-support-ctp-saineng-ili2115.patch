@@ -1,0 +1,30 @@
+From 12d2038abb0669a174074045f176f1ce91d8d6f8 Mon Sep 17 00:00:00 2001
+From: Li Zhanchao <lizc1023@thundersoft.com>
+Date: Wed, 25 Mar 2015 14:24:15 +0800
+Subject: [PATCH 2/3] ARM:config: support ctp saineng ili2115
+
+Add CTP SAINENG@ILI21150JB045M00@ILI2115 config
+
+Change-Id: Ie913e63132756d10e664e95b2d5ff3352fdae218
+Signed-off-by: Li Zhanchao <lizc1023@thundersoft.com>
+---
+ arch/arm/configs/msm8916_defconfig | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/configs/msm8916_defconfig b/arch/arm/configs/msm8916_defconfig
+index 08fd762..145c583 100644
+--- a/arch/arm/configs/msm8916_defconfig
++++ b/arch/arm/configs/msm8916_defconfig
+@@ -253,7 +253,8 @@ CONFIG_INPUT_JOYSTICK=y
+ CONFIG_JOYSTICK_XPAD=y
+ CONFIG_INPUT_TOUCHSCREEN=y
+ CONFIG_TOUCHSCREEN_ATMEL_MXT=y
+-CONFIG_TOUCHSCREEN_FT5X06=y
++#CONFIG_TOUCHSCREEN_FT5X06 is not set
++CONFIG_TOUCHSCREEN_ILI210X=y
+ CONFIG_TOUCHSCREEN_GEN_VKEYS=y
+ CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI4=y
+ CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_RMI4_DEV=y
+-- 
+1.9.1
+

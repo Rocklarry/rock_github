@@ -1,0 +1,33 @@
+From a695e061d6899ab22049ce98e167c5e7f6c12116 Mon Sep 17 00:00:00 2001
+From: chenxl0723 <chenxl0723@thundersoft.com>
+Date: Tue, 15 Apr 2014 16:54:50 +0800
+Subject: [PATCH 3/3] ARM:config: support ctp truly ct4f0340
+
+Add CTP IHV-TRULY@CT4F0340@HX8527-D48 config
+
+Signed-off-by: Xuelong Chen <chenxl0723@thundersoft.com>
+
+Change-Id: Ie59f6d6bd0a95f6239c5cb80e63f651ea5d8dde5
+---
+ arch/arm/configs/msm8610_defconfig |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/configs/msm8610_defconfig b/arch/arm/configs/msm8610_defconfig
+index 02db2f2..c4abfae 100644
+--- a/arch/arm/configs/msm8610_defconfig
++++ b/arch/arm/configs/msm8610_defconfig
+@@ -232,8 +232,9 @@ CONFIG_INPUT_EVBUG=m
+ CONFIG_KEYBOARD_GPIO=y
+ CONFIG_INPUT_TOUCHSCREEN=y
+ CONFIG_TOUCHSCREEN_ATMEL_MXT=y
+-CONFIG_TOUCHSCREEN_FT5X06=y
+-CONFIG_TOUCHSCREEN_GEN_VKEYS=y
++#CONFIG_TOUCHSCREEN_FT5X06=y
++#CONFIG_TOUCHSCREEN_GEN_VKEYS=y
++CONFIG_TOUCHSCREEN_HIMAX8526=y
+ CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI4=y
+ CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_RMI4_DEV=y
+ CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE=y
+-- 
+1.7.9.5
+

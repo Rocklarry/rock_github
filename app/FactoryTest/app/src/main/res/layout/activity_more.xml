@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context="com.a3nod.lenovo.sparrowfactory.MoreActivity">
+
+    <include layout="@layout/layout_title"/>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center_vertical"
+        android:onClick="tremoloTest"
+        android:text="Tremolo test"
+        android:textSize="24sp"
+        />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#999999"
+        />
+
+    <TextView
+    android:layout_width="match_parent"
+    android:layout_height="60dp"
+    android:clickable="true"
+    android:focusable="true"
+    android:gravity="center_vertical"
+    android:onClick="rebootTest"
+    android:text="Reboot test"
+    android:textSize="24sp"
+    />
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center_vertical"
+        android:onClick="temperature"
+        android:text="Temperature test"
+        android:textSize="24sp"
+        />
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center_vertical"
+        android:onClick="backLight"
+        android:text="BackLight test"
+        android:textSize="24sp"
+        />
+<!--    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#999999"
+        />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:clickable="true"
+        android:onClick="videoTest"
+        android:textSize="24sp"
+        android:text="Demo test"
+        android:gravity="center_vertical"
+        />-->
+</LinearLayout>

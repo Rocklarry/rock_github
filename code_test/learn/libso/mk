@@ -1,0 +1,3 @@
+ gcc -shared -fPIC -o libadd.so add.c 
+
+  gcc test.c -o test ./libadd.so 

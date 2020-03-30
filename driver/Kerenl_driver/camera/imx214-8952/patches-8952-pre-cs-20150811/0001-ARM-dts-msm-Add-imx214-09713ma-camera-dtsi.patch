@@ -1,0 +1,26 @@
+From 76b408d9369ccf89227ec4cfee93d71951559a33 Mon Sep 17 00:00:00 2001
+From: wangwf <wangwf0922@thundersoft.com>
+Date: Wed, 29 Jul 2015 16:28:41 +0800
+Subject: [PATCH] ARM dts msm Add imx214 09713ma camera dtsi
+
+Change-Id: I6ff45a437a1aa7f329438be06008e1bb08c8fad5
+---
+ arch/arm/boot/dts/qcom/msm8952-camera-sensor-qrd.dtsi | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8952-camera-sensor-qrd.dtsi b/arch/arm/boot/dts/qcom/msm8952-camera-sensor-qrd.dtsi
+index 4ff5443..27cf44d 100644
+--- a/arch/arm/boot/dts/qcom/msm8952-camera-sensor-qrd.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8952-camera-sensor-qrd.dtsi
+@@ -185,7 +185,7 @@
+ 		cell-index = <0>;
+ 		compatible = "qcom,camera";
+ 		reg = <0x0>;
+-		qcom,special-support-sensors = "ov13850_q13v06k";
++		qcom,special-support-sensors = "imx214_09713ma";
+ 		qcom,csiphy-sd-index = <0>;
+ 		qcom,csid-sd-index = <0>;
+ 		qcom,mount-angle = <90>;
+-- 
+1.9.1
+

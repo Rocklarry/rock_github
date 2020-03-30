@@ -1,0 +1,125 @@
+From 857b24708f42eff0cd82383e23e838aab23b1c12 Mon Sep 17 00:00:00 2001
+From: yanqy <yanqy0911@thundersoft.com>
+Date: Tue, 17 Mar 2015 11:13:09 +0800
+Subject: [PATCH 1/2] ARM:dts:msm: support ctp s7020
+
+Add CTP IHV-UNKNOW@GG7.0@S7020 device tree
+
+Change-Id: I9f112da3ea9f141087ed5a2ad646ab08d1ebba23
+Signed-off-by: Qiyang Yan <yanqy0911@thundersoft.com>
+---
+ .../input/touchscreen/synaptics_i2c_rmi4.txt       |   46 +++++---------------
+ arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi       |   22 +++++++++-
+ 2 files changed, 33 insertions(+), 35 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/input/touchscreen/synaptics_i2c_rmi4.txt b/Documentation/devicetree/bindings/input/touchscreen/synaptics_i2c_rmi4.txt
+index 469baa4..0822439 100644
+--- a/Documentation/devicetree/bindings/input/touchscreen/synaptics_i2c_rmi4.txt
++++ b/Documentation/devicetree/bindings/input/touchscreen/synaptics_i2c_rmi4.txt
+@@ -57,44 +57,22 @@ These properties are defined only when synaptics,detect-device property is defin
+ - synaptics,button-map		: virtual key code mappings to be used.
+ 
+ Example:
+-	i2c@f9927000 { /* BLSP1 QUP5 */
+-		cell-index = <5>;
+-		compatible = "qcom,i2c-qup";
+-		#address-cells = <1>;
+-		#size-cells = <0>;
+-		reg-names = "qup_phys_addr";
+-		reg = <0xf9927000 0x1000>;
+-		interrupt-names = "qup_err_intr";
+-		interrupts = <0 99 0>;
+-		gpios = <&msmgpio 19 0>, /* SCL */
+-			<&msmgpio 18 0>; /* SDA */
+-		qcom,i2c-bus-freq = <100000>;
+-		qcom,i2c-src-freq = <19200000>;
+-
+-		synaptics@20 {
++		synaptics@70 {
+ 			compatible = "synaptics,rmi4"
+-			reg = <0x20>;
++			reg = <0x70>;
+ 			interrupt-parent = <&msmgpio>;
+-			interrupts = <17 0x2>;
+-			vdd-supply = <&pm8226_l19>;
+-			vcc_i2c-supply = <&pm8226_lvs1>;
++			interrupts = <13 0x2008>;
++			vdd-supply = <&pm8916_l17>;
++			vcc_i2c-supply = <&pm8916_l16>;
+ 			pinctrl-names = "pmx_ts_active","pmx_ts_suspend","pmx_ts_release";
+ 			pinctrl-0 = <&ts_int_active &ts_reset_active>;
+ 			pinctrl-1 = <&ts_int_suspend &ts_reset_suspend>;
+-			pinctrl-1 = <&ts_release>;
+-			synaptics,reset-gpio = <&msmgpio 16 0x00>;
+-			synaptics,irq-gpio = <&msmgpio 17 0x00>;
++			synaptics,display-coords = <0 0 1280 720>;
++			synaptics,panel-coords = <0 0 1400 720>;
++			synaptics,reset-gpio = <&msmgpio 12 0x0>;
++			synaptics,irq-gpio = <&msmgpio 13 0x2008>;
+ 			synaptics,i2c-pull-up;
+-			synaptics,modify-reso;
+-			synaptics,detect-device;
+-			synaptics,device1 {
+-				synaptics,package-id = <3202>;
+-				synaptics,button-map = <139 172 158>;
+-			};
+-			synaptics,device2 {
+-				synaptics,package-id = <3408>;
+-				synaptics,display-coords = <0 0 1079 1919>;
+-				synaptics,panel-coords = <0 0 1079 2084>;
+-			};
++			synaptics,power-down;
++			synaptics,disable-gpios;
++			synaptics,fw-image-name = "PR1468813.img";
+ 		};
+-	};
+diff --git a/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi b/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
+index 5bb6734..43b39e9 100644
+--- a/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
+@@ -279,6 +279,7 @@
+ 	};
+ 
+ 	i2c@78b9000 { /* BLSP1 QUP5 */
++/*
+ 		synaptics@70 {
+ 			compatible = "synaptics,rmi4";
+ 			reg = <0x70>;
+@@ -286,7 +287,6 @@
+ 			interrupts = <13 0x2008>;
+ 			vdd-supply = <&vdd_vreg>;
+ 			vcc_i2c-supply = <&pm8916_l16>;
+-			/* pins used by touchscreen */
+ 			pinctrl-names = "pmx_ts_active","pmx_ts_suspend";
+ 			pinctrl-0 = <&ts_int_active &ts_reset_active>;
+ 			pinctrl-1 = <&ts_int_suspend &ts_reset_suspend>;
+@@ -299,6 +299,26 @@
+ 			synaptics,disable-gpios;
+ 			synaptics,fw-image-name = "PR1601177-s3207_8916_qrd_00430000.img";
+ 		};
++*/
++		synaptics@70 {
++			compatible = "synaptics,rmi4";
++			reg = <0x70>;
++			interrupt-parent = <&msm_gpio>;
++			interrupts = <13 0x2008>;
++			vdd-supply = <&pm8916_l17>;
++			vcc_i2c-supply = <&pm8916_l16>;
++			pinctrl-names = "pmx_ts_active","pmx_ts_suspend";
++			pinctrl-0 = <&ts_int_active &ts_reset_active>;
++			pinctrl-1 = <&ts_int_suspend &ts_reset_suspend>;
++			synaptics,display-coords = <0 0 1280 720>;
++			synaptics,panel-coords = <0 0 1400 720>;
++			synaptics,reset-gpio = <&msm_gpio 12 0x0>;
++			synaptics,irq-gpio = <&msm_gpio 13 0x2008>;
++			synaptics,i2c-pull-up;
++			synaptics,power-down;
++			synaptics,disable-gpios;
++			synaptics,fw-image-name = "PR1468813.img";
++		};
+ 	};
+ 
+ 	vdd_vreg: vdd_vreg {
+-- 
+1.7.9.5
+

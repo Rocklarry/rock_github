@@ -1,0 +1,76 @@
+From 5d4a6303be0b89fe9ac46924ae307b6e76802ed6 Mon Sep 17 00:00:00 2001
+From: yanqy <yanqy0911@thundersoft.com>
+Date: Wed, 11 Mar 2015 15:21:22 +0800
+Subject: [PATCH 1/2] ARM:dts:msm: support ofilm sol050512 ft5406dq9
+
+Add O-FILM@SOL-050-5120@FT5406DQ9 device tree
+
+Change-Id: Ib6df4fc7bd607bd7bdb35817075fd8edeaad4fcd
+Signed-off-by: Qiyang Yan <yanqy0911@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi |   39 ++++++++++++++++++++++++--
+ 1 file changed, 36 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi b/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
+index 5bb6734..e41c6e7 100644
+--- a/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
+@@ -299,6 +299,38 @@
+ 			synaptics,disable-gpios;
+ 			synaptics,fw-image-name = "PR1601177-s3207_8916_qrd_00430000.img";
+ 		};
++
++		focaltech@38 {
++			compatible = "focaltech,5x06";
++			reg = <0x38>;
++			interrupt-parent = <&msm_gpio>;
++			interrupts = <13 0x2008>;
++			vdd-supply = <&pm8916_l17>;
++			vcc_i2c-supply = <&pm8916_l16>;
++			focaltech,name = "FT5406DQ9";
++			focaltech,family-id = <0x55>;
++			focaltech,reset-gpio = <&msm_gpio 12 0x0>;
++			focaltech,irq-gpio = <&msm_gpio 13 0x2008>;
++			focaltech,display-coords = <0 0 720 1280>;
++			focaltech,panel-coords = <0 0 720 1380>;
++			focaltech,button-map= <139 172 158>;
++			focaltech,no-force-update;
++			focaltech,i2c-pull-up;
++			focaltech,fw-vkey-support;
++			focaltech,group-id = <1>;
++			focaltech,hard-reset-delay-ms = <20>;
++			focaltech,soft-reset-delay-ms = <150>;
++			focaltech,num-max-touches = <5>;
++			focaltech,fw-name = "ft_8916_qrd_fw.bin";
++			focaltech,fw-delay-aa-ms = <50>;
++			focaltech,fw-delay-55-ms = <30>;
++			focaltech,fw-upgrade-id1 = <0x79>;
++			focaltech,fw-upgrade-id2 = <0x03>;
++			focaltech,fw-delay-readid-ms = <10>;
++			focaltech,fw-delay-era-flsh-ms = <2000>;
++			focaltech,fw-auto-cal;
++			focaltech,ignore-id-check;
++		};
+ 	};
+ 
+ 	vdd_vreg: vdd_vreg {
+@@ -309,12 +341,13 @@
+ 
+ 	gen-vkeys {
+ 		compatible = "qcom,gen-vkeys";
+-		label = "synaptics_rmi4_i2c";
++		label = "ft5x06_ts";
+ 		qcom,disp-maxx = <720>;
+ 		qcom,disp-maxy = <1280>;
+ 		qcom,panel-maxx = <720>;
+-		qcom,panel-maxy = <1369>;
+-		qcom,key-codes = <158 172 139>;
++		qcom,panel-maxy = <1380>;
++		qcom,key-codes = <139 172 158>;
++		qcom,y-offset = <0>;
+ 	};
+ };
+ 
+-- 
+1.7.9.5
+

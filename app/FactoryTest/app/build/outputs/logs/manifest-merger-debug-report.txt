@@ -1,0 +1,873 @@
+-- Merging decision tree log ---
+manifest
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:2:1-408:12
+INJECTED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:2:1-408:12
+INJECTED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:2:1-408:12
+INJECTED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:2:1-408:12
+MERGED from [com.android.support:appcompat-v7:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\c810039c254dbb9468427a828cc21d79\AndroidManifest.xml:17:1-31:12
+MERGED from [com.android.support.constraint:constraint-layout:1.0.2] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\0162cfe8acc9a74d2b023b2aa389b882\AndroidManifest.xml:2:1-11:12
+MERGED from [com.squareup.leakcanary:leakcanary-android:1.3.1] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\230f2823c78e3a6cc322c177a6d6c463\AndroidManifest.xml:17:1-51:12
+MERGED from [com.android.support:animated-vector-drawable:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\ebbdf3f4e2af9d94322d79536c1e087a\AndroidManifest.xml:17:1-28:12
+MERGED from [com.android.support:support-vector-drawable:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\bc4e346edc08c9bde0e7b82bfff5ee9b\AndroidManifest.xml:17:1-28:12
+MERGED from [com.android.support:support-v4:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\14c591f7c7714899fd7c7e73ebd6790c\AndroidManifest.xml:17:1-31:12
+MERGED from [com.android.support:support-media-compat:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\3b8d0310675562cf2cbc6506512b5a6f\AndroidManifest.xml:17:1-31:12
+MERGED from [com.android.support:support-fragment:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\2ba573ee96471234921725ff9030c790\AndroidManifest.xml:17:1-31:12
+MERGED from [com.android.support:support-core-utils:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\89d4bc8060f94fd524591e62865ae90b\AndroidManifest.xml:17:1-31:12
+MERGED from [com.android.support:support-core-ui:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\bab6fe53e1e05998b8eb7f18a381392d\AndroidManifest.xml:17:1-31:12
+MERGED from [com.android.support:support-compat:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\163f80be26168c25fc9adf7b0fb4aae9\AndroidManifest.xml:17:1-31:12
+MERGED from [android.arch.lifecycle:runtime:1.0.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\259428e5ee336ba37061c286091786f3\AndroidManifest.xml:17:1-30:12
+INJECTED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:2:1-408:12
+INJECTED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:2:1-408:12
+INJECTED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:2:1-408:12
+	package
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:3:5-46
+		INJECTED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml
+		INJECTED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml
+	android:versionName
+		INJECTED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:2:1-408:12
+		INJECTED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml
+	android:versionCode
+		INJECTED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:2:1-408:12
+		INJECTED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml
+	xmlns:android
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:2:11-69
+uses-permission#android.permission.INTERNET
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:8:5-67
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:8:22-64
+uses-permission#android.permission.BLUETOOTH
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:9:5-68
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:9:22-65
+uses-permission#android.permission.BLUETOOTH_ADMIN
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:10:5-74
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:10:22-71
+uses-permission#android.permission.ACCESS_WIFI_STATE
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:11:5-76
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:11:22-73
+uses-permission#android.permission.CHANGE_WIFI_STATE
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:12:5-76
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:12:22-73
+uses-permission#android.permission.ACCESS_FINE_LOCATION
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:13:5-79
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:13:22-76
+uses-permission#android.permission.ACCESS_NETWORK_STATE
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:14:5-79
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:14:22-76
+uses-permission#android.permission.ACCESS_COARSE_LOCATION
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:15:5-81
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:15:22-78
+uses-permission#android.permission.CAMERA
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:16:5-65
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:16:22-62
+uses-permission#android.permission.RECORD_AUDIO
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:17:5-71
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:17:22-68
+uses-feature#android.hardware.camera
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:19:5-60
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:19:19-57
+uses-feature#android.hardware.camera.autofocus
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:20:5-70
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:20:19-67
+uses-feature#android.hardware.camera.flash
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:21:5-66
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:21:19-63
+uses-permission#android.permission.WAKE_LOCK
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:23:5-68
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:23:22-65
+uses-permission#android.permission.RECEIVE_BOOT_COMPLETED
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:24:5-81
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:24:22-78
+uses-permission#android.permission.MODIFY_AUDIO_SETTINGS
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:25:5-80
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:25:22-77
+uses-permission#android.permission.VIBRATE
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:26:5-66
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:26:22-63
+uses-permission#android.permission.DISABLE_KEYGUARD
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:27:5-75
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:27:22-72
+uses-permission#com.google.android.things.permission.MANAGE_SENSOR_DRIVERS
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:29:5-98
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:29:22-95
+uses-permission#android.permission.WRITE_EXTERNAL_STORAGE
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:30:5-81
+MERGED from [com.squareup.leakcanary:leakcanary-android:1.3.1] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\230f2823c78e3a6cc322c177a6d6c463\AndroidManifest.xml:25:5-81
+MERGED from [com.squareup.leakcanary:leakcanary-android:1.3.1] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\230f2823c78e3a6cc322c177a6d6c463\AndroidManifest.xml:25:5-81
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:30:22-78
+uses-permission#android.permission.READ_EXTERNAL_STORAGE
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:31:5-80
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:31:22-77
+uses-permission#com.qualcomm.permission.USE_QCRIL_MSG_TUNNEL
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:32:5-84
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:32:22-81
+uses-permission#android.permission.MOUNT_UNMOUNT_FILESYSTEMS
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:38:5-84
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:38:22-81
+uses-permission#android.permission.WRITE_MEDIA_STORAGE
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:39:5-78
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:39:22-75
+uses-permission#com.google.android.things.permission.REBOOT
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:43:5-82
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:43:22-80
+uses-permission#com.google.android.things.permission.USE_PERIPHERAL_IO
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:44:5-94
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:44:22-91
+uses-permission#com.google.android.things.permission.MANAGE_INPUT_DRIVERS
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:47:5-97
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:47:22-94
+application
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:50:5-406:19
+MERGED from [com.android.support:appcompat-v7:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\c810039c254dbb9468427a828cc21d79\AndroidManifest.xml:25:5-29:19
+MERGED from [com.android.support:appcompat-v7:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\c810039c254dbb9468427a828cc21d79\AndroidManifest.xml:25:5-29:19
+MERGED from [com.android.support.constraint:constraint-layout:1.0.2] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\0162cfe8acc9a74d2b023b2aa389b882\AndroidManifest.xml:9:5-20
+MERGED from [com.android.support.constraint:constraint-layout:1.0.2] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\0162cfe8acc9a74d2b023b2aa389b882\AndroidManifest.xml:9:5-20
+MERGED from [com.squareup.leakcanary:leakcanary-android:1.3.1] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\230f2823c78e3a6cc322c177a6d6c463\AndroidManifest.xml:27:5-49:19
+MERGED from [com.squareup.leakcanary:leakcanary-android:1.3.1] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\230f2823c78e3a6cc322c177a6d6c463\AndroidManifest.xml:27:5-49:19
+MERGED from [com.android.support:animated-vector-drawable:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\ebbdf3f4e2af9d94322d79536c1e087a\AndroidManifest.xml:22:5-26:19
+MERGED from [com.android.support:animated-vector-drawable:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\ebbdf3f4e2af9d94322d79536c1e087a\AndroidManifest.xml:22:5-26:19
+MERGED from [com.android.support:support-vector-drawable:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\bc4e346edc08c9bde0e7b82bfff5ee9b\AndroidManifest.xml:22:5-26:19
+MERGED from [com.android.support:support-vector-drawable:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\bc4e346edc08c9bde0e7b82bfff5ee9b\AndroidManifest.xml:22:5-26:19
+MERGED from [com.android.support:support-v4:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\14c591f7c7714899fd7c7e73ebd6790c\AndroidManifest.xml:25:5-29:19
+MERGED from [com.android.support:support-v4:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\14c591f7c7714899fd7c7e73ebd6790c\AndroidManifest.xml:25:5-29:19
+MERGED from [com.android.support:support-media-compat:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\3b8d0310675562cf2cbc6506512b5a6f\AndroidManifest.xml:25:5-29:19
+MERGED from [com.android.support:support-media-compat:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\3b8d0310675562cf2cbc6506512b5a6f\AndroidManifest.xml:25:5-29:19
+MERGED from [com.android.support:support-fragment:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\2ba573ee96471234921725ff9030c790\AndroidManifest.xml:25:5-29:19
+MERGED from [com.android.support:support-fragment:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\2ba573ee96471234921725ff9030c790\AndroidManifest.xml:25:5-29:19
+MERGED from [com.android.support:support-core-utils:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\89d4bc8060f94fd524591e62865ae90b\AndroidManifest.xml:25:5-29:19
+MERGED from [com.android.support:support-core-utils:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\89d4bc8060f94fd524591e62865ae90b\AndroidManifest.xml:25:5-29:19
+MERGED from [com.android.support:support-core-ui:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\bab6fe53e1e05998b8eb7f18a381392d\AndroidManifest.xml:25:5-29:19
+MERGED from [com.android.support:support-core-ui:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\bab6fe53e1e05998b8eb7f18a381392d\AndroidManifest.xml:25:5-29:19
+MERGED from [com.android.support:support-compat:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\163f80be26168c25fc9adf7b0fb4aae9\AndroidManifest.xml:25:5-29:19
+MERGED from [com.android.support:support-compat:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\163f80be26168c25fc9adf7b0fb4aae9\AndroidManifest.xml:25:5-29:19
+MERGED from [android.arch.lifecycle:runtime:1.0.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\259428e5ee336ba37061c286091786f3\AndroidManifest.xml:24:5-28:19
+MERGED from [android.arch.lifecycle:runtime:1.0.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\259428e5ee336ba37061c286091786f3\AndroidManifest.xml:24:5-28:19
+	android:screenOrientation
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:53:9-46
+	android:allowBackup
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:52:9-36
+	android:theme
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:54:9-40
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:51:9-43
+uses-library#com.google.android.things
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:55:9-66
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:55:23-63
+activity#com.a3nod.lenovo.sparrowfactory.NavigationActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:57:9-71:20
+	android:screenOrientation
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:60:13-50
+	android:configChanges
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:59:13-63
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:58:13-47
+intent-filter#action:name:android.intent.action.MAIN+category:name:android.intent.category.LAUNCHER
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:61:13-65:29
+action#android.intent.action.MAIN
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:62:17-69
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:62:25-66
+category#android.intent.category.LAUNCHER
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:64:17-77
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:64:27-74
+intent-filter#action:name:android.intent.action.MAIN+category:name:android.intent.category.DEFAULT+category:name:android.intent.category.HOME
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:66:13-70:29
+category#android.intent.category.HOME
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:68:17-73
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:68:27-70
+category#android.intent.category.DEFAULT
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:69:17-76
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:69:27-73
+activity#com.a3nod.lenovo.sparrowfactory.mmi.MainActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:72:9-79:20
+	android:screenOrientation
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:73:13-50
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:72:19-51
+intent-filter#action:name:hello.MainActivity+category:name:android.intent.category.DEFAULT
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:74:13-78:29
+action#hello.MainActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:75:17-61
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:75:25-58
+activity#com.a3nod.lenovo.sparrowfactory.mmi.lcd.LcdActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:80:9-87:20
+	android:screenOrientation
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:81:13-50
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:80:19-54
+intent-filter#action:name:lcd.action+category:name:android.intent.category.DEFAULT
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:82:13-86:29
+action#lcd.action
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:83:17-53
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:83:25-50
+activity#com.a3nod.lenovo.sparrowfactory.mmi.button.ButtonActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:88:9-95:20
+	android:screenOrientation
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:89:13-50
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:88:19-60
+intent-filter#action:name:button.action+category:name:android.intent.category.DEFAULT
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:90:13-94:29
+action#button.action
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:91:17-56
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:91:25-53
+activity#com.a3nod.lenovo.sparrowfactory.mmi.sensor.MyGVSensorActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:96:9-104:20
+	android:screenOrientation
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:98:13-50
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:97:13-58
+intent-filter#action:name:gv_sensor.action+category:name:android.intent.category.DEFAULT
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:99:13-103:29
+action#gv_sensor.action
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:100:17-59
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:100:25-56
+activity#com.a3nod.lenovo.sparrowfactory.mmi.camera.TestActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:105:9-112:20
+	android:screenOrientation
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:106:13-50
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:105:19-58
+intent-filter#action:name:hello.testActivity+category:name:android.intent.category.DEFAULT
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:107:13-111:29
+action#hello.testActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:108:17-61
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:108:25-58
+activity#com.a3nod.lenovo.sparrowfactory.mmi.tp.TPTestActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:113:9-120:20
+	android:screenOrientation
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:114:13-50
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:113:19-56
+intent-filter#action:name:hello.TPTestActivity+category:name:android.intent.category.DEFAULT
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:115:13-119:29
+action#hello.TPTestActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:116:17-63
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:116:25-60
+activity#com.a3nod.lenovo.sparrowfactory.mmi.multipoint.MultPointActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:121:9-128:20
+	android:screenOrientation
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:122:13-50
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:121:19-67
+intent-filter#action:name:hello.MultPointActivity+category:name:android.intent.category.DEFAULT
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:123:13-127:29
+action#hello.MultPointActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:124:17-66
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:124:25-63
+activity#com.a3nod.lenovo.sparrowfactory.mmi.speaker.SpeakerActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:129:9-136:20
+	android:screenOrientation
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:130:13-50
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:129:19-62
+intent-filter#action:name:hello.SpeakerActivity+category:name:android.intent.category.DEFAULT
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:131:13-135:29
+action#hello.SpeakerActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:132:17-64
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:132:25-61
+activity#com.a3nod.lenovo.sparrowfactory.mmi.backlight.BackLightActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:145:9-152:20
+	android:screenOrientation
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:146:13-50
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:145:19-66
+intent-filter#action:name:backlight.action+category:name:android.intent.category.DEFAULT
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:147:13-151:29
+action#backlight.action
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:148:17-59
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:148:25-56
+activity#com.a3nod.lenovo.sparrowfactory.mmi.sensor.PSensorActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:153:9-160:20
+	android:screenOrientation
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:154:13-50
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:153:19-61
+intent-filter#action:name:p_sensor.action+category:name:android.intent.category.DEFAULT
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:155:13-159:29
+action#p_sensor.action
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:156:17-58
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:156:25-55
+activity#com.a3nod.lenovo.sparrowfactory.mmi.sensor.LightSensorActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:161:9-168:20
+	android:screenOrientation
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:162:13-50
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:161:19-65
+intent-filter#action:name:l_sensor.action+category:name:android.intent.category.DEFAULT
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:163:13-167:29
+action#l_sensor.action
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:164:17-58
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:164:25-55
+activity#com.a3nod.lenovo.sparrowfactory.mmi.wifi.WifiActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:169:9-176:20
+	android:screenOrientation
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:170:13-50
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:169:19-56
+intent-filter#action:name:wifi.action+category:name:android.intent.category.DEFAULT
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:171:13-175:29
+action#wifi.action
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:172:17-54
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:172:25-51
+activity#com.a3nod.lenovo.sparrowfactory.mmi.bluetooth.BluetoothActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:177:9-184:20
+	android:screenOrientation
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:178:13-50
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:177:19-66
+intent-filter#action:name:hello.BluetoothActivity+category:name:android.intent.category.DEFAULT
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:179:13-183:29
+action#hello.BluetoothActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:180:17-66
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:180:25-63
+activity#com.a3nod.lenovo.sparrowfactory.mmi.result.ResultActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:185:9-192:20
+	android:screenOrientation
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:186:13-50
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:185:19-60
+intent-filter#action:name:hello.ResultActivity+category:name:android.intent.category.DEFAULT
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:187:13-191:29
+action#hello.ResultActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:188:17-63
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:188:25-60
+activity#com.a3nod.lenovo.sparrowfactory.runin.RuninMainActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:195:9-196:52
+	android:screenOrientation
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:196:13-50
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:195:19-58
+activity#com.a3nod.lenovo.sparrowfactory.runin.RuninActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:197:9-198:52
+	android:screenOrientation
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:198:13-50
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:197:19-54
+activity#com.a3nod.lenovo.sparrowfactory.runin.cpu.CPUTestActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:199:9-200:52
+	android:screenOrientation
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:200:13-50
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:199:19-60
+activity#com.a3nod.lenovo.sparrowfactory.runin.memory.MemoryTestActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:201:9-202:52
+	android:screenOrientation
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:202:13-50
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:201:19-66
+activity#com.a3nod.lenovo.sparrowfactory.runin.emmc.EMMCTestActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:203:9-204:52
+	android:screenOrientation
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:204:13-50
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:203:19-62
+activity#com.a3nod.lenovo.sparrowfactory.runin.mic.MicActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:205:9-206:52
+	android:screenOrientation
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:206:13-50
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:205:19-56
+activity#com.a3nod.lenovo.sparrowfactory.runin.camera.CameraTestActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:207:9-213:20
+	android:screenOrientation
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:209:13-50
+	android:launchMode
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:208:13-48
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:207:19-66
+intent-filter#action:name:runin.camera.CameraTestActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:210:13-212:29
+action#runin.camera.CameraTestActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:211:17-81
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:211:25-71
+activity#com.a3nod.lenovo.sparrowfactory.runin.audio.AudioTestActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:214:9-220:20
+	android:screenOrientation
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:215:13-50
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:214:19-64
+intent-filter#action:name:audio_test+category:name:android.intent.category.DEFAULT
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:216:13-219:29
+action#audio_test
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:217:17-60
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:217:25-50
+activity#com.a3nod.lenovo.sparrowfactory.runin.lcd.LCDTestActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:221:9-222:52
+	android:screenOrientation
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:222:13-50
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:221:19-60
+activity#com.a3nod.lenovo.sparrowfactory.runin.video.VideoTestActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:223:9-224:52
+	android:screenOrientation
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:224:13-50
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:223:19-64
+activity#com.a3nod.lenovo.sparrowfactory.runin.threedimensional.ThreeDimensionalActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:225:9-226:52
+	android:screenOrientation
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:226:13-50
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:225:19-82
+activity#com.a3nod.lenovo.sparrowfactory.runin.twodimensional.TwoDimensionalActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:227:9-228:52
+	android:screenOrientation
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:228:13-50
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:227:19-78
+activity#com.a3nod.lenovo.sparrowfactory.runin.reboot.RebootTestActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:229:9-230:52
+	android:screenOrientation
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:230:13-50
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:229:19-66
+activity#com.a3nod.lenovo.sparrowfactory.runin.report.ReportActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:231:9-232:52
+	android:screenOrientation
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:232:13-50
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:231:19-62
+activity#com.a3nod.lenovo.sparrowfactory.TemperatureActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:233:9-234:52
+	android:screenOrientation
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:234:13-50
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:233:19-54
+activity#com.a3nod.lenovo.sparrowfactory.pcba.PcbaTestActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:237:9-244:20
+	android:screenOrientation
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:238:13-50
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:237:19-56
+intent-filter#action:name:hello.PcbaTestActivity+category:name:android.intent.category.DEFAULT
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:239:13-243:29
+action#hello.PcbaTestActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:240:17-65
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:240:25-62
+activity#com.a3nod.lenovo.sparrowfactory.pcba.PcbaLcdActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:245:9-252:20
+	android:screenOrientation
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:246:13-50
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:245:19-55
+intent-filter#action:name:pcba_lcd+category:name:android.intent.category.DEFAULT
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:247:13-251:29
+action#pcba_lcd
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:248:17-51
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:248:25-48
+activity#com.a3nod.lenovo.sparrowfactory.pcba.PcbaButtonActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:253:9-260:20
+	android:screenOrientation
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:254:13-50
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:253:19-58
+intent-filter#action:name:pcba_button+category:name:android.intent.category.DEFAULT
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:255:13-259:29
+action#pcba_button
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:256:17-54
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:256:25-51
+activity#com.a3nod.lenovo.sparrowfactory.pcba.PcbaTpActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:261:9-268:20
+	android:screenOrientation
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:262:13-50
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:261:19-54
+intent-filter#action:name:pcba_tp+category:name:android.intent.category.DEFAULT
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:263:13-267:29
+action#pcba_tp
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:264:17-50
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:264:25-47
+activity#com.a3nod.lenovo.sparrowfactory.pcba.PCBADataCheckTestActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:269:9-276:20
+	android:screenOrientation
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:270:13-50
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:269:19-65
+intent-filter#action:name:pcba.datacheck.action+category:name:android.intent.category.DEFAULT
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:271:13-275:29
+action#pcba.datacheck.action
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:272:17-64
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:272:25-61
+activity#com.a3nod.lenovo.sparrowfactory.mmi.datacheck.DataCheckTestActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:277:9-284:20
+	android:screenOrientation
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:278:13-50
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:277:19-70
+intent-filter#action:name:datacheck.action+category:name:android.intent.category.DEFAULT
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:279:13-283:29
+action#datacheck.action
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:280:17-59
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:280:25-56
+activity#com.a3nod.lenovo.sparrowfactory.pcba.PCBAGSensorActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:285:9-292:20
+	android:screenOrientation
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:286:13-50
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:285:19-59
+intent-filter#action:name:hello.PCBAGSensorActivity+category:name:android.intent.category.DEFAULT
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:287:13-291:29
+action#hello.PCBAGSensorActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:288:17-68
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:288:25-65
+activity#com.a3nod.lenovo.sparrowfactory.pcba.PCBAPSensorActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:293:9-300:20
+	android:screenOrientation
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:294:13-50
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:293:19-59
+intent-filter#action:name:hello.PCBAPSensorActivity+category:name:android.intent.category.DEFAULT
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:295:13-299:29
+action#hello.PCBAPSensorActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:296:17-68
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:296:25-65
+activity#com.a3nod.lenovo.sparrowfactory.pcba.PCBALSensorActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:301:9-308:20
+	android:screenOrientation
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:302:13-50
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:301:19-59
+intent-filter#action:name:hello.PCBALSensorActivity+category:name:android.intent.category.DEFAULT
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:303:13-307:29
+action#hello.PCBALSensorActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:304:17-68
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:304:25-65
+activity#com.a3nod.lenovo.sparrowfactory.pcba.PCBAMicTestActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:309:9-316:20
+	android:screenOrientation
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:310:13-50
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:309:19-59
+intent-filter#action:name:pcba_mic+category:name:android.intent.category.DEFAULT
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:311:13-315:29
+action#pcba_mic
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:312:17-51
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:312:25-48
+activity#com.a3nod.lenovo.sparrowfactory.pcba.PCBASpeakerTestActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:317:9-324:20
+	android:screenOrientation
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:318:13-50
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:317:19-63
+intent-filter#action:name:pcba_speaker+category:name:android.intent.category.DEFAULT
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:319:13-323:29
+action#pcba_speaker
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:320:17-55
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:320:25-52
+activity#com.a3nod.lenovo.sparrowfactory.pcba.PCBACameraTestActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:325:9-332:20
+	android:screenOrientation
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:326:13-50
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:325:19-62
+intent-filter#action:name:pcba_camera+category:name:android.intent.category.DEFAULT
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:327:13-331:29
+action#pcba_camera
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:328:17-54
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:328:25-51
+service#com.a3nod.lenovo.sparrowfactory.runin.RuninService
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:334:9-337:40
+	android:enabled
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:336:13-35
+	android:exported
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:337:13-37
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:335:13-47
+service#com.a3nod.lenovo.sparrowfactory.interact.ConnectManagerService
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:338:9-341:40
+	android:enabled
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:340:13-35
+	android:exported
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:341:13-37
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:339:13-59
+receiver#com.a3nod.lenovo.sparrowfactory.runin.BootupReceiver
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:343:9-350:20
+	android:enabled
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:345:13-35
+	android:exported
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:346:13-37
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:344:13-49
+intent-filter#action:name:android.intent.action.BOOT_COMPLETED
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:347:13-349:29
+action#android.intent.action.BOOT_COMPLETED
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:348:17-79
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:348:25-76
+receiver#com.a3nod.lenovo.sparrowfactory.PCMessageReceiver
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:351:9-370:20
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:351:19-52
+intent-filter#action:name:com.pcba_test
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:352:13-354:29
+action#com.pcba_test
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:353:17-56
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:353:25-53
+intent-filter#action:name:com.sparrow.camera.take_picture
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:355:13-357:29
+action#com.sparrow.camera.take_picture
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:356:17-74
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:356:25-71
+intent-filter#action:name:com.mmi.test
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:358:13-360:29
+action#com.mmi.test
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:359:17-55
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:359:25-52
+intent-filter#action:name:com.write.sn
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:361:13-363:29
+action#com.write.sn
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:362:17-55
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:362:25-52
+intent-filter#action:name:action_start_runin
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:364:13-366:29
+action#action_start_runin
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:365:17-61
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:365:25-58
+intent-filter#action:name:action_stop_runin
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:367:13-369:29
+action#action_stop_runin
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:368:17-60
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:368:25-57
+service#com.a3nod.lenovo.sparrowfactory.driver.AccelerometerService
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:372:9-64
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:372:18-61
+service#com.a3nod.lenovo.sparrowfactory.driver.ProximityService
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:373:9-60
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:373:18-57
+activity#com.a3nod.lenovo.sparrowfactory.GetPhotoActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:375:9-54
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:375:19-51
+activity#com.a3nod.lenovo.sparrowfactory.RebootActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:376:9-52
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:376:19-49
+activity#com.a3nod.lenovo.sparrowfactory.TremoloActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:377:9-53
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:377:19-50
+activity#com.a3nod.lenovo.sparrowfactory.runin.EngineeringModeActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:378:9-67
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:378:19-64
+activity#com.a3nod.lenovo.sparrowfactory.MoreActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:379:9-50
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:379:19-47
+activity#com.a3nod.lenovo.sparrowfactory.ShowSNActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:380:9-52
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:380:19-49
+activity#com.a3nod.lenovo.sparrowfactory.runin.FailActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:381:9-56
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:381:19-53
+activity#com.a3nod.lenovo.sparrowfactory.pcba.PCBABaseActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:382:9-385:52
+	android:screenOrientation
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:385:13-50
+	android:label
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:384:13-60
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:383:13-50
+activity#com.a3nod.lenovo.sparrowfactory.BackLightTestActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:386:9-387:52
+	android:screenOrientation
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:387:13-50
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:386:19-56
+activity#com.a3nod.lenovo.sparrowfactory.ShowRGBActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:388:9-395:20
+	android:screenOrientation
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:389:13-50
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:388:19-50
+intent-filter#action:name:rgb.sensor.action+category:name:android.intent.category.DEFAULT
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:390:13-394:29
+action#rgb.sensor.action
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:391:17-60
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:391:25-57
+activity#com.a3nod.lenovo.sparrowfactory.pcba.PCBARGBActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:396:9-403:20
+	android:screenOrientation
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:397:13-50
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:396:19-55
+intent-filter#action:name:pcbargb.sensor.action+category:name:android.intent.category.DEFAULT
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:398:13-402:29
+action#pcbargb.sensor.action
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:399:17-64
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:399:25-61
+activity#com.a3nod.lenovo.sparrowfactory.facecamera.CameraActivity
+ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:404:9-405:52
+	android:screenOrientation
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:405:13-50
+	android:name
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml:404:19-60
+uses-sdk
+INJECTED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml reason: use-sdk injection requested
+INJECTED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml
+INJECTED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml
+MERGED from [com.android.support:appcompat-v7:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\c810039c254dbb9468427a828cc21d79\AndroidManifest.xml:21:5-23:78
+MERGED from [com.android.support:appcompat-v7:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\c810039c254dbb9468427a828cc21d79\AndroidManifest.xml:21:5-23:78
+MERGED from [com.android.support.constraint:constraint-layout:1.0.2] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\0162cfe8acc9a74d2b023b2aa389b882\AndroidManifest.xml:5:5-7:41
+MERGED from [com.android.support.constraint:constraint-layout:1.0.2] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\0162cfe8acc9a74d2b023b2aa389b882\AndroidManifest.xml:5:5-7:41
+MERGED from [com.squareup.leakcanary:leakcanary-android:1.3.1] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\230f2823c78e3a6cc322c177a6d6c463\AndroidManifest.xml:20:5-22:41
+MERGED from [com.squareup.leakcanary:leakcanary-android:1.3.1] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\230f2823c78e3a6cc322c177a6d6c463\AndroidManifest.xml:20:5-22:41
+MERGED from [com.android.support:animated-vector-drawable:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\ebbdf3f4e2af9d94322d79536c1e087a\AndroidManifest.xml:20:5-44
+MERGED from [com.android.support:animated-vector-drawable:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\ebbdf3f4e2af9d94322d79536c1e087a\AndroidManifest.xml:20:5-44
+MERGED from [com.android.support:support-vector-drawable:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\bc4e346edc08c9bde0e7b82bfff5ee9b\AndroidManifest.xml:20:5-44
+MERGED from [com.android.support:support-vector-drawable:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\bc4e346edc08c9bde0e7b82bfff5ee9b\AndroidManifest.xml:20:5-44
+MERGED from [com.android.support:support-v4:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\14c591f7c7714899fd7c7e73ebd6790c\AndroidManifest.xml:21:5-23:54
+MERGED from [com.android.support:support-v4:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\14c591f7c7714899fd7c7e73ebd6790c\AndroidManifest.xml:21:5-23:54
+MERGED from [com.android.support:support-media-compat:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\3b8d0310675562cf2cbc6506512b5a6f\AndroidManifest.xml:21:5-23:63
+MERGED from [com.android.support:support-media-compat:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\3b8d0310675562cf2cbc6506512b5a6f\AndroidManifest.xml:21:5-23:63
+MERGED from [com.android.support:support-fragment:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\2ba573ee96471234921725ff9030c790\AndroidManifest.xml:21:5-23:60
+MERGED from [com.android.support:support-fragment:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\2ba573ee96471234921725ff9030c790\AndroidManifest.xml:21:5-23:60
+MERGED from [com.android.support:support-core-utils:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\89d4bc8060f94fd524591e62865ae90b\AndroidManifest.xml:21:5-23:61
+MERGED from [com.android.support:support-core-utils:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\89d4bc8060f94fd524591e62865ae90b\AndroidManifest.xml:21:5-23:61
+MERGED from [com.android.support:support-core-ui:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\bab6fe53e1e05998b8eb7f18a381392d\AndroidManifest.xml:21:5-23:58
+MERGED from [com.android.support:support-core-ui:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\bab6fe53e1e05998b8eb7f18a381392d\AndroidManifest.xml:21:5-23:58
+MERGED from [com.android.support:support-compat:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\163f80be26168c25fc9adf7b0fb4aae9\AndroidManifest.xml:21:5-23:58
+MERGED from [com.android.support:support-compat:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\163f80be26168c25fc9adf7b0fb4aae9\AndroidManifest.xml:21:5-23:58
+MERGED from [android.arch.lifecycle:runtime:1.0.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\259428e5ee336ba37061c286091786f3\AndroidManifest.xml:20:5-22:41
+MERGED from [android.arch.lifecycle:runtime:1.0.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\259428e5ee336ba37061c286091786f3\AndroidManifest.xml:20:5-22:41
+INJECTED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml
+INJECTED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml
+	tools:overrideLibrary
+		ADDED from [com.android.support:appcompat-v7:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\c810039c254dbb9468427a828cc21d79\AndroidManifest.xml:23:9-75
+	android:targetSdkVersion
+		INJECTED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml
+		INJECTED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml
+	android:minSdkVersion
+		INJECTED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml
+		ADDED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml
+		INJECTED from D:\Android_test\FactoryTest\FactoryTest\app\src\main\AndroidManifest.xml
+meta-data#android.support.VERSION
+ADDED from [com.android.support:appcompat-v7:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\c810039c254dbb9468427a828cc21d79\AndroidManifest.xml:26:9-28:38
+MERGED from [com.android.support:animated-vector-drawable:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\ebbdf3f4e2af9d94322d79536c1e087a\AndroidManifest.xml:23:9-25:38
+MERGED from [com.android.support:animated-vector-drawable:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\ebbdf3f4e2af9d94322d79536c1e087a\AndroidManifest.xml:23:9-25:38
+MERGED from [com.android.support:support-vector-drawable:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\bc4e346edc08c9bde0e7b82bfff5ee9b\AndroidManifest.xml:23:9-25:38
+MERGED from [com.android.support:support-vector-drawable:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\bc4e346edc08c9bde0e7b82bfff5ee9b\AndroidManifest.xml:23:9-25:38
+MERGED from [com.android.support:support-v4:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\14c591f7c7714899fd7c7e73ebd6790c\AndroidManifest.xml:26:9-28:38
+MERGED from [com.android.support:support-v4:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\14c591f7c7714899fd7c7e73ebd6790c\AndroidManifest.xml:26:9-28:38
+MERGED from [com.android.support:support-media-compat:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\3b8d0310675562cf2cbc6506512b5a6f\AndroidManifest.xml:26:9-28:38
+MERGED from [com.android.support:support-media-compat:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\3b8d0310675562cf2cbc6506512b5a6f\AndroidManifest.xml:26:9-28:38
+MERGED from [com.android.support:support-fragment:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\2ba573ee96471234921725ff9030c790\AndroidManifest.xml:26:9-28:38
+MERGED from [com.android.support:support-fragment:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\2ba573ee96471234921725ff9030c790\AndroidManifest.xml:26:9-28:38
+MERGED from [com.android.support:support-core-utils:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\89d4bc8060f94fd524591e62865ae90b\AndroidManifest.xml:26:9-28:38
+MERGED from [com.android.support:support-core-utils:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\89d4bc8060f94fd524591e62865ae90b\AndroidManifest.xml:26:9-28:38
+MERGED from [com.android.support:support-core-ui:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\bab6fe53e1e05998b8eb7f18a381392d\AndroidManifest.xml:26:9-28:38
+MERGED from [com.android.support:support-core-ui:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\bab6fe53e1e05998b8eb7f18a381392d\AndroidManifest.xml:26:9-28:38
+MERGED from [com.android.support:support-compat:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\163f80be26168c25fc9adf7b0fb4aae9\AndroidManifest.xml:26:9-28:38
+MERGED from [com.android.support:support-compat:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\163f80be26168c25fc9adf7b0fb4aae9\AndroidManifest.xml:26:9-28:38
+	android:value
+		ADDED from [com.android.support:appcompat-v7:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\c810039c254dbb9468427a828cc21d79\AndroidManifest.xml:28:13-35
+	android:name
+		ADDED from [com.android.support:appcompat-v7:26.1.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\c810039c254dbb9468427a828cc21d79\AndroidManifest.xml:27:13-51
+service#com.squareup.leakcanary.internal.HeapAnalyzerService
+ADDED from [com.squareup.leakcanary:leakcanary-android:1.3.1] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\230f2823c78e3a6cc322c177a6d6c463\AndroidManifest.xml:28:9-31:45
+	android:process
+		ADDED from [com.squareup.leakcanary:leakcanary-android:1.3.1] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\230f2823c78e3a6cc322c177a6d6c463\AndroidManifest.xml:31:13-42
+	android:enabled
+		ADDED from [com.squareup.leakcanary:leakcanary-android:1.3.1] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\230f2823c78e3a6cc322c177a6d6c463\AndroidManifest.xml:30:13-36
+	android:name
+		ADDED from [com.squareup.leakcanary:leakcanary-android:1.3.1] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\230f2823c78e3a6cc322c177a6d6c463\AndroidManifest.xml:29:13-80
+service#com.squareup.leakcanary.DisplayLeakService
+ADDED from [com.squareup.leakcanary:leakcanary-android:1.3.1] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\230f2823c78e3a6cc322c177a6d6c463\AndroidManifest.xml:32:9-34:39
+	android:enabled
+		ADDED from [com.squareup.leakcanary:leakcanary-android:1.3.1] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\230f2823c78e3a6cc322c177a6d6c463\AndroidManifest.xml:34:13-36
+	android:name
+		ADDED from [com.squareup.leakcanary:leakcanary-android:1.3.1] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\230f2823c78e3a6cc322c177a6d6c463\AndroidManifest.xml:33:13-70
+activity#com.squareup.leakcanary.internal.DisplayLeakActivity
+ADDED from [com.squareup.leakcanary:leakcanary-android:1.3.1] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\230f2823c78e3a6cc322c177a6d6c463\AndroidManifest.xml:36:9-48:20
+	android:enabled
+		ADDED from [com.squareup.leakcanary:leakcanary-android:1.3.1] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\230f2823c78e3a6cc322c177a6d6c463\AndroidManifest.xml:38:13-36
+	android:label
+		ADDED from [com.squareup.leakcanary:leakcanary-android:1.3.1] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\230f2823c78e3a6cc322c177a6d6c463\AndroidManifest.xml:40:13-73
+	android:icon
+		ADDED from [com.squareup.leakcanary:leakcanary-android:1.3.1] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\230f2823c78e3a6cc322c177a6d6c463\AndroidManifest.xml:39:13-56
+	android:theme
+		ADDED from [com.squareup.leakcanary:leakcanary-android:1.3.1] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\230f2823c78e3a6cc322c177a6d6c463\AndroidManifest.xml:42:13-53
+	android:taskAffinity
+		ADDED from [com.squareup.leakcanary:leakcanary-android:1.3.1] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\230f2823c78e3a6cc322c177a6d6c463\AndroidManifest.xml:41:13-59
+	android:name
+		ADDED from [com.squareup.leakcanary:leakcanary-android:1.3.1] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\230f2823c78e3a6cc322c177a6d6c463\AndroidManifest.xml:37:13-80
+meta-data#android.arch.lifecycle.VERSION
+ADDED from [android.arch.lifecycle:runtime:1.0.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\259428e5ee336ba37061c286091786f3\AndroidManifest.xml:25:9-27:47
+	android:value
+		ADDED from [android.arch.lifecycle:runtime:1.0.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\259428e5ee336ba37061c286091786f3\AndroidManifest.xml:27:13-44
+	android:name
+		ADDED from [android.arch.lifecycle:runtime:1.0.0] C:\Users\ruidong.ren\.gradle\caches\transforms-2\files-2.1\259428e5ee336ba37061c286091786f3\AndroidManifest.xml:26:13-58

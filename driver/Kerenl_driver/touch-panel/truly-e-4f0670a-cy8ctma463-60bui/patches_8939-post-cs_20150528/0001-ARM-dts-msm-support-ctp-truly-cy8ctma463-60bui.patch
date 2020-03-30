@@ -1,0 +1,120 @@
+From 51fe811dd7e0b582e4f3b2395915f9da9456d2ae Mon Sep 17 00:00:00 2001
+From: maoyq0504 <maoyq0504@thundersoft.com>
+Date: Thu, 28 May 2015 13:11:29 +0800
+Subject: [PATCH 1/3] ARM:dts:msm: support ctp truly cy8ctma463-60bui
+
+Add CTP TRULY@E-4F0670A@CY8CTMA463-60BUI device tree
+
+Change-Id: I148ab4b2db147134c9b193db82754d5ef877f3f7
+Signed-off-by: Yuanqiu Mao <maoyq0504@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi | 86 ++++++++++++++++++++++++++++
+ 1 file changed, 86 insertions(+)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+index 1039722..e6d6dad 100755
+--- a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+@@ -19,6 +19,17 @@
+ };
+ 
+ &tlmm_pinmux {
++	cy_463_int_pin {
++		qcom,pins = <&gp 13>;
++		qcom,num-grp-pins = <1>;
++		label = "cy-463-irq";
++		qcom,pin-func = <0>;
++
++		cy_463_default: cy_463_default {
++			drive-strength = <6>;
++			bias-pull-up;
++		};
++	};
+ 	bma2x2_int1_pin {
+ 		qcom,pins = <&gp 112>;
+ 		qcom,num-grp-pins = <1>;
+@@ -190,6 +201,81 @@
+ 			focaltech,fw-auto-cal;
+ 			focaltech,ignore-id-check;
+ 		};
++
++		tsc@1a {
++			compatible = "cy,cyttsp4_i2c_adapter";
++			reg = <0x1a>;
++			interrupts = <13 0x2008>;
++			interrupt-parent = <&msm_gpio>;
++			pinctrl-names = "default";
++			pinctrl-0 = <&cy_463_default>;
++			vdd-supply = <&pm8916_l17>;
++			vcc_i2c-supply = <&pm8916_l6>;
++			cy,adapter_id = "cyttsp4_i2c_adapter";
++			cy,core {
++				cy,name = "cyttsp4_core";
++				cy,id = "main_ttsp_core";
++				cy,num-max-touches = <5>;
++				cy,irq_gpio = <&msm_gpio 13 0x00>;
++				cy,rst_gpio = <&msm_gpio 12 0x00>;
++				/* Enable cy,max_xfer_len to limit max I2C/SPI transfer length */
++				/* cy,max_xfer_len = <0x100>; */
++
++				/* CY_CORE_FLAG_WAKE_ON_GESTURE */
++				cy,flags = <1>;
++
++				/* CY_CORE_EWG_TAP_TAP | CY_CORE_EWG_TWO_FINGER_SLIDE */
++				cy,easy_wakeup_gesture = <3>;
++				cy,btn_keys = <158 /* KEY_BACK */
++					           172 /* KEY_HOME */
++							   139 /* KEY_MENU */
++							   217 /* KEY_SEARCH */
++							   114 /* KEY_VOLUMEDOWN */
++							   115 /* KEY_VOLUMEUP */
++							   212 /* KEY_CAMERA */
++							   116>; /* KEY_POWER */
++				cy,btn_keys-tag = <0>;
++
++				cy,mt {
++					cy,name = "cyttsp4_mt";
++					cy,inp_dev_name = "cyttsp4_mt";
++					/* CY_MT_FLAG_FLIP | CY_MT_FLAG_INV_X | CY_MT_FLAG_INV_Y */
++					cy,flags = <0x40>;
++					cy,abs =
++						/* ABS_MT_POSITION_X, CY_ABS_MIN_X, CY_ABS_MAX_X, 0, 0 */
++						<0x35 0 720 0 0
++						/* ABS_MT_POSITION_Y, CY_ABS_MIN_Y, CY_ABS_MAX_Y, 0, 0 */
++						0x36 0 1280 0 0
++						/* ABS_MT_PRESSURE, CY_ABS_MIN_P, CY_ABS_MAX_P, 0, 0 */
++						0x3a 0 255 0 0
++						/* CY_IGNORE_VALUE, CY_ABS_MIN_W, CY_ABS_MAX_W, 0, 0 */
++						0xffff 0 255 0 0
++						/* ABS_MT_TRACKING_ID, CY_ABS_MIN_T, CY_ABS_MAX_T, 0, 0 */
++						0x39 0 15 0 0
++						/* ABS_MT_TOUCH_MAJOR, 0, 255, 0, 0 */
++						0x30 0 255 0 0
++						/* ABS_MT_TOUCH_MINOR, 0, 255, 0, 0 */
++						0x31 0 255 0 0
++						/* ABS_MT_ORIENTATION, -128, 127, 0, 0 */
++						0x34 0xfffffed7 127 0 0>;
++
++					cy,vkeys_x = <720>;
++					cy,vkeys_y = <1280>;
++					cy,virtual_keys = /* KeyCode CenterX CenterY Width Height */
++						/* KEY_BACK */
++						<158 180 2009 360 142
++						/* KEY_HOME */
++						/*modify the key value of KEY_HOME*/
++						172 540 2009 360 142
++						/* KEY_MENU */
++						139 900 2009 360 142>;
++				};
++				cy,btn {
++					cy,name = "cyttsp4_btn";
++					cy,inp_dev_name = "cyttsp4_btn";
++				};
++			};
++		};
+ 	};
+ 
+ 	gen-vkeys {
+-- 
+1.9.1
+

@@ -1,0 +1,30 @@
+From ae42f922069dc274f3feb20d519d8272ef4eb678 Mon Sep 17 00:00:00 2001
+From: Li Zhanchao <lizc1023@thundersoft.com>
+Date: Tue, 13 Dec 2016 15:56:57 +0800
+Subject: [PATCH 2/3] ARM:config: support ctp holitech msg2836
+
+Add CTP HOLITECH@CBM6164@MSG2836 config
+
+Change-Id: I3e2c4fc5f29681c44d589da585118f0ed82f4b93
+Signed-off-by: Li Zhanchao <lizc1023@thundersoft.com>
+---
+ arch/arm64/configs/msmcortex_defconfig | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm64/configs/msmcortex_defconfig b/arch/arm64/configs/msmcortex_defconfig
+index 2b97d9e..c9851e7 100644
+--- a/arch/arm64/configs/msmcortex_defconfig
++++ b/arch/arm64/configs/msmcortex_defconfig
+@@ -297,7 +297,8 @@ CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE_v26=y
+ CONFIG_SECURE_TOUCH_SYNAPTICS_DSX_V26=y
+ CONFIG_TOUCHSCREEN_ATMEL_MXT=y
+ CONFIG_TOUCHSCREEN_GEN_VKEYS=y
+-CONFIG_TOUCHSCREEN_FT5X06=y
++#CONFIG_TOUCHSCREEN_FT5X06 is not set
++CONFIG_TOUCHSCREEN_MSG28XX=y
+ CONFIG_TOUCHSCREEN_MAXIM_STI=y
+ CONFIG_INPUT_MISC=y
+ CONFIG_INPUT_HBTP_INPUT=y
+-- 
+1.9.1
+

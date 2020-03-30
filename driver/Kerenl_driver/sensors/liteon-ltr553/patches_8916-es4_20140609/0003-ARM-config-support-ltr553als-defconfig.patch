@@ -1,0 +1,34 @@
+From b9f5d060c804a2c8f3615bd740dacefeb9745f7b Mon Sep 17 00:00:00 2001
+From: Ran Gu <guran1128@thundersoft.com>
+Date: Fri, 6 Jun 2014 15:42:39 +0800
+Subject: [PATCH 3/3] ARM:config:support ltr553als defconfig
+
+Defconfig support of ltr553als
+
+Change-Id: Ie57b1e9b9fe6f854c859946693abe37111cdfcf9
+Signed-off-by: Ran Gu <guran1128@thundersoft.com>
+---
+ arch/arm/configs/msm8916_defconfig |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/arch/arm/configs/msm8916_defconfig b/arch/arm/configs/msm8916_defconfig
+index 293b874..62851ec 100644
+--- a/arch/arm/configs/msm8916_defconfig
++++ b/arch/arm/configs/msm8916_defconfig
+@@ -210,7 +210,7 @@ CONFIG_IPC_ROUTER_SECURITY=y
+ CONFIG_CMA=y
+ CONFIG_BLK_DEV_LOOP=y
+ CONFIG_BLK_DEV_RAM=y
+-CONFIG_APDS9930=y
++# CONFIG_APDS9930 is not set
+ CONFIG_QSEECOM=y
+ CONFIG_SCSI=y
+ CONFIG_SCSI_TGT=y
+@@ -511,3 +511,4 @@ CONFIG_CRYPTO_ECB=y
+ CONFIG_CRYPTO_XCBC=y
+ CONFIG_CRYPTO_SHA256=y
+ CONFIG_MSM_BUSPM_DEV=m
++CONFIG_INPUT_LTR553=y
+-- 
+1.7.4.1
+

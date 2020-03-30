@@ -1,0 +1,207 @@
+From 940df49c7958cc36c372bee4ecdab9b917464281 Mon Sep 17 00:00:00 2001
+From: yangzh <yangzh0324@thundersoft.com>
+Date: Thu, 24 Jul 2014 14:55:01 +0800
+Subject: [PATCH 2/2] input:touchscreen: support ctp focal ft6306
+
+Add CTP IHV-EACHOPTO@A019-ALTO@FT6306 driver
+
+Signed-off-by: yangzh <yagnzh0324@thundersoft.com>
+
+Change-Id: I50d90b193f72fcf98e186d63c25ff29c51cf23f4
+---
+ drivers/input/touchscreen/ft5x06_ts.c |  136 ++++++++++++++++++++++++++-------
+ 1 file changed, 109 insertions(+), 27 deletions(-)
+
+diff --git a/drivers/input/touchscreen/ft5x06_ts.c b/drivers/input/touchscreen/ft5x06_ts.c
+index b188f20..07d1be7 100644
+--- a/drivers/input/touchscreen/ft5x06_ts.c
++++ b/drivers/input/touchscreen/ft5x06_ts.c
+@@ -209,6 +209,7 @@ struct ft5x06_ts_data {
+ 	bool loading_fw;
+ 	u8 family_id;
+ 	struct dentry *dir;
++	u8 enable;
+ 	u16 addr;
+ 	bool suspended;
+ 	char *ts_info;
+@@ -1096,9 +1097,6 @@ static ssize_t ft5x06_update_fw_store(struct device *dev,
+ 	return size;
+ }
+ 
+-static DEVICE_ATTR(update_fw, 0664, ft5x06_update_fw_show,
+-				ft5x06_update_fw_store);
+-
+ static ssize_t ft5x06_force_update_fw_store(struct device *dev,
+ 				struct device_attribute *attr,
+ 				const char *buf, size_t size)
+@@ -1125,8 +1123,6 @@ static ssize_t ft5x06_force_update_fw_store(struct device *dev,
+ 	return size;
+ }
+ 
+-static DEVICE_ATTR(force_update_fw, 0664, ft5x06_update_fw_show,
+-				ft5x06_force_update_fw_store);
+ 
+ static ssize_t ft5x06_fw_name_show(struct device *dev,
+ 				struct device_attribute *attr, char *buf)
+@@ -1151,7 +1147,108 @@ static ssize_t ft5x06_fw_name_store(struct device *dev,
+ 	return size;
+ }
+ 
+-static DEVICE_ATTR(fw_name, 0664, ft5x06_fw_name_show, ft5x06_fw_name_store);
++static ssize_t ft5x06_enable_show(struct device *dev,
++				  struct device_attribute *attr, char *buf)
++{
++	struct ft5x06_ts_data *data = dev_get_drvdata(dev);
++	if (data->suspended) {
++		dev_info(&data->client->dev, "Already in suspend state\n");
++		return snprintf(buf, 4, "%s\n", "0");
++	}
++	return snprintf(buf, 4, "%s\n", data->enable ? "1" : "0");
++}
++
++static ssize_t ft5x06_enable_store(struct device *dev,
++				   struct device_attribute *attr,
++				   const char *buf, size_t size)
++{
++	struct ft5x06_ts_data *data = dev_get_drvdata(dev);
++	unsigned long val;
++	int rc, i;
++	char txbuf[2];
++
++	if (size > 2)
++		return -EINVAL;
++
++	if (data->suspended) {
++		dev_info(&data->client->dev, "Already in suspend state\n");
++		goto no_operation;
++	}
++
++	rc = kstrtoul(buf, 10, &val);
++	if (rc != 0)
++		return rc;
++
++	if (val) {
++		txbuf[0] = FT_REG_PMODE;
++		txbuf[1] = FT_PMODE_ACTIVE;
++		ft5x06_i2c_write(data->client, txbuf, sizeof(txbuf));
++
++		enable_irq(data->client->irq);
++		data->enable = true;
++	} else {
++		disable_irq(data->client->irq);
++
++		/* release all touches */
++		for (i = 0; i < data->pdata->num_max_touches; i++) {
++			input_mt_slot(data->input_dev, i);
++			input_mt_report_slot_state(data->input_dev,
++				MT_TOOL_FINGER, 0);
++		}
++		input_mt_report_pointer_emulation(data->input_dev, false);
++		input_sync(data->input_dev);
++
++		txbuf[0] = FT_REG_PMODE;
++		txbuf[1] = FT_PMODE_STANDBY;
++		ft5x06_i2c_write(data->client, txbuf, sizeof(txbuf));
++
++		data->enable = false;
++	}
++
++no_operation:
++	return size;
++}
++
++static ssize_t ft5x06_mt_protocol_type_show(struct device *dev,
++					    struct device_attribute *attr,
++					    char *buf)
++{
++	return snprintf(buf, 16, "%s\n", "MT Protocal B");
++}
++
++static ssize_t ft5x06_ts_info_show(struct device *dev,
++				   struct device_attribute *attr, char *buf)
++{
++	struct ft5x06_ts_data *data = dev_get_drvdata(dev);
++	return snprintf(buf, FT_INFO_MAX_LEN, "%s\n", data->ts_info);
++}
++
++static DEVICE_ATTR(update_fw,  (S_IRUGO | S_IWUSR | S_IWGRP),
++		ft5x06_update_fw_show, ft5x06_update_fw_store);
++static DEVICE_ATTR(force_update_fw,  (S_IRUGO | S_IWUSR | S_IWGRP),
++		ft5x06_update_fw_show, ft5x06_force_update_fw_store);
++static DEVICE_ATTR(fw_name,  (S_IRUGO | S_IWUSR | S_IWGRP),
++		ft5x06_fw_name_show, ft5x06_fw_name_store);
++static DEVICE_ATTR(enable, (S_IRUGO | S_IWUSR | S_IWGRP),
++		ft5x06_enable_show, ft5x06_enable_store);
++static DEVICE_ATTR(mt_protocol_type, (S_IRUGO | S_IWUSR | S_IWGRP),
++		ft5x06_mt_protocol_type_show, NULL);
++static DEVICE_ATTR(ts_info, (S_IRUGO | S_IWUSR | S_IWGRP),
++		ft5x06_ts_info_show, NULL);
++
++static struct attribute *ft_gtp_attrs[] = {
++	&dev_attr_fw_name.attr,
++	&dev_attr_update_fw.attr,
++	&dev_attr_force_update_fw.attr,
++	&dev_attr_enable.attr,
++	&dev_attr_mt_protocol_type.attr,
++	&dev_attr_ts_info.attr,
++	NULL
++};
++
++static const struct attribute_group ft_gtp_attr_grp = {
++	.attrs = ft_gtp_attrs,
++};
+ 
+ static bool ft5x06_debug_addr_is_valid(int addr)
+ {
+@@ -1678,29 +1775,18 @@ static int ft5x06_ts_probe(struct i2c_client *client,
+ 		goto free_reset_gpio;
+ 	}
+ 
+-	err = device_create_file(&client->dev, &dev_attr_fw_name);
++	data->enable = true;
++	err = sysfs_create_group(&client->dev.kobj, &ft_gtp_attr_grp);
+ 	if (err) {
+-		dev_err(&client->dev, "sys file creation failed\n");
++		dev_err(&client->dev, "sys file creation failed.\n");
+ 		goto irq_free;
+ 	}
+ 
+-	err = device_create_file(&client->dev, &dev_attr_update_fw);
+-	if (err) {
+-		dev_err(&client->dev, "sys file creation failed\n");
+-		goto free_fw_name_sys;
+-	}
+-
+-	err = device_create_file(&client->dev, &dev_attr_force_update_fw);
+-	if (err) {
+-		dev_err(&client->dev, "sys file creation failed\n");
+-		goto free_update_fw_sys;
+-	}
+-
+ 	data->dir = debugfs_create_dir(FT_DEBUG_DIR_NAME, NULL);
+ 	if (data->dir == NULL || IS_ERR(data->dir)) {
+ 		pr_err("debugfs_create_dir failed(%ld)\n", PTR_ERR(data->dir));
+ 		err = PTR_ERR(data->dir);
+-		goto free_force_update_fw_sys;
++		goto exit_remove_sysfs;
+ 	}
+ 
+ 	temp = debugfs_create_file("addr", S_IRUSR | S_IWUSR, data->dir, data,
+@@ -1786,12 +1872,8 @@ static int ft5x06_ts_probe(struct i2c_client *client,
+ 
+ free_debug_dir:
+ 	debugfs_remove_recursive(data->dir);
+-free_force_update_fw_sys:
+-	device_remove_file(&client->dev, &dev_attr_force_update_fw);
+-free_update_fw_sys:
+-	device_remove_file(&client->dev, &dev_attr_update_fw);
+-free_fw_name_sys:
+-	device_remove_file(&client->dev, &dev_attr_fw_name);
++exit_remove_sysfs:
++	sysfs_remove_group(&data->input_dev->dev.kobj, &ft_gtp_attr_grp);
+ irq_free:
+ 	free_irq(client->irq, data);
+ free_reset_gpio:
+-- 
+1.7.9.5
+

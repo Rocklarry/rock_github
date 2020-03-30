@@ -1,0 +1,137 @@
+From 5251716df7ccd1ed560d65145b047fce36931984 Mon Sep 17 00:00:00 2001
+From: Li Zhanchao <lizc1023@thundersoft.com>
+Date: Thu, 5 May 2016 18:31:08 +0800
+Subject: [PATCH 1/3] ARM:dts:msm: support ctp unknown gt5663
+
+Add CTP UNKNOWN@HX.VIP246@GT5663 device tree
+
+Change-Id: I37a091609f642030061fe4554c54556915d4f729
+Signed-off-by: Li Zhanchao <lizc1023@thundersoft.com>
+---
+ .../bindings/input/touchscreen/gt9xx/gt1x.txt      | 48 ++++++++++++++++++++++
+ arch/arm/boot/dts/qcom/msmtitanium-qrd.dtsi        | 44 +++++++++++++++-----
+ 2 files changed, 81 insertions(+), 11 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/input/touchscreen/gt9xx/gt1x.txt
+
+diff --git a/Documentation/devicetree/bindings/input/touchscreen/gt9xx/gt1x.txt b/Documentation/devicetree/bindings/input/touchscreen/gt9xx/gt1x.txt
+new file mode 100644
+index 0000000..fcf31e6
+--- /dev/null
++++ b/Documentation/devicetree/bindings/input/touchscreen/gt9xx/gt1x.txt
+@@ -0,0 +1,48 @@
++Goodix GT9xx series touch controller
++
++Required properties:
++
++ - compatible		: Should be "goodix,gt1x"
++ - reg			: I2C slave address of the device.
++ - interrupt-parent	: Parent of interrupt.
++ - interrupts		: Configuration of touch panel controller interrupt
++				GPIO.
++ - goodix,product-id	: Product identification of the controller.
++ - interrupt-gpios	: Interrupt gpio which is to provide interrupts to
++				host, same as "interrupts" node.
++ - reset-gpios		: Reset gpio to control the reset of chip.
++
++Optional properties:
++
++ - vdd-supply		: Power supply needed to power up the device, when use
++				external regulator, do not add this property.
++ - vcc-i2c-supply	: Power source required to power up i2c bus.
++				GT9xx series can provide 1.8V from internal
++				LDO, add this properties base on hardware
++				design.
++ - goodix,name		: The IC name.
++ - goodix,fw-vkey-support	: To specify virtual key is supported.
++
++Example:
++	i2c@78b7000 {
++		status = "okay";
++		goodix@5d {
++			compatible = "goodix,gt1x";
++			reg = <0x5d>;
++			interrupt-parent = <&tlmm>;
++			interrupts = <65 0x2008>;
++			reset-gpios = <&tlmm 64 0x00>;
++			interrupt-gpios = <&tlmm 65 0x2002>;
++			vdd-supply = <&pmtitanium_l17>;
++			vcc-i2c-supply = <&pmtitanium_l6>;
++			/* pins used by touchscreen */
++			pinctrl-names = "pmx_ts_active",
++				"pmx_ts_suspend","pmx_ts_release";
++			pinctrl-0 = <&ts_int_active &ts_reset_active>;
++			pinctrl-1 = <&ts_int_suspend &ts_reset_suspend>;
++			pinctrl-2 = <&ts_release>;
++			goodix,product-id = "5663";
++			goodix,name = "GT5663";
++			goodix,fw-vkey-support;
++		};
++	};
+diff --git a/arch/arm/boot/dts/qcom/msmtitanium-qrd.dtsi b/arch/arm/boot/dts/qcom/msmtitanium-qrd.dtsi
+index fc9c081..b140860 100644
+--- a/arch/arm/boot/dts/qcom/msmtitanium-qrd.dtsi
++++ b/arch/arm/boot/dts/qcom/msmtitanium-qrd.dtsi
+@@ -33,27 +33,49 @@
+ 
+ 	i2c@78b7000 { /* BLSP1 QUP3 */
+ 		status = "okay";
+-		synaptics@20 {
+-			compatible = "synaptics,dsx";
+-			reg = <0x4b>;
++		goodix@5d {
++			compatible = "goodix,gt1x";
++			reg = <0x5d>;
+ 			interrupt-parent = <&tlmm>;
+ 			interrupts = <65 0x2008>;
+-			avdd-supply = <&pmtitanium_l17>;
+-			vdd-supply = <&pmtitanium_l6>;
++			reset-gpios = <&tlmm 64 0x00>;
++			interrupt-gpios = <&tlmm 65 0x2002>;
++			vdd-supply = <&pmtitanium_l17>;
++			vcc-i2c-supply = <&pmtitanium_l6>;
+ 			/* pins used by touchscreen */
+ 			pinctrl-names = "pmx_ts_active",
+ 				"pmx_ts_suspend","pmx_ts_release";
+ 			pinctrl-0 = <&ts_int_active &ts_reset_active>;
+ 			pinctrl-1 = <&ts_int_suspend &ts_reset_suspend>;
+ 			pinctrl-2 = <&ts_release>;
+-			synaptics,display-coords = <0 0 1079 1919>;
+-			synaptics,panel-coords = <0 0 1079 1919>;
+-			synaptics,irq-gpio = <&tlmm 65 0x2008>;
+-			synaptics,reset-gpio = <&tlmm 64 0x0>;
+-			synaptics,disable-gpios;
+-			synaptics,button-map = <139 158 172>;
++			goodix,product-id = "5663";
++			goodix,name = "GT5663";
++			goodix,fw-vkey-support;
++/*			goodix,button-map = <158 139 172>;
++			goodix,panel-coords = <0 0 1080 2098>;
++			goodix,display-coords = <0 0 1080 1920>;
++			goodix,product-id = "5663";
++			goodix,num_max_touches = <5>;
++			goodix,soft_rst_dly = <20>;
++			goodix,name = "GT5663";
++			goodix,fw_name = "gtp_fw.bin";
++			goodix,fw-vkey-support;
++			goodix,i2c-pull-up;
++			goodix,no-force-update;
++			goodix,enable-power-off;
++*/
+ 		};
+ 	};
++	gen-vkeys {
++		compatible = "qcom,gen-vkeys";
++		label = "goodix_ts";
++		qcom,disp-maxx = <1080>;
++		qcom,disp-maxy = <1920>;
++		qcom,panel-maxx = <1080>;
++		qcom,panel-maxy = <2098>;
++		qcom,key-codes = <139 172 158>;
++		qcom,y-offset = <0>;
++	};
+ };
+ 
+ &spmi_bus {
+-- 
+1.9.1
+

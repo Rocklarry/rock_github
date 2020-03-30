@@ -1,0 +1,981 @@
+From 70398491c43135d19fc23d223d02ccfacd70a70d Mon Sep 17 00:00:00 2001
+From: yanqy <yanqy0911@thundersoft.com>
+Date: Tue, 28 Apr 2015 18:27:19 +0800
+Subject: [PATCH 2/2] input:touchscreen: support ctp truly s2202
+
+Add CTP IHV-TRULY@CT3G0225-V1-E@S2202 driver
+
+Change-Id: I29b9c2eb2040d4d8872da97c0299189a76142e4d
+Signed-off-by: Qiyang Yan <yanqy0911@thundersoft.com>
+---
+ drivers/input/touchscreen/synaptics_i2c_rmi4.c |  611 ++++++++++++++----------
+ drivers/input/touchscreen/synaptics_i2c_rmi4.h |   20 +-
+ include/linux/input/synaptics_dsx.h            |   10 +-
+ 3 files changed, 369 insertions(+), 272 deletions(-)
+
+diff --git a/drivers/input/touchscreen/synaptics_i2c_rmi4.c b/drivers/input/touchscreen/synaptics_i2c_rmi4.c
+index 53b342c..7b9517f 100644
+--- a/drivers/input/touchscreen/synaptics_i2c_rmi4.c
++++ b/drivers/input/touchscreen/synaptics_i2c_rmi4.c
+@@ -1,11 +1,11 @@
+ /*
+  * Synaptics RMI4 touchscreen driver
+  *
+- * Copyright (C) 2012 Synaptics Incorporated
++ * Copyright (C) 2015 Synaptics Incorporated
+  *
+- * Copyright (C) 2012 Alexandra Chin <alexandra.chin@tw.synaptics.com>
+- * Copyright (C) 2012 Scott Lin <scott.lin@tw.synaptics.com>
+- * Copyright (c) 2013-2014, The Linux Foundation. All rights reserved.
++ * Copyright (C) 2015 Alexandra Chin <alexandra.chin@tw.synaptics.com>
++ * Copyright (C) 2015 Scott Lin <scott.lin@tw.synaptics.com>
++ * Copyright (c) 2013-2015, The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License as published by
+@@ -39,7 +39,7 @@
+ 
+ #define RESET_DELAY 100
+ 
+-#define TYPE_B_PROTOCOL
++#define TYPE_B_PROTOCOL  1
+ 
+ #define NO_0D_WHILE_2D
+ /*
+@@ -103,10 +103,16 @@ enum device_status {
+ 
+ #define RMI4_COORDS_ARR_SIZE 4
+ 
+-#define F11_MAX_X		4096
+-#define F11_MAX_Y		4096
+-#define F12_MAX_X		65536
+-#define F12_MAX_Y		65536
++#define RMI4_INFO_MAX_LEN   200
++
++#define RMI4_STORE_TS_INFO(buf, id, rev, max_tch, fw_vkey_support, fw_ver) \
++			snprintf(buf, RMI4_INFO_MAX_LEN, \
++					"controller\t= synaptics\n" \
++					"model\t\t= %d rev %d\n" \
++					"max_touches\t= %d\n" \
++					"fw_vkey_support\t= %s\n" \
++					"fw_ver\t\t= %d\n", id, \
++					rev, max_tch, fw_vkey_support, fw_ver)
+ 
+ static int synaptics_rmi4_i2c_read(struct synaptics_rmi4_data *rmi4_data,
+ 		unsigned short addr, unsigned char *data,
+@@ -181,9 +187,18 @@ static ssize_t synaptics_rmi4_flipy_show(struct device *dev,
+ static ssize_t synaptics_rmi4_flipy_store(struct device *dev,
+ 		struct device_attribute *attr, const char *buf, size_t count);
+ 
+-static int synaptics_rmi4_capacitance_button_map(
+-				struct synaptics_rmi4_data *rmi4_data,
+-				struct synaptics_rmi4_fn *fhandler);
++static ssize_t synaptics_rmi4_enable_show(struct device *dev,
++		struct device_attribute *attr, char *buf);
++
++static ssize_t synaptics_rmi4_enable_store(struct device *dev,
++		struct device_attribute *attr, const char *buf, size_t count);
++
++static ssize_t synaptics_rmi4_mt_protocol_type_show(struct device *dev,
++		struct device_attribute *attr, char *buf);
++
++static ssize_t synaptics_rmi4_ts_info_show(struct device *dev,
++		struct device_attribute *attr, char *buf);
++
+ 
+ struct synaptics_rmi4_f01_device_status {
+ 	union {
+@@ -433,12 +448,104 @@ static struct device_attribute attrs[] = {
+ 	__ATTR(flipy, (S_IRUGO | S_IWUSR | S_IWGRP),
+ 			synaptics_rmi4_flipy_show,
+ 			synaptics_rmi4_flipy_store),
++	__ATTR(enable, (S_IRUGO | S_IWUSR | S_IWGRP),
++			synaptics_rmi4_enable_show,
++			synaptics_rmi4_enable_store),
++	__ATTR(mt_protocol_type, S_IRUGO,
++			synaptics_rmi4_mt_protocol_type_show,
++			NULL),
++	__ATTR(ts_info, S_IRUGO,
++			synaptics_rmi4_ts_info_show,
++			NULL),
+ };
+ 
+ static bool exp_fn_inited;
+ static struct mutex exp_fn_list_mutex;
+ static struct list_head exp_fn_list;
+ 
++static bool synaptics_rmi4_debug_addr_is_valid(int addr)
++{
++	if (addr < 0 || addr > 0xFFFF) {
++		pr_err("synaptics_rmi4 reg address is invalid: 0x%x\n", addr);
++		return false;
++	}
++
++	return true;
++}
++
++static int synaptics_rmi4_debug_data_set(void *_data, u64 val)
++{
++	struct synaptics_rmi4_data *data = _data;
++
++	mutex_lock(&data->input_dev->mutex);
++
++	if (synaptics_rmi4_debug_addr_is_valid(data->addr))
++		dev_info(&data->i2c_client->dev,
++				"Writing into synaptics_rmi4 registers not supported\n");
++
++	mutex_unlock(&data->input_dev->mutex);
++
++	return 0;
++}
++
++static int synaptics_rmi4_debug_data_get(void *_data, u64 *val)
++{
++	struct synaptics_rmi4_data *data = _data;
++	int rc;
++	unsigned char reg;
++
++	mutex_lock(&data->input_dev->mutex);
++
++	if (synaptics_rmi4_debug_addr_is_valid(data->addr)) {
++		rc = synaptics_rmi4_i2c_read(data, data->addr,
++						&reg, sizeof(reg));
++		if (rc < 0)
++			dev_err(&data->i2c_client->dev,
++					"synaptics_rmi4 read register 0x%x failed (%d)\n",
++					data->addr, rc);
++		else
++			*val = reg;
++	}
++
++	mutex_unlock(&data->input_dev->mutex);
++
++	return 0;
++}
++
++DEFINE_SIMPLE_ATTRIBUTE(debug_data_fops, synaptics_rmi4_debug_data_get,
++			synaptics_rmi4_debug_data_set, "0x%02llX\n");
++
++static int synaptics_rmi4_debug_addr_set(void *_data, u64 val)
++{
++	struct synaptics_rmi4_data *data = _data;
++
++	if (synaptics_rmi4_debug_addr_is_valid(val)) {
++		mutex_lock(&data->input_dev->mutex);
++		data->addr = val;
++		mutex_unlock(&data->input_dev->mutex);
++	}
++
++	return 0;
++}
++
++static int synaptics_rmi4_debug_addr_get(void *_data, u64 *val)
++{
++	struct synaptics_rmi4_data *data = _data;
++
++	mutex_lock(&data->input_dev->mutex);
++
++	if (synaptics_rmi4_debug_addr_is_valid(data->addr))
++		*val = data->addr;
++
++	mutex_unlock(&data->input_dev->mutex);
++
++	return 0;
++}
++
++DEFINE_SIMPLE_ATTRIBUTE(debug_addr_fops, synaptics_rmi4_debug_addr_get,
++		synaptics_rmi4_debug_addr_set, "0x%04llX\n");
++
++
+ static int synaptics_rmi4_debug_suspend_set(void *_data, u64 val)
+ {
+ 	struct synaptics_rmi4_data *rmi4_data = _data;
+@@ -486,6 +593,28 @@ static ssize_t synaptics_rmi4_full_pm_cycle_store(struct device *dev,
+ 	return count;
+ }
+ 
++static void synaptics_rmi4_update_ts_info(struct synaptics_rmi4_data *rmi4_data)
++{
++	unsigned char pkg_id[4];
++	unsigned int build_id;
++	struct synaptics_rmi4_device_info *rmi;
++	/* read device package id */
++	synaptics_rmi4_i2c_read(rmi4_data,
++			rmi4_data->f01_query_base_addr + 17,
++			pkg_id,
++			sizeof(pkg_id));
++	rmi = &(rmi4_data->rmi4_mod_info);
++
++	build_id = (unsigned int)rmi->build_id[0] +
++		(unsigned int)rmi->build_id[1] * 0x100 +
++		(unsigned int)rmi->build_id[2] * 0x10000;
++
++	RMI4_STORE_TS_INFO(rmi4_data->ts_info, pkg_id[1] << 8 | pkg_id[0],
++			pkg_id[3] << 8 | pkg_id[2], rmi4_data->num_of_fingers,
++			rmi4_data->board->fw_vkey_support ? "yes" : "no",
++			build_id);
++}
++
+ #ifdef CONFIG_FB
+ static void configure_sleep(struct synaptics_rmi4_data *rmi4_data)
+ {
+@@ -703,6 +832,78 @@ static ssize_t synaptics_rmi4_flipy_store(struct device *dev,
+ 	return count;
+ }
+ 
++static ssize_t synaptics_rmi4_enable_show(struct device *dev,
++		struct device_attribute *attr, char *buf)
++{
++	struct synaptics_rmi4_data *rmi4_data = dev_get_drvdata(dev);
++
++	if (rmi4_data->suspended) {
++		dev_info(&rmi4_data->i2c_client->dev, "Already in suspend state\n");
++		return snprintf(buf, 4, "%s\n", "0");
++	}
++
++	return snprintf(buf, 4, "%s\n", rmi4_data->enable ? "1" : "0");
++}
++
++static void synaptics_rmi4_sensor_wake(struct synaptics_rmi4_data *rmi4_data);
++static int synaptics_rmi4_irq_enable(struct synaptics_rmi4_data *rmi4_data,
++		bool enable);
++static void synaptics_rmi4_sensor_sleep(struct synaptics_rmi4_data *rmi4_data);
++static void synaptics_rmi4_release_all(struct synaptics_rmi4_data *rmi4_data);
++
++static ssize_t synaptics_rmi4_enable_store(struct device *dev,
++		struct device_attribute *attr, const char *buf, size_t count)
++{
++	struct synaptics_rmi4_data *data = dev_get_drvdata(dev);
++	unsigned long val;
++	int rc;
++
++	if (count > 2)
++		return -EINVAL;
++
++	if (data->suspended) {
++		dev_info(&data->i2c_client->dev, "Already in suspend state\n");
++		goto no_operation;
++	}
++
++	rc = kstrtoul(buf, 10, &val);
++	if (rc != 0)
++		return rc;
++
++	if (val) {
++		synaptics_rmi4_sensor_wake(data);
++		data->touch_stopped = false;
++		synaptics_rmi4_irq_enable(data, true);
++
++		data->enable = true;
++	} else {
++		if (!data->sensor_sleep) {
++			data->touch_stopped = true;
++			wake_up(&data->wait);
++			synaptics_rmi4_irq_enable(data, false);
++			synaptics_rmi4_sensor_sleep(data);
++		}
++
++		synaptics_rmi4_release_all(data);
++		data->enable = false;
++	}
++no_operation:
++	return count;
++}
++
++static ssize_t synaptics_rmi4_mt_protocol_type_show(struct device *dev,
++		struct device_attribute *attr, char *buf)
++{
++	return snprintf(buf, 16, "%s\n", "MT Protocol B");
++}
++
++static ssize_t synaptics_rmi4_ts_info_show(struct device *dev,
++		struct device_attribute *attr, char *buf)
++{
++	struct synaptics_rmi4_data *data = dev_get_drvdata(dev);
++	return snprintf(buf, RMI4_INFO_MAX_LEN, "%s\n", data->ts_info);
++}
++
+  /**
+  * synaptics_rmi4_set_page()
+  *
+@@ -1453,16 +1654,6 @@ static int synaptics_rmi4_get_dt_coords(struct device *dev, char *name,
+ 		pdata->panel_miny = coords[1];
+ 		pdata->panel_maxx = coords[2];
+ 		pdata->panel_maxy = coords[3];
+-
+-		if (pdata->panel_maxx == 0 || pdata->panel_minx > 0)
+-			rc = -EINVAL;
+-		else if (pdata->panel_maxy == 0 || pdata->panel_miny > 0)
+-			rc = -EINVAL;
+-
+-		if (rc) {
+-			dev_err(dev, "Invalid panel resolution %d\n", rc);
+-			return rc;
+-		}
+ 	} else if (strcmp(name, "synaptics,display-coords") == 0) {
+ 		pdata->disp_minx = coords[0];
+ 		pdata->disp_miny = coords[1];
+@@ -1482,8 +1673,7 @@ static int synaptics_rmi4_parse_dt_children(struct device *dev,
+ {
+ 	struct synaptics_rmi4_device_info *rmi = &(rmi4_data->rmi4_mod_info);
+ 	struct device_node *node = dev->of_node, *child;
+-	int rc = 0;
+-	struct synaptics_rmi4_fn *fhandler = NULL;
++	int rc;
+ 
+ 	for_each_child_of_node(node, child) {
+ 		rc = of_property_read_u32(child, "synaptics,package-id",
+@@ -1519,42 +1709,15 @@ static int synaptics_rmi4_parse_dt_children(struct device *dev,
+ 		if (rc && (rc != -EINVAL))
+ 			return rc;
+ 
+-		rc = synaptics_rmi4_get_button_map(dev, "synaptics,button-map",
+-				rmi4_pdata, child);
+-		if (rc < 0) {
+-			dev_err(dev, "Unable to read key codes\n");
+-			return rc;
+-		}
+-
+-		mutex_lock(&rmi->support_fn_list_mutex);
+-		if (!list_empty(&rmi->support_fn_list)) {
+-			list_for_each_entry(fhandler,
+-					&rmi->support_fn_list, link) {
+-				if (fhandler->fn_number == SYNAPTICS_RMI4_F1A)
+-					break;
+-			}
+-		}
+-		mutex_unlock(&rmi->support_fn_list_mutex);
+-
+-		if (fhandler != NULL && fhandler->fn_number ==
+-						SYNAPTICS_RMI4_F1A) {
+-			rc = synaptics_rmi4_capacitance_button_map(rmi4_data,
+-								fhandler);
+-			if (rc < 0) {
+-				dev_err(dev, "Fail to register F1A %d\n", rc);
+-				return rc;
+-			}
+-		}
+ 		break;
+ 	}
+-
+ 	return 0;
+ }
+ 
+ static int synaptics_rmi4_parse_dt(struct device *dev,
+ 				struct synaptics_rmi4_platform_data *rmi4_pdata)
+ {
+-	struct device_node *np = dev->of_node;
++	struct device_node *np = dev->of_node, *child;
+ 	struct property *prop;
+ 	u32 temp_val, num_buttons;
+ 	u32 button_map[MAX_NUMBER_OF_BUTTONS];
+@@ -1566,12 +1729,12 @@ static int synaptics_rmi4_parse_dt(struct device *dev,
+ 			"synaptics,power-down");
+ 	rmi4_pdata->disable_gpios = of_property_read_bool(np,
+ 			"synaptics,disable-gpios");
+-	rmi4_pdata->modify_reso = of_property_read_bool(np,
+-			"synaptics,modify-reso");
+ 	rmi4_pdata->x_flip = of_property_read_bool(np, "synaptics,x-flip");
+ 	rmi4_pdata->y_flip = of_property_read_bool(np, "synaptics,y-flip");
+ 	rmi4_pdata->do_lockdown = of_property_read_bool(np,
+ 			"synaptics,do-lockdown");
++	rmi4_pdata->fw_vkey_support = of_property_read_bool(np,
++			"synaptics,fw-vkey-support");
+ 
+ 	rc = synaptics_rmi4_get_dt_coords(dev, "synaptics,display-coords",
+ 			rmi4_pdata, NULL);
+@@ -1609,7 +1772,7 @@ static int synaptics_rmi4_parse_dt(struct device *dev,
+ 					"synaptics,detect-device");
+ 
+ 	if (rmi4_pdata->detect_device)
+-		return 0;
++		goto parse_button_map_for_children;
+ 
+ 	prop = of_find_property(np, "synaptics,button-map", NULL);
+ 	if (prop) {
+@@ -1644,7 +1807,17 @@ static int synaptics_rmi4_parse_dt(struct device *dev,
+ 			return -EINVAL;
+ 		}
+ 	}
++	return 0;
+ 
++parse_button_map_for_children:
++	for_each_child_of_node(np, child) {
++		rc = synaptics_rmi4_get_button_map(dev, "synaptics,button-map",
++				rmi4_pdata, child);
++		if (rc < 0) {
++			dev_err(dev, "Unable to read key codes\n");
++			return rc;
++		}
++	}
+ 	return 0;
+ }
+ #else
+@@ -1753,63 +1926,13 @@ static int synaptics_rmi4_f11_init(struct synaptics_rmi4_data *rmi4_data,
+ 	if (retval < 0)
+ 		return retval;
+ 
+-	/* Maximum x */
++	/* Maximum x and y */
+ 	rmi4_data->sensor_max_x = ((control[6] & MASK_8BIT) << 0) |
+-		((control[7] & MASK_4BIT) << 8);
+-
+-	if (rmi4_data->board->modify_reso) {
+-		if (rmi4_data->board->panel_maxx) {
+-			if (rmi4_data->board->panel_maxx >= F11_MAX_X) {
+-				dev_err(&rmi4_data->i2c_client->dev,
+-					"F11 max_x value out of bound.");
+-				return -EINVAL;
+-			}
+-			if (rmi4_data->sensor_max_x !=
+-				rmi4_data->board->panel_maxx) {
+-				rmi4_data->sensor_max_x =
+-					rmi4_data->board->panel_maxx;
+-				control[6] = rmi4_data->board->panel_maxx
+-					& MASK_8BIT;
+-				control[7] = (rmi4_data->board->panel_maxx >> 8)
+-					& MASK_4BIT;
+-				retval = synaptics_rmi4_i2c_write(rmi4_data,
+-					fhandler->full_addr.ctrl_base,
+-					control,
+-					sizeof(control));
+-				if (retval < 0)
+-					return retval;
+-			}
+-		}
+-	}
+-
+-	/* Maximum y */
++			((control[7] & MASK_4BIT) << 8);
+ 	rmi4_data->sensor_max_y = ((control[8] & MASK_8BIT) << 0) |
+-		((control[9] & MASK_4BIT) << 8);
++			((control[9] & MASK_4BIT) << 8);
+ 
+-	if (rmi4_data->board->modify_reso) {
+-		if (rmi4_data->board->panel_maxy) {
+-			if (rmi4_data->board->panel_maxy >= F11_MAX_Y) {
+-				dev_err(&rmi4_data->i2c_client->dev,
+-					"F11 max_y value out of bound.");
+-				return -EINVAL;
+-			}
+-			if (rmi4_data->sensor_max_y !=
+-				rmi4_data->board->panel_maxy) {
+-				rmi4_data->sensor_max_y =
+-					rmi4_data->board->panel_maxy;
+-				control[8] = rmi4_data->board->panel_maxy
+-					& MASK_8BIT;
+-				control[9] = (rmi4_data->board->panel_maxy >> 8)
+-					& MASK_4BIT;
+-				retval = synaptics_rmi4_i2c_write(rmi4_data,
+-					fhandler->full_addr.ctrl_base,
+-					control,
+-					sizeof(control));
+-				if (retval < 0)
+-					return retval;
+-			}
+-		}
+-	}
++	rmi4_data->sensor_max_y = 1750;
+ 
+ 	dev_dbg(&rmi4_data->i2c_client->dev,
+ 			"%s: Function %02x max x = %d max y = %d\n",
+@@ -2007,72 +2130,13 @@ static int synaptics_rmi4_f12_init(struct synaptics_rmi4_data *rmi4_data,
+ 	if (retval < 0)
+ 		return retval;
+ 
+-	/* Maximum x */
++	/* Maximum x and y */
+ 	rmi4_data->sensor_max_x =
+-		((unsigned short)ctrl_8.max_x_coord_lsb << 0) |
+-		((unsigned short)ctrl_8.max_x_coord_msb << 8);
+-
+-	if (rmi4_data->board->modify_reso) {
+-		if (rmi4_data->board->panel_maxx) {
+-			if (rmi4_data->board->panel_maxx >= F12_MAX_X) {
+-				dev_err(&rmi4_data->i2c_client->dev,
+-					"F12 max_x value out of bound.");
+-				return -EINVAL;
+-			}
+-			if (rmi4_data->sensor_max_x !=
+-					rmi4_data->board->panel_maxx) {
+-				rmi4_data->sensor_max_x =
+-					rmi4_data->board->panel_maxx;
+-				ctrl_8.max_x_coord_lsb = (unsigned char)
+-					(rmi4_data->board->panel_maxx
+-					& MASK_8BIT);
+-				ctrl_8.max_x_coord_msb = (unsigned char)
+-					((rmi4_data->board->panel_maxx >> 8)
+-					& MASK_8BIT);
+-				retval = synaptics_rmi4_i2c_write(rmi4_data,
+-					fhandler->full_addr.ctrl_base
+-						+ ctrl_8_offset,
+-					ctrl_8.data,
+-					sizeof(ctrl_8.data));
+-				if (retval < 0)
+-					return retval;
+-			}
+-		}
+-	}
+-
+-	/* Maximum y */
++			((unsigned short)ctrl_8.max_x_coord_lsb << 0) |
++			((unsigned short)ctrl_8.max_x_coord_msb << 8);
+ 	rmi4_data->sensor_max_y =
+-		((unsigned short)ctrl_8.max_y_coord_lsb << 0) |
+-		((unsigned short)ctrl_8.max_y_coord_msb << 8);
+-
+-	if (rmi4_data->board->modify_reso) {
+-		if (rmi4_data->board->panel_maxy) {
+-			if (rmi4_data->board->panel_maxy >= F12_MAX_Y) {
+-				dev_err(&rmi4_data->i2c_client->dev,
+-					"F12 max_y value out of bound.");
+-					return -EINVAL;
+-			}
+-			if (rmi4_data->sensor_max_y !=
+-				rmi4_data->board->panel_maxy) {
+-				rmi4_data->sensor_max_y =
+-					rmi4_data->board->panel_maxy;
+-				ctrl_8.max_y_coord_lsb = (unsigned char)
+-					(rmi4_data->board->panel_maxy
+-					& MASK_8BIT);
+-				ctrl_8.max_y_coord_msb = (unsigned char)
+-					((rmi4_data->board->panel_maxy >> 8)
+-					& MASK_8BIT);
+-				retval = synaptics_rmi4_i2c_write(rmi4_data,
+-					fhandler->full_addr.ctrl_base
+-						+ ctrl_8_offset,
+-					ctrl_8.data,
+-					sizeof(ctrl_8.data));
+-				if (retval < 0)
+-					return retval;
+-			}
+-		}
+-	}
+-
++			((unsigned short)ctrl_8.max_y_coord_lsb << 0) |
++			((unsigned short)ctrl_8.max_y_coord_msb << 8);
+ 	dev_dbg(&rmi4_data->i2c_client->dev,
+ 			"%s: Function %02x max x = %d max y = %d\n",
+ 			__func__, fhandler->fn_number,
+@@ -2448,12 +2512,16 @@ static int synaptics_rmi4_query_device(struct synaptics_rmi4_data *rmi4_data)
+ 				if (retval < 0)
+ 					return retval;
+ 
+-				while (status.status_code == STATUS_CRC_IN_PROGRESS) {
+-					msleep(1);
+-					retval = synaptics_rmi4_i2c_read(rmi4_data,
+-						rmi4_data->f01_data_base_addr,
+-						status.data,
+-						sizeof(status.data));
++				while (status.status_code ==
++						STATUS_CRC_IN_PROGRESS) {
++					usleep_range(999, 1000);/*msleep(1)*/
++					retval =
++						synaptics_rmi4_i2c_read(
++							rmi4_data,
++							rmi4_data->
++							f01_data_base_addr,
++							status.data,
++							sizeof(status.data));
+ 					if (retval < 0)
+ 						return retval;
+ 				}
+@@ -2974,51 +3042,58 @@ static int synaptics_rmi4_pinctrl_init(struct synaptics_rmi4_data *rmi4_data)
+ 	/* Get pinctrl if target uses pinctrl */
+ 	rmi4_data->ts_pinctrl = devm_pinctrl_get(&(rmi4_data->i2c_client->dev));
+ 	if (IS_ERR_OR_NULL(rmi4_data->ts_pinctrl)) {
+-		retval = PTR_ERR(rmi4_data->ts_pinctrl);
+ 		dev_dbg(&rmi4_data->i2c_client->dev,
+-			"Target does not use pinctrl %d\n", retval);
+-		goto err_pinctrl_get;
+-	}
+-
+-	rmi4_data->pinctrl_state_active
+-		= pinctrl_lookup_state(rmi4_data->ts_pinctrl,
+-				PINCTRL_STATE_ACTIVE);
+-	if (IS_ERR_OR_NULL(rmi4_data->pinctrl_state_active)) {
+-		retval = PTR_ERR(rmi4_data->pinctrl_state_active);
+-		dev_err(&rmi4_data->i2c_client->dev,
+-			"Can not lookup %s pinstate %d\n",
+-			PINCTRL_STATE_ACTIVE, retval);
+-		goto err_pinctrl_lookup;
++			"Target does not use pinctrl\n");
++		retval = PTR_ERR(rmi4_data->ts_pinctrl);
++		rmi4_data->ts_pinctrl = NULL;
++		return retval;
+ 	}
+ 
+-	rmi4_data->pinctrl_state_suspend
+-		= pinctrl_lookup_state(rmi4_data->ts_pinctrl,
+-				PINCTRL_STATE_SUSPEND);
+-	if (IS_ERR_OR_NULL(rmi4_data->pinctrl_state_suspend)) {
+-		retval = PTR_ERR(rmi4_data->pinctrl_state_suspend);
+-		dev_err(&rmi4_data->i2c_client->dev,
+-			"Can not lookup %s pinstate %d\n",
+-			PINCTRL_STATE_SUSPEND, retval);
+-		goto err_pinctrl_lookup;
++	rmi4_data->gpio_state_active
++		= pinctrl_lookup_state(rmi4_data->ts_pinctrl, "pmx_ts_active");
++	if (IS_ERR_OR_NULL(rmi4_data->gpio_state_active)) {
++		dev_dbg(&rmi4_data->i2c_client->dev,
++			"Can not get ts default pinstate\n");
++		retval = PTR_ERR(rmi4_data->gpio_state_active);
++		rmi4_data->ts_pinctrl = NULL;
++		return retval;
+ 	}
+ 
+-	rmi4_data->pinctrl_state_release
+-		= pinctrl_lookup_state(rmi4_data->ts_pinctrl,
+-			PINCTRL_STATE_RELEASE);
+-	if (IS_ERR_OR_NULL(rmi4_data->pinctrl_state_release)) {
+-		retval = PTR_ERR(rmi4_data->pinctrl_state_release);
++	rmi4_data->gpio_state_suspend
++		= pinctrl_lookup_state(rmi4_data->ts_pinctrl, "pmx_ts_suspend");
++	if (IS_ERR_OR_NULL(rmi4_data->gpio_state_suspend)) {
+ 		dev_dbg(&rmi4_data->i2c_client->dev,
+-			"Can not lookup %s pinstate %d\n",
+-			PINCTRL_STATE_RELEASE, retval);
++			"Can not get ts sleep pinstate\n");
++		retval = PTR_ERR(rmi4_data->gpio_state_suspend);
++		rmi4_data->ts_pinctrl = NULL;
++		return retval;
+ 	}
+ 
+ 	return 0;
++}
+ 
+-err_pinctrl_lookup:
+-	devm_pinctrl_put(rmi4_data->ts_pinctrl);
+-err_pinctrl_get:
+-	rmi4_data->ts_pinctrl = NULL;
+-	return retval;
++static int synpatics_rmi4_pinctrl_select(struct synaptics_rmi4_data *rmi4_data,
++						bool on)
++{
++	struct pinctrl_state *pins_state;
++	int ret;
++
++	pins_state = on ? rmi4_data->gpio_state_active
++		: rmi4_data->gpio_state_suspend;
++	if (!IS_ERR_OR_NULL(pins_state)) {
++		ret = pinctrl_select_state(rmi4_data->ts_pinctrl, pins_state);
++		if (ret) {
++			dev_err(&rmi4_data->i2c_client->dev,
++				"can not set %s pins\n",
++				on ? "pmx_ts_active" : "pmx_ts_suspend");
++			return ret;
++		}
++	} else
++		dev_err(&rmi4_data->i2c_client->dev,
++			"not a valid '%s' pinstate\n",
++				on ? "pmx_ts_active" : "pmx_ts_suspend");
++
++	return 0;
+ }
+ 
+ static int synaptics_rmi4_gpio_configure(struct synaptics_rmi4_data *rmi4_data,
+@@ -3132,6 +3207,7 @@ static int synaptics_rmi4_probe(struct i2c_client *client,
+ 	int retval = 0;
+ 	unsigned char ii;
+ 	unsigned char attr_count;
++	unsigned char reg_value;
+ 	struct synaptics_rmi4_f1a_handle *f1a;
+ 	struct synaptics_rmi4_fn *fhandler;
+ 	struct synaptics_rmi4_fn *next_fhandler;
+@@ -3199,6 +3275,7 @@ static int synaptics_rmi4_probe(struct i2c_client *client,
+ 	rmi4_data->irq_enabled = false;
+ 	rmi4_data->fw_updating = false;
+ 	rmi4_data->suspended = false;
++	rmi4_data->enable = true;
+ 
+ 	rmi4_data->i2c_read = synaptics_rmi4_i2c_read;
+ 	rmi4_data->i2c_write = synaptics_rmi4_i2c_write;
+@@ -3244,18 +3321,15 @@ static int synaptics_rmi4_probe(struct i2c_client *client,
+ 
+ 	retval = synaptics_rmi4_pinctrl_init(rmi4_data);
+ 	if (!retval && rmi4_data->ts_pinctrl) {
+-		retval = pinctrl_select_state(rmi4_data->ts_pinctrl,
+-					rmi4_data->pinctrl_state_active);
++		retval = synpatics_rmi4_pinctrl_select(rmi4_data, true);
+ 		if (retval < 0)
+-			goto err_pinctrl_select;
+-	} else {
+-		goto err_pinctrl_init;
++			goto err_gpio_config;
+ 	}
+ 
+ 	retval = synaptics_rmi4_gpio_configure(rmi4_data, true);
+ 	if (retval < 0) {
+ 		dev_err(&client->dev, "Failed to configure gpios\n");
+-		goto err_gpio_config;
++		goto pinctrl_sleep;
+ 	}
+ 
+ 	init_waitqueue_head(&rmi4_data->wait);
+@@ -3360,6 +3434,14 @@ static int synaptics_rmi4_probe(struct i2c_client *client,
+ 		exp_fn_inited = 1;
+ 	}
+ 
++	/* check the controller id */
++	retval = synaptics_rmi4_i2c_read(rmi4_data, 0x68,
++						&reg_value, sizeof(reg_value));
++	if (retval < 0) {
++		dev_err(&client->dev, "version read failed");
++		goto err_read_id;
++	}
++
+ 	rmi4_data->det_workqueue =
+ 			create_singlethread_workqueue("rmi_det_workqueue");
+ 	INIT_DELAYED_WORK(&rmi4_data->det_work,
+@@ -3401,6 +3483,34 @@ static int synaptics_rmi4_probe(struct i2c_client *client,
+ 		goto err_create_debugfs_file;
+ 	}
+ 
++	temp = debugfs_create_file("addr", S_IRUSR | S_IWUSR, rmi4_data->dir,
++					rmi4_data, &debug_addr_fops);
++	if (temp == NULL || IS_ERR(temp)) {
++		dev_err(&client->dev,
++			"%s: Failed to create addr debugfs file, rc = %ld\n",
++			__func__, PTR_ERR(temp));
++		retval = PTR_ERR(temp);
++		goto err_create_debugfs_file;
++	}
++
++	temp = debugfs_create_file("data", S_IRUSR | S_IWUSR, rmi4_data->dir,
++					rmi4_data, &debug_data_fops);
++	if (temp == NULL || IS_ERR(temp)) {
++		dev_err(&client->dev,
++			"%s: Failed to create data debugfs file, rc = %ld\n",
++			__func__, PTR_ERR(temp));
++		retval = PTR_ERR(temp);
++		goto err_create_debugfs_file;
++	}
++
++	rmi4_data->ts_info = kzalloc(RMI4_INFO_MAX_LEN, GFP_KERNEL);
++	if (!rmi4_data->ts_info) {
++		dev_err(&client->dev, "Not enough memory\n");
++		goto err_alloc_ts_info_mem;
++	}
++
++	synaptics_rmi4_update_ts_info(rmi4_data);
++
+ 	for (attr_count = 0; attr_count < ARRAY_SIZE(attrs); attr_count++) {
+ 		retval = sysfs_create_file(&client->dev.kobj,
+ 				&attrs[attr_count].attr);
+@@ -3435,6 +3545,10 @@ err_sysfs:
+ 		sysfs_remove_file(&rmi4_data->input_dev->dev.kobj,
+ 				&attrs[attr_count].attr);
+ 	}
++
++	kfree(rmi4_data->ts_info);
++	rmi4_data->ts_info = NULL;
++err_alloc_ts_info_mem:
+ err_create_debugfs_file:
+ 	debugfs_remove_recursive(rmi4_data->dir);
+ err_create_debugfs_dir:
+@@ -3445,6 +3559,7 @@ err_enable_irq:
+ 	destroy_workqueue(rmi4_data->det_workqueue);
+ 	input_unregister_device(rmi4_data->input_dev);
+ 
++err_read_id:
+ err_register_input:
+ 	mutex_lock(&rmi->support_fn_list_mutex);
+ 	if (!list_empty(&rmi->support_fn_list)) {
+@@ -3465,20 +3580,13 @@ err_free_gpios:
+ 		gpio_free(rmi4_data->board->reset_gpio);
+ 	if (gpio_is_valid(rmi4_data->board->irq_gpio))
+ 		gpio_free(rmi4_data->board->irq_gpio);
+-err_gpio_config:
+-err_pinctrl_select:
++pinctrl_sleep:
+ 	if (rmi4_data->ts_pinctrl) {
+-		if (IS_ERR_OR_NULL(rmi4_data->pinctrl_state_release)) {
+-			devm_pinctrl_put(rmi4_data->ts_pinctrl);
+-			rmi4_data->ts_pinctrl = NULL;
+-		} else {
+-			retval = pinctrl_select_state(rmi4_data->ts_pinctrl,
+-					rmi4_data->pinctrl_state_release);
+-			if (retval)
+-				pr_err("failed to select release pinctrl state\n");
+-		}
++		retval = synpatics_rmi4_pinctrl_select(rmi4_data, false);
++		if (retval < 0)
++			pr_err("Cannot get idle pinctrl state\n");
+ 	}
+-err_pinctrl_init:
++err_gpio_config:
+ 	synaptics_rmi4_power_on(rmi4_data, false);
+ err_power_device:
+ 	synaptics_rmi4_regulator_configure(rmi4_data, false);
+@@ -3550,15 +3658,9 @@ static int synaptics_rmi4_remove(struct i2c_client *client)
+ 		gpio_free(rmi4_data->board->irq_gpio);
+ 
+ 	if (rmi4_data->ts_pinctrl) {
+-		if (IS_ERR_OR_NULL(rmi4_data->pinctrl_state_release)) {
+-			devm_pinctrl_put(rmi4_data->ts_pinctrl);
+-			rmi4_data->ts_pinctrl = NULL;
+-		} else {
+-			retval = pinctrl_select_state(rmi4_data->ts_pinctrl,
+-					rmi4_data->pinctrl_state_release);
+-			if (retval < 0)
+-				pr_err("failed to select release pinctrl state\n");
+-		}
++		retval = synpatics_rmi4_pinctrl_select(rmi4_data, false);
++		if (retval < 0)
++			pr_err("Cannot get idle pinctrl state\n");
+ 	}
+ 
+ 	synaptics_rmi4_power_on(rmi4_data, false);
+@@ -3957,10 +4059,10 @@ static int synaptics_rmi4_suspend(struct device *dev)
+ 
+ 	if (rmi4_data->board->disable_gpios) {
+ 		if (rmi4_data->ts_pinctrl) {
+-			retval = pinctrl_select_state(rmi4_data->ts_pinctrl,
+-					rmi4_data->pinctrl_state_suspend);
++			retval = synpatics_rmi4_pinctrl_select(rmi4_data,
++								 false);
+ 			if (retval < 0)
+-				dev_err(dev, "failed to select idle pinctrl state\n");
++				dev_err(dev, "Cannot get idle pinctrl state\n");
+ 		}
+ 
+ 		retval = synaptics_rmi4_gpio_configure(rmi4_data, false);
+@@ -3975,10 +4077,9 @@ static int synaptics_rmi4_suspend(struct device *dev)
+ 
+ err_gpio_configure:
+ 	if (rmi4_data->ts_pinctrl) {
+-		retval = pinctrl_select_state(rmi4_data->ts_pinctrl,
+-					rmi4_data->pinctrl_state_active);
++		retval = synpatics_rmi4_pinctrl_select(rmi4_data, true);
+ 		if (retval < 0)
+-			dev_err(dev, "failed to select get default pinctrl state\n");
++			dev_err(dev, "Cannot get default pinctrl state\n");
+ 	}
+ 	synaptics_rmi4_regulator_lpm(rmi4_data, false);
+ 
+@@ -4023,10 +4124,9 @@ static int synaptics_rmi4_resume(struct device *dev)
+ 
+ 	if (rmi4_data->board->disable_gpios) {
+ 		if (rmi4_data->ts_pinctrl) {
+-			retval = pinctrl_select_state(rmi4_data->ts_pinctrl,
+-					rmi4_data->pinctrl_state_active);
++			retval = synpatics_rmi4_pinctrl_select(rmi4_data, true);
+ 			if (retval < 0)
+-				dev_err(dev, "failed to select default pinctrl state\n");
++				dev_err(dev, "Cannot get default pinctrl state\n");
+ 		}
+ 
+ 		retval = synaptics_rmi4_gpio_configure(rmi4_data, true);
+@@ -4056,10 +4156,10 @@ err_check_configuration:
+ 
+ 	if (rmi4_data->board->disable_gpios) {
+ 		if (rmi4_data->ts_pinctrl) {
+-			retval = pinctrl_select_state(rmi4_data->ts_pinctrl,
+-					rmi4_data->pinctrl_state_suspend);
++			retval = synpatics_rmi4_pinctrl_select(rmi4_data,
++								false);
+ 			if (retval < 0)
+-				dev_err(dev, "failed to select idle pinctrl state\n");
++				dev_err(dev, "Cannot get idle pinctrl state\n");
+ 		}
+ 
+ 		synaptics_rmi4_gpio_configure(rmi4_data, false);
+@@ -4071,10 +4171,9 @@ err_check_configuration:
+ 
+ err_gpio_configure:
+ 	if (rmi4_data->ts_pinctrl) {
+-		retval = pinctrl_select_state(rmi4_data->ts_pinctrl,
+-					rmi4_data->pinctrl_state_suspend);
++		retval = synpatics_rmi4_pinctrl_select(rmi4_data, false);
+ 		if (retval < 0)
+-			pr_err("failed to select idle pinctrl state\n");
++			pr_err("Cannot get idle pinctrl state\n");
+ 	}
+ 	synaptics_rmi4_regulator_lpm(rmi4_data, true);
+ 	wake_up(&rmi4_data->wait);
+diff --git a/drivers/input/touchscreen/synaptics_i2c_rmi4.h b/drivers/input/touchscreen/synaptics_i2c_rmi4.h
+index 414fac6e..9ce947b 100644
+--- a/drivers/input/touchscreen/synaptics_i2c_rmi4.h
++++ b/drivers/input/touchscreen/synaptics_i2c_rmi4.h
+@@ -1,11 +1,11 @@
+ /*
+  * Synaptics RMI4 touchscreen driver
+  *
+- * Copyright (C) 2012 Synaptics Incorporated
++ * Copyright (C) 2015 Synaptics Incorporated
+  *
+- * Copyright (C) 2012 Alexandra Chin <alexandra.chin@tw.synaptics.com>
+- * Copyright (C) 2012 Scott Lin <scott.lin@tw.synaptics.com>
+- * Copyright (c) 2013-2014, The Linux Foundation. All rights reserved.
++ * Copyright (C) 2015 Alexandra Chin <alexandra.chin@tw.synaptics.com>
++ * Copyright (C) 2015 Scott Lin <scott.lin@tw.synaptics.com>
++ * Copyright (c) 2013-2015, The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License as published by
+@@ -72,10 +72,6 @@
+ 
+ #define NAME_BUFFER_SIZE 256
+ 
+-#define PINCTRL_STATE_ACTIVE	"pmx_ts_active"
+-#define PINCTRL_STATE_SUSPEND	"pmx_ts_suspend"
+-#define PINCTRL_STATE_RELEASE	"pmx_ts_release"
+-
+ /*
+  * struct synaptics_rmi4_fn_desc - function descriptor fields in PDT
+  * @query_base_addr: base address for query registers
+@@ -253,6 +249,9 @@ struct synaptics_rmi4_data {
+ 	bool flip_y;
+ 	bool fw_updating;
+ 	bool suspended;
++	bool enable;
++	char *ts_info;
++	unsigned short addr;
+ 	wait_queue_head_t wait;
+ 	bool stay_awake;
+ 	bool staying_awake;
+@@ -270,9 +269,8 @@ struct synaptics_rmi4_data {
+ #endif
+ #endif
+ 	struct pinctrl *ts_pinctrl;
+-	struct pinctrl_state *pinctrl_state_active;
+-	struct pinctrl_state *pinctrl_state_suspend;
+-	struct pinctrl_state *pinctrl_state_release;
++	struct pinctrl_state *gpio_state_active;
++	struct pinctrl_state *gpio_state_suspend;
+ };
+ 
+ enum exp_fn {
+diff --git a/include/linux/input/synaptics_dsx.h b/include/linux/input/synaptics_dsx.h
+index 976b4bf..3c42d1b 100644
+--- a/include/linux/input/synaptics_dsx.h
++++ b/include/linux/input/synaptics_dsx.h
+@@ -1,11 +1,11 @@
+ /*
+  * Synaptics RMI4 touchscreen driver
+  *
+- * Copyright (C) 2012 Synaptics Incorporated
++ * Copyright (C) 2015 Synaptics Incorporated
+  *
+- * Copyright (C) 2012 Alexandra Chin <alexandra.chin@tw.synaptics.com>
+- * Copyright (C) 2012 Scott Lin <scott.lin@tw.synaptics.com>
+- * Copyright (c) 2013-2014, The Linux Foundation. All rights reserved.
++ * Copyright (C) 2015 Alexandra Chin <alexandra.chin@tw.synaptics.com>
++ * Copyright (C) 2015 Scott Lin <scott.lin@tw.synaptics.com>
++ * Copyright (c) 2013-2015, The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License as published by
+@@ -62,8 +62,8 @@ struct synaptics_rmi4_platform_data {
+ 	bool power_down_enable;
+ 	bool disable_gpios;
+ 	bool do_lockdown;
++	bool fw_vkey_support;
+ 	bool detect_device;
+-	bool modify_reso;
+ 	unsigned irq_gpio;
+ 	u32 irq_flags;
+ 	u32 reset_flags;
+-- 
+1.7.9.5
+

@@ -1,0 +1,30 @@
+From bf680a8ba0d3b259a62e350baaadf3f9b843d4c3 Mon Sep 17 00:00:00 2001
+From: Li Zhanchao <lizc1023@thundersoft.com>
+Date: Sat, 9 Apr 2016 14:33:09 +0800
+Subject: [PATCH 2/3] ARM:config: support ctp unknown gsl915
+
+Add CTP UNKNOWN@GT60X1-3@GSL915 config
+
+Change-Id: Iaab7cca9ba37bc76ed08e75aab91501734b27b50
+Signed-off-by: Li Zhanchao <lizc1023@thundersoft.com>
+---
+ arch/arm64/configs/msmcortex_defconfig | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm64/configs/msmcortex_defconfig b/arch/arm64/configs/msmcortex_defconfig
+index cf88de2..e555b9a 100644
+--- a/arch/arm64/configs/msmcortex_defconfig
++++ b/arch/arm64/configs/msmcortex_defconfig
+@@ -287,7 +287,8 @@ CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_RMI_DEV_v21=y
+ CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE_v21=y
+ CONFIG_TOUCHSCREEN_ATMEL_MXT=y
+ CONFIG_TOUCHSCREEN_GEN_VKEYS=y
+-CONFIG_TOUCHSCREEN_FT5X06=y
++#CONFIG_TOUCHSCREEN_FT5X06 is not set
++CONFIG_TOUCHSCREEN_GSL_TS=y
+ CONFIG_TOUCHSCREEN_MAXIM_STI=y
+ CONFIG_INPUT_MISC=y
+ CONFIG_INPUT_HBTP_INPUT=y
+-- 
+1.9.1
+

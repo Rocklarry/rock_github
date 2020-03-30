@@ -1,0 +1,1 @@
+/home/idea/code_test/mag/CMakeFiles/mag0_hmc5883l_driver.dir

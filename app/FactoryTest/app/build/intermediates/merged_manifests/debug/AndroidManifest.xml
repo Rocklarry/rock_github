@@ -1,0 +1,494 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.a3nod.lenovo.sparrowfactory"
+    android:versionCode="400"
+    android:versionName="0.2.2" >
+
+    <uses-sdk
+        android:minSdkVersion="24"
+        android:targetSdkVersion="26" />
+
+    <!-- android:sharedUserId="android.uid.system" -->
+    <!-- Needed to setup bluetooth A2DP -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.BLUETOOTH" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <uses-feature android:name="android.hardware.camera" />
+    <uses-feature android:name="android.hardware.camera.autofocus" />
+    <uses-feature android:name="android.hardware.camera.flash" />
+
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.DISABLE_KEYGUARD" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="com.google.android.things.permission.MANAGE_SENSOR_DRIVERS" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="com.qualcomm.permission.USE_QCRIL_MSG_TUNNEL" />
+
+    <!-- <uses-permission android:name="android.permission.REBOOT" /> -->
+    <!-- <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" /> -->
+    <!-- <uses-permission android:name="android.permission.WRITE_SETTINGS" /> -->
+    <!-- <uses-permission android:name="android.permission.DEVICE_POWER" /> -->
+    <uses-permission android:name="android.permission.MOUNT_UNMOUNT_FILESYSTEMS" />
+    <uses-permission android:name="android.permission.WRITE_MEDIA_STORAGE" />
+
+    <!-- 访问GPIO总线端口，需要打开相关的权限 -->
+    <uses-permission android:name="com.google.android.things.permission.REBOOT" />
+    <uses-permission android:name="com.google.android.things.permission.USE_PERIPHERAL_IO" />
+
+    <!-- &lt;!&ndash;注册用户驱动&ndash;&gt; -->
+    <uses-permission android:name="com.google.android.things.permission.MANAGE_INPUT_DRIVERS" />
+
+    <application
+        android:name="com.a3nod.lenovo.sparrowfactory.SparrowApplication"
+        android:allowBackup="false"
+        android:debuggable="true"
+        android:screenOrientation="landscape"
+        android:testOnly="true"
+        android:theme="@style/AppTheme" >
+        <uses-library android:name="com.google.android.things" />
+
+        <activity
+            android:name="com.a3nod.lenovo.sparrowfactory.NavigationActivity"
+            android:configChanges="orientation|keyboardHidden"
+            android:screenOrientation="landscape" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.HOME" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="com.a3nod.lenovo.sparrowfactory.mmi.MainActivity"
+            android:screenOrientation="landscape" >
+            <intent-filter>
+                <action android:name="hello.MainActivity" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="com.a3nod.lenovo.sparrowfactory.mmi.lcd.LcdActivity"
+            android:screenOrientation="landscape" >
+            <intent-filter>
+                <action android:name="lcd.action" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="com.a3nod.lenovo.sparrowfactory.mmi.button.ButtonActivity"
+            android:screenOrientation="landscape" >
+            <intent-filter>
+                <action android:name="button.action" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="com.a3nod.lenovo.sparrowfactory.mmi.sensor.MyGVSensorActivity"
+            android:screenOrientation="landscape" >
+            <intent-filter>
+                <action android:name="gv_sensor.action" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="com.a3nod.lenovo.sparrowfactory.mmi.camera.TestActivity"
+            android:screenOrientation="landscape" >
+            <intent-filter>
+                <action android:name="hello.testActivity" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="com.a3nod.lenovo.sparrowfactory.mmi.tp.TPTestActivity"
+            android:screenOrientation="landscape" >
+            <intent-filter>
+                <action android:name="hello.TPTestActivity" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="com.a3nod.lenovo.sparrowfactory.mmi.multipoint.MultPointActivity"
+            android:screenOrientation="landscape" >
+            <intent-filter>
+                <action android:name="hello.MultPointActivity" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="com.a3nod.lenovo.sparrowfactory.mmi.speaker.SpeakerActivity"
+            android:screenOrientation="landscape" >
+            <intent-filter>
+                <action android:name="hello.SpeakerActivity" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <!-- <activity android:name=".mmi.speaker.SpeakerTestActivity"> -->
+        <!-- <intent-filter> -->
+        <!-- <action android:name="hello.SpeakerTestActivity"/> -->
+
+
+        <!-- <category android:name="android.intent.category.DEFAULT"/> -->
+        <!-- </intent-filter> -->
+        <!-- </activity> -->
+        <activity
+            android:name="com.a3nod.lenovo.sparrowfactory.mmi.backlight.BackLightActivity"
+            android:screenOrientation="landscape" >
+            <intent-filter>
+                <action android:name="backlight.action" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="com.a3nod.lenovo.sparrowfactory.mmi.sensor.PSensorActivity"
+            android:screenOrientation="landscape" >
+            <intent-filter>
+                <action android:name="p_sensor.action" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="com.a3nod.lenovo.sparrowfactory.mmi.sensor.LightSensorActivity"
+            android:screenOrientation="landscape" >
+            <intent-filter>
+                <action android:name="l_sensor.action" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="com.a3nod.lenovo.sparrowfactory.mmi.wifi.WifiActivity"
+            android:screenOrientation="landscape" >
+            <intent-filter>
+                <action android:name="wifi.action" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="com.a3nod.lenovo.sparrowfactory.mmi.bluetooth.BluetoothActivity"
+            android:screenOrientation="landscape" >
+            <intent-filter>
+                <action android:name="hello.BluetoothActivity" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="com.a3nod.lenovo.sparrowfactory.mmi.result.ResultActivity"
+            android:screenOrientation="landscape" >
+            <intent-filter>
+                <action android:name="hello.ResultActivity" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+        <!-- runin manifest -->
+        <activity
+            android:name="com.a3nod.lenovo.sparrowfactory.runin.RuninMainActivity"
+            android:screenOrientation="landscape" />
+        <activity
+            android:name="com.a3nod.lenovo.sparrowfactory.runin.RuninActivity"
+            android:screenOrientation="landscape" />
+        <activity
+            android:name="com.a3nod.lenovo.sparrowfactory.runin.cpu.CPUTestActivity"
+            android:screenOrientation="landscape" />
+        <activity
+            android:name="com.a3nod.lenovo.sparrowfactory.runin.memory.MemoryTestActivity"
+            android:screenOrientation="landscape" />
+        <activity
+            android:name="com.a3nod.lenovo.sparrowfactory.runin.emmc.EMMCTestActivity"
+            android:screenOrientation="landscape" />
+        <activity
+            android:name="com.a3nod.lenovo.sparrowfactory.runin.mic.MicActivity"
+            android:screenOrientation="landscape" />
+        <activity
+            android:name="com.a3nod.lenovo.sparrowfactory.runin.camera.CameraTestActivity"
+            android:launchMode="singleInstance"
+            android:screenOrientation="landscape" >
+            <intent-filter>
+                <action android:name="runin.camera.CameraTestActivity" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="com.a3nod.lenovo.sparrowfactory.runin.audio.AudioTestActivity"
+            android:screenOrientation="landscape" >
+            <intent-filter>
+                <action android:name="audio_test" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="com.a3nod.lenovo.sparrowfactory.runin.lcd.LCDTestActivity"
+            android:screenOrientation="landscape" />
+        <activity
+            android:name="com.a3nod.lenovo.sparrowfactory.runin.video.VideoTestActivity"
+            android:screenOrientation="landscape" />
+        <activity
+            android:name="com.a3nod.lenovo.sparrowfactory.runin.threedimensional.ThreeDimensionalActivity"
+            android:screenOrientation="landscape" />
+        <activity
+            android:name="com.a3nod.lenovo.sparrowfactory.runin.twodimensional.TwoDimensionalActivity"
+            android:screenOrientation="landscape" />
+        <activity
+            android:name="com.a3nod.lenovo.sparrowfactory.runin.reboot.RebootTestActivity"
+            android:screenOrientation="landscape" />
+        <activity
+            android:name="com.a3nod.lenovo.sparrowfactory.runin.report.ReportActivity"
+            android:screenOrientation="landscape" />
+        <activity
+            android:name="com.a3nod.lenovo.sparrowfactory.TemperatureActivity"
+            android:screenOrientation="landscape" />
+        <!-- pcba manifest -->
+
+        <activity
+            android:name="com.a3nod.lenovo.sparrowfactory.pcba.PcbaTestActivity"
+            android:screenOrientation="landscape" >
+            <intent-filter>
+                <action android:name="hello.PcbaTestActivity" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="com.a3nod.lenovo.sparrowfactory.pcba.PcbaLcdActivity"
+            android:screenOrientation="landscape" >
+            <intent-filter>
+                <action android:name="pcba_lcd" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="com.a3nod.lenovo.sparrowfactory.pcba.PcbaButtonActivity"
+            android:screenOrientation="landscape" >
+            <intent-filter>
+                <action android:name="pcba_button" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="com.a3nod.lenovo.sparrowfactory.pcba.PcbaTpActivity"
+            android:screenOrientation="landscape" >
+            <intent-filter>
+                <action android:name="pcba_tp" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="com.a3nod.lenovo.sparrowfactory.pcba.PCBADataCheckTestActivity"
+            android:screenOrientation="landscape" >
+            <intent-filter>
+                <action android:name="pcba.datacheck.action" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="com.a3nod.lenovo.sparrowfactory.mmi.datacheck.DataCheckTestActivity"
+            android:screenOrientation="landscape" >
+            <intent-filter>
+                <action android:name="datacheck.action" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="com.a3nod.lenovo.sparrowfactory.pcba.PCBAGSensorActivity"
+            android:screenOrientation="landscape" >
+            <intent-filter>
+                <action android:name="hello.PCBAGSensorActivity" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="com.a3nod.lenovo.sparrowfactory.pcba.PCBAPSensorActivity"
+            android:screenOrientation="landscape" >
+            <intent-filter>
+                <action android:name="hello.PCBAPSensorActivity" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="com.a3nod.lenovo.sparrowfactory.pcba.PCBALSensorActivity"
+            android:screenOrientation="landscape" >
+            <intent-filter>
+                <action android:name="hello.PCBALSensorActivity" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="com.a3nod.lenovo.sparrowfactory.pcba.PCBAMicTestActivity"
+            android:screenOrientation="landscape" >
+            <intent-filter>
+                <action android:name="pcba_mic" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="com.a3nod.lenovo.sparrowfactory.pcba.PCBASpeakerTestActivity"
+            android:screenOrientation="landscape" >
+            <intent-filter>
+                <action android:name="pcba_speaker" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="com.a3nod.lenovo.sparrowfactory.pcba.PCBACameraTestActivity"
+            android:screenOrientation="landscape" >
+            <intent-filter>
+                <action android:name="pcba_camera" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+        <service
+            android:name="com.a3nod.lenovo.sparrowfactory.runin.RuninService"
+            android:enabled="true"
+            android:exported="false" />
+        <service
+            android:name="com.a3nod.lenovo.sparrowfactory.interact.ConnectManagerService"
+            android:enabled="true"
+            android:exported="false" />
+
+        <receiver
+            android:name="com.a3nod.lenovo.sparrowfactory.runin.BootupReceiver"
+            android:enabled="true"
+            android:exported="false" >
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+        <receiver android:name="com.a3nod.lenovo.sparrowfactory.PCMessageReceiver" >
+            <intent-filter>
+                <action android:name="com.pcba_test" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="com.sparrow.camera.take_picture" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="com.mmi.test" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="com.write.sn" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="action_start_runin" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="action_stop_runin" />
+            </intent-filter>
+        </receiver>
+
+        <service android:name="com.a3nod.lenovo.sparrowfactory.driver.AccelerometerService" />
+        <service android:name="com.a3nod.lenovo.sparrowfactory.driver.ProximityService" />
+
+        <activity android:name="com.a3nod.lenovo.sparrowfactory.GetPhotoActivity" />
+        <activity android:name="com.a3nod.lenovo.sparrowfactory.RebootActivity" />
+        <activity android:name="com.a3nod.lenovo.sparrowfactory.TremoloActivity" />
+        <activity android:name="com.a3nod.lenovo.sparrowfactory.runin.EngineeringModeActivity" />
+        <activity android:name="com.a3nod.lenovo.sparrowfactory.MoreActivity" />
+        <activity android:name="com.a3nod.lenovo.sparrowfactory.ShowSNActivity" />
+        <activity android:name="com.a3nod.lenovo.sparrowfactory.runin.FailActivity" />
+        <activity
+            android:name="com.a3nod.lenovo.sparrowfactory.pcba.PCBABaseActivity"
+            android:label="@string/title_activity_pcbabase"
+            android:screenOrientation="landscape" />
+        <activity
+            android:name="com.a3nod.lenovo.sparrowfactory.BackLightTestActivity"
+            android:screenOrientation="landscape" />
+        <activity
+            android:name="com.a3nod.lenovo.sparrowfactory.ShowRGBActivity"
+            android:screenOrientation="landscape" >
+            <intent-filter>
+                <action android:name="rgb.sensor.action" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="com.a3nod.lenovo.sparrowfactory.pcba.PCBARGBActivity"
+            android:screenOrientation="landscape" >
+            <intent-filter>
+                <action android:name="pcbargb.sensor.action" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="com.a3nod.lenovo.sparrowfactory.facecamera.CameraActivity"
+            android:screenOrientation="landscape" />
+
+        <meta-data
+            android:name="android.support.VERSION"
+            android:value="26.1.0" />
+
+        <service
+            android:name="com.squareup.leakcanary.internal.HeapAnalyzerService"
+            android:enabled="false"
+            android:process=":leakcanary" />
+        <service
+            android:name="com.squareup.leakcanary.DisplayLeakService"
+            android:enabled="false" />
+
+        <activity
+            android:name="com.squareup.leakcanary.internal.DisplayLeakActivity"
+            android:enabled="false"
+            android:icon="@drawable/__leak_canary_icon"
+            android:label="@string/__leak_canary_display_activity_label"
+            android:taskAffinity="com.squareup.leakcanary"
+            android:theme="@style/__LeakCanary.Base" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <meta-data
+            android:name="android.arch.lifecycle.VERSION"
+            android:value="27.0.0-SNAPSHOT" />
+
+        <provider
+            android:name="com.android.tools.ir.server.InstantRunContentProvider"
+            android:authorities="com.a3nod.lenovo.sparrowfactory.com.android.tools.ir.server.InstantRunContentProvider"
+            android:multiprocess="true" />
+    </application>
+
+</manifest>

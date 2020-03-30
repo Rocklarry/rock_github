@@ -1,0 +1,80 @@
+From 3da37c3d01a3e458c4301e9e71f595bbfaeac346 Mon Sep 17 00:00:00 2001
+From: liuyan <liuyan0429@thundersoft.com>
+Date: Sat, 31 May 2014 15:06:51 +0800
+Subject: [PATCH 1/3]     ARM:dts:msm: support ctp hx8526-d32
+
+    Add CTP DIJING@AW980@HX8526-D32 driver
+
+Change-Id: Ic57b6a7abd9db78cfe730d6ea145a0b6885f072b
+Signed-off-by: Yan Liu <liuyan0429@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8916-qrd.dtsi |   53 ++++++++++++++++++++-----------
+ 1 file changed, 34 insertions(+), 19 deletions(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8916-qrd.dtsi b/arch/arm/boot/dts/qcom/msm8916-qrd.dtsi
+index 936ed4d..1f84a25 100644
+--- a/arch/arm/boot/dts/qcom/msm8916-qrd.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8916-qrd.dtsi
+@@ -21,25 +21,40 @@
+ 
+ &soc {
+ 	i2c@78b9000 { /* BLSP1 QUP5 */
+-		synaptics@70 {
+-			compatible = "synaptics,rmi4";
+-			reg = <0x70>;
+-			interrupt-parent = <&msm_gpio>;
+-			interrupts = <13 0x2008>;
+-			vdd-supply = <&pm8916_l17>;
+-			vcc_i2c-supply = <&pm8916_l16>;
+-			/* pins used by touchscreen */
+-			pinctrl-names = "pmx_ts_active","pmx_ts_suspend";
+-			pinctrl-0 = <&ts_int_active &ts_reset_active>;
+-			pinctrl-1 = <&ts_int_suspend &ts_reset_suspend>;
+-			synaptics,display-coords = <0 0 1100 1775>;
+-                        synaptics,panel-coords = <0 0 1100 1899>;
+-			synaptics,irq-gpio = <&msm_gpio 13 0x2008>;
+-			synaptics,reset-gpio = <&msm_gpio 12 0x0>;
+-			synaptics,i2c-pull-up;
+-			synaptics,power-down;
+-			synaptics,disable-gpios;
+-		};
++	//	synaptics@70 {
++	//		compatible = "synaptics,rmi4";
++	//		reg = <0x70>;
++	//		interrupt-parent = <&msm_gpio>;
++	//		interrupts = <13 0x2008>;
++	//		vdd-supply = <&pm8916_l17>;
++	//		vcc_i2c-supply = <&pm8916_l16>;
++	//		/* pins used by touchscreen */
++	//		pinctrl-names = "pmx_ts_active","pmx_ts_suspend";
++	//		pinctrl-0 = <&ts_int_active &ts_reset_active>;
++	//		pinctrl-1 = <&ts_int_suspend &ts_reset_suspend>;
++	//		synaptics,display-coords = <0 0 1100 1775>;
++          //              synaptics,panel-coords = <0 0 1100 1899>;
++	//		synaptics,irq-gpio = <&msm_gpio 13 0x2008>;
++	//		synaptics,reset-gpio = <&msm_gpio 12 0x0>;
++	//		synaptics,i2c-pull-up;
++	//		synaptics,power-down;
++	//		synaptics,disable-gpios;
++	//	};
++		himax@4a {
++                        compatible = "himax,hx8526-d32";
++                        reg = <0x4a>;
++                        interrupt-parent = <&msm_gpio>;
++                        interrupts = <13 0x2008>;
++                        vdd-supply = <&pm8916_l17>;
++                        vcc_i2c-supply = <&pm8916_l16>;
++			himax,name = "hx8526";
++                        himax,reset-gpio = <&msm_gpio 13 0x2008>;
++                        himax,irq-gpio = <&msm_gpio 12 0x0>;
++                        himax,virtual_key;
++                        himax,i2c-pull-up;
++                        himax,reg-en;
++			himax,num-max-touches = <5>;
++                };
+ 	};
+ 
+ 	gen-vkeys {
+-- 
+1.7.9.5
+

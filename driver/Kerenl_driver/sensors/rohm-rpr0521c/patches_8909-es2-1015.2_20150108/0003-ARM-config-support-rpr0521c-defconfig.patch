@@ -1,0 +1,30 @@
+From 6f3d5d47466a5e068fcd264b6b37e25a5d2214d6 Mon Sep 17 00:00:00 2001
+From: Yukun Wan <wanyk0402@thundersoft.com>
+Date: Thu, 8 Jan 2015 14:16:24 +0800
+Subject: [PATCH 3/3] ARM:config: support rpr0521c defconfig
+
+Defconfig support rpr0521c
+
+Change-Id: If14d746cafb919b0995f4f08f6da9238bfaf63f3
+Signed-off-by: Yukun Wan <wanyk0402@thundersoft.com>
+---
+ arch/arm/configs/msm8909_defconfig | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/configs/msm8909_defconfig b/arch/arm/configs/msm8909_defconfig
+index a94587e..042074b 100644
+--- a/arch/arm/configs/msm8909_defconfig
++++ b/arch/arm/configs/msm8909_defconfig
+@@ -295,7 +295,8 @@ CONFIG_SENSORS_MPU6050=y
+ CONFIG_SENSORS_MMC3416X=y
+ CONFIG_SENSORS_AKM8963=y
+ CONFIG_SENSORS_BMA2X2=y
+-CONFIG_SENSORS_AP3426=y
++#CONFIG_SENSORS_AP3426 is not set
++CONFIG_SENSORS_RPR0521C=y
+ CONFIG_SERIAL_MSM_HSL=y
+ CONFIG_SERIAL_MSM_HSL_CONSOLE=y
+ CONFIG_SERIAL_MSM_SMD=y
+-- 
+2.2.1
+

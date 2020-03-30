@@ -1,0 +1,59 @@
+From 1a71a00751fab29861b08b514bd7ea24cac55d72 Mon Sep 17 00:00:00 2001
+From: chenx <chenxiang0527@thundersoft.com>
+Date: Thu, 13 Nov 2014 14:34:32 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support bmi055 devicetree
+
+Devicetree support bmi055
+
+Change-Id: I7783d80d93cbddfe11a675ac4ec1f18be08ea4d5
+Signed-off-by: Xiang Chen <chenxiang0527@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi |   18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi b/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
+index 9981e42..47e2b28 100644
+--- a/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
+@@ -75,6 +75,20 @@
+ };
+ 
+ &i2c_0 { /* BLSP1 QUP2 */
++	bosch@69 { /* gyro sensor */
++		compatible = "bosch,bmg160";
++		reg = <0x69>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++	};
++
++	bosch@18 { /* Accelerometer sensor */
++		compatible = "bosch,bma2x2";
++		reg = <0x18>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++	};
++
+ 	akm@c {
+ 		compatible = "ak,ak09911";
+ 		reg = <0x0c>;
+@@ -108,7 +122,7 @@
+ 		avago,als-D = <129>;
+ 		avago,ga-value = <98>;
+ 	};
+-
++/*
+ 	st@18 {
+ 		compatible = "st,lis3dh";
+ 		reg = <0x18>;
+@@ -128,7 +142,7 @@
+ 		st,negate-x;
+ 		st,negate-y;
+ 	};
+-
++*/
+ 	tps65132@3e {
+ 		compatible = "ti,tps65132";
+ 		reg = <0x3e>;
+-- 
+1.7.9.5
+

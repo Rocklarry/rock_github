@@ -1,0 +1,28 @@
+From 59b4bf6206506e4e3ae69ecd8f3dc76e90893004 Mon Sep 17 00:00:00 2001
+From: chenxiang <chenxiang0527@thundersoft.com>
+Date: Wed, 7 Sep 2016 09:42:32 +0800
+Subject: [PATCH 3/3] ARM:config: support mmc3630kj defconfig
+
+Defconfig support mmc3630kj
+
+Change-Id: Ief395b3ecbb261182d2c29b28bf039f2ec71064f
+Signed-off-by: Xiang Chen <chenxiang0527@thundersoft.com>
+---
+ arch/arm/configs/msm8909-1gb_defconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm/configs/msm8909-1gb_defconfig b/arch/arm/configs/msm8909-1gb_defconfig
+index 809eabc..7ff45a1 100644
+--- a/arch/arm/configs/msm8909-1gb_defconfig
++++ b/arch/arm/configs/msm8909-1gb_defconfig
+@@ -322,6 +322,7 @@ CONFIG_SENSORS_MMC3416X=y
+ CONFIG_SENSORS_AKM8963=y
+ CONFIG_SENSORS_BMA2X2=y
+ CONFIG_SENSORS_AP3426=y
++CONFIG_SENSORS_MMC3630KJ=y
+ CONFIG_SENSORS_HALL=y
+ CONFIG_SERIAL_MSM_HSL=y
+ CONFIG_SERIAL_MSM_HSL_CONSOLE=y
+-- 
+1.9.1
+

@@ -1,0 +1,41 @@
+From af65e4f5348df792f2c1ceca808e11b5876951c4 Mon Sep 17 00:00:00 2001
+From: Xiaowu Long <longxw0410@thundersoft.com>
+Date: Mon, 23 Mar 2015 13:16:58 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support bmc156 devicetree
+
+Devicetree support bmc156
+
+Change-Id: Ib7319cfaea3c6c9a84ebcad4f57daec5c68cea2d
+Signed-off-by: Xiaowu Long <longxw0410@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi b/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
+index 5bb6734..3738137 100644
+--- a/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
+@@ -75,6 +75,20 @@
+ };
+ 
+ &i2c_0 { /* BLSP1 QUP2 */
++	bosch@10 { /* Accelerometer sensor */
++		compatible = "bosch,bma2x2";
++		reg = <0x10>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++	};
++
++	bosch@12 { /* Magnetic field sensor */
++		compatible = "bosch,bmm050";
++		reg = <0x12>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++	};
++
+ 	akm@c {
+ 		compatible = "ak,ak09911";
+ 		reg = <0x0c>;
+-- 
+2.2.2
+

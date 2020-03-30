@@ -1,0 +1,61 @@
+From f28906cdec37d8e49cb80d9fcce9f6ccd2bb8c70 Mon Sep 17 00:00:00 2001
+From: maoyq0504 <maoyq0504@thundersoft.com>
+Date: Fri, 22 May 2015 14:22:48 +0800
+Subject: [PATCH 1/3] ARM:dts:msm: support ctp laibao gt9158 devicetree
+
+Add CTP laibao@TPAY050A9G@GT9158 device tree
+
+Change-Id: I6dfe6b4bb97daed5c379e98ce95b27cac5d3ed94
+Signed-off-by: Yuanqiu Mao <maoyq0504@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi | 26 ++++++++++++++++++++++++--
+ 1 file changed, 24 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+index 1039722..00d1c76 100755
+--- a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+@@ -1,4 +1,4 @@
+-/* Copyright (c) 2014, The Linux Foundation. All rights reserved.
++/* Copyright (c) 2014-2015, The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 and
+@@ -190,11 +190,33 @@
+ 			focaltech,fw-auto-cal;
+ 			focaltech,ignore-id-check;
+ 		};
++		goodix@5d {
++			compatible = "goodix,gt9xx";
++			reg = <0x5d>;
++			interrupt-parent = <&msm_gpio>;
++			interrupts = <13 0x2008>;
++			reset-gpios = <&msm_gpio 12 0x00>;
++			interrupt-gpios = <&msm_gpio 13 0x00>;
++			vdd-supply = <&pm8916_l17>;
++			vcc-i2c-supply = <&pm8916_l6>;
++			goodix,button-map = <139 102 158>;
++			goodix,panel-coords = <0 0 720 1400>;
++			goodix,display-coords = <0 0 720 1280>;
++			goodix,product-id = "9158";
++			goodix,num_max_touches = <5>;
++			goodix,soft_rst_dly = <20>;
++			goodix,name = "GT9158";
++			goodix,fw_name = "gtp_fw.bin";
++			goodix,fw-vkey-support;
++			goodix,i2c-pull-up;
++			goodix,no-force-update;
++			goodix,enable-power-off;
++                };
+ 	};
+ 
+ 	gen-vkeys {
+ 		compatible = "qcom,gen-vkeys";
+-		label = "ft5x06_ts";
++		label = "goodix-ts";
+ 		qcom,disp-maxx = <1080>;
+ 		qcom,disp-maxy = <1920>;
+ 		qcom,panel-maxx = <1080>;
+-- 
+1.9.1
+

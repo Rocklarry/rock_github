@@ -1,0 +1,29 @@
+From 98e90a1e7b2f6c32a192a862a26da2b79772376c Mon Sep 17 00:00:00 2001
+From: chenqingfeng <chenqf0228@thundersoft.com>
+Date: Thu, 19 Mar 2015 15:30:55 +0800
+Subject: [PATCH 2/2] ARM:config: support bma250e defconfig
+
+Defconfig support bma250e
+
+Change-Id: Id5b455bc477f8b1d713022e5f6264261360661d3
+Signed-off-by: Qingfeng Chen <chenqf0228@thundersoft.com>
+---
+ arch/arm64/configs/msm_defconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm64/configs/msm_defconfig b/arch/arm64/configs/msm_defconfig
+index 32c6f91..f155bae 100644
+--- a/arch/arm64/configs/msm_defconfig
++++ b/arch/arm64/configs/msm_defconfig
+@@ -251,7 +251,7 @@ CONFIG_TOUCHSCREEN_BU21150=y
+ CONFIG_INPUT_MT_WRAPPER=y
+ CONFIG_INPUT_MISC=y
+ CONFIG_INPUT_HBTP_INPUT=y
+-CONFIG_SENSORS_MPU6050=y
++#CONFIG_SENSORS_MPU6050=y
+ CONFIG_SENSORS_LIS3DH=y
+ CONFIG_INPUT_UINPUT=y
+ CONFIG_INPUT_GPIO=m
+-- 
+1.7.9.5
+

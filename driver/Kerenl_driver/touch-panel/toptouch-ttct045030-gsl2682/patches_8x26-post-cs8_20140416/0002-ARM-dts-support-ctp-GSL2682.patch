@@ -1,0 +1,49 @@
+From d62660f2f1993e3a380b19887238a8a8cbc7903e Mon Sep 17 00:00:00 2001
+From: Xinhui Wang <wangxh0701@thundersoft.com>
+Date: Tue, 15 Apr 2014 16:53:48 +0800
+Subject: [PATCH 2/3] ARM:dts: support ctp GSL2682
+
+add CTP TOPTOUCH@TTCT045030@GSL2682 driver
+Signed-off-by: Xinhui Wang <wangxh0701@thundersoft.com>
+
+Change-Id: I45f4e8838e6a84ec158aedb43ac20ee030df11e1
+---
+ arch/arm/boot/dts/msm8226-qrd.dtsi |   15 ++++++++++++++-
+ 1 file changed, 14 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/msm8226-qrd.dtsi b/arch/arm/boot/dts/msm8226-qrd.dtsi
+index 7ff97f6..6af2864 100644
+--- a/arch/arm/boot/dts/msm8226-qrd.dtsi
++++ b/arch/arm/boot/dts/msm8226-qrd.dtsi
+@@ -18,7 +18,7 @@
+ 	};
+ 
+ 	i2c@f9927000 { /* BLSP1 QUP5 */
+-		synaptics@20 {
++	/*	synaptics@20 {
+ 			compatible = "synaptics,rmi4";
+ 			reg = <0x20>;
+ 			interrupt-parent = <&msmgpio>;
+@@ -61,6 +61,19 @@
+ 			focaltech,fw-upgrade-id2 = <0x03>;
+ 			focaltech,fw-delay-readid-ms = <10>;
+ 			focaltech,fw-delay-era-flsh-ms = <2000>;
++		};*/
++
++		gsl@40 {
++			compatible = "gsl,2688";
++			reg = <0x40>;
++			interrupt-parent = <&msmgpio>;
++			interrupts = <17 0x2>;
++			vdd-supply = <&pm8226_l19>;
++			vcc_i2c-supply = <&pm8226_lvs1>;
++			gsl,reset-gpio = <&msmgpio 16 0x00>;
++			gsl,irq-gpio = <&msmgpio 17 0x00>;
++			gsl,fw-name = "gsl2680.h";
++			gsl,fw-vkey-support;
+ 		};
+ 	};
+ 
+-- 
+1.7.9.5
+

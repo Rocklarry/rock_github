@@ -1,0 +1,57 @@
+From 9ec5819b45ecdaf249df1c19b89da4aead0403ae Mon Sep 17 00:00:00 2001
+From: Xiaowu Long <longxw0410@thundersoft.com>
+Date: Wed, 18 Mar 2015 10:49:56 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support mc3430 devicetree
+
+Devicetree support mc3430
+
+Change-Id: I9cbad22d67734489ec485291fff00350dfa3260e
+Signed-off-by: Xiaowu Long <longxw0410@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi | 23 +++++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi b/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
+index 5bb6734..a2afd2f 100644
+--- a/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
+@@ -30,6 +30,17 @@
+ 		};
+ 	};
+ 
++	mc3xxx_int_pin {
++		qcom,pins = <&gp 113>;
++		qcom,pin-func = <0>;
++		qcom,num-grp-pins = <1>;
++		label = "mc3xxx_irq";
++		mc3xxx_default: mc3xxx_default {
++		drive-strength = <6>;
++		bias-pull-up;
++		};
++	};
++
+ 	lis3dh_int1_pin {
+ 		qcom,pins = <&gp 115>;
+ 		qcom,num-grp-pins = <1>;
+@@ -109,6 +120,18 @@
+ 		avago,ga-value = <98>;
+ 	};
+ 
++	mcube@4c { /* Accelerometer sensor */
++		compatible = "mcube,mc3xxx";
++		reg = <0x4c>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&mc3xxx_default>;
++		interrupt-parent = <&msm_gpio>;
++		interrupts = <113 0x2002>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++		mcube,position = <1>;
++	};
++
+ 	st@18 {
+ 		compatible = "st,lis3dh";
+ 		reg = <0x18>;
+-- 
+2.2.2
+

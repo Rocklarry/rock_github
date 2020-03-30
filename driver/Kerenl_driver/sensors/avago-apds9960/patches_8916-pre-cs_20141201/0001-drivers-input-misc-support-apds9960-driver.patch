@@ -1,0 +1,5250 @@
+From 43b55267ff11a79c5469837c89ab2da1e065316b Mon Sep 17 00:00:00 2001
+From: chenx <chenxiang0527@thundersoft.com>
+Date: Mon, 1 Dec 2014 16:30:04 +0800
+Subject: [PATCH 1/3] drivers:input:misc: support apds9960 driver
+
+Driver support apds9960
+
+Change-Id: I3b51b042ed4042a393c8e0932d026df20ec4cf3c
+Signed-off-by: Xiang Chen <chenxiang0527@thundersoft.com>
+---
+ .../devicetree/bindings/input/misc/apds9960.txt    |   38 +
+ drivers/input/misc/Kconfig                         |    9 +
+ drivers/input/misc/Makefile                        |    1 +
+ drivers/input/misc/apds9960.c                      | 4546 ++++++++++++++++++++
+ drivers/input/misc/apds9960.h                      |  595 +++
+ 5 files changed, 5189 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/input/misc/apds9960.txt
+ create mode 100644 drivers/input/misc/apds9960.c
+ create mode 100644 drivers/input/misc/apds9960.h
+
+diff --git a/Documentation/devicetree/bindings/input/misc/apds9960.txt b/Documentation/devicetree/bindings/input/misc/apds9960.txt
+new file mode 100644
+index 0000000..1d94736
+--- /dev/null
++++ b/Documentation/devicetree/bindings/input/misc/apds9960.txt
+@@ -0,0 +1,38 @@
++Avago apds9960 ambient light + proximity combo driver.
++
++Required properties:
++
++ - compatible					: Should be "avago,apds9960".
++ - reg							: i2c slave address of the device.
++ - pinctrl-names				: The pinctrl configration names of this sensor driver. Should be
++									"default" and "sleep".
++ - pinctrl-0					: Should specify pin control groups used for this controller.
++ - pinctrl-1					: Should specify pin control groups used for this controller.
++ - interrupt-parent				: Parent of interrupt.
++ - interupts					: L/P sample interrupt to indicate new data ready.
++ - vdd-supply					: Power supply needed to power up the device.
++ - vio-supply					: IO power supply needed for IO and I2C.
++ - avago,irq-gpio				: The gpio pin for the interrupt.
++ - avago,ps-threshold			: The threshold adc value for proximity sensor
++									to trigger away interrupt.
++ - avago,ps-hysteresis-threshold: The hysteresis threshold adc value for
++									proximity sensor to trigger  close interrupt.
++
++ Example:
++
++&i2c_0 { /* BLSP1 QUP2 */
++	avago@39 {
++		compatible = "avago,apds9960";
++		reg = <0x39>;
++		pinctrl-names = "default","sleep";
++		pinctrl-0 = <&apds9960_default>;
++		pinctrl-1 = <&apds9960_sleep>;
++		interrupt-parent = <&msm_gpio>;
++		interrupts = <113 0x2002>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++		avago,irq-gpio = <&msm_gpio 113 0x2002>;
++		avago,ps-threshold = <200>;
++		avago,ps-hysteresis-threshold = <150>;
++	};
++};
+\ No newline at end of file
+diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
+index b358471..0788d20 100644
+--- a/drivers/input/misc/Kconfig
++++ b/drivers/input/misc/Kconfig
+@@ -819,5 +819,14 @@ config SENSORS_BMI058
+ 	 If you say yes here, you get support for Bosch Sensortec's
+ 	 sensor driver of BMI058.
+ 
++config SENSORS_APDS9960
++	tristate "Avago APDS9960 combined als and proximity sensors"
++	depends on I2C
++	help
++	  Say Y here if you want to build a driver for Avago APDS9960
++	  combined ambient light and proximity sensor chip.
++
++	  To compile this driver as a module, choose M here: the
++	  module will be called apds9960. If unsure, say N here.
+ endif
+ 
+diff --git a/drivers/input/misc/Makefile b/drivers/input/misc/Makefile
+index 139a4fb..1c54d2c 100644
+--- a/drivers/input/misc/Makefile
++++ b/drivers/input/misc/Makefile
+@@ -83,3 +83,4 @@ endif
+ ifeq ($(CONFIG_BOSCH_BMA2X2_ENABLE_INT2),y)
+ 	EXTRA_CFLAGS += -DBMA2X2_ENABLE_INT2
+ endif
++obj-$(CONFIG_SENSORS_APDS9960)	+= apds9960.o
+\ No newline at end of file
+diff --git a/drivers/input/misc/apds9960.c b/drivers/input/misc/apds9960.c
+new file mode 100644
+index 0000000..e4fb7d4
+--- /dev/null
++++ b/drivers/input/misc/apds9960.c
+@@ -0,0 +1,4546 @@
++/*
++ *  apds9960.c - Linux kernel modules for
++ *  Gesture + RGB + ambient light + proximity sensor
++ *  Copyright (C) 2013-2014 Lee Kai Koon <kai-koon.lee@avagotech.com>
++ *  Copyright (C) 2013-2014 Avago Technologies
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; either version 2 of the License, or
++ *  (at your option) any later version.
++ *
++ *  This program is distributed in the hope that it will be useful,
++ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *  GNU General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License
++ *  along with this program; if not, write to the Free Software
++ *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
++ */
++
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <linux/fs.h>
++#include <linux/slab.h>
++#include <linux/i2c.h>
++#include <linux/mutex.h>
++#include <linux/delay.h>
++#include <linux/interrupt.h>
++#include <linux/irq.h>
++#include <linux/input.h>
++#include <linux/ioctl.h>
++#include <linux/miscdevice.h>
++#include <linux/uaccess.h>
++#include <linux/gpio.h>
++#include <linux/interrupt.h>
++#include <linux/time.h>
++#include <linux/regulator/consumer.h>
++#include <linux/of_gpio.h>
++#include <linux/sensors.h>
++#include "apds9960.h"
++
++
++/************************************************
++Change history
++
++Ver		When		 Who Why
++---		----		 --- ---
++1.0.0	19-Aug-2013	 KK	Initial draft
++1.0.1	26-Aug-2013	 KK	Revise gesture algorithm
++1.0.2	29-Aug-2013	 KK	Change GTHR_IN and GTHR_OUT
++1.0.3	03-Sep-2013	 KK	Correct divide by zero error
++		in AveragingRawData()
++1.0.4	05-Sep-2013	 KK	Accept old and latest ID value
++1.0.5	17-Sep-2013	 KK	Return if sample size is less than or
++		equal to 4 in GestureDataProcessing();
++		Correct error in AveragingRawData()
++1.0.6	27-Sep-2013	 KK	Simplify GestureDataProcessing() and revise
++		Gesture Calibration Added Up/Down/Left/Right
++		U-Turn gesture detection
++************************************************/
++
++
++/*
++ * Global data
++ */
++/* global i2c_client to support ioctl */
++static struct i2c_client *apds9960_i2c_client;
++static struct workqueue_struct *apds_workqueue;
++
++static unsigned char apds9960_als_atime_tb[] = { 0xF6, 0xEB, 0xD6 };
++ /* DO NOT use beyond 100.8ms */
++static unsigned short apds9960_als_integration_tb[] = {2400, 5040, 10080};
++static unsigned short apds9960_als_res_tb[] = { 10240, 21504, 43008 };
++static unsigned char apds9960_als_again_tb[] = { 1, 4, 16, 64 };
++static unsigned char apds9960_als_again_bit_tb[] = { 0x00, 0x01, 0x02, 0x03 };
++
++#ifndef PLATFORM_SENSOR_APDS9960
++/* ensure the coefficients do not exceed 9999 */
++static int RGB_COE_X[3] = {-1882, 10240, -8173};/* {-1.8816, 10.24, -8.173}; */
++static int RGB_COE_Y[3] = {-2100, 10130, -7708};/* {-2.0998, 10.13, -7.708}; */
++static int RGB_COE_Z[3] = {-1937, 5201, -2435};/* {-1.937, 5.201, -2.435}; */
++#endif
++
++static int RGB_CIE_N1 = 332;	/* 0.332; */
++static int RGB_CIE_N2 = 186;	/* 0.1858; */
++
++static int RGB_CIE_CCT1 = 449;	/* 449.0; */
++static int RGB_CIE_CCT2 = 3525;	/* 3525.0; */
++static int RGB_CIE_CCT3 = 6823;	/* 6823.3; */
++static int RGB_CIE_CCT4 = 5520;	/* 5520.33; */
++
++/* Gesture data storage */
++static struct GESTURE_DATA_TYPE gesture_data;
++
++static int gesture_motion = DIR_NONE;
++static int gesture_prev_motion = DIR_NONE;
++static int fMotionMapped;
++
++int gesture_ud_delta;
++int gesture_lr_delta;
++int gesture_state;
++
++int negative_ud_delta;
++int positive_ud_delta;
++int negative_lr_delta;
++int positive_lr_delta;
++/* 1 = positive then negative, 2 = negative then positive */
++int ud_delta_positive_negative;
++int lr_delta_positive_negative;
++
++int gesture_circle_state;
++int gesture_circle_cw_count;
++int gesture_circle_acw_count;
++
++int gesture_ud_count;
++int gesture_lr_count;
++
++int gesture_near_count;
++int gesture_far_count;
++
++int gesture_fundamentals;	/* 0 = fundamentals, 1 = extra */
++
++unsigned int gesture_start_time;
++unsigned int gesture_end_time;
++unsigned int gesture_time;
++int gesture_speed;
++
++char gesture_str[DIR_ALL][15] = {"", "Left", "Right", "Up", "Down",
++	"Up-Right", "Right-Down", "Down-Left", "Left-Up",
++	"NEAR", "FAR", "Circle-CW", "Circle-ACW",
++	"Up U-Turn", "Down U-Turn", "Left U-Turn", "Right U-Turn"};
++static int apds9960_init_client(struct i2c_client *client);
++static struct sensors_classdev sensors_light_cdev = {
++	.name = "apds9960-light",
++	.vendor = "avago",
++	.version = 1,
++	.handle = SENSORS_LIGHT_HANDLE,
++	.type = SENSOR_TYPE_LIGHT,
++	.max_range = "30000",
++	.resolution = "0.0125",
++	.sensor_power = "0.20",
++	.min_delay = 0, /* in microseconds */
++	.fifo_reserved_event_count = 0,
++	.fifo_max_event_count = 0,
++	.enabled = 0,
++	.delay_msec = 100,
++	.sensors_enable = NULL,
++	.sensors_poll_delay = NULL,
++};
++
++static struct sensors_classdev sensors_proximity_cdev = {
++	.name = "apds9960-proximity",
++	.vendor = "avago",
++	.version = 1,
++	.handle = SENSORS_PROXIMITY_HANDLE,
++	.type = SENSOR_TYPE_PROXIMITY,
++	.max_range = "5",
++	.resolution = "5.0",
++	.sensor_power = "3",
++	.min_delay = 0, /* in microseconds */
++	.fifo_reserved_event_count = 0,
++	.fifo_max_event_count = 0,
++	.enabled = 0,
++	.delay_msec = 100,
++	.sensors_enable = NULL,
++	.sensors_poll_delay = NULL,
++};
++
++
++/*
++ * Global data
++ */
++static struct apds9960_data *pdev_data;
++
++/* global i2c_client to support ioctl */
++static struct i2c_client *apds9960_i2c_client;
++
++/*
++ * Management functions
++ */
++
++static int apds9960_clear_interrupt(struct i2c_client *client, int command)
++{
++	int ret;
++
++	ret = i2c_smbus_write_byte(client, command);
++
++	return ret;
++}
++
++static int apds9960_set_enable(struct i2c_client *client, int enable)
++{
++	struct apds9960_data *data = i2c_get_clientdata(client);
++	int ret;
++
++	ret = i2c_smbus_write_byte_data(client, APDS9960_ENABLE_REG, enable);
++
++	data->enable = enable;
++
++	return ret;
++}
++
++static int apds9960_set_atime(struct i2c_client *client, int atime)
++{
++	struct apds9960_data *data = i2c_get_clientdata(client);
++	int ret;
++
++	ret = i2c_smbus_write_byte_data(client, APDS9960_ATIME_REG, atime);
++
++	data->atime = atime;
++
++	return ret;
++}
++
++static int apds9960_set_wtime(struct i2c_client *client, int wtime)
++{
++	struct apds9960_data *data = i2c_get_clientdata(client);
++	int ret;
++
++	ret = i2c_smbus_write_byte_data(client, APDS9960_WTIME_REG, wtime);
++
++	data->wtime = wtime;
++
++	return ret;
++}
++
++static int apds9960_set_ailt(struct i2c_client *client, int threshold)
++{
++	struct apds9960_data *data = i2c_get_clientdata(client);
++	int ret;
++
++	ret = i2c_smbus_write_word_data(client, APDS9960_AILTL_REG, threshold);
++
++	data->ailt = threshold;
++
++	return ret;
++}
++
++static int apds9960_set_aiht(struct i2c_client *client, int threshold)
++{
++	struct apds9960_data *data = i2c_get_clientdata(client);
++	int ret;
++
++	ret = i2c_smbus_write_word_data(client, APDS9960_AIHTL_REG, threshold);
++
++	data->aiht = threshold;
++
++	return ret;
++}
++
++static int apds9960_set_pilt(struct i2c_client *client, int threshold)
++{
++	struct apds9960_data *data = i2c_get_clientdata(client);
++	int ret;
++
++	ret = i2c_smbus_write_byte_data(client, APDS9960_PITLO_REG, threshold);
++
++	data->pilt = threshold;
++
++	return ret;
++}
++
++static int apds9960_set_piht(struct i2c_client *client, int threshold)
++{
++	struct apds9960_data *data = i2c_get_clientdata(client);
++	int ret;
++
++	ret = i2c_smbus_write_byte_data(client, APDS9960_PITHI_REG, threshold);
++
++	data->piht = threshold;
++
++	return ret;
++}
++
++static int apds9960_set_pers(struct i2c_client *client, int pers)
++{
++	struct apds9960_data *data = i2c_get_clientdata(client);
++	int ret;
++
++	ret = i2c_smbus_write_byte_data(client, APDS9960_PERS_REG, pers);
++
++	data->pers = pers;
++
++	return ret;
++}
++
++static int apds9960_set_config(struct i2c_client *client, int config)
++{
++	struct apds9960_data *data = i2c_get_clientdata(client);
++	int ret;
++
++	ret = i2c_smbus_write_byte_data(client, APDS9960_CONFIG_REG, config);
++
++	data->config = config;
++
++	return ret;
++}
++
++static int apds9960_set_ppulse(struct i2c_client *client, int ppulse)
++{
++	struct apds9960_data *data = i2c_get_clientdata(client);
++	int ret;
++
++	ret = i2c_smbus_write_byte_data(client, APDS9960_PPULSE_REG, ppulse);
++
++	data->ppulse = ppulse;
++
++	return ret;
++}
++
++static int apds9960_set_control(struct i2c_client *client, int control)
++{
++	struct apds9960_data *data = i2c_get_clientdata(client);
++	int ret;
++
++	ret = i2c_smbus_write_byte_data(client, APDS9960_CONTROL_REG, control);
++
++	data->control = control;
++
++	return ret;
++}
++
++static int apds9960_set_aux(struct i2c_client *client, int aux)
++{
++	struct apds9960_data *data = i2c_get_clientdata(client);
++	int ret;
++
++	ret = i2c_smbus_write_byte_data(client, APDS9960_AUX_REG, aux);
++
++	data->aux = aux;
++
++	return ret;
++}
++
++static int apds9960_set_poffset_ur(struct i2c_client *client, int poffset_ur)
++{
++	struct apds9960_data *data = i2c_get_clientdata(client);
++	int ret;
++
++	ret = i2c_smbus_write_byte_data(client,
++		APDS9960_POFFSET_UR_REG, poffset_ur);
++
++	data->poffset_ur = poffset_ur;
++
++	return ret;
++}
++
++static int apds9960_set_poffset_dl(struct i2c_client *client, int poffset_dl)
++{
++	struct apds9960_data *data = i2c_get_clientdata(client);
++	int ret;
++
++	ret = i2c_smbus_write_byte_data(client,
++		APDS9960_POFFSET_DL_REG, poffset_dl);
++
++	data->poffset_dl = poffset_dl;
++
++	return ret;
++}
++
++/****************** Gesture related registers ************************/
++static int apds9960_set_config2(struct i2c_client *client, int config2)
++{
++	struct apds9960_data *data = i2c_get_clientdata(client);
++	int ret;
++
++	ret = i2c_smbus_write_byte_data(client, APDS9960_CONFIG2_REG, config2);
++
++	data->config2 = config2;
++
++	return ret;
++}
++
++static int apds9960_set_gthr_in(struct i2c_client *client, int gthr_in)
++{
++	struct apds9960_data *data = i2c_get_clientdata(client);
++	int ret;
++
++	ret = i2c_smbus_write_byte_data(client, APDS9960_GTHR_IN_REG, gthr_in);
++
++	data->gthr_in = gthr_in;
++
++	return ret;
++}
++
++static int apds9960_set_gthr_out(struct i2c_client *client, int gthr_out)
++{
++	struct apds9960_data *data = i2c_get_clientdata(client);
++	int ret;
++
++	ret = i2c_smbus_write_byte_data(client,
++		APDS9960_GTHR_OUT_REG, gthr_out);
++
++	data->gthr_out = gthr_out;
++
++	return ret;
++}
++
++static int apds9960_set_gconf1(struct i2c_client *client, int gconf1)
++{
++	struct apds9960_data *data = i2c_get_clientdata(client);
++	int ret;
++
++	ret = i2c_smbus_write_byte_data(client, APDS9960_GCONF1_REG, gconf1);
++
++	data->gconf1 = gconf1;
++
++	return ret;
++}
++
++static int apds9960_set_gconf2(struct i2c_client *client, int gconf2)
++{
++	struct apds9960_data *data = i2c_get_clientdata(client);
++	int ret;
++
++	ret = i2c_smbus_write_byte_data(client, APDS9960_GCONF2_REG, gconf2);
++
++	data->gconf2 = gconf2;
++
++	return ret;
++}
++
++static int apds9960_set_goffset_u(struct i2c_client *client, int goffset_u)
++{
++	struct apds9960_data *data = i2c_get_clientdata(client);
++	int ret;
++
++	ret = i2c_smbus_write_byte_data(client,
++		APDS9960_GOFFSET_U_REG, goffset_u);
++
++	data->goffset_u = goffset_u;
++
++	return ret;
++}
++
++static int apds9960_set_goffset_d(struct i2c_client *client, int goffset_d)
++{
++	struct apds9960_data *data = i2c_get_clientdata(client);
++	int ret;
++
++	ret = i2c_smbus_write_byte_data(client,
++		APDS9960_GOFFSET_D_REG, goffset_d);
++
++	data->goffset_d = goffset_d;
++
++	return ret;
++}
++
++static int apds9960_set_gpulse(struct i2c_client *client, int gpulse)
++{
++	struct apds9960_data *data = i2c_get_clientdata(client);
++	int ret;
++
++	ret = i2c_smbus_write_byte_data(client, APDS9960_GPULSE_REG, gpulse);
++
++	data->gpulse = gpulse;
++
++	return ret;
++}
++
++static int apds9960_set_goffset_l(struct i2c_client *client, int goffset_l)
++{
++	struct apds9960_data *data = i2c_get_clientdata(client);
++	int ret;
++
++	ret = i2c_smbus_write_byte_data(client,
++		APDS9960_GOFFSET_L_REG, goffset_l);
++
++	data->goffset_l = goffset_l;
++
++	return ret;
++}
++
++static int apds9960_set_goffset_r(struct i2c_client *client, int goffset_r)
++{
++	struct apds9960_data *data = i2c_get_clientdata(client);
++	int ret;
++
++	ret = i2c_smbus_write_byte_data(client,
++		APDS9960_GOFFSET_R_REG, goffset_r);
++
++	data->goffset_r = goffset_r;
++
++	return ret;
++}
++
++static int apds9960_set_gconf3(struct i2c_client *client, int gconf3)
++{
++	struct apds9960_data *data = i2c_get_clientdata(client);
++	int ret;
++
++	ret = i2c_smbus_write_byte_data(client, APDS9960_GCONF3_REG, gconf3);
++
++	data->gconf3 = gconf3;
++
++	return ret;
++}
++
++static int apds9960_set_gctrl(struct i2c_client *client, int gctrl)
++{
++	struct apds9960_data *data = i2c_get_clientdata(client);
++	int ret;
++
++	ret = i2c_smbus_write_byte_data(client, APDS9960_GCTRL_REG, gctrl);
++
++	data->gctrl = gctrl;
++
++	return ret;
++}
++
++/*********************************************************************/
++
++static int LuxCalculation(struct i2c_client *client)
++{
++	struct apds9960_data *data = i2c_get_clientdata(client);
++	int X1, Y1, Z1;
++	int x1, y1, z1;
++	int n;
++	/*unsigned int lux; */
++	unsigned int cct;
++	int sum_XYZ = 0;
++
++	X1 = (data->RGB_COE_X[0] * data->rdata) +
++	(data->RGB_COE_X[1] * data->gdata) + (data->RGB_COE_X[2] * data->bdata);
++	Y1 = (data->RGB_COE_Y[0] * data->rdata) +
++	(data->RGB_COE_Y[1] * data->gdata) + (data->RGB_COE_Y[2] * data->bdata);
++	Z1 = (data->RGB_COE_Z[0] * data->rdata) +
++	(data->RGB_COE_Z[1] * data->gdata) + (data->RGB_COE_Z[2] * data->bdata);
++
++	if ((X1 == 0) && (Y1 == 0) && (Z1 == 0)) {
++		x1 = y1 = z1 = 0;
++	} else {
++		sum_XYZ = (X1 + Y1 + Z1) / 1000;	/* scale down */
++		if (sum_XYZ > 0) {
++			if (((X1 + Y1 + Z1)%1000) >= 500)
++				sum_XYZ++;
++		} else {
++			if (((X1 + Y1 + Z1) % 1000) <= -500)
++				sum_XYZ--;
++		}
++
++		x1 = X1 / sum_XYZ;
++		y1 = Y1 / sum_XYZ;
++		z1 = Z1 / sum_XYZ;
++	}
++
++	if (data->cdata > 10) {
++
++		n = ((x1 - RGB_CIE_N1) * 1000) / (RGB_CIE_N2 - y1);
++		cct = (((RGB_CIE_CCT1 * (n * n * n)) / 1000000000) +
++			   ((RGB_CIE_CCT2 * (n * n)) / 1000000) +
++			   ((RGB_CIE_CCT3 * n) / 1000) + RGB_CIE_CCT4);
++	} else {
++		n = 0;
++		cct = 0;
++	}
++
++	data->lux = (data->cdata * 10080) /
++	(apds9960_als_integration_tb[data->als_atime_index] *
++	apds9960_als_again_tb[data->als_again_index]);
++
++	data->cct = cct;
++
++	if (data->cdata > 0) {
++		/* Incandescent 2600K */
++		if (((data->rdata * 100) / data->cdata) >= 65) {
++			data->cct = (data->cct * data->cct_GA2) / 1000;
++			data->lux = (data->lux * data->lux_GA2) / 1000;
++		} else if (((data->rdata * 100) / data->cdata) >= 45) {
++			/* Fluorescent Warm White 2700K */
++			data->cct = (data->cct * data->cct_GA3) / 1000;
++			data->lux = (data->lux * data->lux_GA3) / 1000;
++		} else {  /* Fluorescent Daylight 6500K */
++			data->cct = (data->cct * data->cct_GA1) / 1000;
++			data->lux = (data->lux * data->lux_GA1) / 1000;
++		}
++	}
++
++	return 0;
++}
++
++static void apds9960_change_ps_threshold(struct i2c_client *client)
++{
++	struct apds9960_data *data = i2c_get_clientdata(client);
++
++	data->ps_data =	i2c_smbus_read_byte_data(client, APDS9960_PDATA_REG);
++
++	if ((data->ps_data > data->piht) && (data->ps_data > data->pilt)) {
++		/* far-to-near detected */
++		data->ps_detection = 1;
++		/* FAR-to-NEAR detection */
++		input_report_abs(data->input_dev_ps, ABS_DISTANCE, 0);
++		input_sync(data->input_dev_ps);
++
++		/* setup to detect far now */
++		apds9960_set_pilt(client, data->ps_hysteresis_threshold);
++		apds9960_set_piht(client, APDS9960_FAR_THRESHOLD_HIGH);
++
++		dev_err(&client->dev, "far-to-near detected\n");
++	} else if ((data->ps_data < data->pilt) &&
++		(data->ps_data < data->piht)) {
++		/* near-to-far detected */
++		data->ps_detection = 0;
++		/* NEAR-to-FAR detection */
++		input_report_abs(data->input_dev_ps, ABS_DISTANCE, 1);
++		input_sync(data->input_dev_ps);
++
++		/* setup to detect near now */
++		apds9960_set_pilt(client, APDS9960_NEAR_THRESHOLD_LOW);
++		apds9960_set_piht(client, data->ps_threshold);
++
++		dev_err(&client->dev, "near-to-far detected\n");
++	} else if ((data->pilt == APDS9960_FAR_THRESHOLD_HIGH) &&
++		(data->piht == APDS9960_NEAR_THRESHOLD_LOW)) {
++		/* force interrupt */
++		/* special case */
++		/* near-to-far detected */
++		data->ps_detection = 0;
++		/* NEAR-to-FAR detection */
++		input_report_abs(data->input_dev_ps, ABS_DISTANCE, 1);
++		input_sync(data->input_dev_ps);
++
++		/* setup to detect near now */
++		apds9960_set_pilt(client, APDS9960_NEAR_THRESHOLD_LOW);
++		apds9960_set_piht(client, data->ps_threshold);
++
++		dev_err(&client->dev, "near-to-far detected\n");
++	}
++}
++
++static void apds9960_change_als_threshold(struct i2c_client *client)
++{
++	struct apds9960_data *data = i2c_get_clientdata(client);
++	unsigned char change_again = 0;
++	unsigned char control_data = 0;
++	unsigned char i2c_data[16];
++	int status;
++
++	status = i2c_smbus_read_i2c_block_data(client,
++		APDS9960_CDATAL_REG, 8, (unsigned char *)i2c_data);
++
++	if (status < 0)
++		return;
++	if (status != 8)
++		return;
++
++	data->cdata = (i2c_data[1] << 8) | i2c_data[0];
++
++	data->rdata = (i2c_data[3] << 8) | i2c_data[2];
++
++	data->gdata = (i2c_data[5] << 8) | i2c_data[4];
++	data->bdata = (i2c_data[7] << 8) | i2c_data[6];
++
++	LuxCalculation(client);
++
++	if (data->lux >= 0) {
++		data->lux = data->lux < 30000 ? data->lux : 30000;
++		data->als_prev_lux = data->lux;
++	}
++
++	if (data->cct >= 0)
++		data->cct = data->cct < 10000 ? data->cct : 10000;
++
++	dev_err(&client->dev, "cct=%d, lux=%d cdata=%d rdata=%d gdata=%d bdata=%d atime=%x again=%d\n",
++		data->cct, data->lux, data->cdata, data->rdata, data->gdata,
++		data->bdata, apds9960_als_atime_tb[data->als_atime_index],
++		apds9960_als_again_tb[data->als_again_index]);
++
++	data->als_data = data->cdata;
++
++	data->als_threshold_l =
++	(data->als_data * (100 - APDS9960_ALS_THRESHOLD_HSYTERESIS)) / 100;
++	data->als_threshold_h =
++	(data->als_data * (100 + APDS9960_ALS_THRESHOLD_HSYTERESIS)) / 100;
++
++	if (data->als_threshold_h >=
++		apds9960_als_res_tb[data->als_atime_index])
++		data->als_threshold_h =
++		apds9960_als_res_tb[data->als_atime_index];
++
++	if (data->als_data >=
++		(apds9960_als_res_tb[data->als_atime_index] * 99) / 100) {
++		/* lower AGAIN if possible */
++		if (data->als_again_index != APDS9960_ALS_GAIN_1X) {
++			data->als_again_index--;
++			change_again = 1;
++		} else {
++			 /* report lux level */
++			input_report_abs(data->input_dev_als,
++				ABS_MISC, data->lux);
++			 /* report color temperature cct */
++			input_report_abs(data->input_dev_als,
++				ABS_CCT, data->cct);
++			input_sync(data->input_dev_als);
++		}
++	} else if (data->als_data <=
++		(apds9960_als_res_tb[data->als_atime_index] * 1) / 100) {
++		/* increase AGAIN if possible */
++		if (data->als_again_index != APDS9960_ALS_GAIN_64X) {
++			data->als_again_index++;
++			change_again = 1;
++		} else {
++			/* report lux level */
++			input_report_abs(data->input_dev_als,
++				ABS_MISC, data->lux);
++			/* report color temperature cct */
++			input_report_abs(data->input_dev_als,
++				ABS_CCT, data->cct);
++			input_sync(data->input_dev_als);
++		}
++	} else {
++		/* report lux level */
++		input_report_abs(data->input_dev_als, ABS_MISC, data->lux);
++		/* report color temperature cct */
++		input_report_abs(data->input_dev_als, ABS_CCT, data->cct);
++		input_sync(data->input_dev_als);
++	}
++
++	if (change_again) {
++		control_data = i2c_smbus_read_byte_data(client,
++			APDS9960_CONTROL_REG);
++		control_data = control_data & 0xFC;
++
++		control_data = control_data |
++			apds9960_als_again_bit_tb[data->als_again_index];
++		i2c_smbus_write_byte_data(client,
++			APDS9960_CONTROL_REG, control_data);
++	}
++
++	i2c_smbus_write_word_data(client,
++		APDS9960_AILTL_REG, data->als_threshold_l);
++	i2c_smbus_write_word_data(client,
++		APDS9960_AIHTL_REG, data->als_threshold_h);
++}
++
++static void apds9960_reschedule_work(struct apds9960_data *data,
++					  unsigned long delay)
++{
++	/*
++	 * If work is already scheduled then subsequent schedules will not
++	 * change the scheduled time that's why we have to cancel it first.
++	 */
++	cancel_delayed_work(&data->dwork);
++	queue_delayed_work(apds_workqueue, &data->dwork, delay);
++}
++
++void ResetGestureParameters()
++{
++	gesture_data.index = 0;
++	gesture_data.total_gestures = 0;
++
++	gesture_ud_delta = 0;
++	gesture_lr_delta = 0;
++	gesture_state = 0;
++
++	negative_ud_delta = 0;
++	positive_ud_delta = 0;
++	negative_lr_delta = 0;
++	positive_lr_delta = 0;
++	ud_delta_positive_negative = 0;
++	lr_delta_positive_negative = 0;
++
++	gesture_circle_state = 0;
++	gesture_circle_cw_count = 0;
++	gesture_circle_acw_count = 0;
++
++	gesture_ud_count = 0;
++	gesture_lr_count = 0;
++
++	gesture_near_count = 0;
++	gesture_far_count = 0;
++
++	gesture_prev_motion = DIR_NONE;
++
++	gesture_start_time = 0;
++	gesture_end_time = 0;
++	gesture_time = 0;
++	gesture_speed = 0;
++}
++/*
++void SaveToFile(void)
++{
++	struct file *fd;
++	int i;
++	char dummyc[100];
++
++	fd = filp_open("/sdcard/gesture.csv",
++		O_CREAT | O_APPEND | O_WRONLY, 0644);
++	if (IS_ERR(fd)) {
++		dev_err(&pdev_data->client->dev, "Failed to open file.\n");
++	} else {
++		for (i = 0; i < gesture_data.total_gestures; i++) {
++			snprintf(dummyc, sizeof(dummyc), "%d, %d, %d, %d\r\n",
++			gesture_data.u_data[i], gesture_data.d_data[i],
++			gesture_data.l_data[i], gesture_data.r_data[i]);
++			fd->f_op->write(fd, dummyc, strlen(dummyc), &fd->f_pos);
++			fd->f_pos += strlen(dummyc);
++		}
++	}
++
++	filp_close(fd, NULL);
++}
++*/
++unsigned int GetTickCount(void)
++{
++	struct timeval tv;
++	unsigned int ret;
++
++	do_gettimeofday(&tv);
++	ret = ((tv.tv_sec * 1000) + (tv.tv_usec / 1000));
++
++	return ret; /* return in msec */
++}
++
++int FilterGestureRawData(struct GESTURE_DATA_TYPE *gesture_in_data,
++	struct GESTURE_DATA_TYPE *gesture_out_data)
++{
++	int i;
++
++	if (gesture_in_data->total_gestures > 32 ||
++		gesture_in_data->total_gestures <= 0)
++		return -EPERM;
++
++	gesture_out_data->total_gestures = 0;
++
++	for (i = 0; i < gesture_in_data->total_gestures; i++) {
++
++		if (gesture_in_data->u_data[i] >
++			gesture_in_data->out_threshold &&
++			gesture_in_data->d_data[i] >
++			gesture_in_data->out_threshold &&
++			gesture_in_data->l_data[i] >
++			gesture_in_data->out_threshold &&
++			gesture_in_data->r_data[i] >
++			gesture_in_data->out_threshold) {
++
++			gesture_out_data->u_data[
++				gesture_out_data->total_gestures] =
++				gesture_in_data->u_data[i];
++			gesture_out_data->d_data[
++				gesture_out_data->total_gestures] =
++				gesture_in_data->d_data[i];
++			gesture_out_data->l_data[
++				gesture_out_data->total_gestures] =
++				gesture_in_data->l_data[i];
++			gesture_out_data->r_data[
++				gesture_out_data->total_gestures] =
++				gesture_in_data->r_data[i];
++
++			gesture_out_data->total_gestures++;
++		}
++	}
++
++	if (gesture_out_data->total_gestures == 0)
++		return -EPERM;
++
++	for (i = 1; i < gesture_out_data->total_gestures-1; i++) {
++
++		gesture_out_data->u_data[i] = (gesture_out_data->u_data[i] +
++			(gesture_out_data->u_data[i-1]) +
++			gesture_out_data->u_data[i+1]) / 3;
++		gesture_out_data->d_data[i] = (gesture_out_data->d_data[i] +
++			(gesture_out_data->d_data[i-1]) +
++			gesture_out_data->d_data[i+1]) / 3;
++		gesture_out_data->l_data[i] = (gesture_out_data->l_data[i] +
++			(gesture_out_data->l_data[i-1]) +
++			gesture_out_data->l_data[i+1]) / 3;
++		gesture_out_data->r_data[i] = (gesture_out_data->r_data[i] +
++			(gesture_out_data->r_data[i-1]) +
++			gesture_out_data->r_data[i+1]) / 3;
++	}
++
++	return 1;
++}
++
++void AveragingRawData(struct GESTURE_DATA_TYPE *gesture_data)
++{
++	int i, j;
++	int loop;
++
++	loop = (gesture_data->total_gestures - 4);
++
++	for (i = 0; i < loop; i++) {
++		for (j = 0; j < 4; j++) {
++			gesture_data->u_data[i] += gesture_data->u_data[i+j+1];
++			gesture_data->d_data[i] += gesture_data->d_data[i+j+1];
++			gesture_data->l_data[i] += gesture_data->l_data[i+j+1];
++			gesture_data->r_data[i] += gesture_data->r_data[i+j+1];
++		}
++
++		gesture_data->u_data[i] /= 5;
++		gesture_data->d_data[i] /= 5;
++		gesture_data->l_data[i] /= 5;
++		gesture_data->r_data[i] /= 5;
++	}
++
++	for (i = loop; i < (gesture_data->total_gestures-1); i++) {
++		for (j = 0; j < (gesture_data->total_gestures-i-1); j++) {
++			gesture_data->u_data[i] += gesture_data->u_data[i+j+1];
++			gesture_data->d_data[i] += gesture_data->d_data[i+j+1];
++			gesture_data->l_data[i] += gesture_data->l_data[i+j+1];
++			gesture_data->r_data[i] += gesture_data->r_data[i+j+1];
++		}
++
++		if ((gesture_data->total_gestures-i) > 0) {
++			gesture_data->u_data[i] /=
++				(gesture_data->total_gestures - i);
++			gesture_data->d_data[i] /=
++				(gesture_data->total_gestures - i);
++			gesture_data->l_data[i] /=
++				(gesture_data->total_gestures - i);
++			gesture_data->r_data[i] /=
++				(gesture_data->total_gestures - i);
++		}
++	}
++}
++
++int GestureZone(int ud, int lr)
++{
++	if ((ud < 0 && lr > 0) || (ud == 0 && lr > 0))
++		return GESTURE_ZONE_1;
++	else if (ud > 0 && lr > 0)
++		return GESTURE_ZONE_2;
++	else if ((ud > 0 && lr < 0) || (ud > 0 && lr == 0))
++		return GESTURE_ZONE_3;
++	else if (ud < 0 && lr < 0)
++		return GESTURE_ZONE_4;
++	else
++		return GESTURE_ZONE_UNKNOWN;
++}
++
++int DecodeGestureZone(int mapped, int start, int end)
++{
++	if ((start == 2 && end == 1) || (start == 3 && end == 4)) {
++		if (!mapped)
++			return DIR_UP;
++		else
++			return DIR_RIGHT;	/* mapped */
++	} else if ((start == 1 && end == 2) || (start == 4 && end == 3)) {
++		if (!mapped)
++			return DIR_DOWN;
++		else
++			return DIR_LEFT;	/* mapped */
++	} else if ((start == 1 && end == 4) || (start == 2 && end == 3)) {
++		if (!mapped)
++			return DIR_LEFT;
++		else
++			return DIR_UP;	/* mapped */
++	} else if ((start == 4 && end == 1) || (start == 3 && end == 2)) {
++		if (!mapped)
++			return DIR_RIGHT;
++		else
++			return DIR_DOWN;	/* mapped */
++	} else if (start == 1 && end == 3) {
++		if (!mapped)
++			return DIR_DOWN_LEFT;
++		else
++			return DIR_LEFT_UP;	/* mapped */
++	} else if (start == 3 && end == 1) {
++		if (!mapped)
++			return DIR_UP_RIGHT;
++		else
++			return DIR_RIGHT_DOWN;	/* mapped */
++	} else if (start == 4 && end == 2) {
++		if (!mapped)
++			return DIR_RIGHT_DOWN;
++		else
++			return DIR_DOWN_LEFT;	/* mapped */
++	} else if (start == 2 && end == 4) {
++		if (!mapped)
++			return DIR_LEFT_UP;
++		else
++			return DIR_UP_RIGHT;	/* mapped */
++	}
++
++	return DIR_NONE;
++}
++
++int DecodeMappedGesture(int mapped, int motion)
++{
++	if (!mapped)
++		return motion;
++	else {
++		switch (motion) {
++		case DIR_UP:
++			return DIR_RIGHT;
++		case DIR_DOWN:
++			return DIR_LEFT;
++		case DIR_LEFT:
++			return DIR_UP;
++		case DIR_RIGHT:
++			return DIR_DOWN;
++		case DIR_LEFT_UP:
++			return DIR_UP_RIGHT;
++		case DIR_RIGHT_DOWN:
++			return DIR_DOWN_LEFT;
++		case DIR_UP_RIGHT:
++			return DIR_RIGHT_DOWN;
++		case DIR_DOWN_LEFT:
++			return DIR_LEFT_UP;
++		case DIR_UP_U_TURN:
++			return DIR_RIGHT_U_TURN;
++		case DIR_DOWN_U_TURN:
++			return DIR_LEFT_U_TURN;
++		case DIR_LEFT_U_TURN:
++			return DIR_UP_U_TURN;
++		case DIR_RIGHT_U_TURN:
++			return DIR_DOWN_U_TURN;
++		default:
++			return DIR_NONE;
++		}
++	}
++}
++
++int DecodeGesture(int gesture_mode)
++{
++	/* check timing */
++
++	if ((gesture_end_time - gesture_start_time) <= 100)
++		gesture_speed = 2; /* fast */
++	else if ((gesture_end_time - gesture_start_time) <= 300)
++		gesture_speed = 1; /* medium */
++	else
++		gesture_speed = 0; /* slow */
++#ifdef DEBUG_GESTURE
++	dev_err(&pdev_data->client->dev,
++		"gesture_state=%d, cw_count=%d,acw_count=%d, ud_count=%d,"
++		"lr_count=%d, near_count=%d, far_count=%d\n",
++		gesture_state, gesture_circle_cw_count,
++		gesture_circle_acw_count,
++		gesture_ud_count, gesture_lr_count,
++		gesture_near_count, gesture_far_count);
++#endif
++	/* special case */
++	if (gesture_state == CIRCLE_CW_STATE) {
++
++		if ((gesture_prev_motion != DIR_FAR) &&
++			(gesture_prev_motion != DIR_NEAR)) {
++
++			if (gesture_mode == 1) {
++				gesture_motion = DIR_CIRCLE_CW;
++				return 1;
++			} else
++				return -EPERM;
++		} else
++			return -EPERM;
++	} else if (gesture_state == CIRCLE_ACW_STATE) {
++
++		if ((gesture_prev_motion != DIR_FAR) &&
++			(gesture_prev_motion != DIR_NEAR)) {
++
++			if (gesture_mode == 1) {
++				gesture_motion = DIR_CIRCLE_ACW;
++				return 1;
++			} else
++				return -EPERM;
++		} else
++			return -EPERM;
++	} else if (gesture_state == NEAR_STATE) {
++
++		if ((gesture_prev_motion != DIR_CIRCLE_CW) &&
++			(gesture_prev_motion != DIR_CIRCLE_ACW)) {
++
++			gesture_motion = DIR_NEAR;
++			return 1;
++		} else
++			return -EPERM;
++	} else if (gesture_state == FAR_STATE) {
++
++		if ((gesture_prev_motion != DIR_CIRCLE_CW) &&
++			(gesture_prev_motion != DIR_CIRCLE_ACW)) {
++
++			gesture_motion = DIR_FAR;
++			return 1;
++		} else
++			return -EPERM;
++	}
++/*
++#if 0
++	if (gesture_circle_cw_count > 1 && gesture_circle_acw_count > 1) {
++		gesture_motion = DIR_NONE;
++		OutputDebugString("xxx\n");
++		return -EPERM;
++	}
++#endif
++*/
++	if (gesture_ud_count == -1 &&
++		gesture_lr_count == 0) {
++
++		if ((gesture_prev_motion != DIR_FAR) &&
++			(gesture_prev_motion != DIR_NEAR) &&
++			(gesture_prev_motion != DIR_CIRCLE_CW) &&
++			(gesture_prev_motion != DIR_CIRCLE_ACW)) {
++
++			gesture_motion =
++				DecodeMappedGesture(fMotionMapped, DIR_UP);
++		}
++	} else if (gesture_ud_count == 1 &&
++			  gesture_lr_count == 0) {
++
++		if ((gesture_prev_motion != DIR_FAR) &&
++			(gesture_prev_motion != DIR_NEAR) &&
++			(gesture_prev_motion != DIR_CIRCLE_CW) &&
++			(gesture_prev_motion != DIR_CIRCLE_ACW)) {
++
++			gesture_motion =
++				DecodeMappedGesture(fMotionMapped, DIR_DOWN);
++		}
++	} else if (gesture_ud_count == 0 &&
++				gesture_lr_count == 1) {
++
++		if ((gesture_prev_motion != DIR_FAR) &&
++			(gesture_prev_motion != DIR_NEAR) &&
++			(gesture_prev_motion != DIR_CIRCLE_CW) &&
++			(gesture_prev_motion != DIR_CIRCLE_ACW)) {
++
++			gesture_motion =
++				DecodeMappedGesture(fMotionMapped, DIR_RIGHT);
++		}
++	} else if (gesture_ud_count == 0 &&
++			  gesture_lr_count == -1) {
++
++		if ((gesture_prev_motion != DIR_FAR) &&
++			(gesture_prev_motion != DIR_NEAR) &&
++			(gesture_prev_motion != DIR_CIRCLE_CW) &&
++			(gesture_prev_motion != DIR_CIRCLE_ACW))
++			gesture_motion =
++				DecodeMappedGesture(fMotionMapped, DIR_LEFT);
++	} else if (gesture_ud_count == -1 &&
++			  gesture_lr_count == 1) {
++
++		if ((gesture_prev_motion != DIR_FAR) &&
++			(gesture_prev_motion != DIR_NEAR) &&
++			(gesture_prev_motion != DIR_CIRCLE_CW) &&
++			(gesture_prev_motion != DIR_CIRCLE_ACW)) {
++
++			if (gesture_mode == 1)
++				gesture_motion =
++				DecodeMappedGesture(fMotionMapped,
++					DIR_UP_RIGHT);
++			else {
++				if (abs(gesture_ud_delta) >
++					abs(gesture_lr_delta))
++					gesture_motion =
++					DecodeMappedGesture(fMotionMapped,
++						DIR_UP);
++				else
++					gesture_motion =
++					DecodeMappedGesture(fMotionMapped,
++						DIR_RIGHT);
++			}
++		}
++	} else if (gesture_ud_count == 1 &&
++			  gesture_lr_count == -1) {
++
++		if ((gesture_prev_motion != DIR_FAR) &&
++			(gesture_prev_motion != DIR_NEAR) &&
++			(gesture_prev_motion != DIR_CIRCLE_CW) &&
++			(gesture_prev_motion != DIR_CIRCLE_ACW)) {
++
++			if (gesture_mode == 1)
++				gesture_motion =
++				DecodeMappedGesture(fMotionMapped,
++					DIR_DOWN_LEFT);
++			else {
++				if (abs(gesture_ud_delta) >
++					abs(gesture_lr_delta))
++					gesture_motion =
++					DecodeMappedGesture(fMotionMapped,
++						DIR_DOWN);
++				else
++					gesture_motion =
++					DecodeMappedGesture(fMotionMapped,
++						DIR_LEFT);
++			}
++		}
++	} else if (gesture_ud_count == -1 &&
++			  gesture_lr_count == -1) {
++
++		if ((gesture_prev_motion != DIR_FAR) &&
++			(gesture_prev_motion != DIR_NEAR) &&
++			(gesture_prev_motion != DIR_CIRCLE_CW) &&
++			(gesture_prev_motion != DIR_CIRCLE_ACW)) {
++
++			if (gesture_mode == 1)
++				gesture_motion =
++				DecodeMappedGesture(fMotionMapped,
++					DIR_LEFT_UP);
++			else {
++				if (abs(gesture_ud_delta) >
++					abs(gesture_lr_delta))
++					gesture_motion =
++					DecodeMappedGesture(fMotionMapped,
++						DIR_UP);
++				else
++					gesture_motion =
++					DecodeMappedGesture(fMotionMapped,
++						DIR_LEFT);
++			}
++		}
++	} else if (gesture_ud_count == 1 &&
++			  gesture_lr_count == 1) {
++
++		if ((gesture_prev_motion != DIR_FAR) &&
++			(gesture_prev_motion != DIR_NEAR) &&
++			(gesture_prev_motion != DIR_CIRCLE_CW) &&
++			(gesture_prev_motion != DIR_CIRCLE_ACW)) {
++
++			if (gesture_mode == 1)
++				gesture_motion =
++				DecodeMappedGesture(fMotionMapped,
++					DIR_RIGHT_DOWN);
++			else {
++				if (abs(gesture_ud_delta) >
++					abs(gesture_lr_delta))
++					gesture_motion =
++					DecodeMappedGesture(fMotionMapped,
++						DIR_DOWN);
++				else
++					gesture_motion =
++					DecodeMappedGesture(fMotionMapped,
++						DIR_RIGHT);
++			}
++		}
++	} else {
++		if (positive_ud_delta > positive_lr_delta &&
++			negative_ud_delta < negative_lr_delta) {
++
++			if (positive_ud_delta >= GESTURE_SENSITIVITY_LEVEL1 &&
++				negative_ud_delta <=
++				-GESTURE_SENSITIVITY_LEVEL1) {
++
++				if (ud_delta_positive_negative == 1)
++					gesture_motion =
++					DecodeMappedGesture(fMotionMapped,
++						DIR_DOWN_U_TURN);
++				else if (ud_delta_positive_negative == 2)
++					gesture_motion =
++					DecodeMappedGesture(fMotionMapped,
++						DIR_UP_U_TURN);
++			}
++		} else if (positive_lr_delta > positive_ud_delta &&
++			negative_lr_delta < negative_ud_delta) {
++			if (positive_lr_delta >= GESTURE_SENSITIVITY_LEVEL1 &&
++				negative_lr_delta <=
++				-GESTURE_SENSITIVITY_LEVEL1) {
++				if (lr_delta_positive_negative == 1)
++					gesture_motion =
++					DecodeMappedGesture(fMotionMapped,
++						DIR_RIGHT_U_TURN);
++				else if (lr_delta_positive_negative == 2)
++					gesture_motion =
++					DecodeMappedGesture(fMotionMapped,
++						DIR_LEFT_U_TURN);
++			}
++		} else {
++			dev_err(&pdev_data->client->dev, "???\n");
++			return -EPERM;
++		}
++	}
++
++	return 1;
++}
++
++int GestureDataProcessing()
++{
++	struct GESTURE_DATA_TYPE gesture_out_data;
++	int ud_delta, lr_delta;
++	int sensitivity1_threshold = GESTURE_SENSITIVITY_LEVEL1;
++	int sensitivity2_threshold = GESTURE_SENSITIVITY_LEVEL2;
++	int zone = 0;
++	int gesture_u_d_ratio_first, gesture_u_d_ratio_last;
++	int gesture_l_r_ratio_first, gesture_l_r_ratio_last;
++
++	if (gesture_data.total_gestures <= 4)
++		return -EPERM;
++
++	/************** This is to detect fundamentals gesture ****************/
++
++	gesture_data.in_threshold = GESTURE_GTHR_IN;
++	gesture_data.out_threshold = GESTURE_THRESHOLD_OUT - 10;
++	/* for fundamental */
++	FilterGestureRawData(&gesture_data, &gesture_out_data);
++
++	if (gesture_out_data.total_gestures == 0)
++		return -EPERM;
++
++	if (gesture_out_data.u_data[0] == 0)
++		gesture_out_data.u_data[0] = 1;
++	if (gesture_out_data.d_data[0] == 0)
++		gesture_out_data.d_data[0] = 1;
++	if (gesture_out_data.l_data[0] == 0)
++		gesture_out_data.l_data[0] = 1;
++	if (gesture_out_data.r_data[0] == 0)
++		gesture_out_data.r_data[0] = 1;
++
++	if (gesture_out_data.u_data[gesture_out_data.total_gestures-1] == 0)
++		gesture_out_data.u_data[gesture_out_data.total_gestures-1] = 1;
++	if (gesture_out_data.d_data[gesture_out_data.total_gestures-1] == 0)
++		gesture_out_data.d_data[gesture_out_data.total_gestures-1] = 1;
++	if (gesture_out_data.l_data[gesture_out_data.total_gestures-1] == 0)
++		gesture_out_data.l_data[gesture_out_data.total_gestures-1] = 1;
++	if (gesture_out_data.r_data[gesture_out_data.total_gestures-1] == 0)
++		gesture_out_data.r_data[gesture_out_data.total_gestures-1] = 1;
++
++	gesture_u_d_ratio_first =
++	(gesture_out_data.u_data[0] - gesture_out_data.d_data[0]) *
++	100 / (gesture_out_data.u_data[0] + gesture_out_data.d_data[0]);
++
++	gesture_l_r_ratio_first =
++	(gesture_out_data.l_data[0] - gesture_out_data.r_data[0]) *
++	100 / (gesture_out_data.l_data[0] + gesture_out_data.r_data[0]);
++
++	gesture_u_d_ratio_last =
++	(gesture_out_data.u_data[gesture_out_data.total_gestures-1] -
++	gesture_out_data.d_data[gesture_out_data.total_gestures-1]) *
++	100 / (gesture_out_data.u_data[gesture_out_data.total_gestures-1] +
++	gesture_out_data.d_data[gesture_out_data.total_gestures-1]);
++
++	gesture_l_r_ratio_last =
++	(gesture_out_data.l_data[gesture_out_data.total_gestures-1] -
++	gesture_out_data.r_data[gesture_out_data.total_gestures-1]) * 100 /
++	(gesture_out_data.l_data[gesture_out_data.total_gestures-1] +
++	gesture_out_data.r_data[gesture_out_data.total_gestures-1]);
++
++	ud_delta = (gesture_u_d_ratio_last - gesture_u_d_ratio_first);
++	lr_delta = (gesture_l_r_ratio_last - gesture_l_r_ratio_first);
++
++	if (ud_delta >= 0) {
++		positive_ud_delta += ud_delta;
++
++		if (positive_ud_delta >= sensitivity1_threshold &&
++			ud_delta_positive_negative == 0)
++			ud_delta_positive_negative = 1;
++	} else {
++		negative_ud_delta += ud_delta;
++		if (negative_ud_delta <= -sensitivity1_threshold &&
++			ud_delta_positive_negative == 0)
++			ud_delta_positive_negative = 2;
++	}
++
++	if (lr_delta >= 0) {
++		positive_lr_delta += lr_delta;
++		if (positive_lr_delta >= sensitivity1_threshold &&
++			lr_delta_positive_negative == 0)
++			lr_delta_positive_negative = 1;
++	} else {
++		negative_lr_delta += lr_delta;
++		if (negative_lr_delta <= -sensitivity1_threshold &&
++			lr_delta_positive_negative == 0)
++			lr_delta_positive_negative = 2;
++	}
++
++	gesture_ud_delta = ud_delta + gesture_ud_delta;
++	gesture_lr_delta = lr_delta + gesture_lr_delta;
++
++	/**************** for Left/Right/Up/Down ****************/
++	if (gesture_ud_delta >= sensitivity1_threshold)
++		gesture_ud_count = 1;
++	else if (gesture_ud_delta <= -sensitivity1_threshold)
++		gesture_ud_count = -1;
++	else
++		gesture_ud_count = 0;
++
++	if (gesture_lr_delta >= sensitivity1_threshold)
++		gesture_lr_count = 1;
++	else if (gesture_lr_delta <= -sensitivity1_threshold)
++		gesture_lr_count = -1;
++	else
++		gesture_lr_count = 0;
++	/**************** for Left/Right/Up/Down ****************/
++
++	if (gesture_ud_count == 0 && gesture_lr_count == 0) {
++
++		if (abs(ud_delta) < sensitivity2_threshold &&
++			abs(lr_delta) < sensitivity2_threshold) {
++
++			if (ud_delta == 0 && lr_delta == 0)
++				gesture_near_count++;
++			else if (ud_delta != 0 || lr_delta != 0)
++				gesture_far_count++;
++
++			if (gesture_near_count >= 10 &&
++				gesture_far_count >= 2) {
++
++				if (ud_delta == 0 && lr_delta == 0)
++					gesture_state = NEAR_STATE;
++				else if (ud_delta != 0 && lr_delta != 0)
++					gesture_state = FAR_STATE;
++
++				return 1;
++			}
++		}
++	} else {
++
++		if (abs(ud_delta) < sensitivity2_threshold &&
++			abs(lr_delta) < sensitivity2_threshold) {
++
++			if (ud_delta == 0 && lr_delta == 0)
++				gesture_near_count++;
++
++			if (gesture_near_count >= 10) {
++				gesture_ud_count = 0;
++				gesture_lr_count = 0;
++				gesture_ud_delta = 0;
++				gesture_lr_delta = 0;
++			}
++		}
++	}
++
++#ifdef DEBUG_GESTURE
++	dev_err(&pdev_data->client->dev,
++		"ud_delta=%d, lr_delta=%d, total_ud=%d, total_lr=%d,"
++		"ud_count=%d, lr_count=%d, near_count=%d, far_count=%d, n=%d\n",
++		ud_delta, lr_delta, gesture_ud_delta, gesture_lr_delta,
++		gesture_ud_count, gesture_lr_count, gesture_near_count,
++		gesture_far_count, gesture_out_data.total_gestures);
++#endif
++
++	/********************* Circle Gesture *******************************/
++
++	if (gesture_near_count >= 6) {
++
++		gesture_circle_state = CIRCLE_NA;
++		gesture_circle_cw_count = 0;
++		gesture_circle_acw_count = 0;
++		return -EPERM;
++	}
++
++	AveragingRawData(&gesture_data);	/* for circle gesture */
++
++	if (gesture_data.u_data[0] == 0)
++		gesture_data.u_data[0] = 1;
++	if (gesture_data.d_data[0] == 0)
++		gesture_data.d_data[0] = 1;
++	if (gesture_data.l_data[0] == 0)
++		gesture_data.l_data[0] = 1;
++	if (gesture_data.r_data[0] == 0)
++		gesture_data.r_data[0] = 1;
++	if (gesture_data.u_data[gesture_data.total_gestures-1] == 0)
++		gesture_data.u_data[gesture_data.total_gestures-1] = 1;
++	if (gesture_data.d_data[gesture_data.total_gestures-1] == 0)
++		gesture_data.d_data[gesture_data.total_gestures-1] = 1;
++	if (gesture_data.l_data[gesture_data.total_gestures-1] == 0)
++		gesture_data.l_data[gesture_data.total_gestures-1] = 1;
++	if (gesture_data.r_data[gesture_data.total_gestures-1] == 0)
++		gesture_data.r_data[gesture_data.total_gestures-1] = 1;
++
++	gesture_u_d_ratio_first =
++		(gesture_data.u_data[0] - gesture_data.d_data[0]) *
++		500 / (gesture_data.u_data[0] + gesture_data.d_data[0]);
++	gesture_l_r_ratio_first =
++		(gesture_data.l_data[0] - gesture_data.r_data[0]) *
++		500 / (gesture_data.l_data[0] + gesture_data.r_data[0]);
++	gesture_u_d_ratio_last =
++		(gesture_data.u_data[gesture_data.total_gestures-1] -
++		gesture_data.d_data[gesture_data.total_gestures-1]) *
++		500 / (gesture_data.u_data[gesture_data.total_gestures-1] +
++		gesture_data.d_data[gesture_data.total_gestures-1]);
++	gesture_l_r_ratio_last =
++		(gesture_data.l_data[gesture_data.total_gestures-1] -
++		gesture_data.r_data[gesture_data.total_gestures-1]) *
++		500 / (gesture_data.l_data[gesture_data.total_gestures-1] +
++		gesture_data.r_data[gesture_data.total_gestures-1]);
++
++	ud_delta = (gesture_u_d_ratio_last - gesture_u_d_ratio_first);
++	lr_delta = (gesture_l_r_ratio_last - gesture_l_r_ratio_first);
++
++#ifdef DEBUG_GESTURE
++	dev_err(&pdev_data->client->dev,
++		"(circle) ud_delta=%d, lr_delta=%d, n=%d\n",
++		ud_delta, lr_delta, gesture_data.total_gestures);
++#endif
++
++	if (abs(ud_delta) < sensitivity2_threshold &&
++		abs(lr_delta) < sensitivity2_threshold)
++		return -EPERM;
++
++	zone = GestureZone(ud_delta, lr_delta);
++
++	if (zone == GESTURE_ZONE_1) {
++		if (gesture_circle_state == CIRCLE_NA)
++			gesture_circle_state = CIRCLE_1;
++		else if (gesture_circle_state == CIRCLE_4) {
++			gesture_circle_state = CIRCLE_1;
++			gesture_circle_cw_count++;
++		} else if (gesture_circle_state == CIRCLE_3) {
++			gesture_circle_state = CIRCLE_1;
++			if (gesture_circle_cw_count > gesture_circle_acw_count)
++				gesture_circle_cw_count++;
++			else if (gesture_circle_cw_count <
++				gesture_circle_acw_count)
++				gesture_circle_acw_count++;
++		} else if (gesture_circle_state == CIRCLE_2) {
++			gesture_circle_state = CIRCLE_1;
++			gesture_circle_acw_count++;
++		}
++	} else if (zone == GESTURE_ZONE_2) {
++		if (gesture_circle_state == CIRCLE_NA)
++			gesture_circle_state = CIRCLE_2;
++		else if (gesture_circle_state == CIRCLE_1) {
++			gesture_circle_state = CIRCLE_2;
++			gesture_circle_cw_count++;
++		} else if (gesture_circle_state == CIRCLE_3) {
++			gesture_circle_state = CIRCLE_2;
++			gesture_circle_acw_count++;
++		} else if (gesture_circle_state == CIRCLE_4) {
++			gesture_circle_state = CIRCLE_2;
++			if (gesture_circle_cw_count > gesture_circle_acw_count)
++				gesture_circle_cw_count++;
++			else if (gesture_circle_cw_count <
++				gesture_circle_acw_count)
++				gesture_circle_acw_count++;
++		}
++	} else if (zone == GESTURE_ZONE_3) {
++		if (gesture_circle_state == CIRCLE_NA) {
++			gesture_circle_state = CIRCLE_3;
++		} else if (gesture_circle_state == CIRCLE_1) {
++			gesture_circle_state = CIRCLE_3;
++			if (gesture_circle_cw_count > gesture_circle_acw_count)
++				gesture_circle_cw_count++;
++			else if (gesture_circle_cw_count <
++				gesture_circle_acw_count)
++				gesture_circle_acw_count++;
++		} else if (gesture_circle_state == CIRCLE_2) {
++			gesture_circle_state = CIRCLE_3;
++			gesture_circle_cw_count++;
++		} else if (gesture_circle_state == CIRCLE_4) {
++			gesture_circle_state = CIRCLE_3;
++			gesture_circle_acw_count++;
++		}
++	} else if (zone == GESTURE_ZONE_4) {
++		if (gesture_circle_state == CIRCLE_NA)
++			gesture_circle_state = CIRCLE_4;
++		else if (gesture_circle_state == CIRCLE_1) {
++			gesture_circle_state = CIRCLE_4;
++			gesture_circle_acw_count++;
++		} else if (gesture_circle_state == CIRCLE_2) {
++			gesture_circle_state = CIRCLE_4;
++			if (gesture_circle_cw_count >
++				gesture_circle_acw_count)
++				gesture_circle_cw_count++;
++			else if (gesture_circle_cw_count <
++				gesture_circle_acw_count)
++				gesture_circle_acw_count++;
++		} else if (gesture_circle_state == CIRCLE_3) {
++			gesture_circle_state = CIRCLE_4;
++			gesture_circle_cw_count++;
++		}
++	}
++
++	if (gesture_circle_cw_count >= 5 ||
++		gesture_circle_acw_count >= 5) {
++		if (gesture_circle_cw_count >= 5) {
++			gesture_state = CIRCLE_CW_STATE;
++			gesture_state = CIRCLE_CW_STATE;
++		} else {
++			gesture_state = CIRCLE_ACW_STATE;
++			gesture_state = CIRCLE_ACW_STATE;
++		}
++
++		return 1;
++	}
++
++	/************** Remove this code if not needed *********************/
++
++	return -EPERM;
++}
++
++static void apds9960_gesture_processing(struct i2c_client *client)
++{
++	struct apds9960_data *data = i2c_get_clientdata(client);
++	int gstatus;
++	int gfifo_level;
++	int gfifo_read;
++	unsigned char gfifo_data[128];
++	int i;
++	int m, n;
++	int k;
++	/*int fFifoOverflow = 0; */
++
++	/* need to loop gstatus until fifo is empty */
++	gesture_start_time = GetTickCount();
++
++	while (1) {
++		/* is this enough to collect next batch of the fifo data? */
++		/*mdelay(30);*/
++		for (k = 15; k > 0; k--)
++			udelay(2000);
++
++		gstatus =
++			i2c_smbus_read_byte_data(client, APDS9960_GSTATUS_REG);
++#ifdef DEBUG_GESTURE
++		dev_err(&pdev_data->client->dev,
++		"%s: gstatus = %d\n", __func__, gstatus);
++#endif
++
++		if (gstatus < 0) {
++			dev_err(&pdev_data->client->dev,
++				"%s (%d): exit 1\n", __func__, gstatus);
++			return;
++		}
++
++		/*if ((gstatus & APDS9960_GFIFO_OV) == APDS9960_GFIFO_OV) {
++			//fFifoOverflow = 1;
++		}*/
++
++		if ((gstatus & APDS9960_GVALID) == APDS9960_GVALID) {
++			gfifo_level =
++			i2c_smbus_read_byte_data(client,
++				APDS9960_GFIFO_LVL_REG);
++#ifdef DEBUG_GESTURE
++			dev_err(&client->dev,
++				"%s: gfifo_level = %d\n",
++				__func__, gfifo_level);
++#endif
++			if (gfifo_level > 0) {
++				gfifo_read =
++				i2c_smbus_read_i2c_block_data(client,
++					APDS9960_GFIFO0_REG,
++					(gfifo_level * 4),
++					(unsigned char *)gfifo_data);
++#ifdef DEBUG_GESTURE
++				dev_err(&client->dev,
++				"%s: gfifo_read = %d\n",
++				__func__, gfifo_read);
++#endif
++				if (gfifo_read >= 4) {
++
++					for (i = 0; i < gfifo_read; i += 4) {
++						gesture_data.u_data[
++						gesture_data.index] =
++						gfifo_data[i+0];
++						gesture_data.d_data[
++						gesture_data.index] =
++						gfifo_data[i+1];
++						gesture_data.l_data[
++						gesture_data.index] =
++						gfifo_data[i+2];
++						gesture_data.r_data[
++						gesture_data.index] =
++						gfifo_data[i+3];
++						gesture_data.index++;
++						gesture_data.total_gestures++;
++					}
++
++					m = GestureDataProcessing();
++					n = DecodeGesture(gesture_fundamentals);
++					if (m > 0 && n > 0 &&
++						gesture_prev_motion !=
++						gesture_motion &&
++						gesture_motion !=
++						DIR_NONE) {
++							/* event->value
++							PS_NEAR = 0
++							DIR_LEFT = 1
++							DIR_RIGHT =2
++							DIR_UP = 3
++							DIR_DOWN = 4
++							DIR_UP_RIGHT = 5
++							DIR_RIGHT_DOWN = 6
++							DIR_DOWN_LEFT = 7
++							DIR_LEFT_UP = 8
++							DIR_NEAR = 9
++							DIR_FAR = 10
++							DIR_CIRCLE_CW =11
++							DIR_CIRCLE_ACW = 12
++							DIR_UP_U_TURN = 13
++							DIR_DOWN_U_TURN = 14
++							DIR_LEFT_U_TURN = 15
++							DIR_RIGHT_U_TURN = 16
++							PS_FAR = 20
++							*/
++						dev_err(&client->dev,
++						"gesture_motion = %d =======\n",
++						gesture_motion);
++						input_report_abs(
++						data->input_dev_ps,
++						ABS_DISTANCE, gesture_motion);
++						/* GESTURE event */
++						input_sync(data->input_dev_ps);
++					}
++					if (m > 0 && n > 0)
++						gesture_prev_motion =
++							gesture_motion;
++
++					gesture_data.index = 0;
++					gesture_data.total_gestures = 0;
++
++					/* mdelay(30); */
++				}
++			}
++		} else {
++
++			gesture_end_time = GetTickCount();
++
++			/*SaveToFile(); */
++			if (DecodeGesture(gesture_fundamentals) > 0) {
++				dev_err(&client->dev, "+++ %s (%s)\n",
++				gesture_str[gesture_motion],
++				gesture_str[gesture_prev_motion]);
++				if (gesture_prev_motion != gesture_motion &&
++					gesture_motion != DIR_NONE) {
++
++					/* event->value
++					PS_NEAR = 0
++					DIR_LEFT = 1
++					DIR_RIGHT =2
++					DIR_UP = 3
++					DIR_DOWN = 4
++					DIR_UP_RIGHT = 5
++					DIR_RIGHT_DOWN = 6
++					DIR_DOWN_LEFT = 7
++					DIR_LEFT_UP = 8
++					DIR_NEAR = 9
++					DIR_FAR = 10
++					DIR_CIRCLE_CW =11
++					DIR_CIRCLE_ACW = 12
++					DIR_UP_U_TURN = 13
++					DIR_DOWN_U_TURN = 14
++					DIR_LEFT_U_TURN = 15
++					DIR_RIGHT_U_TURN = 16
++					PS_FAR = 20
++					*/
++					dev_err(&client->dev,
++					"gesture_motion = %d **********\n",
++					gesture_motion);
++					input_report_abs(data->input_dev_ps,
++						ABS_DISTANCE,
++						gesture_motion);
++					/* GESTURE event */
++					input_sync(data->input_dev_ps);
++				}
++
++				gesture_prev_motion = gesture_motion;
++			}
++
++			ResetGestureParameters();
++			dev_err(&client->dev,
++				"%s: exit 5\n", __func__);
++			return;
++		}
++	}
++}
++
++/* ALS polling routine */
++static void apds9960_als_polling_work_handler(struct work_struct *work)
++{
++	struct apds9960_data *data =
++		container_of(work, struct apds9960_data, als_dwork.work);
++	struct i2c_client *client = data->client;
++	unsigned char change_again = 0;
++	unsigned char control_data = 0;
++	unsigned char i2c_data[10];
++	int status;
++
++	data->ps_data =	i2c_smbus_read_byte_data(client, APDS9960_PDATA_REG);
++
++	if (data->enable_als_sensor != APDS_ENABLE_ALS_NO_INT)
++		return;
++
++	status = i2c_smbus_read_i2c_block_data(client,
++		APDS9960_CDATAL_REG, 8, (unsigned char *)i2c_data);
++
++	if (status < 0)
++		return;
++	if (status != 8)
++		return;
++
++	data->cdata = (i2c_data[1] << 8) | i2c_data[0];
++	data->rdata = (i2c_data[3] << 8) | i2c_data[2];
++	data->gdata = (i2c_data[5] << 8) | i2c_data[4];
++	data->bdata = (i2c_data[7] << 8) | i2c_data[6];
++
++	LuxCalculation(client);
++
++	if (data->lux >= 0) {
++		data->lux = data->lux < 30000 ? data->lux : 30000;
++		data->als_prev_lux = data->lux;
++	}
++
++	if (data->cct >= 0)
++		data->cct = data->cct < 10000 ? data->cct : 10000;
++/*
++	dev_err(&client->dev,
++		"cct=%d, lux=%d cdata=%d rdata=%d gdata=%d bdata=%d again=%d\n",
++		data->cct, data->lux, data->cdata, data->rdata, data->gdata,
++		data->bdata, apds9960_als_again_tb[data->als_again_index]);
++*/
++	data->als_data = data->cdata;
++
++	if (data->als_data >=
++		(apds9960_als_res_tb[data->als_atime_index] * 99) / 100) {
++		/* lower AGAIN if possible */
++		if (data->als_again_index != APDS9960_ALS_GAIN_1X) {
++			data->als_again_index--;
++			change_again = 1;
++		}
++	} else if (data->als_data <=
++		(apds9960_als_res_tb[data->als_atime_index] * 1) / 100) {
++		/* increase AGAIN if possible */
++		if (data->als_again_index != APDS9960_ALS_GAIN_64X) {
++			data->als_again_index++;
++			change_again = 1;
++		}
++	} else {
++		/* report lux level */
++		input_report_abs(data->input_dev_als, ABS_MISC, data->lux);
++		/* report color temperature cct */
++		input_report_abs(data->input_dev_als, ABS_CCT, data->cct);
++		input_sync(data->input_dev_als);
++	}
++
++	if (change_again) {
++		control_data =
++			i2c_smbus_read_byte_data(client, APDS9960_CONTROL_REG);
++		control_data = control_data & 0xFC;
++		control_data = control_data |
++			apds9960_als_again_bit_tb[data->als_again_index];
++		i2c_smbus_write_byte_data(client,
++			APDS9960_CONTROL_REG, control_data);
++	}
++	/* restart timer */
++	queue_delayed_work(apds_workqueue, &data->als_dwork,
++		msecs_to_jiffies(data->als_poll_delay));
++}
++
++/* ALS_PS interrupt routine */
++static void apds9960_work_handler(struct work_struct *work)
++{
++	struct apds9960_data *data =
++		container_of(work, struct apds9960_data, dwork.work);
++	struct i2c_client *client = data->client;
++	int status;
++
++	status = i2c_smbus_read_byte_data(client, APDS9960_STATUS_REG);
++
++	dev_err(&client->dev,
++		"==>isr : status=%x, enable=%x\n", status, data->enable);
++
++	if ((status & APDS9960_STATUS_GINT) &&
++		 (data->enable & (APDS9960_GESTURE_ENABLE|APDS9960_PWR_ON)) &&
++		 (data->gctrl & 0x02)) {
++		/* Gesture is enabled with interrupte */
++		apds9960_gesture_processing(client);
++		return;
++	}
++
++	if ((status & APDS9960_STATUS_PINT) && ((data->enable &
++		(APDS9960_PS_INT_ENABLE | APDS9960_PS_ENABLE |
++		APDS9960_PWR_ON)) == (APDS9960_PS_INT_ENABLE |
++		APDS9960_PS_ENABLE | APDS9960_PWR_ON))) {
++		/* PS is interrupted */
++
++		/* check if this is triggered by background ambient noise */
++		if (status & APDS9960_STATUS_PSAT)
++			dev_err(&client->dev,
++			"PS is triggered by background ambient noise\n");
++		else if (status & APDS9960_STATUS_PVALID)
++			apds9960_change_ps_threshold(client);
++	}
++
++	if ((status & APDS9960_STATUS_AINT) &&
++		 ((data->enable & (APDS9960_ALS_INT_ENABLE |
++		 APDS9960_ALS_ENABLE | APDS9960_PWR_ON)) ==
++		 (APDS9960_ALS_INT_ENABLE | APDS9960_ALS_ENABLE |
++		 APDS9960_PWR_ON))) {
++		/* ALS is interrupted */
++		/* check if this is triggered by background ambient noise */
++		if (status & APDS9960_STATUS_ASAT)
++			dev_err(&client->dev, "ALS is saturated\n");
++		else if (status & APDS9960_STATUS_AVALID)
++			apds9960_change_als_threshold(client);
++	}
++
++	apds9960_clear_interrupt(client, CMD_CLR_ALL_INT);
++
++	/*dev_err(&pdev_data->client->dev, "<== apds9960_work_handler\n"); */
++}
++
++/* assume this is ISR */
++static irqreturn_t apds9960_interrupt(int vec, void *info)
++{
++	struct i2c_client *client = (struct i2c_client *)info;
++	struct apds9960_data *data = i2c_get_clientdata(client);
++
++	/*dev_err(&pdev_data->client->dev, "==> apds9960_interrupt\n"); */
++	apds9960_reschedule_work(data, 0);
++	/* ensure PS cycle is completed if ALS interrupt asserts */
++	/*dev_err(&client->dev, "<== apds9960_interrupt\n"); */
++
++	return IRQ_HANDLED;
++}
++
++/*
++ * Initialization function
++ */
++
++static int apds9960_init_client(struct i2c_client *client)
++{
++	struct apds9960_data *data = i2c_get_clientdata(client);
++	int err;
++	int id;
++
++	err = apds9960_set_enable(client, 0);
++
++	if (err < 0)
++		return err;
++
++	id = i2c_smbus_read_byte_data(client, APDS9960_ID_REG);
++	if (id == 0xAB || id == 0x9C)
++		dev_err(&client->dev, "APDS-9960\n");
++	else {
++		dev_err(&client->dev, "Not APDS-9960\n");
++		return -EIO;
++	}
++
++	err = apds9960_set_atime(client,
++		apds9960_als_atime_tb[data->als_atime_index]);
++	if (err < 0)
++		return err;
++
++	err = apds9960_set_wtime(client, 0xF6);	/* 27ms Wait time */
++	if (err < 0)
++		return err;
++
++	err = apds9960_set_ppulse(client, data->ps_ppulse);
++	if (err < 0)
++		return err;
++
++	err = apds9960_set_poffset_ur(client, data->ps_poffset_ur);
++	if (err < 0)
++		return err;
++
++	err = apds9960_set_poffset_dl(client, data->ps_poffset_dl);
++	if (err < 0)
++		return err;
++
++	err = apds9960_set_config(client, 0x60);	/* no long wait */
++	if (err < 0)
++		return err;
++
++	err = apds9960_set_control(client,
++		APDS9960_PDRVIE_FOR_PS | APDS9960_PGAIN_FOR_PS |
++		apds9960_als_again_bit_tb[data->als_again_index]);
++	if (err < 0)
++		return err;
++
++	/* init threshold for proximity */
++	err = apds9960_set_pilt(client, 0);
++	if (err < 0)
++		return err;
++
++	err = apds9960_set_piht(client, data->ps_threshold);
++	if (err < 0)
++		return err;
++
++	/* force first ALS interrupt to get the environment reading */
++	err = apds9960_set_ailt(client, 0xFFFF);
++	if (err < 0)
++		return err;
++
++	err = apds9960_set_aiht(client, 0);
++	if (err < 0)
++		return err;
++
++	/* 2 consecutive persistence */
++	err = apds9960_set_pers(client, APDS9960_PPERS_2 | APDS9960_APERS_2);
++	if (err < 0)
++		return err;
++
++	/* gesture register */
++	err = apds9960_set_aux(client, 0x01);
++	if (err < 0)
++		return err;
++
++	err = apds9960_set_config2(client, 0);
++	if (err < 0)
++		return err;
++
++	err = apds9960_set_gthr_in(client, data->gthr_in);
++	if (err < 0)
++		return err;
++
++	err = apds9960_set_gthr_out(client, data->gthr_out);
++	if (err < 0)
++		return err;
++
++	err = apds9960_set_gconf1(client, APDS9960_GESTURE_FIFO);
++	if (err < 0)
++		return err;
++
++	err = apds9960_set_gconf2(client,
++		APDS9960_GDRIVE | APDS9960_GGAIN | APDS9960_GTIME);
++	if (err < 0)
++		return err;
++
++	err = apds9960_set_goffset_u(client, 0);
++	if (err < 0)
++		return err;
++
++	err = apds9960_set_goffset_d(client, 0);
++	if (err < 0)
++		return err;
++
++	err = apds9960_set_gpulse(client,
++		(APDS9960_GPULSE - 1) | APDS9960_GPULSE_LEN);
++	if (err < 0)
++		return err;
++
++	err = apds9960_set_goffset_l(client, 0);
++	if (err < 0)
++		return err;
++
++	err = apds9960_set_goffset_r(client, 0);
++	if (err < 0)
++		return err;
++
++	err = apds9960_set_gconf3(client, 0);
++	if (err < 0)
++		return err;
++
++	err = apds9960_set_gctrl(client, 0x04);
++	if (err < 0)
++		return err;
++
++	/* sensor is in disabled mode but all the configurations are preset */
++
++	return 0;
++}
++
++/*
++ * IOCTL support
++ */
++
++static int apds9960_enable_als_sensor(struct i2c_client *client, int val)
++{
++	struct apds9960_data *data = i2c_get_clientdata(client);
++	struct apds9960_platform_data *pdata = data->platform_data;
++	int rc;
++	dev_err(&client->dev, "%s: enable als sensor (%d)\n", __func__, val);
++
++	if ((val != APDS_DISABLE_ALS) &&
++		(val != APDS_ENABLE_ALS_WITH_INT) &&
++		(val != APDS_ENABLE_ALS_NO_INT)) {
++		dev_err(&client->dev,
++			"%s: enable als sensor=%d\n", __func__, val);
++		return -EPERM;
++	}
++
++	if ((val == APDS_ENABLE_ALS_WITH_INT) ||
++		(val == APDS_ENABLE_ALS_NO_INT)) {
++		/* turn on light  sensor */
++		if ((data->enable_als_sensor == 0) &&
++			(data->enable_ps_sensor == 0)) {
++			/* Power on and initalize the device */
++			if (pdata->power_on)
++				pdata->power_on(true);
++
++			rc = apds9960_init_client(client);
++			if (rc) {
++				dev_err(&client->dev, "Failed to init apds9960\n");
++				return rc;
++			}
++		}
++		if (data->enable_als_sensor == APDS_DISABLE_ALS) {
++
++			data->enable_als_sensor = val;
++
++			apds9960_set_enable(client, 0); /* Power Off */
++
++			if (data->enable_als_sensor == APDS_ENABLE_ALS_NO_INT) {
++				if (data->enable_ps_sensor)
++					/* Enable PS with interrupt */
++					apds9960_set_enable(client, 0x27);
++				else
++					/* no interrupt*/
++					apds9960_set_enable(client, 0x03);
++
++	/*
++	* If work is already scheduled then subsequent schedules will not
++	* change the scheduled time that's why we have to cancel it first.
++	*/
++				cancel_delayed_work(&data->als_dwork);
++				flush_delayed_work(&data->als_dwork);
++				queue_delayed_work(apds_workqueue,
++					&data->als_dwork,
++					msecs_to_jiffies(data->als_poll_delay));
++
++			} else {	/* als with int */
++	/* force first ALS interrupt in order to get environment reading */
++				apds9960_set_ailt(client, 0xFFFF);
++				apds9960_set_aiht(client, 0);
++
++				if (data->enable_ps_sensor)
++					/* Enable both ALS and
++					PS with interrupt */
++					apds9960_set_enable(client, 0x37);
++				else
++					/* only enable light
++					sensor with interrupt*/
++					apds9960_set_enable(client, 0x13);
++
++	/*
++	* If work is already scheduled then subsequent schedules will not
++	* change the scheduled time that's why we have to cancel it first.
++	*/
++				cancel_delayed_work(&data->als_dwork);
++				flush_delayed_work(&data->als_dwork);
++			}
++
++		}
++	} else {
++		/*turn off light sensor */
++		/* what if the p sensor is active? */
++		data->enable_als_sensor = APDS_DISABLE_ALS;
++
++		if ((data->enable_ps_sensor == APDS_ENABLE_PS) &&
++			(data->enable_gesture_sensor ==
++			APDS_DISABLE_GESTURE)) {
++			apds9960_set_enable(client, 0); /* Power Off */
++
++			apds9960_set_pilt(client, APDS9960_FAR_THRESHOLD_HIGH);
++			apds9960_set_piht(client, APDS9960_NEAR_THRESHOLD_LOW);
++			/* only enable prox sensor with interrupt */
++			apds9960_set_enable(client, 0x2D);
++		} else if ((data->enable_ps_sensor == APDS_ENABLE_PS) &&
++			(data->enable_gesture_sensor == APDS_ENABLE_GESTURE))
++			/* only enable gesture sensor with ps */
++			apds9960_set_enable(client, 0x4D);
++		else
++			apds9960_set_enable(client, 0);
++
++	/*
++	* If work is already scheduled then subsequent schedules will not
++	* change the scheduled time that's why we have to cancel it first.
++	*/
++		cancel_delayed_work(&data->als_dwork);
++		flush_delayed_work(&data->als_dwork);
++	}
++
++	/* Vote off  regulators if both light and prox sensor are off */
++	if ((data->enable_als_sensor == 0) &&
++		(data->enable_ps_sensor == 0) &&
++		(pdata->power_on))
++		pdata->power_on(false);
++
++	return 0;
++}
++
++static int apds9960_set_als_poll_delay(struct i2c_client *client,
++	unsigned int val)
++{
++	struct apds9960_data *data = i2c_get_clientdata(client);
++	int ret;
++	int atime_index = 0;
++
++	dev_err(&client->dev, "%s : %d\n", __func__, val);
++
++	if ((val != APDS_ALS_POLL_SLOW) && (val != APDS_ALS_POLL_MEDIUM) &&
++		(val != APDS_ALS_POLL_FAST)) {
++		dev_err(&client->dev,
++			"%s:invalid value=%d\n", __func__, val);
++		return -EPERM;
++	}
++/*
++	if (val <= 0 || val >= 10000) {
++		dev_err(&client->dev,
++			"%s:invalid delay=%d\n", __func__, val);
++		val = 1;
++	}
++*/
++	if (val == APDS_ALS_POLL_FAST) {
++		data->als_poll_delay = 50;		/* 50ms */
++		atime_index = APDS9960_ALS_RES_24MS;
++	} else if (val == APDS_ALS_POLL_MEDIUM) {
++		data->als_poll_delay = 200;		/* 200ms */
++		atime_index = APDS9960_ALS_RES_50MS;
++	} else {	/* APDS_ALS_POLL_SLOW */
++		data->als_poll_delay = 1000;	/* 1000ms */
++		atime_index = APDS9960_ALS_RES_100MS;
++	}
++
++	ret = apds9960_set_atime(client, apds9960_als_atime_tb[atime_index]);
++	if (ret >= 0) {
++		data->als_atime_index = atime_index;
++		dev_err(&client->dev,
++			"poll delay %d, atime_index %d\n",
++			data->als_poll_delay, data->als_atime_index);
++	} else
++		return -EPERM;
++/*
++	data->als_poll_delay = val;
++*/
++
++	/*
++	* If work is already scheduled then subsequent schedules will not
++	* change the scheduled time that's why we have to cancel it first.
++	*/
++	cancel_delayed_work(&data->als_dwork);
++	flush_delayed_work(&data->als_dwork);
++	queue_delayed_work(apds_workqueue,
++		&data->als_dwork, msecs_to_jiffies(data->als_poll_delay));
++
++	return 0;
++}
++
++static int apds9960_enable_ps_sensor(struct i2c_client *client, int val)
++{
++	struct apds9960_data *data = i2c_get_clientdata(client);
++	struct apds9960_platform_data *pdata = data->platform_data;
++	int rc;
++	dev_err(&client->dev, "enable ps senosr (%d)\n", val);
++
++	if ((val != APDS_DISABLE_PS) && (val != APDS_ENABLE_PS)) {
++		dev_err(&client->dev,
++			"%s:invalid value=%d\n", __func__, val);
++		return -EPERM;
++	}
++
++	if (val == APDS_ENABLE_PS) {	/* interrupt mode only */
++		/*turn on p sensor */
++		if ((data->enable_als_sensor == 0) &&
++			(data->enable_ps_sensor == 0)) {
++			/* Power on and initalize the device */
++			if (pdata->power_on)
++				pdata->power_on(true);
++
++			rc = apds9960_init_client(client);
++			if (rc) {
++				dev_err(&client->dev, "Failed to init apds9960\n");
++				return rc;
++			}
++		}
++		if (data->enable_ps_sensor == APDS_DISABLE_PS) {
++
++			data->enable_ps_sensor = APDS_ENABLE_PS;
++
++			apds9960_set_enable(client, 0); /* Power Off */
++
++			apds9960_set_ppulse(client, data->ps_ppulse);
++
++			apds9960_set_control(client, APDS9960_PDRVIE_FOR_PS |
++			APDS9960_PGAIN_FOR_PS |
++			apds9960_als_again_bit_tb[data->als_again_index]);
++
++			apds9960_set_poffset_ur(client, data->ps_poffset_ur);
++			apds9960_set_poffset_dl(client, data->ps_poffset_dl);
++
++			/* force first interrupt to inform HAL */
++			apds9960_set_pilt(client, APDS9960_FAR_THRESHOLD_HIGH);
++			apds9960_set_piht(client, APDS9960_NEAR_THRESHOLD_LOW);
++			apds9960_set_aux(client, APDS9960_PS_LED_BOOST | 0x01);
++
++			/* disable gesture if it was enabled previously  */
++			if (data->enable_als_sensor == APDS_DISABLE_ALS) {
++				apds9960_set_wtime(client, 0xF6);
++				/* only enable PS interrupt */
++				apds9960_set_enable(client, 0x2D);
++			} else if (data->enable_als_sensor ==
++				APDS_ENABLE_ALS_WITH_INT)
++				/* enable ALS and PS interrupt */
++				apds9960_set_enable(client, 0x37);
++			else	/* APDS_ENABLE_ALS_NO_INT */
++					/* enable PS interrupt only */
++				apds9960_set_enable(client, 0x27);
++		}
++	} else {
++		/*turn off p sensor - can't turn off the entire sensor,
++		the light sensor may be needed by HAL  */
++		data->enable_ps_sensor = APDS_DISABLE_PS;
++		if ((data->enable_als_sensor == APDS_ENABLE_ALS_NO_INT) &&
++			(data->enable_gesture_sensor == APDS_DISABLE_GESTURE)) {
++			apds9960_set_enable(client, 0x03);
++			/* no ALS interrupt */
++
++	/*
++	* If work is already scheduled then subsequent schedules will not
++	* change the scheduled time that's why we have to cancel it first.
++	*/
++			cancel_delayed_work(&data->als_dwork);
++			flush_delayed_work(&data->als_dwork);
++			queue_delayed_work(apds_workqueue,
++				&data->als_dwork,
++				msecs_to_jiffies(data->als_poll_delay));
++		} else if ((data->enable_als_sensor ==
++			APDS_ENABLE_ALS_WITH_INT) &&
++			(data->enable_gesture_sensor == APDS_DISABLE_GESTURE)) {
++			/* reconfigute light sensor setting	 */
++			apds9960_set_enable(client, 0); /* Power Off */
++			/* Force ALS interrupt  */
++			apds9960_set_ailt(client, 0xFFFF);
++			apds9960_set_aiht(client, 0);
++			/* enable ALS interrupt */
++			apds9960_set_enable(client, 0x13);
++		} else if ((data->enable_als_sensor == APDS_DISABLE_ALS) &&
++		(data->enable_gesture_sensor == APDS_DISABLE_GESTURE)) {
++			apds9960_set_enable(client, 0);
++	/*
++	 * If work is already scheduled then subsequent schedules will not
++	 * change the scheduled time that's why we have to cancel it first.
++	 */
++			cancel_delayed_work(&data->als_dwork);
++			flush_delayed_work(&data->als_dwork);
++		} else if (data->enable_gesture_sensor == APDS_ENABLE_GESTURE) {
++			apds9960_set_enable(client, 0x4D);
++	/*
++	* If work is already scheduled then subsequent schedules will not
++	* change the scheduled time that's why we have to cancel it first.
++	*/
++			cancel_delayed_work(&data->als_dwork);
++			flush_delayed_work(&data->als_dwork);
++		}
++	}
++
++	/* Vote off  regulators if both light and prox sensor are off */
++	if ((data->enable_als_sensor == 0) &&
++		(data->enable_ps_sensor == 0) &&
++		(pdata->power_on))
++		pdata->power_on(false);
++
++	return 0;
++}
++
++static int apds9960_enable_gesture_sensor(struct i2c_client *client, int val)
++{
++	struct apds9960_data *data = i2c_get_clientdata(client);
++
++	dev_err(&client->dev, "enable gesture senosr (%d)\n", val);
++
++	if ((val != APDS_DISABLE_GESTURE) && (val != APDS_ENABLE_GESTURE)) {
++		dev_err(&client->dev,
++			"%s:invalid value=%d\n", __func__, val);
++		return -EPERM;
++	}
++
++	if (val == APDS_ENABLE_GESTURE) {	/* interrupt mode only  */
++
++		if (data->enable_gesture_sensor == APDS_DISABLE_GESTURE) {
++
++			data->enable_gesture_sensor = APDS_ENABLE_GESTURE;
++
++			ResetGestureParameters();
++
++			apds9960_set_enable(client, 0); /* Power Off */
++
++			apds9960_set_wtime(client, 0xFF);
++
++			apds9960_set_ppulse(client, data->gesture_ppulse);
++
++			apds9960_set_control(client,
++			APDS9960_PDRVIE_FOR_GESTURE |
++			APDS9960_PGAIN_FOR_GESTURE |
++			apds9960_als_again_bit_tb[data->als_again_index]);
++
++			apds9960_set_poffset_ur(client,
++				data->gesture_poffset_ur);
++			apds9960_set_poffset_dl(client,
++				data->gesture_poffset_dl);
++
++			apds9960_set_aux(client,
++				APDS9960_GESTURE_LED_BOOST | 0x01);
++
++			/* gesture registers  */
++			apds9960_set_gctrl(client, 0x07);
++
++			if (data->enable_als_sensor == APDS_ENABLE_ALS_NO_INT) {
++				/* need to turn on p sensor for gesture mode  */
++				apds9960_set_enable(client, APDS9960_PWR_ON |
++				APDS9960_ALS_ENABLE | APDS9960_PS_ENABLE |
++				APDS9960_GESTURE_ENABLE);
++
++				cancel_delayed_work(&data->als_dwork);
++				flush_delayed_work(&data->als_dwork);
++				queue_delayed_work(apds_workqueue,
++				&data->als_dwork,
++				msecs_to_jiffies(data->als_poll_delay));
++			} else if (data->enable_als_sensor ==
++				APDS_ENABLE_ALS_WITH_INT) {
++				/* need to turn on p sensor for gesture mode  */
++				apds9960_set_enable(client, APDS9960_PWR_ON |
++				APDS9960_ALS_ENABLE | APDS9960_PS_ENABLE |
++				APDS9960_ALS_INT_ENABLE |
++				APDS9960_GESTURE_ENABLE);
++			} else { /* APDS_DISABLE_ALS  */
++				/* need to turn on p sensor for gesture mode  */
++			apds9960_set_enable(client,	APDS9960_PWR_ON |
++			APDS9960_WAIT_ENABLE | APDS9960_PS_ENABLE |
++			APDS9960_GESTURE_ENABLE);
++			}
++		}
++	} else {
++		/*turn off gesture sensor - can't turn off the entire sensor,
++		the light/proximity sensor may be needed by HAL  */
++		data->enable_gesture_sensor = APDS_DISABLE_GESTURE;
++		if ((data->enable_als_sensor == APDS_ENABLE_ALS_NO_INT) &&
++			 (data->enable_ps_sensor == APDS_DISABLE_PS)) {
++			apds9960_set_enable(client, 0x03);
++			/* no ALS interrupt */
++	/*
++	* If work is already scheduled then subsequent schedules will not
++	* change the scheduled time that's why we have to cancel it first.
++	*/
++			cancel_delayed_work(&data->als_dwork);
++			flush_delayed_work(&data->als_dwork);
++			queue_delayed_work(apds_workqueue,
++				&data->als_dwork,
++				msecs_to_jiffies(data->als_poll_delay));
++		} else if ((data->enable_als_sensor ==
++			APDS_ENABLE_ALS_WITH_INT) &&
++			(data->enable_ps_sensor == APDS_DISABLE_PS)) {
++			/* reconfigute light sensor setting	 */
++			apds9960_set_enable(client, 0); /* Power Off */
++			/* Force ALS interrupt  */
++			apds9960_set_ailt(client, 0xFFFF);
++			apds9960_set_aiht(client, 0);
++			/* enable ALS interrupt */
++			apds9960_set_enable(client, 0x13);
++		} else if ((data->enable_als_sensor == APDS_DISABLE_ALS) &&
++			(data->enable_ps_sensor == APDS_DISABLE_PS)) {
++			apds9960_set_enable(client, 0);
++
++	/*
++	* If work is already scheduled then subsequent schedules will not
++	* change the scheduled time that's why we have to cancel it first.
++	*/
++			cancel_delayed_work(&data->als_dwork);
++			flush_delayed_work(&data->als_dwork);
++		} else if ((data->enable_als_sensor ==
++			APDS_ENABLE_ALS_NO_INT) &&
++			(data->enable_ps_sensor == APDS_ENABLE_PS)) {
++			apds9960_set_enable(client, 0x27);/* no ALS interrupt */
++
++	/*
++	* If work is already scheduled then subsequent schedules will not
++	* change the scheduled time that's why we have to cancel it first.
++	*/
++			cancel_delayed_work(&data->als_dwork);
++			flush_delayed_work(&data->als_dwork);
++			queue_delayed_work(apds_workqueue,
++				&data->als_dwork,
++				msecs_to_jiffies(data->als_poll_delay));
++		} else if ((data->enable_als_sensor ==
++			APDS_ENABLE_ALS_WITH_INT) &&
++			(data->enable_ps_sensor == APDS_ENABLE_PS)) {
++			/* reconfigute light sensor setting	 */
++			apds9960_set_enable(client, 0); /* Power Off */
++			/* Force ALS interrupt  */
++			apds9960_set_ailt(client, 0xFFFF);
++			apds9960_set_aiht(client, 0);
++			/* enable ALS interrupt */
++			apds9960_set_enable(client, 0x37);
++		} else {/* APDS_DISBLE_ALS & APDS_ENALBE_PS  */
++			apds9960_set_enable(client, 0);
++
++			/* force first interrupt to inform HAL  */
++			apds9960_set_pilt(client, APDS9960_FAR_THRESHOLD_HIGH);
++			apds9960_set_piht(client, APDS9960_NEAR_THRESHOLD_LOW);
++			/* only enable PS interrupt */
++			apds9960_set_enable(client, 0x2D);
++	/*
++	* If work is already scheduled then subsequent schedules will not
++	* change the scheduled time that's why we have to cancel it first.
++	*/
++			cancel_delayed_work(&data->als_dwork);
++			flush_delayed_work(&data->als_dwork);
++		}
++	}
++
++	return 0;
++}
++
++static int apds9960_calibration(struct i2c_client *client, int val)
++{
++	struct apds9960_data *data = i2c_get_clientdata(client);
++#ifdef PLATFORM_SENSOR_APDS9960
++	struct apds9960_platform_data *platform_data =
++		client->dev.platform_data;
++#endif
++	int status;
++	unsigned char i2c_data[10];
++	unsigned int old_lux_GA1, old_cct_GA1;
++	int loop = 0;
++	unsigned int old_poffset_ur, old_poffset_dl,
++		old_wtime, old_config2, old_gctrl;
++	unsigned int old_goffset_u, old_goffset_d, old_goffset_l, old_goffset_r;
++	unsigned int old_gthr_in = 0, old_gthr_out = 0;
++	unsigned int old_control, old_ppulse;
++	unsigned int temp_offset = 0, temp_offset_negative = 127;
++	unsigned int temp_goffset_u = 0, temp_goffset_u_negative = 127;
++	unsigned int temp_goffset_d = 0, temp_goffset_d_negative = 127;
++	unsigned int temp_goffset_l = 0, temp_goffset_l_negative = 127;
++	unsigned int temp_goffset_r = 0, temp_goffset_r_negative = 127;
++	int gstatus;
++	unsigned int gesture_u, gesture_d, gesture_l, gesture_r;
++	unsigned int gesture_u_cal_done = 0;
++	unsigned int gesture_d_cal_done = 0;
++	unsigned int gesture_l_cal_done = 0;
++	unsigned int gesture_r_cal_done = 0;
++	unsigned int j;
++
++	dev_err(&client->dev, "apds9960_calibration (%d)\n", val);
++
++	if ((data->enable_ps_sensor != APDS_DISABLE_PS) ||
++		(data->enable_als_sensor != APDS_DISABLE_ALS) ||
++		(data->enable_gesture_sensor != APDS_DISABLE_GESTURE)) {
++
++		dev_err(&client->dev,
++		"%s:sensor is in active mode, no calibration\n",
++		__func__);
++		return -EPERM;
++	}
++
++	if (val == APDS_ALS_CALIBRATION) {
++
++		apds9960_set_enable(client, 0x03);
++		udelay(2000);
++		status = i2c_smbus_read_i2c_block_data(client,
++			APDS9960_CDATAL_REG, 8, (unsigned char *)i2c_data);
++
++		if (status < 0)
++			return status;
++		if (status != 8)
++			return -EPERM;
++
++		data->cdata = (i2c_data[1] << 8) | i2c_data[0];
++		data->rdata = (i2c_data[3] << 8) | i2c_data[2];
++		data->gdata = (i2c_data[5] << 8) | i2c_data[4];
++		data->bdata = (i2c_data[7] << 8) | i2c_data[6];
++
++		old_lux_GA1 = data->lux_GA1;
++		old_cct_GA1 = data->cct_GA1;
++		data->lux_GA1 = 100;
++		LuxCalculation(client);
++
++		if ((data->lux >= (APDS9960_ALS_CALIBRATED_LUX * 70) /
++			100) && (data->lux <= (APDS9960_ALS_CALIBRATED_LUX *
++			130) / 100)) {
++			data->lux_GA1 = (APDS9960_ALS_CALIBRATED_LUX *
++				100) / data->lux;
++#ifdef PLATFORM_SENSOR_APDS9960
++			platform_data->lux_GA1 = data->lux_GA1;
++#endif
++			return 1;
++		} else {
++			data->lux_GA1 = old_lux_GA1;
++			return -ENOENT;
++		}
++
++		if ((data->cct >= (APDS9960_ALS_CALIBRATED_CCT * 90) / 100) &&
++		(data->cct <= (APDS9960_ALS_CALIBRATED_CCT * 110) / 100)) {
++			data->cct_GA1 = (APDS9960_ALS_CALIBRATED_CCT * 100) /
++			data->cct;
++#ifdef PLATFORM_SENSOR_APDS9960
++			platform_data->cct_GA1 = data->cct_GA1;
++#endif
++			return 1;
++		} else {
++			data->cct_GA1 = old_cct_GA1;
++			return -ESRCH;
++		}
++
++		dev_err(&client->dev,
++			"ALS cal done : %d lux\n", data->lux);
++	} else if (val == APDS_PS_CALIBRATION) {
++
++		old_control = data->control;
++		old_ppulse = data->ppulse;
++		old_poffset_ur = data->poffset_ur;
++		old_poffset_dl = data->poffset_dl;
++		old_wtime = data->wtime;
++		old_config2 = data->config2;
++
++		apds9960_set_wtime(client, 0xF6);
++		apds9960_set_ppulse(client, data->ps_ppulse);
++		apds9960_set_control(client,
++			APDS9960_PDRVIE_FOR_PS | APDS9960_PGAIN_FOR_PS);
++		apds9960_set_config(client, 0x60);
++		apds9960_set_config2(client, 0x26);
++		apds9960_set_aux(client, APDS9960_PS_LED_BOOST | 0x01);
++		apds9960_set_poffset_ur(client, 0x00);
++		apds9960_set_poffset_dl(client, 0x00);
++		apds9960_set_enable(client, 0x0D);
++
++		/* POFFSET_UR  */
++		loop = 0;
++		temp_offset = 0;
++		temp_offset_negative = 127;
++		while (loop++ <= 127) {
++			/*mdelay(10);*/
++			for (j = 5; j > 0; j--)
++				udelay(2000);
++			data->ps_data =
++			i2c_smbus_read_byte_data(client, APDS9960_PDATA_REG);
++
++			if ((data->ps_data <= APDS9960_PS_CALIBRATED_XTALK) &&
++			(data->ps_data >=
++			APDS9960_PS_CALIBRATED_XTALK_BASELINE)) {
++				dev_err(&client->dev,
++					"cal ur %d (%d) - done\n",
++					temp_offset, data->ps_data);
++				break;
++			} else {
++				if (data->ps_data >
++				APDS9960_PS_CALIBRATED_XTALK) {
++					/* reduce  */
++					if ((temp_offset >= 0) &&
++					(temp_offset <= 127))
++						temp_offset += 1;
++					else
++						temp_offset -= 1;
++				} else if (data->ps_data <
++					APDS9960_PS_CALIBRATED_XTALK_BASELINE) {
++					/* increase  */
++					if ((temp_offset > 0) &&
++					(temp_offset <= 127))
++						temp_offset -= 1;
++					else {
++						/* start from 128 */
++						temp_offset_negative += 1;
++						temp_offset =
++						temp_offset_negative & 0xFF;
++					}
++				}
++			}
++
++			apds9960_set_poffset_ur(client, temp_offset);
++		}
++
++		if (loop >= 128) {
++			apds9960_set_wtime(client, old_wtime);
++
++			apds9960_set_ppulse(client, old_ppulse);
++			apds9960_set_control(client, old_control);
++			apds9960_set_poffset_ur(client, old_poffset_ur);
++			apds9960_set_poffset_dl(client, old_poffset_dl);
++			apds9960_set_config2(client, old_config2);
++			apds9960_set_enable(client, 0);
++			return -EINTR;
++		}
++
++#ifdef PLATFORM_SENSOR_APDS9960
++		platform_data->ps_poffset_ur = data->poffset_ur;
++#endif
++		data->ps_poffset_ur = data->poffset_ur;
++
++		apds9960_set_enable(client, 0x00);
++		apds9960_set_config2(client, 0x29);
++		apds9960_set_enable(client, 0x0D);
++
++		loop = 0;
++		temp_offset = 0;
++		temp_offset_negative = 127;
++		while (loop++ <= 127) {
++			/*mdelay(10);*/
++			for (j = 5; j > 0; j--)
++				udelay(2000);
++			data->ps_data =
++				i2c_smbus_read_byte_data(client,
++				APDS9960_PDATA_REG);
++
++			if ((data->ps_data <= APDS9960_PS_CALIBRATED_XTALK) &&
++				(data->ps_data >=
++				APDS9960_PS_CALIBRATED_XTALK_BASELINE)) {
++				dev_err(&client->dev,
++					"cal dl %d (%d) - done\n",
++					temp_offset, data->ps_data);
++				break;
++			} else {
++				if (data->ps_data >
++					APDS9960_PS_CALIBRATED_XTALK) {
++					/* reduce   */
++					if ((temp_offset >= 0) &&
++					(temp_offset <= 127))
++						temp_offset += 1;
++					else
++						temp_offset -= 1;
++				} else if (data->ps_data <
++					APDS9960_PS_CALIBRATED_XTALK_BASELINE) {
++					/* increase  */
++					if ((temp_offset > 0) &&
++					(temp_offset <= 127))
++						temp_offset -= 1;
++					else {
++						/* start from 128 */
++						temp_offset_negative += 1;
++						temp_offset =
++						temp_offset_negative & 0xFF;
++					}
++				}
++			}
++
++			apds9960_set_poffset_dl(client, temp_offset);
++		}
++
++		if (loop >= 128) {
++			apds9960_set_wtime(client, old_wtime);
++			apds9960_set_ppulse(client, old_ppulse);
++			apds9960_set_control(client, old_control);
++			apds9960_set_poffset_ur(client, old_poffset_ur);
++			apds9960_set_poffset_dl(client, old_poffset_dl);
++			apds9960_set_config2(client, old_config2);
++			apds9960_set_enable(client, 0);
++			dev_err(&client->dev, "loop %d -5\n", loop);
++			return -EIO;
++		}
++
++		apds9960_set_ppulse(client, old_ppulse);
++		apds9960_set_control(client, old_control);
++		apds9960_set_wtime(client, old_wtime);
++		apds9960_set_config2(client, old_config2);
++
++#ifdef PLATFORM_SENSOR_APDS9960
++		platform_data->ps_poffset_dl = data->poffset_dl;
++#endif
++		data->ps_poffset_dl = data->poffset_dl;
++
++		dev_err(&client->dev,
++			"PS cal done : ur=%d dl=%d\n",
++			data->poffset_ur, data->poffset_dl);
++	} else if (val == APDS_PS_GESTURE_CALIBRATION) {
++
++		old_control = data->control;
++		old_ppulse = data->ppulse;
++		old_poffset_ur = data->poffset_ur;
++		old_poffset_dl = data->poffset_dl;
++		old_wtime = data->wtime;
++		old_config2 = data->config2;
++
++		apds9960_set_wtime(client, 0xF6);
++		apds9960_set_ppulse(client, data->gesture_ppulse);
++		apds9960_set_control(client,
++		APDS9960_PDRVIE_FOR_GESTURE | APDS9960_PGAIN_FOR_GESTURE);
++
++		apds9960_set_config(client, 0x60);
++		apds9960_set_config2(client, 0x26);
++		apds9960_set_aux(client, APDS9960_GESTURE_LED_BOOST | 0x01);
++		apds9960_set_poffset_ur(client, 0x00);
++		apds9960_set_poffset_dl(client, 0x00);
++		apds9960_set_enable(client, 0x0D);
++
++		/* POFFSET_UR */
++		loop = 0;
++		temp_offset = 0;
++		temp_offset_negative = 127;
++		while (loop++ <= 127) {
++			/*mdelay(10);*/
++			for (j = 5; j > 0; j--)
++				udelay(2000);
++			data->ps_data =
++			i2c_smbus_read_byte_data(client, APDS9960_PDATA_REG);
++
++			if ((data->ps_data <= APDS9960_PS_CALIBRATED_XTALK) &&
++				(data->ps_data >=
++				APDS9960_PS_CALIBRATED_XTALK_BASELINE)) {
++				dev_err(&client->dev,
++					"cal ur %d (%d) - done\n",
++					temp_offset, data->ps_data);
++				break;
++			} else {
++				if (data->ps_data >
++					APDS9960_PS_CALIBRATED_XTALK) {
++					/* reduce  */
++					if ((temp_offset >= 0) &&
++						(temp_offset <= 127))
++						temp_offset += 1;
++					else
++						temp_offset -= 1;
++				} else if (data->ps_data <
++					APDS9960_PS_CALIBRATED_XTALK_BASELINE) {
++					/* increase */
++					if ((temp_offset > 0) &&
++						(temp_offset <= 127))
++						temp_offset -= 1;
++					else {
++						temp_offset_negative += 1;
++						temp_offset =
++						temp_offset_negative & 0xFF;
++					}
++				}
++			}
++
++			apds9960_set_poffset_ur(client, temp_offset);
++		}
++
++		if (loop >= 128) {
++			apds9960_set_wtime(client, old_wtime);
++
++			apds9960_set_ppulse(client, old_ppulse);
++			apds9960_set_control(client, old_control);
++			apds9960_set_poffset_ur(client, old_poffset_ur);
++			apds9960_set_poffset_dl(client, old_poffset_dl);
++			apds9960_set_config2(client, old_config2);
++			apds9960_set_enable(client, 0);
++			return -EINTR;
++		}
++
++#ifdef PLATFORM_SENSOR_APDS9960
++		platform_data->gesture_poffset_ur = data->poffset_ur;
++#endif
++		data->gesture_poffset_ur = data->poffset_ur;
++
++		apds9960_set_enable(client, 0x00);
++		apds9960_set_config2(client, 0x29);
++		apds9960_set_enable(client, 0x0D);
++
++		loop = 0;
++		temp_offset = 0;
++		temp_offset_negative = 127;
++		while (loop++ <= 127) {
++			/*mdelay(10);*/
++			for (j = 5; j > 0; j--)
++				udelay(2000);
++			data->ps_data =
++			i2c_smbus_read_byte_data(client, APDS9960_PDATA_REG);
++
++			if ((data->ps_data <= APDS9960_PS_CALIBRATED_XTALK) &&
++				(data->ps_data >=
++				APDS9960_PS_CALIBRATED_XTALK_BASELINE)) {
++				dev_err(&client->dev,
++					"cal dl %d (%d) - done\n",
++					temp_offset, data->ps_data);
++				break;
++			} else {
++				if (data->ps_data >
++				APDS9960_PS_CALIBRATED_XTALK) {
++					/* reduce  */
++					if ((temp_offset >= 0) &&
++						(temp_offset <= 127))
++						temp_offset += 1;
++					else
++						temp_offset -= 1;
++				} else if (data->ps_data <
++					APDS9960_PS_CALIBRATED_XTALK_BASELINE) {
++					/* increase */
++					if ((temp_offset > 0) &&
++						(temp_offset <= 127))
++						temp_offset -= 1;
++					else {
++						/* start from 128 */
++						temp_offset_negative += 1;
++						temp_offset =
++						temp_offset_negative & 0xFF;
++					}
++				}
++			}
++
++			apds9960_set_poffset_dl(client, temp_offset);
++		}
++
++		if (loop >= 128) {
++			apds9960_set_wtime(client, old_wtime);
++			apds9960_set_ppulse(client, old_ppulse);
++			apds9960_set_control(client, old_control);
++			apds9960_set_poffset_ur(client, old_poffset_ur);
++			apds9960_set_poffset_dl(client, old_poffset_dl);
++			apds9960_set_config2(client, old_config2);
++			apds9960_set_enable(client, 0);
++			dev_err(&client->dev, "loop %d -5\n", loop);
++			return -EIO;
++		}
++
++		apds9960_set_ppulse(client, old_ppulse);
++		apds9960_set_control(client, old_control);
++		apds9960_set_wtime(client, old_wtime);
++		apds9960_set_config2(client, old_config2);
++
++#ifdef PLATFORM_SENSOR_APDS9960
++		platform_data->gesture_poffset_dl = data->poffset_dl;
++#endif
++		data->gesture_poffset_dl = data->poffset_dl;
++
++		old_config2 = data->config2;
++		old_gctrl = data->gctrl;
++		old_goffset_u = data->goffset_u;
++		old_goffset_d = data->goffset_d;
++		old_goffset_l = data->goffset_l;
++		old_goffset_r = data->goffset_r;
++		old_gthr_in = data->gthr_in;
++		old_gthr_out = data->gthr_out;
++
++		apds9960_set_enable(client, 0x00);
++		apds9960_set_config2(client, 0x00);
++
++		apds9960_set_gthr_in(client, 0x00);
++		apds9960_set_gthr_out(client, 0x00);
++
++		apds9960_set_goffset_u(client, 0x00);
++		apds9960_set_goffset_d(client, 0x00);
++		apds9960_set_goffset_l(client, 0x00);
++		apds9960_set_goffset_r(client, 0x00);
++
++		apds9960_set_enable(client, 0x41);
++		apds9960_set_gctrl(client, 0x05);
++
++		loop = 0;
++		temp_goffset_u = 0;
++		temp_goffset_d = 0;
++		temp_goffset_l = 0;
++		temp_goffset_r = 0;
++		temp_goffset_u_negative = 127;
++		temp_goffset_d_negative = 127;
++		temp_goffset_l_negative = 127;
++		temp_goffset_r_negative = 127;
++
++		while (loop++ <= 127) {
++			/*mdelay(10);*/
++			for (j = 5; j > 0; j--)
++				udelay(2000);
++			gstatus =
++			i2c_smbus_read_byte_data(client, APDS9960_GSTATUS_REG);
++
++			if (gstatus < 0) {
++				dev_err(&client->dev,
++				"gstatus error %d\n", gstatus);
++				return -ENXIO;
++			}
++
++			dev_err(&client->dev,
++				"gstatus = %x (%d)\n", gstatus, loop);
++			if (gstatus & APDS9960_GVALID) {
++
++				status = i2c_smbus_read_i2c_block_data(client,
++					APDS9960_GFIFO0_REG,
++					4, (unsigned char *)i2c_data);
++
++				gesture_u = i2c_data[0];
++				gesture_d = i2c_data[1];
++				gesture_l = i2c_data[2];
++				gesture_r = i2c_data[3];
++
++				/*if (!gesture_u_cal_done)
++				{	*/
++				if ((gesture_u <=
++				APDS9960_PS_CALIBRATED_XTALK) &&
++				(gesture_u >=
++				APDS9960_PS_CALIBRATED_XTALK_BASELINE)) {
++					gesture_u_cal_done = 1;
++					dev_err(&pdev_data->client->dev,
++					"cal u %d (%d) - done\n",
++					gesture_u, temp_goffset_u);
++				} else if (gesture_u >
++					APDS9960_PS_CALIBRATED_XTALK) {
++						/* reduce  */
++					gesture_u_cal_done = 0;
++					if ((temp_goffset_u >= 0) &&
++						(temp_goffset_u <= 127))
++						temp_goffset_u += 1;
++					else if (temp_goffset_u == 128)
++						temp_goffset_u = 0;
++					else
++						temp_goffset_u -= 1;
++				} else if (gesture_u <
++					APDS9960_PS_CALIBRATED_XTALK_BASELINE) {
++						/* increase */
++					gesture_u_cal_done = 0;
++					if ((temp_goffset_u > 0) &&
++						(temp_goffset_u <= 127))
++						temp_goffset_u -= 1;
++					else {
++						/* start from 128 */
++						temp_goffset_u_negative += 1;
++						temp_goffset_u =
++						temp_goffset_u_negative & 0xFF;
++					}
++				}
++				apds9960_set_goffset_u(client, temp_goffset_u);
++			/*	} */
++
++				/*if (!gesture_d_cal_done)
++				{  */
++				if ((gesture_d <=
++				APDS9960_PS_CALIBRATED_XTALK) &&
++				(gesture_d >=
++				APDS9960_PS_CALIBRATED_XTALK_BASELINE)) {
++					gesture_d_cal_done = 1;
++					dev_err(&pdev_data->client->dev,
++					"cal d %d (%d) - done\n",
++					gesture_d, temp_goffset_d);
++				} else if (gesture_d >
++					APDS9960_PS_CALIBRATED_XTALK) {
++						/* reduce  */
++					gesture_d_cal_done = 0;
++					if ((temp_goffset_d >= 0) &&
++						(temp_goffset_d <= 127))
++						temp_goffset_d += 1;
++					else if (temp_goffset_d == 128)
++						temp_goffset_d = 0;
++					else
++						temp_goffset_d -= 1;
++				} else if (gesture_d <
++					APDS9960_PS_CALIBRATED_XTALK_BASELINE) {
++						/* increase */
++					gesture_d_cal_done = 0;
++					if ((temp_goffset_d > 0) &&
++						(temp_goffset_d <= 127))
++						temp_goffset_d -= 1;
++					else {
++						/* start from 128 */
++						temp_goffset_d_negative += 1;
++						temp_goffset_d =
++						temp_goffset_d_negative & 0xFF;
++					}
++				}
++				apds9960_set_goffset_d(client, temp_goffset_d);
++			/*	}	*/
++
++				/*if (!gesture_l_cal_done)
++				{*/
++				if ((gesture_l <=
++				APDS9960_PS_CALIBRATED_XTALK) &&
++				(gesture_l >=
++				APDS9960_PS_CALIBRATED_XTALK_BASELINE)) {
++					gesture_l_cal_done = 1;
++					dev_err(&pdev_data->client->dev,
++					"cal l %d (%d) - done\n",
++					gesture_l, temp_goffset_l);
++				} else if (gesture_l >
++				APDS9960_PS_CALIBRATED_XTALK) {
++					/* reduce  */
++					gesture_l_cal_done = 0;
++					if ((temp_goffset_l >= 0) &&
++						(temp_goffset_l <= 127))
++						temp_goffset_l += 1;
++					else if (temp_goffset_l == 128)
++						temp_goffset_l = 0;
++					else
++						temp_goffset_l -= 1;
++				} else if (gesture_l <
++					APDS9960_PS_CALIBRATED_XTALK_BASELINE) {
++						/* increase */
++					gesture_l_cal_done = 0;
++					if ((temp_goffset_l > 0) &&
++						(temp_goffset_l <= 127)) {
++						temp_goffset_l -= 1;
++					} else {
++						/* start from 128 */
++						temp_goffset_l_negative += 1;
++						temp_goffset_l =
++						temp_goffset_l_negative & 0xFF;
++					}
++				}
++				apds9960_set_goffset_l(client, temp_goffset_l);
++			/*	} */
++
++				/*if (!gesture_r_cal_done)
++				{ */
++				if ((gesture_r <=
++				APDS9960_PS_CALIBRATED_XTALK) &&
++				(gesture_r >=
++				APDS9960_PS_CALIBRATED_XTALK_BASELINE)) {
++					gesture_r_cal_done = 1;
++					dev_err(&pdev_data->client->dev,
++					"cal r %d (%d) - done\n",
++					gesture_r, temp_goffset_r);
++				} else if (gesture_r >
++				APDS9960_PS_CALIBRATED_XTALK) {
++					/* reduce  */
++					gesture_r_cal_done = 0;
++					if ((temp_goffset_r >= 0) &&
++						(temp_goffset_r <= 127))
++						temp_goffset_r += 1;
++					else if (temp_goffset_r == 128)
++						temp_goffset_r = 0;
++					else
++						temp_goffset_r -= 1;
++				} else if (gesture_r <
++				APDS9960_PS_CALIBRATED_XTALK_BASELINE) {
++					/* increase */
++					gesture_r_cal_done = 0;
++					if ((temp_goffset_r > 0) &&
++						(temp_goffset_r <= 127))
++						temp_goffset_r -= 1;
++					else {
++						/* start from 128 */
++						temp_goffset_r_negative += 1;
++						temp_goffset_r =
++						temp_goffset_r_negative & 0xFF;
++					}
++				}
++
++				apds9960_set_goffset_r(client, temp_goffset_r);
++			/*	} */
++
++				apds9960_set_gctrl(client, 0x05);
++			}
++
++			if (gesture_u_cal_done && gesture_d_cal_done &&
++				gesture_l_cal_done && gesture_r_cal_done)
++				break;
++		}
++
++		if (loop >= 128) {
++
++			apds9960_set_config2(client, old_config2);
++
++			apds9960_set_gthr_in(client, old_gthr_in);
++			apds9960_set_gthr_out(client, old_gthr_out);
++
++			apds9960_set_goffset_u(client, old_goffset_u);
++			apds9960_set_goffset_d(client, old_goffset_d);
++			apds9960_set_goffset_l(client, old_goffset_l);
++			apds9960_set_goffset_r(client, old_goffset_r);
++
++			apds9960_set_gctrl(client, old_gctrl);
++			apds9960_set_enable(client, 0);
++			return -EIO;
++		}
++
++		apds9960_set_config2(client, old_config2);
++		apds9960_set_gthr_in(client, old_gthr_in);
++		apds9960_set_gthr_out(client, old_gthr_out);
++		apds9960_set_gctrl(client, old_gctrl);
++		apds9960_set_enable(client, 0);
++
++#ifdef PLATFORM_SENSOR_APDS9960
++		platform_data->gesture_goffset_u = data->goffset_u;
++		platform_data->gesture_goffset_d = data->goffset_d;
++		platform_data->gesture_goffset_l = data->goffset_l;
++		platform_data->gesture_goffset_r = data->goffset_r;
++#endif
++		data->gesture_goffset_u = data->goffset_u;
++		data->gesture_goffset_d = data->goffset_d;
++		data->gesture_goffset_l = data->goffset_l;
++		data->gesture_goffset_r = data->goffset_r;
++
++		dev_err(&client->dev,
++			"Gesture cal done %d %d %d %d\n",
++			gesture_u, gesture_d, gesture_l, gesture_r);
++	}
++
++	return 0;
++}
++
++
++static int apds9960_ps_open(struct inode *inode, struct file *file)
++
++{
++/*	dev_err(&pdev_data->client->dev, "apds9960_ps_open\n"); */
++	return 0;
++}
++
++static int apds9960_ps_release(struct inode *inode, struct file *file)
++{
++/*	dev_err(&pdev_data->client->dev, "apds9960_ps_release\n"); */
++	return 0;
++}
++
++static long apds9960_ps_ioctl(struct file *file,
++	unsigned int cmd, unsigned long arg)
++{
++	struct apds9960_data *data;
++	struct i2c_client *client;
++	int enable;
++	int ret = -1;
++
++	if (arg == 0)
++		return -EPERM;
++
++	if (apds9960_i2c_client == NULL) {
++		dev_err(&pdev_data->client->dev,
++			"apds9960_ps_ioctl error: i2c driver not installed\n");
++		return -EFAULT;
++	}
++
++	client = apds9960_i2c_client;
++	data = i2c_get_clientdata(apds9960_i2c_client);
++
++	switch (cmd) {
++	case APDS_IOCTL_PS_ENABLE:
++
++		if (copy_from_user(&enable,
++			(void __user *)arg, sizeof(enable))) {
++			dev_err(&client->dev,
++				"apds9960_ps_ioctl: copy_from_user failed\n");
++			return -EFAULT;
++		}
++
++		ret = apds9960_enable_ps_sensor(client, enable);
++		if (ret < 0)
++			return ret;
++	break;
++
++	case APDS_IOCTL_PS_GET_ENABLE:
++		if (copy_to_user((void __user *)arg, &data->enable_ps_sensor,
++			sizeof(data->enable_ps_sensor))) {
++			dev_err(&client->dev,
++				"apds9960_ps_ioctl: copy_to_user failed\n");
++			return -EFAULT;
++		}
++
++	break;
++
++	case APDS_IOCTL_PS_GET_PDATA:
++
++		data->ps_data =
++		i2c_smbus_read_byte_data(client, APDS9960_PDATA_REG);
++
++		if (copy_to_user((void __user *)arg,
++			&data->ps_data, sizeof(data->ps_data))) {
++			dev_err(&client->dev,
++				"apds9960_ps_ioctl: copy_to_user failed\n");
++			return -EFAULT;
++		}
++	break;
++
++	case APDS_IOCTL_GESTURE_ENABLE:
++
++		if (copy_from_user(&enable,
++			(void __user *)arg, sizeof(enable))) {
++			dev_err(&client->dev,
++				"apds9960_ps_ioctl: copy_from_user failed\n");
++			return -EFAULT;
++		}
++
++		ret = apds9960_enable_gesture_sensor(client, enable);
++		if (ret < 0)
++			return ret;
++	break;
++
++	case APDS_IOCTL_GESTURE_GET_ENABLE:
++		if (copy_to_user((void __user *)arg,
++			&data->enable_gesture_sensor,
++			sizeof(data->enable_gesture_sensor))) {
++			dev_err(&client->dev,
++				"apds9960_ps_ioctl: copy_to_user failed\n");
++			return -EFAULT;
++		}
++
++	break;
++
++	default:
++	break;
++	}
++
++	return 0;
++}
++
++static int apds9960_als_open(struct inode *inode, struct file *file)
++{
++/*	dev_err(&pdev_data->client->dev, "apds9960_als_open\n"); */
++	return 0;
++}
++
++static int apds9960_als_release(struct inode *inode, struct file *file)
++{
++/*	dev_err(&pdev_data->client->dev, "apds9960_als_release\n"); */
++	return 0;
++}
++
++static long apds9960_als_ioctl(struct file *file,
++	unsigned int cmd, unsigned long arg)
++{
++	struct apds9960_data *data;
++	struct i2c_client *client;
++	int enable;
++	int ret = -1;
++	unsigned int delay;
++
++	if (arg == 0)
++		return -EPERM;
++
++	if (apds9960_i2c_client == NULL) {
++		dev_err(&pdev_data->client->dev,
++			"apds9960_als_ioctl error: i2c driver not installed\n");
++		return -EFAULT;
++	}
++
++	client = apds9960_i2c_client;
++	data = i2c_get_clientdata(apds9960_i2c_client);
++
++	switch (cmd) {
++
++	case APDS_IOCTL_ALS_ENABLE:
++
++		if (copy_from_user(&enable,
++			(void __user *)arg, sizeof(enable))) {
++			dev_err(&pdev_data->client->dev,
++				"apds9960_als_ioctl: copy_from_user failed\n");
++			return -EFAULT;
++			}
++
++		ret = apds9960_enable_als_sensor(client, enable);
++		if (ret < 0)
++			return ret;
++	break;
++
++	case APDS_IOCTL_ALS_POLL_DELAY:
++
++		if (data->enable_als_sensor == APDS_ENABLE_ALS_NO_INT) {
++			if (copy_from_user(&delay,
++				(void __user *)arg, sizeof(delay))) {
++				dev_err(&pdev_data->client->dev,
++					"apds9960_als_ioctl: copy_to_user failed\n");
++				return -EFAULT;
++			}
++
++			ret = apds9960_set_als_poll_delay(client, delay);
++			if (ret < 0)
++				return ret;
++		} else {
++			dev_err(&pdev_data->client->dev,
++				"apds9960_als_ioctl: als is not in polling mode!\n");
++			return -EFAULT;
++		}
++	break;
++
++	case APDS_IOCTL_ALS_GET_ENABLE:
++		if (copy_to_user((void __user *)arg,
++			&data->enable_als_sensor,
++			sizeof(data->enable_als_sensor))) {
++			dev_err(&pdev_data->client->dev,
++				"apds9960_als_ioctl: copy_to_user failed\n");
++			return -EFAULT;
++		}
++	break;
++
++	case APDS_IOCTL_ALS_GET_CDATA:
++
++		data->als_data =
++		i2c_smbus_read_word_data(client, APDS9960_CDATAL_REG);
++
++		if (copy_to_user((void __user *)arg, &data->als_data,
++			sizeof(data->als_data))) {
++			dev_err(&pdev_data->client->dev,
++				"apds9960_ps_ioctl: copy_to_user failed\n");
++			return -EFAULT;
++		}
++	break;
++
++	case APDS_IOCTL_ALS_GET_RDATA:
++
++		data->als_data =
++		i2c_smbus_read_word_data(client, APDS9960_RDATAL_REG);
++
++		if (copy_to_user((void __user *)arg, &data->als_data,
++			sizeof(data->als_data))) {
++			dev_err(&pdev_data->client->dev,
++				"apds9960_ps_ioctl: copy_to_user failed\n");
++			return -EFAULT;
++		}
++	break;
++
++	case APDS_IOCTL_ALS_GET_GDATA:
++
++		data->als_data =
++		i2c_smbus_read_word_data(client, APDS9960_GDATAL_REG);
++
++		if (copy_to_user((void __user *)arg, &data->als_data,
++			sizeof(data->als_data))) {
++			dev_err(&pdev_data->client->dev,
++				"apds9960_ps_ioctl: copy_to_user failed\n");
++			return -EFAULT;
++		}
++	break;
++
++	case APDS_IOCTL_ALS_GET_BDATA:
++
++		data->als_data =
++		i2c_smbus_read_word_data(client, APDS9960_BDATAL_REG);
++
++		if (copy_to_user((void __user *)arg, &data->als_data,
++			sizeof(data->als_data))) {
++				dev_err(&pdev_data->client->dev,
++					"apds9960_ps_ioctl: copy_to_user failed\n");
++				return -EFAULT;
++			}
++	break;
++
++	default:
++	break;
++	}
++
++	return 0;
++}
++
++/*
++ * SysFS support
++ */
++
++static ssize_t apds9960_show_cdata(struct device *dev,
++			struct device_attribute *attr, char *buf)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	int cdata;
++
++	cdata = i2c_smbus_read_word_data(client, APDS9960_CDATAL_REG);
++
++	return snprintf(buf, PAGE_SIZE, "%d\n", cdata);
++}
++
++static DEVICE_ATTR(cdata, S_IRUGO,
++		   apds9960_show_cdata, NULL);
++
++static ssize_t apds9960_show_rdata(struct device *dev,
++			struct device_attribute *attr, char *buf)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	int rdata;
++
++	rdata = i2c_smbus_read_word_data(client, APDS9960_RDATAL_REG);
++
++	return snprintf(buf, PAGE_SIZE, "%d\n", rdata);
++}
++
++static DEVICE_ATTR(rdata, S_IRUGO,
++		   apds9960_show_rdata, NULL);
++
++static ssize_t apds9960_show_gdata(struct device *dev,
++			struct device_attribute *attr, char *buf)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	int gdata;
++
++	gdata = i2c_smbus_read_word_data(client, APDS9960_GDATAL_REG);
++
++	return snprintf(buf, PAGE_SIZE, "%d\n", gdata);
++}
++
++static DEVICE_ATTR(gdata, S_IRUGO,
++		   apds9960_show_gdata, NULL);
++
++static ssize_t apds9960_show_bdata(struct device *dev,
++			struct device_attribute *attr, char *buf)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	int bdata;
++
++	bdata = i2c_smbus_read_word_data(client, APDS9960_BDATAL_REG);
++
++	return snprintf(buf, PAGE_SIZE, "%d\n", bdata);
++}
++
++static DEVICE_ATTR(bdata, S_IRUGO,
++		   apds9960_show_bdata, NULL);
++
++static ssize_t apds9960_show_pdata(struct device *dev,
++			struct device_attribute *attr, char *buf)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	int pdata;
++
++	pdata = i2c_smbus_read_byte_data(client, APDS9960_PDATA_REG);
++
++	return snprintf(buf, PAGE_SIZE, "%d\n", pdata);
++}
++
++static DEVICE_ATTR(pdata, S_IRUGO,
++		   apds9960_show_pdata, NULL);
++
++static ssize_t apds9960_show_proximity_enable(struct device *dev,
++				struct device_attribute *attr, char *buf)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	struct apds9960_data *data = i2c_get_clientdata(client);
++
++	return snprintf(buf, PAGE_SIZE, "%d\n", data->enable_ps_sensor);
++}
++
++static ssize_t apds9960_store_proximity_enable(struct device *dev,
++	struct device_attribute *attr, const char *buf, size_t count)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	unsigned long val;
++
++	if (kstrtoul(buf, 10, &val))
++		return -EINVAL;
++
++	dev_err(&client->dev,
++		"%s: enable ps senosr (%ld)\n", __func__, val);
++
++	if ((val != APDS_DISABLE_PS) && (val != APDS_ENABLE_PS)) {
++		dev_err(&client->dev,
++			"**%s:store invalid value=%ld\n", __func__, val);
++		return count;
++	}
++
++	apds9960_enable_ps_sensor(client, val);
++
++	return count;
++}
++
++static DEVICE_ATTR(proximity_enable, S_IWUSR | S_IWGRP | S_IRUGO,
++	apds9960_show_proximity_enable, apds9960_store_proximity_enable);
++
++static ssize_t apds9960_show_light_enable(struct device *dev,
++	struct device_attribute *attr, char *buf)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	struct apds9960_data *data = i2c_get_clientdata(client);
++
++	return snprintf(buf, PAGE_SIZE, "%d\n", data->enable_als_sensor);
++}
++
++static ssize_t apds9960_store_light_enable(struct device *dev,
++	struct device_attribute *attr, const char *buf, size_t count)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	unsigned long val;
++
++	if (kstrtoul(buf, 10, &val))
++		return -EINVAL;
++
++	dev_err(&client->dev,
++		"%s: enable als sensor (%ld)\n", __func__, val);
++
++	if ((val != APDS_DISABLE_ALS) && (val != APDS_ENABLE_ALS_WITH_INT) &&
++		(val != APDS_ENABLE_ALS_NO_INT)) {
++		dev_err(&client->dev,
++			"**%s: store invalid valeu=%ld\n", __func__, val);
++		return count;
++	}
++
++	apds9960_enable_als_sensor(client, val);
++
++	return count;
++}
++
++static DEVICE_ATTR(light_enable, S_IWUSR | S_IWGRP | S_IRUGO,
++		apds9960_show_light_enable, apds9960_store_light_enable);
++
++static ssize_t apds9960_show_gesture_enable(struct device *dev,
++				struct device_attribute *attr, char *buf)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	struct apds9960_data *data = i2c_get_clientdata(client);
++
++	return snprintf(buf, PAGE_SIZE, "%d\n", data->enable_gesture_sensor);
++}
++
++static ssize_t apds9960_store_gesture_enable(struct device *dev,
++	struct device_attribute *attr, const char *buf, size_t count)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	unsigned long val;
++
++	if (kstrtoul(buf, 10, &val))
++		return -EINVAL;
++
++	dev_err(&client->dev,
++		"%s: enable gesture sensor (%ld)\n", __func__, val);
++
++	if ((val != APDS_DISABLE_GESTURE) && (val != APDS_ENABLE_GESTURE)) {
++		dev_err(&client->dev,
++			"**%s: store invalid valeu=%ld\n", __func__, val);
++		return count;
++	}
++
++	apds9960_enable_gesture_sensor(client, val);
++
++	return count;
++}
++
++static DEVICE_ATTR(gesture_enable, S_IWUSR | S_IWGRP | S_IRUGO,
++		apds9960_show_gesture_enable, apds9960_store_gesture_enable);
++
++static ssize_t apds9960_show_calibration(struct device *dev,
++				struct device_attribute *attr, char *buf)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	struct apds9960_data *data = i2c_get_clientdata(client);
++
++	return snprintf(buf, PAGE_SIZE, "%d\n", data->enable_gesture_sensor);
++}
++
++static ssize_t apds9960_store_calibration(struct device *dev,
++	struct device_attribute *attr, const char *buf, size_t count)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	unsigned long val;
++
++	if (kstrtoul(buf, 10, &val))
++		return -EINVAL;
++
++	dev_err(&client->dev,
++		"%s: calibration (%ld)\n", __func__, val);
++
++	if ((val != APDS_ALS_CALIBRATION) && (val != APDS_PS_CALIBRATION) &&
++		(val != APDS_PS_GESTURE_CALIBRATION)) {
++		dev_err(&client->dev,
++			"**%s: store invalid valeu=%ld\n", __func__, val);
++		return count;
++	}
++
++	apds9960_calibration(client, val);
++
++	return count;
++}
++
++static DEVICE_ATTR(calibration, S_IWUSR | S_IWGRP | S_IRUGO,
++		apds9960_show_calibration, apds9960_store_calibration);
++
++static struct attribute *apds9960_attributes[] = {
++	&dev_attr_cdata.attr,
++	&dev_attr_rdata.attr,
++	&dev_attr_gdata.attr,
++	&dev_attr_bdata.attr,
++	&dev_attr_pdata.attr,
++	&dev_attr_proximity_enable.attr,
++	&dev_attr_light_enable.attr,
++	&dev_attr_gesture_enable.attr,
++	&dev_attr_calibration.attr,
++	NULL
++};
++
++static const struct attribute_group apds9960_attr_group = {
++	.attrs = apds9960_attributes,
++};
++
++static const struct file_operations apds9960_ps_fops = {
++	.owner = THIS_MODULE,
++	.open = apds9960_ps_open,
++	.release = apds9960_ps_release,
++	.unlocked_ioctl = apds9960_ps_ioctl,
++};
++
++static struct miscdevice apds9960_ps_device = {
++	.minor = MISC_DYNAMIC_MINOR,
++	.name = "apds_ps_dev",
++	.fops = &apds9960_ps_fops,
++};
++
++static const struct file_operations apds9960_als_fops = {
++	.owner = THIS_MODULE,
++	.open = apds9960_als_open,
++	.release = apds9960_als_release,
++	.unlocked_ioctl = apds9960_als_ioctl,
++};
++
++static struct miscdevice apds9960_als_device = {
++	.minor = MISC_DYNAMIC_MINOR,
++	.name = "apds_als_dev",
++	.fops = &apds9960_als_fops,
++};
++/*
++static int apds9960_gesture_set_enable(struct sensors_classdev *sensors_cdev,
++		unsigned int enable)
++{
++	struct apds9960_data *data = container_of(sensors_cdev,
++			struct apds9960_data, ges_cdev);
++
++	if ((enable != 0) && (enable != 1)) {
++		pr_err("%s: invalid value(%d)\n", __func__, enable);
++		return -EINVAL;
++	}
++
++	return apds9960_enable_gesture_sensor(data->client, enable);
++}
++*/
++static int apds9960_als_set_enable(struct sensors_classdev *sensors_cdev,
++		unsigned int enable)
++{
++	struct apds9960_data *data = container_of(sensors_cdev,
++			struct apds9960_data, als_cdev);
++
++	if ((enable != 0) && (enable != 1)) {
++		pr_err("%s: invalid value(%d)\n", __func__, enable);
++		return -EINVAL;
++	}
++
++	return apds9960_enable_als_sensor(data->client, enable);
++}
++
++static int apds9960_als_poll_delay(struct sensors_classdev *sensors_cdev,
++		unsigned int delay_msec)
++{
++	struct apds9960_data *data = container_of(sensors_cdev,
++			struct apds9960_data, als_cdev);
++	apds9960_set_als_poll_delay(data->client, delay_msec);
++	return 0;
++}
++
++static int apds9960_ps_set_enable(struct sensors_classdev *sensors_cdev,
++		unsigned int enable)
++{
++	struct apds9960_data *data = container_of(sensors_cdev,
++			struct apds9960_data, ps_cdev);
++
++	if ((enable != 0) && (enable != 1)) {
++		pr_err("%s: invalid value(%d)\n", __func__, enable);
++		return -EINVAL;
++	}
++
++	return apds9960_enable_ps_sensor(data->client, enable);
++}
++
++/*********************** regulator start***************************************/
++static int sensor_regulator_configure(struct apds9960_data *data, bool on)
++{
++	int rc;
++
++	if (!on) {
++
++		if (regulator_count_voltages(data->vdd) > 0)
++			regulator_set_voltage(data->vdd, 0,
++				APDS9960_VDD_MAX_UV);
++
++		regulator_put(data->vdd);
++
++		if (regulator_count_voltages(data->vio) > 0)
++			regulator_set_voltage(data->vio, 0,
++				APDS9960_VIO_MAX_UV);
++
++		regulator_put(data->vio);
++	} else {
++		data->vdd = regulator_get(&data->client->dev, "vdd");
++		if (IS_ERR(data->vdd)) {
++			rc = PTR_ERR(data->vdd);
++			dev_err(&data->client->dev,
++				"Regulator get failed vdd rc=%d\n", rc);
++			return rc;
++		}
++
++		if (regulator_count_voltages(data->vdd) > 0) {
++			rc = regulator_set_voltage(data->vdd,
++				APDS9960_VDD_MIN_UV, APDS9960_VDD_MAX_UV);
++			if (rc) {
++				dev_err(&data->client->dev,
++					"Regulator set failed vdd rc=%d\n",
++					rc);
++				goto reg_vdd_put;
++			}
++		}
++
++		data->vio = regulator_get(&data->client->dev, "vio");
++		if (IS_ERR(data->vio)) {
++			rc = PTR_ERR(data->vio);
++			dev_err(&data->client->dev,
++				"Regulator get failed vio rc=%d\n", rc);
++			goto reg_vdd_set;
++		}
++
++		if (regulator_count_voltages(data->vio) > 0) {
++			rc = regulator_set_voltage(data->vio,
++				APDS9960_VIO_MIN_UV, APDS9960_VIO_MAX_UV);
++			if (rc) {
++				dev_err(&data->client->dev,
++				"Regulator set failed vio rc=%d\n", rc);
++				goto reg_vio_put;
++			}
++		}
++	}
++
++	return 0;
++reg_vio_put:
++	regulator_put(data->vio);
++
++reg_vdd_set:
++	if (regulator_count_voltages(data->vdd) > 0)
++		regulator_set_voltage(data->vdd, 0, APDS9960_VDD_MAX_UV);
++reg_vdd_put:
++	regulator_put(data->vdd);
++	return rc;
++}
++
++static int sensor_regulator_power_on(struct apds9960_data *data, bool on)
++{
++	int rc = 0;
++
++	if (!on) {
++		rc = regulator_disable(data->vdd);
++		if (rc) {
++			dev_err(&data->client->dev,
++				"Regulator vdd disable failed rc=%d\n", rc);
++			return rc;
++		}
++
++		rc = regulator_disable(data->vio);
++		if (rc) {
++			dev_err(&data->client->dev,
++				"Regulator vio disable failed rc=%d\n", rc);
++			rc = regulator_enable(data->vdd);
++			dev_err(&data->client->dev,
++					"Regulator vio re-enabled rc=%d\n", rc);
++			/*
++			 * Successfully re-enable regulator.
++			 * Enter poweron delay and returns error.
++			 */
++			if (!rc) {
++				rc = -EBUSY;
++				goto enable_delay;
++			}
++		}
++		return rc;
++	} else {
++		rc = regulator_enable(data->vdd);
++		if (rc) {
++			dev_err(&data->client->dev,
++				"Regulator vdd enable failed rc=%d\n", rc);
++			return rc;
++		}
++
++		rc = regulator_enable(data->vio);
++		if (rc) {
++			dev_err(&data->client->dev,
++				"Regulator vio enable failed rc=%d\n", rc);
++			regulator_disable(data->vdd);
++			return rc;
++		}
++	}
++
++enable_delay:
++	msleep(130);
++	dev_err(&data->client->dev,
++		"Sensor regulator power on =%d\n", on);
++	return rc;
++}
++
++static int sensor_platform_hw_power_on(bool on)
++{
++	struct apds9960_data *data;
++	int err = 0;
++
++	if (pdev_data == NULL)
++		return -ENODEV;
++
++	data = pdev_data;
++	if (data->power_on != on) {
++		if (!IS_ERR_OR_NULL(data->pinctrl)) {
++			if (on)
++				err = pinctrl_select_state(data->pinctrl,
++					data->pin_default);
++			/*else
++				err = pinctrl_select_state(data->pinctrl,
++					data->pin_sleep);*/
++			if (err)
++				dev_err(&data->client->dev,
++					"Can't select pinctrl state\n");
++		}
++
++		err = sensor_regulator_power_on(data, on);
++		if (err)
++			dev_err(&data->client->dev,
++					"Can't configure regulator!\n");
++		else
++			data->power_on = on;
++	}
++
++	return err;
++}
++
++static int sensor_platform_hw_init(void)
++{
++	struct i2c_client *client;
++	struct apds9960_data *data;
++	int error;
++
++	if (pdev_data == NULL)
++		return -ENODEV;
++
++	data = pdev_data;
++	client = data->client;
++
++	error = sensor_regulator_configure(data, true);
++	if (error < 0) {
++		dev_err(&client->dev, "unable to configure regulator\n");
++		return error;
++	}
++
++	if (gpio_is_valid(data->platform_data->irq_gpio)) {
++		/* configure apds9960 irq gpio */
++		error = gpio_request_one(data->platform_data->irq_gpio,
++				GPIOF_DIR_IN,
++				"apds9960_irq_gpio");
++		if (error) {
++			dev_err(&client->dev, "unable to request gpio %d\n",
++				data->platform_data->irq_gpio);
++		}
++		data->irq = client->irq =
++			gpio_to_irq(data->platform_data->irq_gpio);
++	} else {
++		dev_err(&client->dev, "irq gpio not provided\n");
++	}
++	return 0;
++}
++
++static void sensor_platform_hw_exit(void)
++{
++	struct apds9960_data *data = pdev_data;
++
++	if (data == NULL)
++		return;
++
++	sensor_regulator_configure(data, false);
++
++	if (gpio_is_valid(data->platform_data->irq_gpio))
++		gpio_free(data->platform_data->irq_gpio);
++}
++
++static int apds9960_pinctrl_init(struct apds9960_data *data)
++{
++	struct i2c_client *client = data->client;
++
++	data->pinctrl = devm_pinctrl_get(&client->dev);
++	if (IS_ERR_OR_NULL(data->pinctrl)) {
++		dev_err(&client->dev, "Failed to get pinctrl\n");
++		return PTR_ERR(data->pinctrl);
++	}
++
++	data->pin_default =
++		pinctrl_lookup_state(data->pinctrl, "default");
++	if (IS_ERR_OR_NULL(data->pin_default)) {
++		dev_err(&client->dev, "Failed to look up default state\n");
++		return PTR_ERR(data->pin_default);
++	}
++/*
++	data->pin_sleep =
++		pinctrl_lookup_state(data->pinctrl, "sleep");
++	if (IS_ERR_OR_NULL(data->pin_sleep)) {
++		dev_err(&client->dev, "Failed to look up sleep state\n");
++		return PTR_ERR(data->pin_sleep);
++	}
++*/
++	return 0;
++}
++/*********************** regulator end ****************************************/
++
++static int sensor_parse_dt(struct device *dev,
++		struct apds9960_platform_data *pdata)
++{
++	int rc = 0;
++	int tmp;
++	/* set functions of platform data */
++	pdata->init = sensor_platform_hw_init;
++	pdata->exit = sensor_platform_hw_exit;
++	pdata->power_on = sensor_platform_hw_power_on;
++
++	rc = of_get_named_gpio_flags(dev->of_node,
++			"avago,irq-gpio", 0, NULL);
++	if (rc < 0) {
++		dev_err(dev, "Unable to read irq gpio\n");
++		return rc;
++	}
++	pdata->irq_gpio = rc;
++
++	/* ps tuning data*/
++	rc = of_property_read_u32(dev->of_node, "avago,ps-threshold", &tmp);
++	if (rc) {
++		dev_err(dev, "Unable to read ps threshold\n");
++		return rc;
++	}
++	pdata->ps_threshold = tmp;
++
++	rc = of_property_read_u32(dev->of_node,
++		"avago,ps-hysteresis-threshold", &tmp);
++	 if (rc) {
++		dev_err(dev, "Unable to read ps hysteresis threshold\n");
++		return rc;
++	}
++	pdata->ps_hysteresis_threshold = tmp;
++
++	return 0;
++}
++
++/*
++ * I2C init/probing/exit functions
++ */
++
++static struct i2c_driver apds9960_driver;
++static int apds9960_probe(struct i2c_client *client,
++				   const struct i2c_device_id *id)
++{
++	struct i2c_adapter *adapter = to_i2c_adapter(client->dev.parent);
++	struct apds9960_data *data;
++	struct apds9960_platform_data *pdata;
++#ifdef PLATFORM_SENSOR_APDS9960
++	struct apds9960_platform_data *platform_data =
++		client->dev.platform_data;
++	int irq;
++#endif
++	int err = 0;
++
++	if (!i2c_check_functionality(adapter, I2C_FUNC_SMBUS_BYTE)) {
++		err = -EIO;
++		goto exit;
++	}
++	if (client->dev.of_node) {
++		pdata = devm_kzalloc(&client->dev,
++				sizeof(struct apds9960_platform_data),
++				GFP_KERNEL);
++		if (!pdata) {
++			dev_err(&client->dev, "Failed to allocate memory\n");
++			return -ENOMEM;
++		}
++
++		client->dev.platform_data = pdata;
++		err = sensor_parse_dt(&client->dev, pdata);
++		if (err) {
++			pr_err("%s: sensor_parse_dt() err\n", __func__);
++			return err;
++		}
++	} else {
++		pdata = client->dev.platform_data;
++		if (!pdata) {
++			dev_err(&client->dev, "No platform data\n");
++			return -ENODEV;
++		}
++	}
++
++	data = kzalloc(sizeof(struct apds9960_data), GFP_KERNEL);
++	if (!data) {
++		err = -ENOMEM;
++		goto exit;
++	}
++	pdev_data = data;
++	data->platform_data = pdata;
++	data->client = client;
++	apds9960_i2c_client = client;
++	/* initialize pinctrl */
++	err = apds9960_pinctrl_init(data);
++	if (err) {
++		dev_err(&client->dev, "Can't initialize pinctrl\n");
++			goto exit_kfree;
++	}
++	err = pinctrl_select_state(data->pinctrl, data->pin_default);
++	if (err) {
++		dev_err(&client->dev,
++			"Can't select pinctrl default state\n");
++		goto exit_kfree;
++	}
++
++	/* h/w initialization */
++	if (pdata->init)
++		err = pdata->init();
++
++	if (pdata->power_on)
++		err = pdata->power_on(true);
++
++	i2c_set_clientdata(client, data);
++
++	data->enable = 0;		/* default mode is standard */
++	data->ps_detection = 0;	/* default to no detection */
++	data->enable_als_sensor = 0;	/* default to 0 */
++	data->enable_ps_sensor = 0;		/* default to 0 */
++	data->enable_gesture_sensor = 0;/* default to 0 */
++
++	data->als_poll_delay = 1000;		/* default to 1000ms */
++	data->als_atime_index = APDS9960_ALS_RES_100MS;	/* 100ms ATIME */
++	data->als_again_index = APDS9960_ALS_GAIN_1X;	/* 1x AGAIN */
++	data->als_prev_lux = 0;
++	data->suspended = 0;
++	data->enable_suspended_value = 0;
++
++#ifdef PLATFORM_SENSOR_APDS9960
++	data->gesture_ppulse = platform_data->ppulse_for_gesture;
++	data->ps_ppulse = platform_data->ppulse;
++	data->ps_threshold = platform_data->ps_int_threshold;
++	data->ps_hysteresis_threshold =
++		platform_data->ps_int_hsyteresis_threshold;
++	data->ps_poffset_ur = platform_data->poffset_ur;
++	data->ps_poffset_dl = platform_data->poffset_dl;
++	data->gthr_in = platform->gthr_in;
++	data->gthr_out = platform->gthr_out;
++	data->gesture_poffset_ur = platform_data->gesture_poffset_ur;
++	data->gesture_poffset_dl = platform_data->gesture_poffset_dl;
++	data->gesture_goffset_u = platform_data->gesture_goffset_u;
++	data->gesture_goffset_d = platform_data->gesture_goffset_d;
++	data->gesture_goffset_l = platform_data->gesture_goffset_l;
++	data->gesture_goffset_r = platform_data->gesture_goffset_r;
++
++	data->RGB_COE_X[0] = platform->RGB_COE_X[0];
++	data->RGB_COE_X[1] = platform->RGB_COE_X[1];
++	data->RGB_COE_X[2] = platform->RGB_COE_X[2];
++
++	data->RGB_COE_Y[0] = platform->RGB_COE_Y[0];
++	data->RGB_COE_Y[1] = platform->RGB_COE_Y[1];
++	data->RGB_COE_Y[2] = platform->RGB_COE_Y[2];
++
++	data->RGB_COE_Z[0] = platform->RGB_COE_Z[0];
++	data->RGB_COE_Z[1] = platform->RGB_COE_Z[1];
++	data->RGB_COE_Z[2] = platform->RGB_COE_Z[2];
++
++	data->lux_GA1 = platform->lux_GA1;
++	data->lux_GA2 = platform->lux_GA2;
++	data->lux_GA3 = platform->lux_GA3;
++
++	data->cct_GA1 = platform->cct_GA1;
++	data->cct_GA2 = platform->cct_GA2;
++	data->cct_GA3 = platform->cct_GA3;
++#else
++	data->ps_threshold = pdata->ps_threshold;
++	data->ps_hysteresis_threshold = pdata->ps_hysteresis_threshold;
++	data->gesture_ppulse =
++		(APDS9960_PPULSE_FOR_GESTURE-1) |
++		APDS9960_PPULSE_LEN_FOR_GESTURE;
++	data->ps_ppulse =
++		(APDS9960_PPULSE_FOR_PS - 1) | APDS9960_PPULSE_LEN_FOR_PS;
++	data->ps_poffset_ur = 0;
++	data->gthr_in = GESTURE_GTHR_IN;
++	data->gthr_out = GESTURE_GTHR_OUT;
++	data->gesture_poffset_dl = 0;
++	data->gesture_poffset_ur = 0;
++	data->gesture_goffset_u = 0;
++	data->gesture_goffset_d = 0;
++	data->gesture_goffset_l = 0;
++	data->gesture_goffset_r = 0;
++
++	data->RGB_COE_X[0] = RGB_COE_X[0];
++	data->RGB_COE_X[1] = RGB_COE_X[1];
++	data->RGB_COE_X[2] = RGB_COE_X[2];
++
++	data->RGB_COE_Y[0] = RGB_COE_Y[0];
++	data->RGB_COE_Y[1] = RGB_COE_Y[1];
++	data->RGB_COE_Y[2] = RGB_COE_Y[2];
++
++	data->RGB_COE_Z[0] = RGB_COE_Z[0];
++	data->RGB_COE_Z[1] = RGB_COE_Z[1];
++	data->RGB_COE_Z[2] = RGB_COE_Z[2];
++
++	data->lux_GA1 = APDS9960_LUX_GA1;
++	data->lux_GA2 = APDS9960_LUX_GA2;
++	data->lux_GA3 = APDS9960_LUX_GA3;
++
++	data->cct_GA1 = APDS9960_CCT_GA1;
++	data->cct_GA2 = APDS9960_CCT_GA2;
++	data->cct_GA3 = APDS9960_CCT_GA3;
++#endif
++
++	/*mutex_init(&data->update_lock); */
++
++#ifdef PLATFORM_SENSOR_APDS9960
++	err = gpio_request(platform_data->irq_num, "apds_irq");
++	if (err) {
++			dev_err(&client->dev, "Unable to request GPIO.\n");
++			goto exit_kfree;
++		}
++
++		gpio_direction_input(platform_data->irq_num);
++		irq = gpio_to_irq(platform_data->irq_num);
++
++		if (irq < 0) {
++				err = irq;
++				dev_err(&client->dev,
++				"Unable to request gpio irq. err=%d\n", err);
++				gpio_free(platform_data->irq_num);
++
++				goto exit_kfree;
++		}
++
++		data->irq = irq;
++	if (request_irq(data->irq, apds9960_interrupt, IRQF_TRIGGER_FALLING,
++		APDS9960_DRV_NAME, (void *)client)) {
++		dev_err(&client->dev,
++			"%s Could not allocate APDS9960_INT !\n", __func__);
++
++		goto exit_kfree;
++	}
++
++#else
++	if (data->irq) {
++		err = request_irq(data->irq, apds9960_interrupt,
++					IRQF_TRIGGER_FALLING,
++					APDS9960_DRV_NAME, (void *)client);
++		if (err < 0) {
++			dev_err(&client->dev,
++				"Could not allocate APDS9960_INT !\n");
++			goto exit_kfree;
++		}
++		/*disable_irq(data->irq); */
++	}
++#endif
++
++#ifdef LINUX_KERNEL_2_6_X
++	set_irq_wake(client->irq, 1);
++#else
++	irq_set_irq_wake(client->irq, 1);
++#endif
++
++	INIT_DELAYED_WORK(&data->dwork, apds9960_work_handler);
++	INIT_DELAYED_WORK(&data->als_dwork, apds9960_als_polling_work_handler);
++
++	dev_err(&client->dev, "%s interrupt is hooked\n", __func__);
++
++	/* Initialize the APDS9960 chip */
++	err = apds9960_init_client(client);
++	if (err)
++		goto exit_kfree;
++
++	/* Register to Input Device */
++	data->input_dev_als = input_allocate_device();
++	if (!data->input_dev_als) {
++		err = -ENOMEM;
++		dev_err(&client->dev,
++			"Failed to allocate input device als\n");
++		goto exit_free_irq;
++	}
++
++	data->input_dev_ps = input_allocate_device();
++	if (!data->input_dev_ps) {
++		err = -ENOMEM;
++		dev_err(&client->dev,
++			"Failed to allocate input device ps\n");
++		goto exit_free_dev_als;
++	}
++
++	set_bit(EV_ABS, data->input_dev_als->evbit);
++	set_bit(EV_ABS, data->input_dev_ps->evbit);
++	/* lux */
++	input_set_abs_params(data->input_dev_als, ABS_MISC, 0, 30000, 0, 0);
++	/* color temperature cct */
++	input_set_abs_params(data->input_dev_als, ABS_CCT, 0, 10000, 0, 0);
++	input_set_abs_params(data->input_dev_ps, ABS_DISTANCE, 0, 1, 0, 0);
++
++	data->input_dev_als->name = "light";
++	data->input_dev_ps->name = "proximity";
++
++	err = input_register_device(data->input_dev_als);
++	if (err) {
++		err = -ENOMEM;
++		dev_err(&client->dev,
++			"Unable to register input device als: %s\n",
++			data->input_dev_als->name);
++		goto exit_free_dev_ps;
++	}
++
++	err = input_register_device(data->input_dev_ps);
++	if (err) {
++		err = -ENOMEM;
++		dev_err(&client->dev,
++			"Unable to register input device ps: %s\n",
++			data->input_dev_ps->name);
++		goto exit_unregister_dev_als;
++	}
++
++	/* Register sysfs hooks */
++	err = sysfs_create_group(&client->dev.kobj, &apds9960_attr_group);
++	if (err)
++		goto exit_unregister_dev_ps;
++
++	/* Register for sensor ioctl */
++	err = misc_register(&apds9960_ps_device);
++	if (err) {
++		dev_err(&client->dev,
++			"Unalbe to register ps ioctl: %d", err);
++		goto exit_unregister_als_ioctl;
++	}
++
++		err =	misc_register(&apds9960_als_device);
++	if (err) {
++		dev_err(&client->dev,
++			"Unalbe to register als ioctl: %d", err);
++		goto exit_unregister_ps_ioctl;
++	}
++
++	/* Register to sensors class */
++	data->als_cdev = sensors_light_cdev;
++	data->als_cdev.sensors_enable = apds9960_als_set_enable;
++	data->als_cdev.sensors_poll_delay = apds9960_als_poll_delay;
++	data->ps_cdev = sensors_proximity_cdev;
++	data->ps_cdev.sensors_enable = apds9960_ps_set_enable;
++	data->ps_cdev.sensors_poll_delay = NULL;
++/*
++	data->ges_cdev = sensors_gesture_cdev;
++	data->ges_cdev.sensors_enable = apds9960_gesture_set_enable;
++	data->ges_cdev.sensors_poll_delay = NULL;
++*/
++	err = sensors_classdev_register(&client->dev, &data->als_cdev);
++	if (err) {
++		pr_err("%s: Unable to register to sensors class: %d\n",
++				__func__, err);
++		goto exit_unregister_als_class;
++	}
++
++	err = sensors_classdev_register(&client->dev, &data->ps_cdev);
++	if (err) {
++		pr_err("%s: Unable to register to sensors class: %d\n",
++			       __func__, err);
++		goto exit_unregister_ps_class;
++	}
++/*
++	err = sensors_classdev_register(&client->dev, &data->ges_cdev);
++	if (err) {
++		pr_err("%s: Unable to register to sensors class: %d\n",
++			       __func__, err);
++		goto exit_unregister_ges_class;
++	}
++*/
++	if (pdata->power_on)
++		err = pdata->power_on(false);
++
++	dev_err(&client->dev, "%s support ver. %s enabled\n",
++		__func__, DRIVER_VERSION);
++
++	return 0;
++/*exit_unregister_ges_class:
++	sensors_classdev_unregister(&data->ges_cdev);*/
++exit_unregister_ps_class:
++	sensors_classdev_unregister(&data->ps_cdev);
++exit_unregister_als_class:
++	sensors_classdev_unregister(&data->als_cdev);
++exit_unregister_als_ioctl:
++	misc_deregister(&apds9960_als_device);
++exit_unregister_ps_ioctl:
++	misc_deregister(&apds9960_ps_device);
++exit_unregister_dev_ps:
++	input_unregister_device(data->input_dev_ps);
++exit_unregister_dev_als:
++	input_unregister_device(data->input_dev_als);
++exit_free_dev_ps:
++exit_free_dev_als:
++exit_free_irq:
++	free_irq(data->irq, client);
++exit_kfree:
++	kfree(data);
++exit:
++	return err;
++}
++
++static int apds9960_remove(struct i2c_client *client)
++{
++	struct apds9960_data *data = i2c_get_clientdata(client);
++
++	cancel_delayed_work(&data->dwork);
++	cancel_delayed_work(&data->als_dwork);
++
++	/* Power down the device */
++	apds9960_set_enable(client, 0);
++
++	misc_deregister(&apds9960_als_device);
++	misc_deregister(&apds9960_ps_device);
++
++	sysfs_remove_group(&client->dev.kobj, &apds9960_attr_group);
++
++	input_unregister_device(data->input_dev_ps);
++	input_unregister_device(data->input_dev_als);
++
++	free_irq(data->irq, client);
++
++	kfree(data);
++
++	return 0;
++}
++
++#ifdef CONFIG_PM
++
++static int apds9960_suspend(struct i2c_client *client, pm_message_t mesg)
++{
++	struct apds9960_data *data = pdev_data;
++	struct apds9960_platform_data *pdata = data->platform_data;
++
++	dev_err(&client->dev, "apds9960_suspend enable_ps_sensor=%d\n",
++		data->enable_ps_sensor);
++
++	/* Do nothing as p-sensor is in active */
++	if (data->enable_ps_sensor)
++		return 0;
++	disable_irq(data->irq);
++
++	data->suspended = 1;
++	data->enable_suspended_value = data->enable;
++
++/*	apds9960_set_enable(client, 0);
++	apds9960_clear_interrupt(client, CMD_CLR_ALL_INT);
++*/
++	cancel_delayed_work(&data->als_dwork);
++	flush_delayed_work(&data->als_dwork);
++
++	cancel_delayed_work(&data->dwork);
++	flush_delayed_work(&data->dwork);
++
++	flush_workqueue(apds_workqueue);
++
++#ifdef LINUX_KERNEL_2_6_X
++	set_irq_wake(client->irq, 0);
++#else
++	irq_set_irq_wake(client->irq, 0);
++#endif
++
++	if (NULL != apds_workqueue) {
++		destroy_workqueue(apds_workqueue);
++		dev_err(&client->dev,
++		"%s, Destroy workqueue\n", __func__);
++		apds_workqueue = NULL;
++	}
++
++	if ((data->enable_als_sensor == 0) &&
++		(data->enable_ps_sensor == 0) &&
++		(pdata->power_on))
++		pdata->power_on(false);
++
++	return 0;
++}
++
++static int apds9960_resume(struct i2c_client *client)
++{
++	struct apds9960_data *data = pdev_data;
++	struct apds9960_platform_data *pdata = data->platform_data;
++
++	/* Do nothing as it was not suspended */
++	dev_err(&client->dev, "apds9960_resume (enable=%d)\n",
++		data->enable_suspended_value);
++
++	if (!data->suspended)
++		return 0;	/* if previously not suspended, leave it */
++
++	if ((data->enable_als_sensor == 0) &&
++		(data->enable_ps_sensor == 0) &&
++		(pdata->power_on))
++		pdata->power_on(true);
++
++	if (apds_workqueue == NULL) {
++		apds_workqueue = create_workqueue("proximity_als");
++		if (NULL == apds_workqueue)
++			return -ENOMEM;
++	}
++
++	enable_irq(data->irq);
++
++	udelay(2000);
++
++	apds9960_set_enable(client, 1);
++
++	data->suspended = 0;
++
++#ifdef LINUX_KERNEL_2_6_X
++	set_irq_wake(client->irq, 1);
++#else
++	irq_set_irq_wake(client->irq, 1);
++#endif
++	/* clear pending interrupt */
++	apds9960_clear_interrupt(client, CMD_CLR_ALL_INT);
++	return 0;
++}
++
++#else
++
++#define apds9960_suspend	NULL
++#define apds9960_resume		NULL
++
++#endif /* CONFIG_PM */
++
++/*
++#ifdef CONFIG_PM
++
++static int apds9960_suspend(struct i2c_client *client, pm_message_t mesg)
++{
++	struct apds9960_data *data = pdev_data;
++	int enable = 0;
++
++	disable_irq(data->platform_data->irq_gpio);
++	if (data->enable_als_sensor)
++		cancel_delayed_work_sync(&data->als_dwork);
++
++	if (data->enable_ps_sensor) {
++		enable = 0x27;
++		enable_irq_wake(data->platform_data->irq_gpio);
++	}
++
++	if (enable != data->enable)
++		apds9960_set_enable(data->client, enable);
++
++	return 0;
++}
++
++static int apds9960_resume(struct i2c_client *client)
++{
++	struct apds9960_data *data = pdev_data;
++	int enable = 0;
++
++	if (data->enable_als_sensor)
++		enable |= 0x03;
++
++	if (data->enable_ps_sensor) {
++		enable |= 0x27;
++		disable_irq_wake(data->platform_data->irq_gpio);
++	}
++
++	if (enable != 0x27)
++		apds9960_set_enable(data->client, enable);
++
++	if (data->enable_als_sensor)
++		schedule_delayed_work(&data->als_dwork,
++			msecs_to_jiffies(data->als_poll_delay));
++
++	enable_irq(data->platform_data->irq_gpio);
++
++	return 0;
++}
++
++#else
++
++#define apds9960_suspend	NULL
++#define apds9960_resume		NULL
++
++#endif
++*/
++
++static struct of_device_id apds9960_match_table[] = {
++	{ .compatible = "avago,apds9960",},
++	{ },
++};
++
++static const struct i2c_device_id apds9960_id[] = {
++	{ "apds9960", 0 },
++	{ }
++};
++MODULE_DEVICE_TABLE(i2c, apds9960_id);
++/*
++static const struct dev_pm_ops apds9960_pm_ops = {
++	.suspend	= apds9960_suspend,
++	.resume	= apds9960_resume,
++};
++*/
++static struct i2c_driver apds9960_driver = {
++	.driver = {
++		.name	= APDS9960_DRV_NAME,
++		.owner	= THIS_MODULE,
++		.of_match_table = apds9960_match_table,
++		/*.pm = &apds9960_pm_ops, */
++	},
++	.suspend = apds9960_suspend,
++	.resume	= apds9960_resume,
++	.probe	= apds9960_probe,
++	.remove	= apds9960_remove,
++	.id_table = apds9960_id,
++};
++
++static int __init apds9960_init(void)
++{
++	apds_workqueue = create_workqueue("proximity_als");
++
++	if (!apds_workqueue)
++		return -ENOMEM;
++
++	return i2c_add_driver(&apds9960_driver);
++}
++
++static void __exit apds9960_exit(void)
++{
++	if (apds_workqueue)
++		destroy_workqueue(apds_workqueue);
++
++	apds_workqueue = NULL;
++
++	i2c_del_driver(&apds9960_driver);
++}
++
++MODULE_AUTHOR("Lee Kai Koon <kai-koon.lee@avagotech.com>");
++MODULE_DESCRIPTION("APDS9960 gesture + RGB + ambient light + proximity sensor driver");
++MODULE_LICENSE("GPL");
++MODULE_VERSION(DRIVER_VERSION);
++
++module_init(apds9960_init);
++module_exit(apds9960_exit);
+diff --git a/drivers/input/misc/apds9960.h b/drivers/input/misc/apds9960.h
+new file mode 100644
+index 0000000..657e1c9
+--- /dev/null
++++ b/drivers/input/misc/apds9960.h
+@@ -0,0 +1,595 @@
++/*  apds9960.h - Linux kernel modules for Gesture + RGB + ambient light +
++ *	proximity sensor
++ *  Copyright (C) 2012-2014 Lee Kai Koon <kai-koon.lee@avagotech.com>
++ *  Copyright (C) 2012-2014 Avago Technologies
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
++ *
++ */
++
++/************************************************
++Change history
++
++Ver	  When		    Who	Why
++---	  ----		    ---	---
++1.0.0 19-Aug-2013 KK Initial draft
++1.0.1 26-Aug-2013 KK Revise gesture algorithm
++1.0.2 29-Aug-2013 KK Change GTHR_IN and GTHR_OUT
++1.0.3 03-Sep-2013 KK Correct divide by zero error in AveragingRawData()
++1.0.4 05-Sep-2013 KK Accept old and latest ID value
++1.0.5 17-Sep-2013 KK Return if sample size is less than or
++      equal to 4 in GestureDataProcessing();
++	  Correct error in AveragingRawData()
++1.0.6 27-Sep-2013 KK Simplify GestureDataProcessing() and
++      revise Gesture Calibration Added
++	  Up/Down/Left/Right U-Turn gesture detection
++************************************************/
++
++#define	KK_DEBUG			1	/* for debug use only */
++/*#define LINUX_KERNEL_2_6_X	1 */
++
++#define APDS9960_DRV_NAME	"apds9960"
++#define DRIVER_VERSION		"1.0.1"
++
++/* define in input.h */
++#define ABS_LIGHT	0x29	/* added to support LIGHT - light sensor */
++#define ABS_CCT		0x2A	/* newly added to support CCT - RGB */
++
++#define APDS9960_INT		IRQ_EINT(20)
++/* no cover glass - for Fluorescent Daylight 6500K */
++#define APDS9960_LUX_GA1	1000
++/* no cover glass - for Incandescent 2600K */
++#define APDS9960_LUX_GA2	1000
++/* no cover glass - for Fluorescent Warm White 2700K */
++#define APDS9960_LUX_GA3	1000
++/* no cover glass - for Fluorescent Daylight 6500K */
++#define APDS9960_CCT_GA1	1000
++/* no cover glass - for Incandescent 2600K */
++#define APDS9960_CCT_GA2	1000
++/* no cover glass - for Fluorescent Warm White 2700K */
++#define APDS9960_CCT_GA3	1000
++
++
++/* Change History
++ *
++ * 1.0.0	Funcamental Functions of APDS-9960
++ *
++ */
++
++#define APDS_IOCTL_PS_ENABLE		1
++#define APDS_IOCTL_PS_GET_ENABLE	2
++#define APDS_IOCTL_PS_POLL_DELAY	3
++#define APDS_IOCTL_ALS_ENABLE		4
++#define APDS_IOCTL_ALS_GET_ENABLE	5
++#define APDS_IOCTL_ALS_POLL_DELAY	6
++#define APDS_IOCTL_PS_GET_PDATA		7	/* pdata */
++#define APDS_IOCTL_ALS_GET_CH0DATA	8	/* ch0data */
++#define APDS_IOCTL_ALS_GET_CH1DATA	9	/* ch1data */
++#define APDS_IOCTL_ALS_GET_CDATA	10	/* cdata */
++#define APDS_IOCTL_ALS_GET_RDATA	11	/* rdata */
++#define APDS_IOCTL_ALS_GET_GDATA	12	/* gdata */
++#define APDS_IOCTL_ALS_GET_BDATA	13	/* bdata */
++#define APDS_IOCTL_GESTURE_ENABLE	14
++#define APDS_IOCTL_GESTURE_GET_ENABLE	15
++
++#define APDS_DISABLE_PS				0
++#define APDS_ENABLE_PS				1
++
++#define APDS_DISABLE_ALS			0
++#define APDS_ENABLE_ALS_WITH_INT	2
++#define APDS_ENABLE_ALS_NO_INT		1
++
++#define APDS_DISABLE_GESTURE		0
++#define APDS_ENABLE_GESTURE			1
++
++#define APDS_ALS_POLL_SLOW			0	/* 1 Hz (1s) */
++#define APDS_ALS_POLL_MEDIUM		1	/* 10 Hz (100ms) */
++#define APDS_ALS_POLL_FAST			2	/* 20 Hz (50ms) */
++
++#define APDS_ALS_CALIBRATION		0
++#define APDS_PS_CALIBRATION			2
++#define APDS_PS_GESTURE_CALIBRATION	1
++
++/*#define DEBUG_GESTURE */
++
++/*
++ * Defines
++ */
++
++#define	APDS9960_ENABLE_REG			0x80
++#define	APDS9960_ATIME_REG			0x81
++#define	APDS9960_WTIME_REG			0x83
++#define	APDS9960_AILTL_REG			0x84
++#define	APDS9960_AILTH_REG			0x85
++#define	APDS9960_AIHTL_REG			0x86
++#define	APDS9960_AIHTH_REG			0x87
++#define	APDS9960_PITLO_REG			0x89
++#define	APDS9960_PITHI_REG			0x8B
++#define	APDS9960_PERS_REG			0x8C
++#define	APDS9960_CONFIG_REG			0x8D
++#define	APDS9960_PPULSE_REG			0x8E
++#define	APDS9960_CONTROL_REG		0x8F
++#define	APDS9960_AUX_REG			0x90
++#define	APDS9960_REV_REG			0x91
++#define	APDS9960_ID_REG				0x92
++#define	APDS9960_STATUS_REG			0x93
++
++#define	APDS9960_CDATAL_REG			0x94
++#define	APDS9960_CDATAH_REG			0x95
++#define	APDS9960_RDATAL_REG			0x96
++#define	APDS9960_RDATAH_REG			0x97
++#define	APDS9960_GDATAL_REG			0x98
++#define	APDS9960_GDATAH_REG			0x99
++#define	APDS9960_BDATAL_REG			0x9A
++#define	APDS9960_BDATAH_REG			0x9B
++
++#define	APDS9960_PDATA_REG			0x9C
++#define	APDS9960_POFFSET_UR_REG		0x9D
++#define	APDS9960_POFFSET_DL_REG		0x9E
++
++#define	APDS9960_CONFIG2_REG		0x9F
++#define	APDS9960_GTHR_IN_REG		0xA0
++#define	APDS9960_GTHR_OUT_REG		0xA1
++#define	APDS9960_GCONF1_REG			0xA2
++#define	APDS9960_GCONF2_REG			0xA3
++#define	APDS9960_GOFFSET_U_REG		0xA4
++#define	APDS9960_GOFFSET_D_REG		0xA5
++#define	APDS9960_GPULSE_REG			0xA6
++#define	APDS9960_GOFFSET_L_REG		0xA7
++#define	APDS9960_GOFFSET_R_REG		0xA9
++#define	APDS9960_GCONF3_REG			0xAA
++#define	APDS9960_GCTRL_REG			0xAB
++#define	APDS9960_GFIFO_LVL_REG		0xAE
++#define	APDS9960_GSTATUS_REG		0xAF
++
++#define	APDS9960_TEST2_REG			0xC3	/* use for soft_reset */
++
++#define	APDS9960_GFIFO0_REG			0xFC	/* U */
++#define	APDS9960_GFIFO1_REG			0xFD	/* D */
++#define	APDS9960_GFIFO2_REG			0xFE	/* L */
++#define	APDS9960_GFIFO3_REG			0xFF	/* R */
++
++/* Register Value define : ENABLE */
++#define APDS9960_PWR_DOWN			0x00    /* PON = 0 */
++#define APDS9960_PWR_ON				0x01    /* PON = 1 */
++#define APDS9960_ALS_ENABLE			0x02    /* AEN */
++#define APDS9960_PS_ENABLE			0x04    /* PEN */
++#define APDS9960_WAIT_ENABLE		0x08    /* WEN */
++#define APDS9960_ALS_INT_ENABLE		0x10    /* AIEN */
++#define APDS9960_PS_INT_ENABLE		0x20    /* PIEN */
++#define APDS9960_GESTURE_ENABLE		0x40    /* GEN */
++
++/* Register Value define : CONTROL */
++#define	APDS9960_PDRIVE_100mA	0x00
++#define	APDS9960_PDRIVE_50mA	0x40
++#define	APDS9960_PDRIVE_25mA	0x80
++#define	APDS9960_PDRIVE_12_5mA	0xC0
++
++#define	APDS9960_PGAIN_1X		0x00
++#define	APDS9960_PGAIN_2X		0x04
++#define	APDS9960_PGAIN_4X		0x08
++#define	APDS9960_PGAIN_8X		0x0C
++
++#define	APDS9960_AGAIN_1X		0x00
++#define	APDS9960_AGAIN_4X		0x01
++#define	APDS9960_AGAIN_16X		0x02
++#define	APDS9960_AGAIN_64X		0x03
++
++#define	APDS9960_GGAIN_1X		0x00
++#define	APDS9960_GGAIN_2X		0x20
++#define	APDS9960_GGAIN_4X		0x40
++#define	APDS9960_GGAIN_8X		0x60
++
++#define CMD_FORCE_INT		0xE4
++#define CMD_CLR_PS_INT		0xE5
++#define CMD_CLR_ALS_INT		0xE6
++#define CMD_CLR_ALL_INT		0xE7
++
++/* Register bits define for pulse len */
++#define APDS9960_PULSE_LEN_4US	0x00
++#define APDS9960_PULSE_LEN_8US	0x40
++#define APDS9960_PULSE_LEN_16US	0x80
++#define APDS9960_PULSE_LEN_32US	0xC0
++
++/* Register bits define for AUX */
++#define	APDS9960_LED_BOOST_100	0x00
++#define	APDS9960_LED_BOOST_150	0x10
++#define	APDS9960_LED_BOOST_200	0x20
++#define	APDS9960_LED_BOOST_300	0x30
++
++/* Register Value define : ATIME */
++#define APDS9960_100MS_ADC_TIME	0xD6  /* 100.8ms integration time */
++#define APDS9960_50MS_ADC_TIME	0xEB  /* 50.4ms integration time */
++#define APDS9960_27MS_ADC_TIME	0xF6  /* 24ms integration time */
++
++/* Register Value define : PERS */
++#define APDS9960_PPERS_0 0x00  /* Every proximity ADC cycle */
++#define APDS9960_PPERS_1 0x10 /* 1 consecutive proximity value out of range */
++#define APDS9960_PPERS_2 0x20 /* 2 consecutive proximity value out of range */
++#define APDS9960_PPERS_3 0x30 /* 3 consecutive proximity value out of range */
++#define APDS9960_PPERS_4 0x40 /* 4 consecutive proximity value out of range */
++#define APDS9960_PPERS_5 0x50 /* 5 consecutive proximity value out of range */
++#define APDS9960_PPERS_6 0x60 /* 6 consecutive proximity value out of range */
++#define APDS9960_PPERS_7 0x70 /* 7 consecutive proximity value out of range */
++#define APDS9960_PPERS_8 0x80 /* 8 consecutive proximity value out of range */
++#define APDS9960_PPERS_9 0x90 /* 9 consecutive proximity value out of range */
++#define APDS9960_PPERS_10 0xA0 /* 10 consecutive proximity value out of range */
++#define APDS9960_PPERS_11 0xB0 /* 11 consecutive proximity value out of range */
++#define APDS9960_PPERS_12 0xC0 /* 12 consecutive proximity value out of range */
++#define APDS9960_PPERS_13 0xD0 /* 13 consecutive proximity value out of range */
++#define APDS9960_PPERS_14 0xE0 /* 14 consecutive proximity value out of range */
++#define APDS9960_PPERS_15 0xF0 /* 15 consecutive proximity value out of range */
++
++#define APDS9960_APERS_0  0x00  /* Every ADC cycle */
++#define APDS9960_APERS_1  0x01  /* 1 consecutive als value out of range */
++#define APDS9960_APERS_2  0x02  /* 2 consecutive als value out of range */
++#define APDS9960_APERS_3  0x03  /* 3 consecutive als value out of range */
++#define APDS9960_APERS_5  0x04  /* 5 consecutive als value out of range */
++#define APDS9960_APERS_10 0x05  /* 10 consecutive als value out of range */
++#define APDS9960_APERS_15 0x06  /* 15 consecutive als value out of range */
++#define APDS9960_APERS_20 0x07  /* 20 consecutive als value out of range */
++#define APDS9960_APERS_25 0x08  /* 25 consecutive als value out of range */
++#define APDS9960_APERS_30 0x09  /* 30 consecutive als value out of range */
++#define APDS9960_APERS_35 0x0A  /* 35 consecutive als value out of range */
++#define APDS9960_APERS_40 0x0B  /* 40 consecutive als value out of range */
++#define APDS9960_APERS_45 0x0C  /* 45 consecutive als value out of range */
++#define APDS9960_APERS_50 0x0D  /* 50 consecutive als value out of range */
++#define APDS9960_APERS_55 0x0E  /* 55 consecutive als value out of range */
++#define APDS9960_APERS_60 0x0F  /* 60 consecutive als value out of range */
++
++/* Register Value define : STATUS */
++#define	APDS9960_STATUS_ASAT	0x80	/* ALS Saturation */
++/* PS Saturation - analog saturated, not a proximity detection */
++#define APDS9960_STATUS_PSAT	0x40
++#define	APDS9960_STATUS_PINT	0x20	/* PS Interrupt status */
++#define	APDS9960_STATUS_AINT	0x10	/* ALS Interrupt status */
++#define APDS9960_STATUS_IINT	0x08	/* Irbeam Interrupt status */
++#define	APDS9960_STATUS_GINT	0x04	/* Gesture Interrupt status */
++#define	APDS9960_STATUS_PVALID	0x02	/* PS data valid status */
++#define	APDS9960_STATUS_AVALID	0x01	/* ALS data valid status */
++
++/* Register Value define : GCTRL */
++/* Clear all gesture status: GFIFO, GINT, GVALID, GFIFO_OV, GFIFO_LVL */
++#define	APDS9960_GFIFO_CLR	0x04
++#define APDS9960_GIEN		0x02	/* Gesture interrupt enable */
++#define APDS9960_GMODE		0x01	/* GMODE */
++
++/* Register Value define : GSTATUS */
++#define	APDS9960_GFIFO_OV	0x02	/* Fifo overflow */
++#define APDS9960_GVALID		0x01	/* Fifo valid status */
++
++/* Register Value define : GCONF1 */
++#define	APDS9960_GFIFO_1_LEVEL	0x00
++#define	APDS9960_GFIFO_4_LEVEL	0x40
++#define	APDS9960_GFIFO_8_LEVEL	0x80
++#define	APDS9960_GFIFO_16_LEVEL	0xC0
++
++/* Register Value define : GCONF2 */
++#define	APDS9960_GTIME_0MS		0x00
++#define	APDS9960_GTIME_2_8MS	0x01
++#define	APDS9960_GTIME_5_6MS	0x02
++#define	APDS9960_GTIME_8_4MS	0x03
++#define	APDS9960_GTIME_14MS		0x04
++#define	APDS9960_GTIME_22_4MS	0x05
++#define	APDS9960_GTIME_30_8MS	0x06
++#define	APDS9960_GTIME_39_2MS	0x07
++
++#define APDS9960_GDRIVE_100MA	0x00
++#define	APDS9960_GDRIVE_50MA	0x08
++#define	APDS9960_GDRIVE_25MA	0x10
++#define APDS9960_GDRIVE_12_5MA	0x18
++
++#define APDS9960_MAX_GESTURE_SAMPLES	32	/* total FIFO size */
++
++#define	APDS9960_PPULSE_FOR_PS		8
++#define APDS9960_PPULSE_LEN_FOR_PS	APDS9960_PULSE_LEN_16US
++#define APDS9960_PDRVIE_FOR_PS		APDS9960_PDRIVE_100mA
++#define APDS9960_PGAIN_FOR_PS		APDS9960_PGAIN_4X
++
++#define	APDS9960_PPULSE_FOR_GESTURE		10
++#define APDS9960_PPULSE_LEN_FOR_GESTURE	APDS9960_PULSE_LEN_16US
++#define APDS9960_PDRVIE_FOR_GESTURE		APDS9960_PDRIVE_100mA
++#define APDS9960_PGAIN_FOR_GESTURE		APDS9960_PGAIN_4X
++
++#define APDS9960_GPULSE		10
++#define APDS9960_GPULSE_LEN	APDS9960_PULSE_LEN_32US
++#define	APDS9960_GGAIN		APDS9960_GGAIN_4X
++#define APDS9960_GTIME		APDS9960_GTIME_2_8MS
++#define APDS9960_GDRIVE		APDS9960_GDRIVE_100MA
++
++#define APDS9960_GESTURE_FIFO	APDS9960_GFIFO_4_LEVEL
++
++#define	APDS9960_PS_LED_BOOST	APDS9960_LED_BOOST_100
++#define	APDS9960_GESTURE_LED_BOOST	APDS9960_LED_BOOST_300
++
++#define APDS9960_PS_DETECTION_THRESHOLD	50
++#define APDS9960_PS_HSYTERESIS_THRESHOLD	30
++
++#define	APDS9960_NEAR_THRESHOLD_LOW	0
++#define APDS9960_FAR_THRESHOLD_HIGH	255
++
++#define APDS9960_ALS_CALIBRATED_LUX	300
++#define APDS9960_ALS_CALIBRATED_CCT	5000
++
++#define APDS9960_PS_CALIBRATED_XTALK_BASELINE	10
++#define APDS9960_PS_CALIBRATED_XTALK			20
++
++#define APDS9960_ALS_THRESHOLD_HSYTERESIS	20	/* 20 = 20% */
++
++#define GESTURE_SENSITIVITY_LEVEL1	50
++#define GESTURE_SENSITIVITY_LEVEL2	20
++
++#define	GESTURE_GTHR_IN		40
++#define GESTURE_GTHR_OUT		30
++
++#define GESTURE_THRESHOLD_OUT	(GESTURE_GTHR_OUT-10)
++
++/* POWER SUPPLY VOLTAGE RANGE */
++#define APDS9960_VDD_MIN_UV  2000000
++#define APDS9960_VDD_MAX_UV  3300000
++#define APDS9960_VIO_MIN_UV  1750000
++#define APDS9960_VIO_MAX_UV  1950000
++
++enum apds9960_als_res_e {
++	APDS9960_ALS_RES_24MS  = 0,    /* 24ms integration time */
++	APDS9960_ALS_RES_50MS  = 1,    /* 50ms integration time */
++	APDS9960_ALS_RES_100MS = 2     /* 100ms integration time */
++};
++
++enum apds9960_als_gain_e {
++	APDS9960_ALS_GAIN_1X    = 0,    /* 1x AGAIN */
++	APDS9960_ALS_GAIN_4X    = 1,    /* 4x AGAIN */
++	APDS9960_ALS_GAIN_16X   = 2,    /* 16x AGAIN */
++	APDS9960_ALS_GAIN_64X   = 3     /* 64x AGAIN */
++};
++
++
++enum {
++	DIR_NONE,
++	DIR_LEFT,
++	DIR_RIGHT,
++	DIR_UP,
++	DIR_DOWN,
++	DIR_UP_RIGHT,
++	DIR_RIGHT_DOWN,
++	DIR_DOWN_LEFT,
++	DIR_LEFT_UP,
++	DIR_NEAR,
++	DIR_FAR,
++	DIR_CIRCLE_CW,
++	DIR_CIRCLE_ACW,
++	DIR_UP_U_TURN,
++	DIR_DOWN_U_TURN,
++	DIR_LEFT_U_TURN,
++	DIR_RIGHT_U_TURN,
++	DIR_ALL
++};
++
++enum {
++	NA_STATE,
++	UD_FLAT_STATE,
++	UD_POSITIVE_STATE,
++	UD_NEGATIVE_STATE,
++	LR_FLAT_STATE,
++	LR_POSITIVE_STATE,
++	LR_NEGATIVE_STATE,
++	NEAR_STATE,
++	FAR_STATE,
++	CIRCLE_CW_STATE,
++	CIRCLE_ACW_STATE,
++	ALL_STATE
++};
++
++enum {
++	CIRCLE_NA,
++	CIRCLE_0,
++	CIRCLE_1,
++	CIRCLE_2,
++	CIRCLE_3,
++	CIRCLE_4,
++	CIRCLE_5,
++	CIRCLE_6,
++	CIRCLE_7,
++	CIRCLE_ALL
++};
++
++enum {
++	GESTURE_ZONE_NA, /* init */
++	GESTURE_ZONE_1,	/* -ve UD, +ve LR */
++	GESTURE_ZONE_2,	/* +ve UD, +ve LR */
++	GESTURE_ZONE_3,	/* +ve UD, -ve LR */
++	GESTURE_ZONE_4, /* -ve UD, -ve LR */
++	GESTURE_ZONE_UNKNOWN, /* unknown */
++	GESTURE_ALL_ZONE
++};
++
++struct GESTURE_DATA_TYPE {
++	int u_data[32];
++	int d_data[32];
++	int l_data[32];
++	int r_data[32];
++	int index;
++	int total_gestures;
++	int in_threshold;
++	int out_threshold;
++};
++
++/*
++ * Structs
++ */
++
++struct apds9960_platform_data {
++	int (*init)(void);
++	void (*exit)(void);
++	int (*power_on)(bool);
++	unsigned int irq_gpio;
++	unsigned int ps_threshold;
++	/* always lower than ps_threshold */
++	unsigned int ps_hysteresis_threshold;
++};
++
++unsigned int GetTickCount(void);
++int FilterGestureRawData(struct GESTURE_DATA_TYPE *,
++	struct GESTURE_DATA_TYPE *);
++int GestureDataProcessing(void);
++int DecodeGesture(int gesture_mode);
++void ResetGestureParameters(void);
++
++struct apds9960_data {
++	struct i2c_client *client;
++	/*struct mutex update_lock;*/
++	struct delayed_work	dwork;		/* for PS interrupt */
++	struct delayed_work	als_dwork;	/* for ALS polling */
++	struct input_dev *input_dev_als;
++	struct input_dev *input_dev_ps;
++
++	int irq;
++	int	suspended;
++	unsigned int enable_suspended_value;	/* suspend_resume usage */
++
++	unsigned int enable;
++	unsigned int atime;
++	unsigned int wtime;
++	unsigned int ailt;
++	unsigned int aiht;
++	unsigned int pilt;
++	unsigned int piht;
++	unsigned int pers;
++	unsigned int config;
++	unsigned int ppulse;
++	unsigned int control;
++	unsigned int aux;
++	unsigned int poffset_ur;
++	unsigned int poffset_dl;
++	unsigned int config2;
++	unsigned int gthr_in;
++	unsigned int gthr_out;
++	unsigned int gconf1;
++	unsigned int gconf2;
++	unsigned int goffset_u;
++	unsigned int goffset_d;
++	unsigned int gpulse;
++	unsigned int goffset_l;
++	unsigned int goffset_r;
++	unsigned int gconf3;
++	unsigned int gctrl;
++	unsigned int cdata;
++	unsigned int rdata;
++	unsigned int gdata;
++	unsigned int bdata;
++	unsigned int pdata;
++
++	/* control flag from HAL */
++	unsigned int enable_ps_sensor;
++	unsigned int enable_als_sensor;
++	unsigned int enable_gesture_sensor;
++
++	/* PS parameters */
++	unsigned int ps_threshold;
++	/* always lower than ps_threshold */
++	unsigned int ps_hysteresis_threshold;
++	unsigned int ps_detection;	/* 0 = near-to-far; 1 = far-to-near */
++	unsigned int ps_data;		/* to store PS data */
++	unsigned int ps_ppulse;
++	unsigned int ps_poffset_ur;
++	unsigned int ps_poffset_dl;
++	unsigned int gesture_ppulse;
++	unsigned int gesture_poffset_ur;
++	unsigned int gesture_poffset_dl;
++	unsigned int gesture_goffset_u;
++	unsigned int gesture_goffset_d;
++	unsigned int gesture_goffset_l;
++	unsigned int gesture_goffset_r;
++
++	/* ALS parameters */
++	unsigned int als_threshold_l;	/* low threshold */
++	unsigned int als_threshold_h;	/* high threshold */
++	unsigned int als_data;	/* to store ALS data */
++	int als_prev_lux;		/* to store previous lux value */
++
++	unsigned int als_gain;	/* needed for Lux calculation */
++	/* needed for light sensor polling : micro-second (us) */
++	unsigned int als_poll_delay;
++	unsigned int als_atime_index;/* storage for als integratiion time */
++	unsigned int als_again_index;/* storage for als GAIN */
++
++	unsigned int cct;	/* color temperature */
++	unsigned int lux;	/* lux */
++
++	int  RGB_COE_X[3];
++	int  RGB_COE_Y[3];
++	int  RGB_COE_Z[3];
++
++	unsigned int lux_GA1;
++	unsigned int lux_GA2;
++	unsigned int lux_GA3;
++	unsigned int cct_GA1;
++	unsigned int cct_GA2;
++	unsigned int cct_GA3;
++
++	struct apds9960_platform_data *platform_data;
++	/* pinctrl data*/
++	struct pinctrl *pinctrl;
++	struct pinctrl_state *pin_default;
++	struct pinctrl_state *pin_sleep;
++
++	struct sensors_classdev als_cdev;
++	struct sensors_classdev ps_cdev;
++	struct sensors_classdev ges_cdev;
++
++	/* regulator data */
++	bool power_on;
++	struct regulator *vdd;
++	struct regulator *vio;
++
++	/* save sensor enabling state for resume */
++	unsigned int als_enable_state;
++};
++
++#ifdef PLATFORM_SENSOR_APDS9960
++struct apds9950_platform_data {
++	int irq_num;
++	int (*power)(unsigned char onoff);
++	unsigned int ps_int_threshold;
++	unsigned int ps_int_hsyteresis_threshold;
++	unsigned int als_threshold_hsyteresis;
++	unsigned int gesture_ppulse;
++	unsigned int ppulse;
++	unsigned int poffset_ur;
++	unsigned int poffset_dl;
++	unsigned int gesture_poffset_ur;
++	unsigned int gesture_poffset_dl;
++	unsigned int gpulse;
++	unsigned int goffset_u;
++	unsigned int goffset_d;
++	unsigned int goffset_l;
++	unsigned int goffset_r;
++	int  RGB_COE_X[3];
++	int  RGB_COE_Y[3];
++	int  RGB_COE_Z[3];
++	unsigned int  alsit;
++	unsigned int  atime;
++	unsigned int lux_GA1;
++	unsigned int lux_GA2;
++	unsigned int lux_GA3;
++	unsigned int cct_GA1;
++	unsigned int cct_GA2;
++	unsigned int cct_GA3;
++};
++#endif
++
++
++
++
+-- 
+1.7.9.5
+

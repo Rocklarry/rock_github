@@ -1,0 +1,150 @@
+From d69faedf2f69336113149598c9f88727948ac32f Mon Sep 17 00:00:00 2001
+From: maoyq0504 <maoyq0504@thundersoft.com>
+Date: Mon, 24 Aug 2015 14:30:59 +0800
+Subject: [PATCH 1/3] ARM:dts:msm: support ctp truly gt917d
+
+Add CTP TRULY@CT3S2242@GT917D device tree
+
+Change-Id: I60c2a31baca1b2c3e668fec6ba133e842d862a34
+Signed-off-by: Yuanqiu Mao <maoyq0504@thundersoft.com>
+---
+ .../bindings/input/touchscreen/gt9xx/gt9xx.txt     | 11 +--
+ arch/arm/boot/dts/qcom/msm8976-qrd-skun.dtsi       | 93 +++++++++-------------
+ 2 files changed, 43 insertions(+), 61 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/input/touchscreen/gt9xx/gt9xx.txt b/Documentation/devicetree/bindings/input/touchscreen/gt9xx/gt9xx.txt
+index ba61a2f..a567eb8 100644
+--- a/Documentation/devicetree/bindings/input/touchscreen/gt9xx/gt9xx.txt
++++ b/Documentation/devicetree/bindings/input/touchscreen/gt9xx/gt9xx.txt
+@@ -64,14 +64,15 @@ i2c@f9927000 {
+ 			compatible = "goodix,gt9xx";
+ 			reg = <0x5d>;
+ 			interrupt-parent = <&msmgpio>;
+-			interrupts = <17 0x2008>;
+-			reset-gpios = <&msmgpio 16 0x00>;
+-			interrupt-gpios = <&msmgpio 17 0x00>;
+-			avdd-supply = <&tp_power>;
++			interrupts = <65 0x2008>;
++			reset-gpios = <&msmgpio 64 0x00>;
++			interrupt-gpios = <&msmgpio 65 0x00>;
++			vdd-supply = <&pm8950_l17>;
++			vcc-i2c-supply = <&pm8950_l6>;
+ 			goodix,panel-coords = <0 0 720 1200>;
+ 			goodix,display-coords = <0 0 720 1080>;
+ 			goodix,button-map= <158 102 139>;
+-			goodix,product-id = "915";
++			goodix,product-id = "917D";
+ 			goodix,cfg-data0 = [
+ 				41 D0 02 00 05 0A 05 01 01 08
+ 				12 58 50 41 03 05 00 00 00 00
+diff --git a/arch/arm/boot/dts/qcom/msm8976-qrd-skun.dtsi b/arch/arm/boot/dts/qcom/msm8976-qrd-skun.dtsi
+index 276c176..13d0468 100644
+--- a/arch/arm/boot/dts/qcom/msm8976-qrd-skun.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8976-qrd-skun.dtsi
+@@ -14,66 +14,47 @@
+ #include "msm8976-qrd.dtsi"
+ 
+ &i2c_4 { /* BLSP1 QUP4 */
+-	focaltech@38 {
+-		compatible = "focaltech,5x06";
+-		reg = <0x38>;
+-		interrupt-parent = <&msm_gpio>;
+-		interrupts = <65 0x2>;
+-		vdd-supply = <&pm8950_l17>;
+-		vcc_i2c-supply = <&pm8950_l6>;
+-		/* pins used by touchscreen */
+-		pinctrl-names = "pmx_ts_active","pmx_ts_suspend","pmx_ts_release";
+-		pinctrl-0 = <&ts_int_active &ts_reset_active>;
+-		pinctrl-1 = <&ts_int_suspend &ts_reset_suspend>;
+-		pinctrl-2 = <&ts_release>;
+-		focaltech,name = "ft5446";
+-		focaltech,family-id = <0x06>;
+-		focaltech,reset-gpio = <&msm_gpio 64 0x0>;
+-		focaltech,irq-gpio = <&msm_gpio 65 0x2008>;
+-		focaltech,display-coords = <0 0 1079 1919>;
+-		focaltech,panel-coords = <0 0 1079 2084>;
+-		focaltech,button-map= <139 102 158>;
+-		focaltech,no-force-update;
+-		focaltech,i2c-pull-up;
+-		focaltech,group-id = <1>;
+-		focaltech,hard-reset-delay-ms = <20>;
+-		focaltech,soft-reset-delay-ms = <200>;
+-		focaltech,num-max-touches = <2>;
+-		focaltech,fw-delay-aa-ms = <30>;
+-		focaltech,fw-delay-55-ms = <30>;
+-		focaltech,fw-upgrade-id1 = <0x79>;
+-		focaltech,fw-upgrade-id2 = <0x08>;
+-		focaltech,fw-delay-readid-ms = <10>;
+-		focaltech,fw-delay-era-flsh-ms = <2000>;
+-		focaltech,fw-auto-cal;
+-		focaltech,ignore-id-check;
+-	};
++		goodix@5d {
++			compatible = "goodix,gt9xx";
++			reg = <0x5d>;
++			interrupt-parent = <&msm_gpio>;
++			interrupts = <65 0x2008>;
++			reset-gpios = <&msm_gpio 64 0x00>;
++			interrupt-gpios = <&msm_gpio 65 0x0>;
++			vdd-supply = <&pm8950_l17>;
++			vcc-i2c-supply = <&pm8950_l6>;
++			pinctrl-names = "pmx_ts_active",
++				"pmx_ts_suspend","pmx_ts_release";
++			pinctrl-0 = <&ts_int_active &ts_reset_active>;
++			pinctrl-1 = <&ts_int_suspend &ts_reset_suspend>;
++			pinctrl-2 = <&ts_release>;
++			goodix,button-map = <139 158 172>;
++			goodix,panel-coords = <0 0 1080 1920>;
++			goodix,display-coords = <0 0 1080 2098>;
++			goodix,product-id = "917D";
++			goodix,num_max_touches = <5>;
++			goodix,soft_rst_dly = <20>;
++			goodix,name = "GT917D";
++			goodix,fw_name = "gtp_fw.bin";
++			goodix,fw-vkey-support;
++			goodix,i2c-pull-up;
++			goodix,no-force-update;
++			goodix,enable-power-off;
++		};
+ 
+-	synaptics@20 {
+-		compatible = "synaptics,rmi4";
+-		reg = <0x20>;
+-		interrupt-parent = <&msm_gpio>;
+-		interrupts = <65 0x2008>;
+-		vdd-supply = <&pm8950_l17>;
+-		vcc_i2c-supply = <&pm8950_l6>;
+-		/* pins used by touchscreen */
+-		pinctrl-names = "pmx_ts_active","pmx_ts_suspend","pmx_ts_release";
+-		pinctrl-0 = <&ts_int_active &ts_reset_active>;
+-		pinctrl-1 = <&ts_int_suspend &ts_reset_suspend>;
+-		pinctrl-2 = <&ts_release>;
+-		synaptics,display-coords = <0 0 1079 1919>;
+-		synaptics,panel-coords = <0 0 1079 2084>;
+-		synaptics,irq-gpio = <&msm_gpio 65 0x2008>;
+-		synaptics,reset-gpio = <&msm_gpio 64 0x0>;
+-		synaptics,i2c-pull-up;
+-		synaptics,power-down;
+-		synaptics,disable-gpios;
+-		synaptics,bypass-packrat-id-check;
+-		synaptics,button-map = <139 172 158>;
+-	};
+ };
+ 
+ &soc {
++	gen-vkeys {
++		compatible = "qcom,gen-vkeys";
++		label = "goodix-ts";
++		qcom,disp-maxx = <1080>;
++		qcom,disp-maxy = <1920>;
++		qcom,panel-maxx = <1080>;
++		qcom,panel-maxy = <2098>;
++		qcom,key-codes = <139 158 172>;
++		qcom,y-offset = <0>;
++	};
+ 	gpio_keys {
+ 		compatible = "gpio-keys";
+ 		input-name = "gpio-keys";
+-- 
+1.9.1
+

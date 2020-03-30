@@ -1,0 +1,28 @@
+From d4c66226a4d2e99252830d428e45d72cc6993422 Mon Sep 17 00:00:00 2001
+From: chenqingfeng <chenqf0228@thundersoft.com>
+Date: Tue, 4 Nov 2014 15:35:39 +0800
+Subject: [PATCH 3/4] ARM:config: support mpu3050c defconfig
+
+Defconfig support mpu3050c
+
+Change-Id: I7e25332009650fe9045ab1467d82d1e267641675
+Signed-off-by: Qingfeng Chen <chenqf0228@thundersoft.com>
+---
+ arch/arm/configs/msm8916_defconfig |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm/configs/msm8916_defconfig b/arch/arm/configs/msm8916_defconfig
+index c476b05..bfc8a84 100644
+--- a/arch/arm/configs/msm8916_defconfig
++++ b/arch/arm/configs/msm8916_defconfig
+@@ -266,6 +266,7 @@ CONFIG_INPUT_UINPUT=y
+ CONFIG_INPUT_GPIO=m
+ CONFIG_SENSORS_LIS3DH=y
+ CONFIG_SENSORS_MPU6050=y
++CONFIG_INPUT_MPU3050=y
+ CONFIG_SENSORS_AKM09911=y
+ CONFIG_SENSORS_BMA2X2=y
+ CONFIG_SENSORS_MMC3416X=y
+-- 
+1.7.9.5
+

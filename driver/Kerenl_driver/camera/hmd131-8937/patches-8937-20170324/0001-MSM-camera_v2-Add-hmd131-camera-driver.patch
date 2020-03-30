@@ -1,0 +1,144 @@
+From 2e73a91a847ac07167e20fdf5c515e73db1a3868 Mon Sep 17 00:00:00 2001
+From: chenhl0630 <chenhl0630@thundersoft.com>
+Date: Thu, 23 Mar 2017 17:44:07 +0800
+Subject: [PATCH] MSM: camera_v2: Add hmd131 camera driver
+
+Add hmd131 camera driver for msm8937
+
+Change-Id: I90234c08682257f77bcb68e60ec96c2be27c895c
+Signed-off-by: chenhl0630 <chenhl0630@thundersoft.com>
+---
+ .../platform/msm/camera_v2/sensor/msm_sensor.c     | 91 +++++++++++++++++++++-
+ 1 file changed, 89 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/media/platform/msm/camera_v2/sensor/msm_sensor.c b/drivers/media/platform/msm/camera_v2/sensor/msm_sensor.c
+index 35963d5..34c7a4d 100644
+--- a/drivers/media/platform/msm/camera_v2/sensor/msm_sensor.c
++++ b/drivers/media/platform/msm/camera_v2/sensor/msm_sensor.c
+@@ -1,4 +1,4 @@
+-/* Copyright (c) 2011-2016, The Linux Foundation. All rights reserved.
++/* Copyright (c) 2011-2017, The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 and
+@@ -21,6 +21,8 @@
+ #undef CDBG
+ #define CDBG(fmt, args...) pr_debug(fmt, ##args)
+ 
++int hmd131_soft_reset_flag = 0;
++
+ static void msm_sensor_adjust_mclk(struct msm_camera_power_ctrl_t *ctrl)
+ {
+ 	int idx;
+@@ -415,6 +417,7 @@ static int msm_sensor_config32(struct msm_sensor_ctrl_t *s_ctrl,
+ 		struct msm_camera_i2c_reg_setting32 conf_array32;
+ 		struct msm_camera_i2c_reg_setting conf_array;
+ 		struct msm_camera_i2c_reg_array *reg_setting = NULL;
++		int num = 0;
+ 
+ 		if (s_ctrl->is_csid_tg_mode)
+ 			goto DONE;
+@@ -465,7 +468,91 @@ static int msm_sensor_config32(struct msm_sensor_ctrl_t *s_ctrl,
+ 		}
+ 
+ 		conf_array.reg_setting = reg_setting;
++		/* add i2c_write for hmd131 */
++		if (strcmp(s_ctrl->sensordata->sensor_name,
++			"hmd131") == 0) {
++			CDBG("%s:%d	 name = %s\n", __func__, __LINE__,
++				s_ctrl->sensordata->sensor_name);
++			if (conf_array.reg_setting[0].reg_addr == 0x0103) {
++				CDBG("%s:%d is the hfr video mode\n",
++					__func__, __LINE__);
++				hmd131_soft_reset_flag = 1;
++				num = conf_array.size;
++			for (i = 0; i < num; ++i) {
++				s_ctrl->sensor_i2c_client->addr_type =
++					conf_array.addr_type;
++				rc = s_ctrl->sensor_i2c_client
++					->i2c_func_tbl->i2c_write(
++					s_ctrl->sensor_i2c_client,
++					conf_array.reg_setting[i].reg_addr,
++					conf_array.reg_setting[i].reg_data,
++					conf_array.data_type);
++				if (rc < 0)
++					pr_err("%s:%d res rc = %d, 0x%x(%d)\n",
++					__func__, __LINE__, rc,
++					conf_array.reg_setting[i].reg_addr,
++					conf_array.reg_setting[i].reg_data);
++				else {
++					CDBG("%s:%d 0x%x(%d) success\n",
++					__func__, __LINE__,
++					conf_array.reg_setting[i].reg_addr,
++					conf_array.reg_setting[i].reg_data);
++				if (conf_array.reg_setting[i].delay > 20)
++					msleep(conf_array.reg_setting[i].delay);
++				else if (conf_array.delay)
++					usleep_range(conf_array.delay * 1000,
++					(conf_array.delay * 1000) + 1000);
++					}
++				}
++				msleep(20);
++			} else	{
++				if ((conf_array.reg_setting[0].
++				reg_addr == 0x0100) || (conf_array.
++				reg_setting[0].reg_addr == 0x0104))
++					CDBG("Not need to softreser !\n");
++				else if (hmd131_soft_reset_flag == 1) {
++					s_ctrl->sensor_i2c_client
++					->i2c_func_tbl->i2c_write(
++					s_ctrl->sensor_i2c_client, 0x0103,
++					0x01, conf_array.data_type);
++				hmd131_soft_reset_flag = 0;
++				CDBG("Manual softreser !\n");
++				}
++				num = conf_array.size;
++				for (i = 0; i < num; ++i) {
++					s_ctrl->sensor_i2c_client->addr_type =
++					conf_array.addr_type;
++					rc = s_ctrl->sensor_i2c_client
++					->i2c_func_tbl->i2c_write(
++					s_ctrl->sensor_i2c_client,
++					conf_array.reg_setting[i].reg_addr,
++					conf_array.reg_setting[i].reg_data,
++					conf_array.data_type);
++				if (rc < 0)
++					pr_err("%s:%d res rc = %d, 0x%x(%d)\n",
++					__func__, __LINE__, rc,
++					conf_array.reg_setting[i].reg_addr,
++					conf_array.reg_setting[i].reg_data);
++				else {
++					CDBG("%s:%d 0x%x(%d) success\n",
++					__func__, __LINE__,
++					conf_array.reg_setting[i].reg_addr,
++					conf_array.reg_setting[i].reg_data);
++				if (conf_array.reg_setting[i].delay > 20)
++					msleep(conf_array.reg_setting[i].delay);
++				else if (conf_array.delay)
++					usleep_range(conf_array.delay * 1000,
++					(conf_array.delay * 1000) + 1000);
++					}
++				}
++				if (conf_array.delay > 20)
++					msleep(conf_array.delay);
++				else if (conf_array.delay)
++					usleep_range(conf_array.delay * 1000,
++					(conf_array.delay * 1000) + 1000);
++			}
+ 
++		} else {
+ 		if (CFG_WRITE_I2C_ARRAY == cdata->cfgtype)
+ 			rc = s_ctrl->sensor_i2c_client->i2c_func_tbl->
+ 				i2c_write_table(s_ctrl->sensor_i2c_client,
+@@ -483,7 +570,7 @@ static int msm_sensor_config32(struct msm_sensor_ctrl_t *s_ctrl,
+ 			rc = s_ctrl->sensor_i2c_client->i2c_func_tbl->
+ 				i2c_write_table_sync(s_ctrl->sensor_i2c_client,
+ 				&conf_array);
+-
++				}
+ 		kfree(reg_setting);
+ 		break;
+ 	}
+-- 
+1.9.1
+

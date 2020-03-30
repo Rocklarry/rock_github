@@ -1,0 +1,71 @@
+From ad900a9dd8ecc3a181faf6940090922c2765a919 Mon Sep 17 00:00:00 2001
+From: chenqingfeng <chenqf0228@thundersoft.com>
+Date: Wed, 29 Oct 2014 16:16:51 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support rpr0521c devicetree
+
+Devicetree support rpr0521c
+
+Change-Id: I46d09fc02dd72f59c8af88ea6249716200100a3c
+Signed-off-by: Qingfeng Chen <chenqf0228@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8916-qrd-skui.dtsi |   34 ++++++++++++++++++++++++--
+ 1 file changed, 32 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8916-qrd-skui.dtsi b/arch/arm/boot/dts/qcom/msm8916-qrd-skui.dtsi
+index 859680e..4cbd06f 100644
+--- a/arch/arm/boot/dts/qcom/msm8916-qrd-skui.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8916-qrd-skui.dtsi
+@@ -176,11 +176,26 @@
+ 			  bias-pull-up;
+ 		};
+ 	};
++
++	rpr0521c_int_pin {
++		qcom,pins = <&gp 113>;
++		qcom,pin-func = <0>;
++		qcom,num-grp-pins = <1>;
++		label = "rpr0521c-irq";
++		rpr0521c_default: rpr0521c_default {
++			drive-strength = <6>;
++			bias-pull-up;
++		};
++		rpr0521c_sleep: rpr0521c_sleep {
++			drive-strength = <2>;
++			bias-pull-down;
++		};
++	};
+ };
+ 
+ &i2c_0 { /* BLSP1 QUP2 */
+-	avago@39 { /* Ambient light and proximity sensor */
+-		compatible = "avago,apds9930";
++/*	avago@39 { /* Ambient light and proximity sensor */
++/*		compatible = "avago,apds9930";
+ 		reg = <0x39>;
+ 		pinctrl-names = "default","sleep";
+ 		pinctrl-0 = <&apds99xx_default>;
+@@ -198,6 +213,21 @@
+ 		avago,als-C = <70>;
+ 		avago,als-D = <142>;
+ 		avago,ga-value = <48>;
++	};*/
++
++	rohm@38 { /* Ambient light and proximity sensor */
++		compatible = "rohm,rpr0521c";
++		reg = <0x38>;
++		pinctrl-names = "default","sleep";
++		pinctrl-0 = <&rpr0521c_default>;
++		pinctrl-1 = <&rpr0521c_sleep>;
++		interrupt-parent = <&msm_gpio>;
++		interrupts = <113 0x2002>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++		rpr0521c,irq-gpio = <&msm_gpio 113 0x2002>;
++		rpr0521c,prox_th_min = <50>;
++		rpr0521c,prox_th_max = <150>;
+ 	};
+ 
+ 	bosch@18 { /* Accelerometer sensor */
+-- 
+1.7.9.5
+

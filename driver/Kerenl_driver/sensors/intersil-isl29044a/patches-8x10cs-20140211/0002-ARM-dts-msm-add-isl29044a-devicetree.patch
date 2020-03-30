@@ -1,0 +1,39 @@
+From 8e7aced8d463f60b20192c89a16fe4c8120a3212 Mon Sep 17 00:00:00 2001
+From: shilz0708 <shilz0708@thundersoft.com>
+Date: Tue, 11 Mar 2014 13:04:50 +0800
+Subject: [PATCH 2/2] ARM:dts:msm:add isl29044a devicetree
+
+Support isl29044a
+
+Change-Id: I54a95c01c1f15fe9ccf3cedc1599378f7e0c23e0
+Signed-off-by: Ran Gu <guran1128@thundersoft.com>
+---
+ arch/arm/boot/dts/msm8610-qrd.dtsi |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/arch/arm/boot/dts/msm8610-qrd.dtsi b/arch/arm/boot/dts/msm8610-qrd.dtsi
+index 14bfbb8..0e33793 100644
+--- a/arch/arm/boot/dts/msm8610-qrd.dtsi
++++ b/arch/arm/boot/dts/msm8610-qrd.dtsi
+@@ -91,6 +91,18 @@
+ 			kionix,negate-z;
+ 			kionix,res-12bit;
+ 		};
++		intersil@44 {
++			compatible = "intersil,isl29044a";
++			reg = <0x44>;
++			vdd-supply = <&pm8110_l19>;
++			vio-supply = <&pm8110_l14>;
++			intersil,ps_led_drv_cur = <0>;
++			intersil,als_range = <1>;
++			intersil,als_mode = <0>;
++			intersil,ps_lt = <30>;
++			intersil,ps_ht = <50>;
++			intersil,poll_delay = <200>;
++		};
+ 	};
+ 
+ 	flashlight {
+-- 
+1.7.9.5
+

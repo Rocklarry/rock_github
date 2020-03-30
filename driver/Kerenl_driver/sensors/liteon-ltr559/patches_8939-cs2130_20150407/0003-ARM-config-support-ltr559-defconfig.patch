@@ -1,0 +1,30 @@
+From a8a5a465a691d0ba6e21f421b02e9dc66cdeabd4 Mon Sep 17 00:00:00 2001
+From: chenqingfeng <chenqf0228@thundersoft.com>
+Date: Tue, 31 Mar 2015 20:38:43 +0800
+Subject: [PATCH 3/3] ARM:config: support ltr559 defconfig
+
+Defconfig support ltr559
+
+Change-Id: I577b83d589300ab01f3993f70fc494156c25f88b
+Signed-off-by: Qingfeng Chen <chenqf0228@thundersoft.com>
+---
+ arch/arm64/configs/msm_defconfig |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm64/configs/msm_defconfig b/arch/arm64/configs/msm_defconfig
+index 32c6f91..70a1e1d 100644
+--- a/arch/arm64/configs/msm_defconfig
++++ b/arch/arm64/configs/msm_defconfig
+@@ -201,7 +201,8 @@ CONFIG_CMA=y
+ CONFIG_CMA_SIZE_MBYTES=64
+ CONFIG_BLK_DEV_LOOP=y
+ CONFIG_BLK_DEV_RAM=y
+-CONFIG_APDS9930=y
++#CONFIG_APDS9930 is not set
++CONFIG_INPUT_LTR559=y
+ CONFIG_QSEECOM=y
+ CONFIG_SCSI=y
+ CONFIG_SCSI_TGT=y
+-- 
+1.7.9.5
+

@@ -1,0 +1,31 @@
+From 6649cf7edfa5251c6df42c3e97e908b719a50075 Mon Sep 17 00:00:00 2001
+From: chenx <chenxiang0527@thundersoft.com>
+Date: Sun, 28 Sep 2014 09:22:28 +0800
+Subject: [PATCH 3/3] ARM:config: support bmg160 defconfig
+
+Defconfig support bmg160
+
+Change-Id: Id0f18c0dcce9deded9642341bba8cd0efc3394ab
+Signed-off-by: Xiang Chen <chenxiang0527@thundersoft.com>
+---
+ arch/arm/configs/msm8916_defconfig |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/configs/msm8916_defconfig b/arch/arm/configs/msm8916_defconfig
+index 3d19788..c77741a 100644
+--- a/arch/arm/configs/msm8916_defconfig
++++ b/arch/arm/configs/msm8916_defconfig
+@@ -259,7 +259,9 @@ CONFIG_INPUT_MISC=y
+ CONFIG_INPUT_UINPUT=y
+ CONFIG_INPUT_GPIO=m
+ CONFIG_SENSORS_LIS3DH=y
+-CONFIG_SENSORS_MPU6050=y
++#CONFIG_SENSORS_MPU6050=y
++CONFIG_SENSORS_BMG=y
++CONFIG_SENSORS_BMG_FIFO=y
+ CONFIG_SENSORS_AKM09911=y
+ CONFIG_SENSORS_BMA2X2=y
+ CONFIG_SENSORS_MMC3416X=y
+-- 
+1.7.9.5
+

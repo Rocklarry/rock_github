@@ -1,0 +1,97 @@
+From df14dcef2be68a94b399f8d6414602bcb4e3e13b Mon Sep 17 00:00:00 2001
+From: Cai Hanjue <caihj0301@thundersoft.com>
+Date: Thu, 11 May 2017 19:15:38 +0800
+Subject: [PATCH] ARM: msm: camera_v2: Add ov12a10 camera driver
+
+Add ov12a10 af driver for msm8998
+
+Change-Id: I42dc29014a3768a721bd97bbadd18b3f9a70bab0
+Signed-off-by: Cai Hanjue <caihj0301@thundersoft.com>
+---
+ .../msm/camera_v2/sensor/actuator/msm_actuator.c   | 43 +++++++++++++++++++++-
+ 1 file changed, 42 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/media/platform/msm/camera_v2/sensor/actuator/msm_actuator.c b/drivers/media/platform/msm/camera_v2/sensor/actuator/msm_actuator.c
+index 4b6005b..69d606a 100644
+--- a/drivers/media/platform/msm/camera_v2/sensor/actuator/msm_actuator.c
++++ b/drivers/media/platform/msm/camera_v2/sensor/actuator/msm_actuator.c
+@@ -1,4 +1,4 @@
+-/* Copyright (c) 2011-2016, The Linux Foundation. All rights reserved.
++/* Copyright (c) 2011-2017, The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 and
+@@ -31,6 +31,10 @@ DEFINE_MSM_MUTEX(msm_actuator_mutex);
+ #define PARK_LENS_SMALL_STEP 3
+ #define MAX_QVALUE 4096
+ 
++#define LC898124_DAC_ADDR 0xA0
++#define LC898124_DAC_MAX 0x4500
++#define LC898124_DAC_MIN 0xBB00
++
+ static struct v4l2_file_operations msm_actuator_v4l2_subdev_fops;
+ static int32_t msm_actuator_power_up(struct msm_actuator_ctrl_t *a_ctrl);
+ static int32_t msm_actuator_power_down(struct msm_actuator_ctrl_t *a_ctrl);
+@@ -162,15 +166,24 @@ static int msm_actuator_bivcm_handle_i2c_ops(
+ 	uint16_t value = 0, reg_data = 0;
+ 	uint32_t size = a_ctrl->reg_tbl_size, i = 0;
+ 	int32_t rc = 0;
++	signed short Hall_Max = LC898124_DAC_MAX;
++	signed short Hall_Min = LC898124_DAC_MIN;
+ 	struct msm_camera_i2c_reg_array i2c_tbl;
+ 	struct msm_camera_i2c_reg_setting reg_setting;
+ 	enum msm_camera_i2c_reg_addr_type save_addr_type =
+ 		a_ctrl->i2c_client.addr_type;
++	uint16_t Min_Pos = 0, Max_Pos = 1023;
++	uint16_t ivalue2;
++	uint16_t a;
++	int iK;
++	double k;
++	double k2;
+ 
+ 	for (i = 0; i < size; i++) {
+ 		reg_setting.size = 1;
+ 		switch (write_arr[i].reg_write_type) {
+ 		case MSM_ACTUATOR_WRITE_DAC:
++			if (write_arr[i].reg_addr != LC898124_DAC_ADDR) {
+ 			value = (next_lens_position <<
+ 			write_arr[i].data_shift) |
+ 			((hw_dword & write_arr[i].hw_mask) >>
+@@ -195,6 +208,34 @@ static int msm_actuator_bivcm_handle_i2c_ops(
+ 			if (rc < 0) {
+ 				pr_err("i2c write error:%d\n", rc);
+ 				return rc;
++				}
++			} else if (write_arr[i].reg_addr == LC898124_DAC_ADDR) {
++				value = (next_lens_position <<
++				write_arr[i].data_shift) |
++				((hw_dword & write_arr[i].hw_mask) >>
++				write_arr[i].hw_shift);
++
++				k = 1.0*(Hall_Min - Hall_Max)/
++				(Max_Pos - Min_Pos);
++				iK = (int)(k * 100);
++				k2 = iK / 100.0;
++				a = (uint16_t)((value * (signed short)k2) +
++				Hall_Max);
++				ivalue2 = a;
++				i2c_tbl.reg_addr = write_arr[i].reg_addr;
++				i2c_tbl.reg_data = ivalue2;
++				i2c_tbl.delay = delay;
++				a_ctrl->i2c_tbl_index++;
++				reg_setting.reg_setting = &i2c_tbl;
++				reg_setting.data_type = a_ctrl->i2c_data_type;
++				rc = a_ctrl->i2c_client.
++					i2c_func_tbl->
++					i2c_write_table_w_microdelay(
++					&a_ctrl->i2c_client, &reg_setting);
++				if (rc < 0) {
++					pr_err("i2c write error:%d\n", rc);
++					return rc;
++				}
+ 			}
+ 			break;
+ 		case MSM_ACTUATOR_WRITE:
+-- 
+2.2.2
+

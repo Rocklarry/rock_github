@@ -1,0 +1,57 @@
+From f543c475371c8a1e568d5191b066d2f9a0cd9ef3 Mon Sep 17 00:00:00 2001
+From: Ran Gu <guran1128@thundersoft.com>
+Date: Fri, 6 Jun 2014 15:41:59 +0800
+Subject: [PATCH 2/3] ARM:dts:msm:support ltr553als devicetree
+
+Devicetree support of ltr553als
+
+Change-Id: I8d5030cf2b5d5fc6b2af6539cd6e379f3f09d195
+Signed-off-by: Ran Gu <guran1128@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8916-qrd-skui.dtsi |   23 +++++++++++++++++++++++
+ 1 files changed, 23 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8916-qrd-skui.dtsi b/arch/arm/boot/dts/qcom/msm8916-qrd-skui.dtsi
+index 401061a..0639a71 100644
+--- a/arch/arm/boot/dts/qcom/msm8916-qrd-skui.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8916-qrd-skui.dtsi
+@@ -157,6 +157,17 @@
+ 		};
+ 	};
+ 
++	ltr553_int_pin {
++		qcom,pins = <&gp 113>;
++		qcom,pin-func = <0>;
++		qcom,num-grp-pins = <1>;
++		label = "ltr553-irq";
++		ltr553_default: ltr553_default {
++			drive-strength = <6>;
++			bias-pull-up;
++		};
++	};
++
+ 	bma2x2_int1_pin {
+ 		qcom,pins = <&gp 112>;
+ 		qcom,num-grp-pins = <1>;
+@@ -200,6 +211,18 @@
+ 		avago,ga-value = <48>;
+ 	};
+ 
++	liteon@23 {
++		compatible = "liteon,ltr553";
++		reg = <0x23>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&ltr553_default>;
++		interrupt-parent = <&msm_gpio>;
++		interrupts = <113 0x2>;
++		liteon,intr = <&msm_gpio 113 0x2>;
++		liteon,highthr = <800>;
++		liteon,lowthr = <300>;
++	};
++
+ 	bosch@18 { /* Accelerometer sensor */
+ 		compatible = "bosch,bma2x2";
+ 		reg = <0x18>;
+-- 
+1.7.4.1
+

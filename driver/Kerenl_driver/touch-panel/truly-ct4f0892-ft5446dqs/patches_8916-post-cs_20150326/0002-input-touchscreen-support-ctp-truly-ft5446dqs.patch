@@ -1,0 +1,529 @@
+From 602cdf32552967c4c6bb4fa43ca76590d24fe7fd Mon Sep 17 00:00:00 2001
+From: yanqy <yanqy0911@thundersoft.com>
+Date: Mon, 23 Mar 2015 16:31:59 +0800
+Subject: [PATCH 2/2] input:touchscreen: support ctp truly ft5446dqs
+
+Add CTP IHV-TRULY@CT4F0892@FT5446DQS driver
+
+Change-Id: I946a9e9e71b03857af8d4865e6687919a98a7d0c
+Signed-off-by: Qiyang Yan <yanqy0911@thundersoft.com>
+---
+ drivers/input/touchscreen/ft5x06_ts.c |  318 ++++++++++++++++++++-------------
+ 1 file changed, 198 insertions(+), 120 deletions(-)
+
+diff --git a/drivers/input/touchscreen/ft5x06_ts.c b/drivers/input/touchscreen/ft5x06_ts.c
+index 0a6ceaa..6451554 100644
+--- a/drivers/input/touchscreen/ft5x06_ts.c
++++ b/drivers/input/touchscreen/ft5x06_ts.c
+@@ -2,8 +2,8 @@
+  *
+  * FocalTech ft5x06 TouchScreen driver.
+  *
+- * Copyright (c) 2010  Focal tech Ltd.
+- * Copyright (c) 2012-2014, The Linux Foundation. All rights reserved.
++ * Copyright (c) 2010-2015 Focal tech Ltd.
++ * Copyright (c) 2012-2015, The Linux Foundation. All rights reserved.
+  *
+  * This software is licensed under the terms of the GNU General Public
+  * License version 2, as published by the Free Software Foundation, and
+@@ -168,10 +168,6 @@
+ #define FT_MAGIC_BLOADER_GZF_30	0x7ff4
+ #define FT_MAGIC_BLOADER_GZF	0x7bf4
+ 
+-#define PINCTRL_STATE_ACTIVE	"pmx_ts_active"
+-#define PINCTRL_STATE_SUSPEND	"pmx_ts_suspend"
+-#define PINCTRL_STATE_RELEASE	"pmx_ts_release"
+-
+ enum {
+ 	FT_BLOADER_VERSION_LZ4 = 0,
+ 	FT_BLOADER_VERSION_Z7 = 1,
+@@ -213,6 +209,7 @@ struct ft5x06_ts_data {
+ 	bool loading_fw;
+ 	u8 family_id;
+ 	struct dentry *dir;
++	u8 enable;
+ 	u16 addr;
+ 	bool suspended;
+ 	char *ts_info;
+@@ -226,9 +223,8 @@ struct ft5x06_ts_data {
+ 	struct early_suspend early_suspend;
+ #endif
+ 	struct pinctrl *ts_pinctrl;
+-	struct pinctrl_state *pinctrl_state_active;
+-	struct pinctrl_state *pinctrl_state_suspend;
+-	struct pinctrl_state *pinctrl_state_release;
++	struct pinctrl_state *gpio_state_active;
++	struct pinctrl_state *gpio_state_suspend;
+ };
+ 
+ static int ft5x06_i2c_read(struct i2c_client *client, char *writebuf,
+@@ -392,9 +388,8 @@ static irqreturn_t ft5x06_ts_interrupt(int irq, void *dev_id)
+ 			input_mt_report_slot_state(ip_dev, MT_TOOL_FINGER, 1);
+ 			input_report_abs(ip_dev, ABS_MT_POSITION_X, x);
+ 			input_report_abs(ip_dev, ABS_MT_POSITION_Y, y);
+-		} else {
++		} else
+ 			input_mt_report_slot_state(ip_dev, MT_TOOL_FINGER, 0);
+-		}
+ 	}
+ 
+ 	if (update_input) {
+@@ -441,10 +436,9 @@ power_off:
+ 		dev_err(&data->client->dev,
+ 			"Regulator vcc_i2c disable failed rc=%d\n", rc);
+ 		rc = regulator_enable(data->vdd);
+-		if (rc) {
++		if (rc)
+ 			dev_err(&data->client->dev,
+ 				"Regulator vdd enable failed rc=%d\n", rc);
+-		}
+ 	}
+ 
+ 	return rc;
+@@ -524,53 +518,63 @@ static int ft5x06_ts_pinctrl_init(struct ft5x06_ts_data *ft5x06_data)
+ 	/* Get pinctrl if target uses pinctrl */
+ 	ft5x06_data->ts_pinctrl = devm_pinctrl_get(&(ft5x06_data->client->dev));
+ 	if (IS_ERR_OR_NULL(ft5x06_data->ts_pinctrl)) {
+-		retval = PTR_ERR(ft5x06_data->ts_pinctrl);
+ 		dev_dbg(&ft5x06_data->client->dev,
+-			"Target does not use pinctrl %d\n", retval);
+-		goto err_pinctrl_get;
++			"Target does not use pinctrl\n");
++		retval = PTR_ERR(ft5x06_data->ts_pinctrl);
++		ft5x06_data->ts_pinctrl = NULL;
++		return retval;
+ 	}
+ 
+-	ft5x06_data->pinctrl_state_active
++	ft5x06_data->gpio_state_active
+ 		= pinctrl_lookup_state(ft5x06_data->ts_pinctrl,
+-				PINCTRL_STATE_ACTIVE);
+-	if (IS_ERR_OR_NULL(ft5x06_data->pinctrl_state_active)) {
+-		retval = PTR_ERR(ft5x06_data->pinctrl_state_active);
+-		dev_err(&ft5x06_data->client->dev,
+-			"Can not lookup %s pinstate %d\n",
+-			PINCTRL_STATE_ACTIVE, retval);
+-		goto err_pinctrl_lookup;
++			"pmx_ts_active");
++	if (IS_ERR_OR_NULL(ft5x06_data->gpio_state_active)) {
++		dev_dbg(&ft5x06_data->client->dev,
++			"Can not get ts default pinstate\n");
++		retval = PTR_ERR(ft5x06_data->gpio_state_active);
++		ft5x06_data->ts_pinctrl = NULL;
++		return retval;
+ 	}
+ 
+-	ft5x06_data->pinctrl_state_suspend
++	ft5x06_data->gpio_state_suspend
+ 		= pinctrl_lookup_state(ft5x06_data->ts_pinctrl,
+-			PINCTRL_STATE_SUSPEND);
+-	if (IS_ERR_OR_NULL(ft5x06_data->pinctrl_state_suspend)) {
+-		retval = PTR_ERR(ft5x06_data->pinctrl_state_suspend);
++			"pmx_ts_suspend");
++	if (IS_ERR_OR_NULL(ft5x06_data->gpio_state_suspend)) {
+ 		dev_err(&ft5x06_data->client->dev,
+-			"Can not lookup %s pinstate %d\n",
+-			PINCTRL_STATE_SUSPEND, retval);
+-		goto err_pinctrl_lookup;
+-	}
+-
+-	ft5x06_data->pinctrl_state_release
+-		= pinctrl_lookup_state(ft5x06_data->ts_pinctrl,
+-			PINCTRL_STATE_RELEASE);
+-	if (IS_ERR_OR_NULL(ft5x06_data->pinctrl_state_release)) {
+-		retval = PTR_ERR(ft5x06_data->pinctrl_state_release);
+-		dev_dbg(&ft5x06_data->client->dev,
+-			"Can not lookup %s pinstate %d\n",
+-			PINCTRL_STATE_RELEASE, retval);
++			"Can not get ts sleep pinstate\n");
++		retval = PTR_ERR(ft5x06_data->gpio_state_suspend);
++		ft5x06_data->ts_pinctrl = NULL;
++		return retval;
+ 	}
+ 
+ 	return 0;
++}
++
++static int ft5x06_ts_pinctrl_select(struct ft5x06_ts_data *ft5x06_data,
++						bool on)
++{
++	struct pinctrl_state *pins_state;
++	int ret;
+ 
+-err_pinctrl_lookup:
+-	devm_pinctrl_put(ft5x06_data->ts_pinctrl);
+-err_pinctrl_get:
+-	ft5x06_data->ts_pinctrl = NULL;
+-	return retval;
++	pins_state = on ? ft5x06_data->gpio_state_active
++		: ft5x06_data->gpio_state_suspend;
++	if (!IS_ERR_OR_NULL(pins_state)) {
++		ret = pinctrl_select_state(ft5x06_data->ts_pinctrl, pins_state);
++		if (ret) {
++			dev_err(&ft5x06_data->client->dev,
++				"can not set %s pins\n",
++				on ? "pmx_ts_active" : "pmx_ts_suspend");
++			return ret;
++		}
++	} else
++		dev_err(&ft5x06_data->client->dev,
++			"not a valid '%s' pinstate\n",
++				on ? "pmx_ts_active" : "pmx_ts_suspend");
++
++	return 0;
+ }
+ 
++
+ #ifdef CONFIG_PM
+ static int ft5x06_ts_suspend(struct device *dev)
+ {
+@@ -587,6 +591,11 @@ static int ft5x06_ts_suspend(struct device *dev)
+ 		dev_info(dev, "Already in suspend state\n");
+ 		return 0;
+ 	}
++	if (data->ts_pinctrl) {
++		err = ft5x06_ts_pinctrl_select(data, false);
++		if (err < 0)
++			dev_err(dev, "Cannot get idle pinctrl state\n");
++	}
+ 
+ 	disable_irq(data->client->irq);
+ 
+@@ -655,6 +664,11 @@ static int ft5x06_ts_resume(struct device *dev)
+ 			return err;
+ 		}
+ 	}
++	if (data->ts_pinctrl) {
++		err = ft5x06_ts_pinctrl_select(data, true);
++		if (err < 0)
++			dev_err(dev, "Cannot get default pinctrl state\n");
++	}
+ 
+ 	if (gpio_is_valid(data->pdata->reset_gpio)) {
+ 		gpio_set_value_cansleep(data->pdata->reset_gpio, 0);
+@@ -881,10 +895,10 @@ static int ft5x06_fw_upgrade_start(struct i2c_client *client,
+ 
+ 	for (i = 0; i < pkt_num; i++) {
+ 		temp = i * FT_FW_PKT_LEN;
+-		pkt_buf[2] = (u8) (temp >> FT_8BIT_SHIFT);
+-		pkt_buf[3] = (u8) temp;
+-		pkt_buf[4] = (u8) (pkt_len >> FT_8BIT_SHIFT);
+-		pkt_buf[5] = (u8) pkt_len;
++		pkt_buf[2] = (u8)(temp >> FT_8BIT_SHIFT);
++		pkt_buf[3] = (u8)temp;
++		pkt_buf[4] = (u8)(pkt_len >> FT_8BIT_SHIFT);
++		pkt_buf[5] = (u8)pkt_len;
+ 
+ 		for (j = 0; j < FT_FW_PKT_LEN; j++) {
+ 			pkt_buf[6 + j] = data[i * FT_FW_PKT_LEN + j];
+@@ -899,11 +913,11 @@ static int ft5x06_fw_upgrade_start(struct i2c_client *client,
+ 	/* send remaining bytes */
+ 	if ((data_len) % FT_FW_PKT_LEN > 0) {
+ 		temp = pkt_num * FT_FW_PKT_LEN;
+-		pkt_buf[2] = (u8) (temp >> FT_8BIT_SHIFT);
+-		pkt_buf[3] = (u8) temp;
++		pkt_buf[2] = (u8)(temp >> FT_8BIT_SHIFT);
++		pkt_buf[3] = (u8)temp;
+ 		temp = (data_len) % FT_FW_PKT_LEN;
+-		pkt_buf[4] = (u8) (temp >> FT_8BIT_SHIFT);
+-		pkt_buf[5] = (u8) temp;
++		pkt_buf[4] = (u8)(temp >> FT_8BIT_SHIFT);
++		pkt_buf[5] = (u8)temp;
+ 
+ 		for (i = 0; i < temp; i++) {
+ 			pkt_buf[6 + i] = data[pkt_num * FT_FW_PKT_LEN + i];
+@@ -1090,9 +1104,6 @@ static ssize_t ft5x06_update_fw_store(struct device *dev,
+ 	return size;
+ }
+ 
+-static DEVICE_ATTR(update_fw, 0664, ft5x06_update_fw_show,
+-				ft5x06_update_fw_store);
+-
+ static ssize_t ft5x06_force_update_fw_store(struct device *dev,
+ 				struct device_attribute *attr,
+ 				const char *buf, size_t size)
+@@ -1119,8 +1130,6 @@ static ssize_t ft5x06_force_update_fw_store(struct device *dev,
+ 	return size;
+ }
+ 
+-static DEVICE_ATTR(force_update_fw, 0664, ft5x06_update_fw_show,
+-				ft5x06_force_update_fw_store);
+ 
+ static ssize_t ft5x06_fw_name_show(struct device *dev,
+ 				struct device_attribute *attr, char *buf)
+@@ -1145,7 +1154,108 @@ static ssize_t ft5x06_fw_name_store(struct device *dev,
+ 	return size;
+ }
+ 
+-static DEVICE_ATTR(fw_name, 0664, ft5x06_fw_name_show, ft5x06_fw_name_store);
++static ssize_t ft5x06_enable_show(struct device *dev,
++				  struct device_attribute *attr, char *buf)
++{
++	struct ft5x06_ts_data *data = dev_get_drvdata(dev);
++	if (data->suspended) {
++		dev_info(&data->client->dev, "Already in suspend state\n");
++		return snprintf(buf, 4, "%s\n", "0");
++	}
++	return snprintf(buf, 4, "%s\n", data->enable ? "1" : "0");
++}
++
++static ssize_t ft5x06_enable_store(struct device *dev,
++				   struct device_attribute *attr,
++				   const char *buf, size_t size)
++{
++	struct ft5x06_ts_data *data = dev_get_drvdata(dev);
++	unsigned long val;
++	int rc, i;
++
++	if (size > 2)
++		return -EINVAL;
++
++	if (data->suspended) {
++		dev_info(&data->client->dev, "Already in suspend state\n");
++		return size;
++	}
++
++	rc = kstrtoul(buf, 10, &val);
++	if (rc != 0)
++		return rc;
++
++	mutex_lock(&data->input_dev->mutex);
++	if (val) {
++		rc = ft5x0x_write_reg(data->client,
++				FT_REG_PMODE, FT_PMODE_ACTIVE);
++		if (rc < 0)
++			dev_err(&data->client->dev, "enable tp failed\n");
++		enable_irq(data->client->irq);
++		data->enable = true;
++	} else {
++		disable_irq(data->client->irq);
++
++		/* release all touches */
++		for (i = 0; i < data->pdata->num_max_touches; i++) {
++			input_mt_slot(data->input_dev, i);
++			input_mt_report_slot_state(data->input_dev,
++				MT_TOOL_FINGER, 0);
++		}
++		input_mt_report_pointer_emulation(data->input_dev, false);
++		input_sync(data->input_dev);
++
++		rc = ft5x0x_write_reg(data->client,
++				FT_REG_PMODE, FT_PMODE_STANDBY);
++		if (rc < 0)
++			dev_err(&data->client->dev, "disable tp failed\n");
++		data->enable = false;
++	}
++	mutex_unlock(&data->input_dev->mutex);
++
++	return size;
++}
++
++static ssize_t ft5x06_mt_protocol_type_show(struct device *dev,
++					    struct device_attribute *attr,
++					    char *buf)
++{
++	return snprintf(buf, 16, "%s\n", "MT Protocal B");
++}
++
++static ssize_t ft5x06_ts_info_show(struct device *dev,
++				   struct device_attribute *attr, char *buf)
++{
++	struct ft5x06_ts_data *data = dev_get_drvdata(dev);
++	return snprintf(buf, FT_INFO_MAX_LEN, "%s\n", data->ts_info);
++}
++
++static DEVICE_ATTR(update_fw,  (S_IRUGO | S_IWUSR | S_IWGRP),
++		ft5x06_update_fw_show, ft5x06_update_fw_store);
++static DEVICE_ATTR(force_update_fw,  (S_IRUGO | S_IWUSR | S_IWGRP),
++		ft5x06_update_fw_show, ft5x06_force_update_fw_store);
++static DEVICE_ATTR(fw_name,  (S_IRUGO | S_IWUSR | S_IWGRP),
++		ft5x06_fw_name_show, ft5x06_fw_name_store);
++static DEVICE_ATTR(enable, (S_IRUGO | S_IWUSR | S_IWGRP),
++		ft5x06_enable_show, ft5x06_enable_store);
++static DEVICE_ATTR(mt_protocol_type, (S_IRUGO | S_IWUSR | S_IWGRP),
++		ft5x06_mt_protocol_type_show, NULL);
++static DEVICE_ATTR(ts_info, (S_IRUGO | S_IWUSR | S_IWGRP),
++		ft5x06_ts_info_show, NULL);
++
++static struct attribute *ft_gtp_attrs[] = {
++	&dev_attr_fw_name.attr,
++	&dev_attr_update_fw.attr,
++	&dev_attr_force_update_fw.attr,
++	&dev_attr_enable.attr,
++	&dev_attr_mt_protocol_type.attr,
++	&dev_attr_ts_info.attr,
++	NULL
++};
++
++static const struct attribute_group ft_gtp_attr_grp = {
++	.attrs = ft_gtp_attrs,
++};
+ 
+ static bool ft5x06_debug_addr_is_valid(int addr)
+ {
+@@ -1607,22 +1717,16 @@ static int ft5x06_ts_probe(struct i2c_client *client,
+ 
+ 	err = ft5x06_ts_pinctrl_init(data);
+ 	if (!err && data->ts_pinctrl) {
+-		err = pinctrl_select_state(data->ts_pinctrl,
+-					data->pinctrl_state_active);
+-		if (err < 0) {
+-			dev_err(&client->dev,
+-				"failed to select pin to active state");
+-			goto pinctrl_deinit;
+-		}
+-	} else {
+-		goto pwr_off;
++		err = ft5x06_ts_pinctrl_select(data, true);
++		if (err < 0)
++			goto pwr_off;
+ 	}
+ 
+ 	if (gpio_is_valid(pdata->irq_gpio)) {
+ 		err = gpio_request(pdata->irq_gpio, "ft5x06_irq_gpio");
+ 		if (err) {
+ 			dev_err(&client->dev, "irq gpio request failed");
+-			goto err_gpio_req;
++			goto pwr_off;
+ 		}
+ 		err = gpio_direction_input(pdata->irq_gpio);
+ 		if (err) {
+@@ -1678,29 +1782,18 @@ static int ft5x06_ts_probe(struct i2c_client *client,
+ 		goto free_reset_gpio;
+ 	}
+ 
+-	err = device_create_file(&client->dev, &dev_attr_fw_name);
++	data->enable = true;
++	err = sysfs_create_group(&client->dev.kobj, &ft_gtp_attr_grp);
+ 	if (err) {
+-		dev_err(&client->dev, "sys file creation failed\n");
++		dev_err(&client->dev, "sys file creation failed.\n");
+ 		goto irq_free;
+ 	}
+ 
+-	err = device_create_file(&client->dev, &dev_attr_update_fw);
+-	if (err) {
+-		dev_err(&client->dev, "sys file creation failed\n");
+-		goto free_fw_name_sys;
+-	}
+-
+-	err = device_create_file(&client->dev, &dev_attr_force_update_fw);
+-	if (err) {
+-		dev_err(&client->dev, "sys file creation failed\n");
+-		goto free_update_fw_sys;
+-	}
+-
+ 	data->dir = debugfs_create_dir(FT_DEBUG_DIR_NAME, NULL);
+ 	if (data->dir == NULL || IS_ERR(data->dir)) {
+ 		pr_err("debugfs_create_dir failed(%ld)\n", PTR_ERR(data->dir));
+ 		err = PTR_ERR(data->dir);
+-		goto free_force_update_fw_sys;
++		goto exit_remove_sysfs;
+ 	}
+ 
+ 	temp = debugfs_create_file("addr", S_IRUSR | S_IWUSR, data->dir, data,
+@@ -1786,32 +1879,25 @@ static int ft5x06_ts_probe(struct i2c_client *client,
+ 
+ free_debug_dir:
+ 	debugfs_remove_recursive(data->dir);
+-free_force_update_fw_sys:
+-	device_remove_file(&client->dev, &dev_attr_force_update_fw);
+-free_update_fw_sys:
+-	device_remove_file(&client->dev, &dev_attr_update_fw);
+-free_fw_name_sys:
+-	device_remove_file(&client->dev, &dev_attr_fw_name);
++exit_remove_sysfs:
++	sysfs_remove_group(&data->input_dev->dev.kobj, &ft_gtp_attr_grp);
+ irq_free:
+ 	free_irq(client->irq, data);
+ free_reset_gpio:
+ 	if (gpio_is_valid(pdata->reset_gpio))
+ 		gpio_free(pdata->reset_gpio);
++	if (data->ts_pinctrl) {
++		err = ft5x06_ts_pinctrl_select(data, false);
++		if (err < 0)
++			pr_err("Cannot get idle pinctrl state\n");
++	}
+ free_irq_gpio:
+ 	if (gpio_is_valid(pdata->irq_gpio))
+ 		gpio_free(pdata->irq_gpio);
+-err_gpio_req:
+-pinctrl_deinit:
+ 	if (data->ts_pinctrl) {
+-		if (IS_ERR_OR_NULL(data->pinctrl_state_release)) {
+-			devm_pinctrl_put(data->ts_pinctrl);
+-			data->ts_pinctrl = NULL;
+-		} else {
+-			err = pinctrl_select_state(data->ts_pinctrl,
+-					data->pinctrl_state_release);
+-			if (err)
+-				pr_err("failed to select relase pinctrl state\n");
+-		}
++		err = ft5x06_ts_pinctrl_select(data, false);
++		if (err < 0)
++			pr_err("Cannot get idle pinctrl state\n");
+ 	}
+ pwr_off:
+ 	if (pdata->power_on)
+@@ -1837,9 +1923,7 @@ static int ft5x06_ts_remove(struct i2c_client *client)
+ 	int retval;
+ 
+ 	debugfs_remove_recursive(data->dir);
+-	device_remove_file(&client->dev, &dev_attr_force_update_fw);
+-	device_remove_file(&client->dev, &dev_attr_update_fw);
+-	device_remove_file(&client->dev, &dev_attr_fw_name);
++	sysfs_remove_group(&data->input_dev->dev.kobj, &ft_gtp_attr_grp);
+ 
+ #if defined(CONFIG_FB)
+ 	if (fb_unregister_client(&data->fb_notif))
+@@ -1856,15 +1940,9 @@ static int ft5x06_ts_remove(struct i2c_client *client)
+ 		gpio_free(data->pdata->irq_gpio);
+ 
+ 	if (data->ts_pinctrl) {
+-		if (IS_ERR_OR_NULL(data->pinctrl_state_release)) {
+-			devm_pinctrl_put(data->ts_pinctrl);
+-			data->ts_pinctrl = NULL;
+-		} else {
+-			retval = pinctrl_select_state(data->ts_pinctrl,
+-					data->pinctrl_state_release);
+-			if (retval < 0)
+-				pr_err("failed to select release pinctrl state\n");
+-		}
++		retval = ft5x06_ts_pinctrl_select(data, false);
++		if (retval < 0)
++			pr_err("Cannot get idle pinctrl state\n");
+ 	}
+ 
+ 	if (data->pdata->power_on)
+@@ -1891,8 +1969,8 @@ MODULE_DEVICE_TABLE(i2c, ft5x06_ts_id);
+ 
+ #ifdef CONFIG_OF
+ static struct of_device_id ft5x06_match_table[] = {
+-	{ .compatible = "focaltech,5x06",},
+-	{ },
++	{.compatible = "focaltech,5x06",},
++	{},
+ };
+ #else
+ #define ft5x06_match_table NULL
+@@ -1902,13 +1980,13 @@ static struct i2c_driver ft5x06_ts_driver = {
+ 	.probe = ft5x06_ts_probe,
+ 	.remove = ft5x06_ts_remove,
+ 	.driver = {
+-		   .name = "ft5x06_ts",
+-		   .owner = THIS_MODULE,
++		.name = "ft5x06_ts",
++		.owner = THIS_MODULE,
+ 		.of_match_table = ft5x06_match_table,
+ #ifdef CONFIG_PM
+-		   .pm = &ft5x06_ts_pm_ops,
++		.pm = &ft5x06_ts_pm_ops,
+ #endif
+-		   },
++		},
+ 	.id_table = ft5x06_ts_id,
+ };
+ 
+-- 
+1.7.9.5
+

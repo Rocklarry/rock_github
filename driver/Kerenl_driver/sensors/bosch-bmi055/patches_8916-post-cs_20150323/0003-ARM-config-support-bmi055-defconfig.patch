@@ -1,0 +1,32 @@
+From a565b5599ab3ccc58ce82233c0d3e1a8e29c20d4 Mon Sep 17 00:00:00 2001
+From: Xiaowu Long <longxw0410@thundersoft.com>
+Date: Mon, 23 Mar 2015 13:17:50 +0800
+Subject: [PATCH 3/3] ARM:config: support bmi055 defconfig
+
+Defconfig support bmi055
+
+Change-Id: I811a813057aba28f132aade4a5cf17feca9b25fe
+Signed-off-by: Xiaowu Long <longxw0410@thundersoft.com>
+---
+ arch/arm/configs/msm8916_defconfig | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/configs/msm8916_defconfig b/arch/arm/configs/msm8916_defconfig
+index 08fd762..047d1a7 100644
+--- a/arch/arm/configs/msm8916_defconfig
++++ b/arch/arm/configs/msm8916_defconfig
+@@ -261,8 +261,10 @@ CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE=y
+ CONFIG_INPUT_MISC=y
+ CONFIG_INPUT_UINPUT=y
+ CONFIG_INPUT_GPIO=m
+-CONFIG_SENSORS_LIS3DH=y
++#CONFIG_SENSORS_LIS3DH=y
+ CONFIG_SENSORS_MPU6050=y
++CONFIG_SENSORS_BMG=y
++CONFIG_SENSORS_BMG_FIFO=y
+ CONFIG_SENSORS_AKM09911=y
+ CONFIG_SENSORS_BMA2X2=y
+ CONFIG_SENSORS_MMC3416X=y
+-- 
+2.2.2
+

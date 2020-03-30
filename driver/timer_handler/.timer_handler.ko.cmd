@@ -1,0 +1,1 @@
+cmd_/mnt/sdc/renruidong/work/test/github/driver/timer_handler/timer_handler.ko := ld -r -m elf_x86_64 -T ./scripts/module-common.lds --build-id  -o /mnt/sdc/renruidong/work/test/github/driver/timer_handler/timer_handler.ko /mnt/sdc/renruidong/work/test/github/driver/timer_handler/timer_handler.o /mnt/sdc/renruidong/work/test/github/driver/timer_handler/timer_handler.mod.o

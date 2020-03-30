@@ -1,0 +1,2 @@
+/usr/bin/ar qc libssdp.a  CMakeFiles/ssdp.dir/ssdp/ssdp.c.o
+/usr/bin/ranlib libssdp.a

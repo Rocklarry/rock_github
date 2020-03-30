@@ -1,0 +1,72 @@
+From b355ce40b7c0cd49439901aa5a2780a1692d5ffe Mon Sep 17 00:00:00 2001
+From: Li Zhanchao <lizc1023@thundersoft.com>
+Date: Mon, 18 May 2015 18:15:10 +0800
+Subject: [PATCH] ARM:dts:msm: support mmc3416 devicetree
+
+Devicetree support mmc3416
+
+Change-Id: I955d448b1c045ac95acee6372f7eae833343ec0c
+Signed-off-by: Li Zhanchao <lizc1023@thundersoft.com>
+---
+ .../devicetree/bindings/input/misc/mmc3416x.txt       | 19 ++++++++++---------
+ arch/arm/boot/dts/qcom/msm8909-qrd-skue.dtsi          | 11 +++++++++++
+ 2 files changed, 21 insertions(+), 9 deletions(-)
+ mode change 100755 => 100644 arch/arm/boot/dts/qcom/msm8909-qrd-skue.dtsi
+
+diff --git a/Documentation/devicetree/bindings/input/misc/mmc3416x.txt b/Documentation/devicetree/bindings/input/misc/mmc3416x.txt
+index c06266f..bf6656a 100644
+--- a/Documentation/devicetree/bindings/input/misc/mmc3416x.txt
++++ b/Documentation/devicetree/bindings/input/misc/mmc3416x.txt
+@@ -44,15 +44,16 @@ Optional properites:
+  - memsic,auto-report	: Boolean value to indicate if enable auto-report mode.
+ 
+  Example:
+-	A chip on 8916 platform with the pattern as the above graph:
+-	&i2c_0 { /* BLSP1 QUP2 */
+-		memsic@30 {
+-				compatible = "memsic,mmc3416x";
+-				reg = <0x30>;
+-				vdd-supply = <&pm8916_l17>;
+-				vio-supply = <&pm8916_l6>;
+-				memsic,dir = "obverse-x-axis-forward";
+-				memsic,auto-report;
++	A chip on 8909 platform with the pattern as the above graph:
++	i2c@78b5000 { /* BLSP1 QUP1 */
++		memsic@30 { /* Magnetic field sensor */
++			compatible = "memsic,mmc3416x";
++			reg = <0x30>;
++			vdd-supply = <&pm8909_l17>;
++			vio-supply = <&pm8909_l6>;
++			memsic,dir = "obverse-x-axis-forward";
++			memsic,auto-report;
++			/*memsic,poll_interval = <100>;*/
+ 		};
+ 	};
+ 
+diff --git a/arch/arm/boot/dts/qcom/msm8909-qrd-skue.dtsi b/arch/arm/boot/dts/qcom/msm8909-qrd-skue.dtsi
+old mode 100755
+new mode 100644
+index 723a743..008c1e5
+--- a/arch/arm/boot/dts/qcom/msm8909-qrd-skue.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8909-qrd-skue.dtsi
+@@ -192,6 +192,17 @@
+ 			bosch,gpio-int1 = <&msm_gpio 96 0x2002>;
+ 			bosch,gpio-int2 = <&msm_gpio 65 0x2002>;
+ 		};
++
++		memsic@30 { /* Magnetic field sensor */
++			compatible = "memsic,mmc3416x";
++			reg = <0x30>;
++			vdd-supply = <&pm8909_l17>;
++			vio-supply = <&pm8909_l6>;
++			memsic,dir = "obverse-x-axis-forward";
++			memsic,auto-report;
++			/*memsic,poll_interval = <100>;*/
++		};
++
+ 	};
+ 
+ 	hall {
+-- 
+1.9.1
+

@@ -1,0 +1,33 @@
+From f76de8c5306fa662c22d60b33c906a064a12189e Mon Sep 17 00:00:00 2001
+From: Xiaowu Long <longxw0410@thundersoft.com>
+Date: Wed, 11 Mar 2015 15:13:49 +0800
+Subject: [PATCH] drivers:input:misc: support apds9930 driver
+
+Driver support apds9930
+
+Change-Id: I5689c0e04747db52831dd8480ecb7cd7d29b743e
+Signed-off-by: Xiaowu Long <longxw0410@thundersoft.com>
+---
+ drivers/misc/apds993x.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/misc/apds993x.c b/drivers/misc/apds993x.c
+index 9ee604d..9735e1e 100644
+--- a/drivers/misc/apds993x.c
++++ b/drivers/misc/apds993x.c
+@@ -1,9 +1,9 @@
+ /*
+  * apds993x.c - Linux kernel modules for ambient light + proximity sensor
+  *
+- * Copyright (C) 2012 Lee Kai Koon <kai-koon.lee@avagotech.com>
+- * Copyright (C) 2012 Avago Technologies
+- * Copyright (C) 2013 LGE Inc.
++ * Copyright (C) 2012-2015 Lee Kai Koon <kai-koon.lee@avagotech.com>
++ * Copyright (C) 2012-2015 Avago Technologies
++ * Copyright (C) 2013-2015 LGE Inc.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License as published by
+-- 
+2.2.2
+

@@ -1,0 +1,71 @@
+From 56a0affb7899bdd74983401decf650e158df945a Mon Sep 17 00:00:00 2001
+From: chenqingfeng <chenqf0228@thundersoft.com>
+Date: Wed, 1 Apr 2015 15:47:14 +0800
+Subject: [PATCH 1/2] ARM:dts:msm: support ak09911 devicetree
+
+Devicetree support ak09911
+
+Change-Id: I05dca54f25214a1ba24d907dab8762757b52a366
+Signed-off-by: Qingfeng Chen <chenqf0228@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi |   32 ++++++++++++++++++++++++--
+ 1 file changed, 30 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+index bd81985..6d6b675 100644
+--- a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+@@ -121,6 +121,21 @@
+ 
+ 
+ &tlmm_pinmux {
++	akm_reset_pin {
++		qcom,pins = <&gp 36>;
++		qcom,pin-func = <0>;
++		qcom,num-grp-pins = <1>;
++		label = "akm_reset_pin";
++		akm_default: akm_default {
++			drive-strength = <6>;
++			bias-pull-up;
++		};
++		akm_sleep: akm_sleep {
++			drive-strength = <2>;
++			bias-pull-down;
++		};
++	};
++
+ 	bma2x2_int1_pin {
+ 		qcom,pins = <&gp 112>;
+ 		qcom,num-grp-pins = <1>;
+@@ -188,13 +203,26 @@
+ 		bosch,gpio-int2 = <&msm_gpio 114 0x2002>;
+ 	};
+ 
+-	memsic@30 { /* Magnetic field sensor */
+-		compatible = "memsic,mmc3416x";
++/*	memsic@30 { /* Magnetic field sensor */
++/*		compatible = "memsic,mmc3416x";
+ 		reg = <0x30>;
+ 		vdd-supply = <&pm8916_l17>;
+ 		vio-supply = <&pm8916_l6>;
+ 		memsic,dir = "obverse-x-axis-forward";
+ 		memsic,auto-report;
++	};*/
++
++	akm@c {
++		compatible = "ak,ak09911";
++		reg = <0xc>;
++		pinctrl-names = "default","sleep";
++		pinctrl-0 = <&akm_default>;
++		pinctrl-1 = <&akm_sleep>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++		akm,layout = <0x3>;
++		akm,gpio_rstn = <&msm_gpio 36 0x0>;
++		akm,auto-report;
+ 	};
+ 
+ 	mpu6050@68 { /* Gyroscope and accelerometer sensor combo */
+-- 
+1.7.9.5
+

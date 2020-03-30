@@ -1,0 +1,1445 @@
+From eb6c29542323309944e172a21f66147c94bbd8dd Mon Sep 17 00:00:00 2001
+From: longxw <longxw0410@thundersoft.com>
+Date: Thu, 20 Nov 2014 19:43:34 +0800
+Subject: [PATCH 1/3] drivers:input:misc: support qmc6983 driver
+
+Driver support qmc6983
+
+Change-Id: Ia4bbdbfeb3a26267f053e506100540f4b28522d6
+Signed-off-by: Xiaowu Long <longxw0410@thundersoft.com>
+---
+ .../devicetree/bindings/input/misc/qmc6983.txt     |   36 +
+ drivers/input/misc/Kconfig                         |   11 +-
+ drivers/input/misc/Makefile                        |    1 +
+ drivers/input/misc/qmc6983.c                       | 1229 ++++++++++++++++++++
+ include/linux/input/qmc6983.h                      |  102 ++
+ 5 files changed, 1378 insertions(+), 1 deletion(-)
+ create mode 100644 Documentation/devicetree/bindings/input/misc/qmc6983.txt
+ create mode 100644 drivers/input/misc/qmc6983.c
+ create mode 100644 include/linux/input/qmc6983.h
+
+diff --git a/Documentation/devicetree/bindings/input/misc/qmc6983.txt b/Documentation/devicetree/bindings/input/misc/qmc6983.txt
+new file mode 100644
+index 0000000..0204ac2
+--- /dev/null
++++ b/Documentation/devicetree/bindings/input/misc/qmc6983.txt
+@@ -0,0 +1,35 @@
++QST QMC6983 3-axis magnetic sensor
++
++The QST 3-axis magnetic sensor is a complete 3-axis magnetic sensor with
++on-chip signal processing and intergrated i2c bus. It can be connected to host
++processor via i2c. It can measure magnetic fields within the full scale range
++from -16 Gauss to +16 Gauss.
++
++Required properties:
++
++ - compatible		: Should be "qst,qmc6983".
++ - reg			: i2c address of the device.
++ - vdd-supply		: Analog power supply needed to power up the device.
++ - vio-supply		: Digital IO power supply needed for IO and I2C.
++ - qst,dir		: String value of the direction of the ecompass sensor
++	chip. There are 8 patterns of direction:
++ - qst,delay_ms	: The pollint time is ms.
++
++
++Optional properites:
++
++ - qst,auto-report	: Boolean value to indicate if enable auto-report mode.
++
++ Example:
++	A chip on 8939 platform with the pattern as the above graph:
++	&i2c_0 { /* BLSP1 QUP2 */
++		qst@2c {
++				compatible = "qst,qmc6983";
++				reg = <0x2c>;
++				vdd-supply = <&pm8916_l17>;
++				vio-supply = <&pm8916_l6>;
++				qst,dir = "obverse-x-axis-forward";
++				qst,auto-report;
++				qst,delay_ms = <100>;
++		};
++	};
+diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
+index b358471..f58f625 100644
+--- a/drivers/input/misc/Kconfig
++++ b/drivers/input/misc/Kconfig
+@@ -734,6 +734,16 @@ config SENSORS_MMC3416X
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called mmc3416x.
+ 
++config SENSORS_QMC6983
++	tristate "QMC6983 3-axis magnetic sensor driver"
++	depends on I2C
++	help
++	  Say Y here if you want to enable the QMC6983 magnetic sensor
++	  driver.
++
++	  To compile this driver as a module, choose M here: the
++	  module will be called qmc6983.
++
+ config SENSORS_AKM09911
+ 	tristate "AKM09911 3-axis electronic compass sensor driver"
+ 	depends on I2C
+@@ -820,4 +830,3 @@ config SENSORS_BMI058
+ 	 sensor driver of BMI058.
+ 
+ endif
+-
+diff --git a/drivers/input/misc/Makefile b/drivers/input/misc/Makefile
+index 139a4fb..73cf471 100644
+--- a/drivers/input/misc/Makefile
++++ b/drivers/input/misc/Makefile
+@@ -65,6 +65,7 @@ obj-$(CONFIG_INPUT_YEALINK)		+= yealink.o
+ obj-$(CONFIG_BMP18X)			+= bmp18x-core.o
+ obj-$(CONFIG_BMP18X_I2C)		+= bmp18x-i2c.o
+ obj-$(CONFIG_SENSORS_MMC3416X)		+= mmc3416x.o
++obj-$(CONFIG_SENSORS_QMC6983)          += qmc6983.o
+ obj-$(CONFIG_SENSORS_MMA8X5X)	  	+= mma8x5x.o
+ obj-$(CONFIG_SENSORS_STK3X1X)		+= stk3x1x.o
+ obj-$(CONFIG_SENSORS_CAPELLA_CM36283)	+= cm36283.o
+diff --git a/drivers/input/misc/qmc6983.c b/drivers/input/misc/qmc6983.c
+new file mode 100644
+index 0000000..7798869
+--- /dev/null
++++ b/drivers/input/misc/qmc6983.c
+@@ -0,0 +1,1229 @@
++/****************************************************************************
++*   This software is licensed under the terms of the GNU General Public License version 2,
++*   as published by the Free Software Foundation,
++*	and may be copied, distributed, and
++*   modified under those terms.
++*	This program is distributed in the hope that it will be useful,
++*	but WITHOUT ANY
++*   WARRANTY; without even the implied warranty of MERCHANTABILITY or
++*	FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License
++*   for more details.
++*
++*	Copyright (C) 2012-2014 by QST(Shanghai XiRui Keji) Corporation
++****************************************************************************/
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/slab.h>
++#include <linux/fs.h>
++#include <linux/i2c.h>
++#include <linux/i2c-dev.h>
++#include <linux/uaccess.h>
++#include <linux/input.h>
++#include <linux/errno.h>
++#include <linux/completion.h>
++#include <linux/workqueue.h>
++#include <linux/input/qmc6983.h>
++#include <linux/miscdevice.h>
++#include <linux/delay.h>
++#include <linux/sensors.h>
++#include <linux/regulator/consumer.h>
++
++#define QMC6983_MAJOR	101
++#define QMC6983_MINOR	4
++
++/* Magnetometer registers */
++#define CTL_REG_ONE	0x09  /* Contrl register one */
++#define CTL_REG_TWO	0x0a  /* Contrl register two */
++
++/* Output register start address*/
++#define OUT_X_REG		0x00
++
++/*Status registers */
++#define STA_REG_ONE    0x06
++#define STA_REG_TWO    0x0c
++
++/* Temperature registers */
++#define TEMP_H_REG		0x08
++#define TEMP_L_REG		0x07
++
++/*different from qmc6983,the ratio register*/
++#define RATIO_REG		0x0b
++
++/* POWER SUPPLY VOLTAGE RANGE */
++#define QMC6983_VDD_MIN_UV	2160000
++#define QMC6983_VDD_MAX_UV	3600000
++#define QMC6983_VIO_MIN_UV	1650000
++#define QMC6983_VIO_MAX_UV	3600000
++
++#define QCOM_PLATFORM
++#define	QMC6983_BUFSIZE		0x20
++
++#define ACC_OFFSET     0
++#define QMC_OFFSET     3
++#define QMC_CAL_OFFSET 7
++#define ORI_OFFSET     11
++short all_data[15];
++short reg_data[15];
++/*
++ * QMC6983 magnetometer data
++ * brief Structure containing magnetic field values for x,y and z-axis in
++ * signed short
++*/
++
++struct QMC6983_t {
++	short	x, /**< x-axis magnetic field data. Range -8000 to 8000. */
++			y, /**< y-axis magnetic field data. Range -8000 to 8000. */
++			z; /**< z-axis magnetic filed data. Range -8000 to 8000. */
++};
++
++/* Save last device state for power down */
++struct qmc_sensor_state {
++	bool power_on;
++	uint8_t mode;
++};
++
++struct QMC6983_data {
++	struct i2c_client				*client;
++	struct QMC6983_platform_data	*pdata;
++	short						xy_sensitivity;
++	short						z_sensitivity;
++	struct mutex					lock;
++	struct delayed_work			work;
++	struct input_dev				*input;
++	struct miscdevice				qmc_misc;
++	struct sensors_classdev			cdev;
++	int							delay_ms;
++	int							enabled;
++	struct completion				data_updated;
++	wait_queue_head_t				state_wq;
++	struct regulator				*vdd;
++	struct regulator				*vio;
++	struct qmc_sensor_state			state;
++	int enable_sensor;
++};
++
++static struct class *qmc_mag_dev_class;
++
++static struct QMC6983_data *qmc6983;
++
++static struct sensors_classdev sensors_cdev = {
++	.name = "qmc6983-mag",
++	.vendor = "QST",
++	.version = 1,
++	.handle = SENSORS_MAGNETIC_FIELD_HANDLE,
++	.type = SENSOR_TYPE_MAGNETIC_FIELD,
++	.max_range = "1228.8",
++	.resolution = "1.0",
++	.sensor_power = "0.35",
++	.min_delay = 10000,
++	.fifo_reserved_event_count = 0,
++	.fifo_max_event_count = 0,
++	.enabled = 0,
++	.delay_msec = 10000,
++	.sensors_enable = NULL,
++	.sensors_poll_delay = NULL,
++};
++
++
++static char QMC6983_i2c_write(unsigned char reg_addr,
++				    unsigned char *data,
++				    unsigned char len);
++
++static char QMC6983_i2c_read(unsigned char reg_addr,
++				   unsigned char *data,
++				   unsigned char len);
++
++static int QMC6983_read_mag_xyz(struct QMC6983_t *data);
++static int qmc6983_power_set(struct QMC6983_data *data, bool on);
++static int qmc6983_power_init(struct QMC6983_data *data, bool on);
++
++/* 6983 Self Test data collection */
++int QMC6983_self_test(char mode, short *buf)
++{
++	return 0;
++}
++
++/* X,Y and Z-axis magnetometer data readout
++ * param *mag pointer to \ref QMC6983_t structure for x,y,z data readout
++ * note data will be read by multi-byte protocol into a 6 byte structure
++ */
++int QMC6983_read_mag_xyz(struct QMC6983_t *data)
++{
++	int res;
++	unsigned char mag_data[6];
++	int hw_d[3] = { 0 };
++
++	res = QMC6983_i2c_read(OUT_X_REG, mag_data, 6);
++
++	hw_d[0] = (short) (((mag_data[1]) << 8) | mag_data[0]);
++	hw_d[1] = (short) (((mag_data[3]) << 8) | mag_data[2]);
++	hw_d[2] = (short) (((mag_data[5]) << 8) | mag_data[4]);
++
++
++	hw_d[0] = hw_d[0] * 1000 / qmc6983->xy_sensitivity;
++	hw_d[1] = hw_d[1] * 1000 / qmc6983->xy_sensitivity;
++	hw_d[2] = hw_d[2] * 1000 / qmc6983->z_sensitivity;
++
++	data->x = hw_d[0];
++	data->y = hw_d[1];
++	data->z = hw_d[2];
++
++	return res;
++}
++
++/* Set the Gain range */
++int QMC6983_set_range(short range)
++{
++	int err = 0;
++	int ran;
++	switch (range) {
++	case QMC6983_RNG_2G:
++		ran = RNG_2G;
++		break;
++	case QMC6983_RNG_8G:
++		ran = RNG_8G;
++		break;
++	case QMC6983_RNG_12G:
++		ran = RNG_12G;
++		break;
++	case QMC6983_RNG_20G:
++		ran = RNG_20G;
++		break;
++	default:
++		return -EINVAL;
++	}
++	qmc6983->xy_sensitivity = 16000/ran;
++	qmc6983->z_sensitivity = 16000/ran;
++
++	return err;
++}
++
++/* Set the sensor mode */
++int QMC6983_set_mode(char mode)
++{
++	int err = 0;
++	unsigned char data;
++
++	QMC6983_i2c_read(CTL_REG_ONE, &data, 1);
++	data &= 0xfc;
++	data |= mode;
++	err = QMC6983_i2c_write(CTL_REG_ONE, &data, 1);
++	return err;
++}
++
++int QMC6983_set_ratio(char ratio)
++{
++	int err = 0;
++	unsigned char data;
++
++	data = ratio;
++	err = QMC6983_i2c_write(RATIO_REG, &data, 1);
++	return err;
++}
++
++int QMC6983_set_output_data_rate(char rate)
++{
++	int err = 0;
++	unsigned char data;
++
++	data = rate;
++	data &= 0xf3;
++	data |= (rate << 2);
++	err = QMC6983_i2c_write(CTL_REG_ONE, &data, 1);
++	return err;
++}
++
++int QMC6983_set_oversample_ratio(char ratio)
++{
++	int err = 0;
++	unsigned char data;
++
++	data = ratio;
++	data &= 0x3f;
++	data |= (ratio << 6);
++	err = QMC6983_i2c_write(CTL_REG_ONE, &data, 1);
++	return err;
++}
++
++
++/*  i2c write routine for qmc6983 magnetometer */
++static char QMC6983_i2c_write(unsigned char reg_addr,
++				    unsigned char *data,
++				    unsigned char len)
++{
++	int dummy;
++	int i;
++
++	if (qmc6983->client == NULL)  /*  No global client pointer? */
++		return -ENODEV;
++	for (i = 0; i < len; i++) {
++		dummy = i2c_smbus_write_byte_data(qmc6983->client,
++						  reg_addr++, data[i]);
++		if (dummy) {
++			pr_info("%s:i2c write error\n", __func__);
++			return dummy;
++		}
++	}
++	return 0;
++}
++
++/*  i2c read routine for QMC6983 magnetometer */
++static char QMC6983_i2c_read(unsigned char reg_addr,
++				   unsigned char *data,
++				   unsigned char len)
++{
++	char dummy = 0;
++	int i = 0;
++
++	if (qmc6983->client == NULL)  /*  No global client pointer? */
++		return -ENODEV;
++
++	while (i < len) {
++		dummy = i2c_smbus_read_byte_data(qmc6983->client,
++				reg_addr++);
++		if (dummy >= 0) {
++			data[i] = dummy;
++			i++;
++		} else
++			return dummy;
++
++		dummy = len;
++	}
++
++	return dummy;
++}
++
++static void qmc6983_start_measure(struct QMC6983_data *qmc6983)
++{
++	int err = 0;
++	unsigned char data;
++	data = 0x1d;
++	err = QMC6983_i2c_write(CTL_REG_ONE, &data, 1);
++}
++
++static void qmc6983_stop_measure(struct QMC6983_data *qmc6983)
++{
++	unsigned char data;
++	data = 0x1c;
++	QMC6983_i2c_write(CTL_REG_ONE, &data, 1);
++}
++
++static int qmc6983_enable(struct QMC6983_data *qmc6983)
++{
++	/* qmc6983_power_set(qmc6983, true); */
++	qmc6983_start_measure(qmc6983);
++	QMC6983_set_range(QMC6983_RNG_20G);
++	QMC6983_set_ratio(1);
++	schedule_delayed_work(&qmc6983->work,
++		msecs_to_jiffies(qmc6983->delay_ms));
++	return 0;
++}
++
++static int qmc6983_disable(struct QMC6983_data *qmc6983)
++{
++	dev_dbg(&qmc6983->client->dev, "stop measure!\n");
++	/* qmc6983_power_set(qmc6983, false); */
++	qmc6983_stop_measure(qmc6983);
++	cancel_delayed_work(&qmc6983->work);
++
++	return 0;
++}
++
++
++static void qmc6983_work(struct work_struct *work)
++{
++	int ret;
++	struct QMC6983_data *qmc6983 = container_of((struct delayed_work *)work,
++						struct QMC6983_data, work);
++	unsigned char data[6];
++	int needRetry = 0;
++	mutex_lock(&qmc6983->lock);
++
++	if (!qmc6983->enabled)
++		goto out;
++
++	ret = QMC6983_read_mag_xyz((struct QMC6983_t *)data);
++	if (ret < 0)
++		dev_err(&qmc6983->client->dev, "error read data\n");
++
++/*TODO: Some times, sensor could send bad data
++  *(x&y&z read 255 in same time) for hardware reason
++  *Because we don't know the gain, so we just check
++  *and retry when x==y==z
++  */
++	if ((((struct QMC6983_t *)data)->x ==
++		((struct QMC6983_t *)data)->y)
++		&& (((struct QMC6983_t *)data)->x
++		== ((struct QMC6983_t *)data)->y)) {
++			needRetry = 1;
++		} else {
++			input_report_abs(qmc6983->input, ABS_X,
++				((struct QMC6983_t *)data)->x);
++			input_report_abs(qmc6983->input, ABS_Y,
++				((struct QMC6983_t *)data)->y);
++			input_report_abs(qmc6983->input, ABS_Z,
++				((struct QMC6983_t *)data)->z);
++			input_sync(qmc6983->input);
++		}
++
++	schedule_delayed_work(&qmc6983->work,
++		msecs_to_jiffies(qmc6983->delay_ms));
++
++out:
++	mutex_unlock(&qmc6983->lock);
++}
++
++static int qmc6983_input_init(struct QMC6983_data *qmc6983)
++{
++	struct input_dev *dev;
++	int ret;
++
++	dev = input_allocate_device();
++	if (!dev)
++		return -ENOMEM;
++
++	dev->name = "compass";
++	dev->id.bustype = BUS_I2C;
++
++	set_bit(EV_ABS, dev->evbit);
++	/* Magnetic field (limited to 16bit) */
++	input_set_abs_params(dev, ABS_X, -32768, 32767, 0, 0);
++	input_set_abs_params(dev, ABS_Y, -32768, 32767, 0, 0);
++	input_set_abs_params(dev, ABS_Z, -32768, 32767, 0, 0);
++	ret = input_register_device(dev);
++
++	input_set_drvdata(dev, qmc6983);
++	if (ret < 0) {
++		input_free_device(dev);
++		return ret;
++	}
++
++	qmc6983->input = dev;
++	return 0;
++}
++
++static ssize_t
++attr_get_poll(struct device *dev, struct device_attribute *attr, char *buf)
++{
++	struct QMC6983_data *qmc6983 = dev_get_drvdata(dev);
++	int pollms;
++
++	mutex_lock(&qmc6983->lock);
++	pollms = qmc6983->delay_ms;
++	mutex_unlock(&qmc6983->lock);
++
++	return snprintf(buf, PAGE_SIZE, "%d\n", pollms);
++}
++
++#define QMC6983_MAX_RATE 75
++
++static ssize_t attr_set_poll(struct device *dev,
++		struct device_attribute *attr, const char *buf, size_t size)
++{
++	struct QMC6983_data *qmc6983 = dev_get_drvdata(dev);
++	unsigned long pollms = 0;
++
++	if (kstrtoul(buf, 10, &pollms) || pollms <= 0)
++		return -EINVAL;
++
++	if (pollms < (1000 / QMC6983_MAX_RATE))
++		pollms = 1000 / QMC6983_MAX_RATE + 5;
++
++	mutex_lock(&qmc6983->lock);
++	qmc6983->delay_ms = pollms;
++	mutex_unlock(&qmc6983->lock);
++
++	return size;
++}
++static DEVICE_ATTR(poll, S_IRUGO | S_IWUSR, attr_get_poll, attr_set_poll);
++
++static ssize_t attr_get_enable(struct device *dev,
++			       struct device_attribute *attr, char *buf)
++{
++	struct QMC6983_data *qmc6983 = dev_get_drvdata(dev);
++	int val;
++
++	mutex_lock(&qmc6983->lock);
++	val = qmc6983->enabled;
++	mutex_unlock(&qmc6983->lock);
++
++	return snprintf(buf, PAGE_SIZE, "%d\n", val);
++}
++
++static ssize_t attr_set_enable(struct device *dev,
++			       struct device_attribute *attr,
++			       const char *buf, size_t size)
++{
++	struct QMC6983_data *qmc6983 = dev_get_drvdata(dev);
++	unsigned long val;
++
++	if (kstrtoul(buf, 10, &val))
++		return -EINVAL;
++
++	mutex_lock(&qmc6983->lock);
++	if (val)
++		qmc6983_enable(qmc6983);
++	else
++		qmc6983_disable(qmc6983);
++
++	qmc6983->enabled = val;
++	mutex_unlock(&qmc6983->lock);
++
++	return size;
++}
++
++static DEVICE_ATTR(enable, S_IRUGO | S_IWUSR, attr_get_enable, attr_set_enable);
++
++static int id = -1;
++static ssize_t attr_get_idchk(struct device *dev,
++			       struct device_attribute *attr, char *buf)
++{
++	struct QMC6983_data *qmc6983 = dev_get_drvdata(dev);
++	int val;
++
++	mutex_lock(&qmc6983->lock);
++	val = id;
++	mutex_unlock(&qmc6983->lock);
++
++	return snprintf(buf, PAGE_SIZE, "%d\n", val);
++}
++
++static ssize_t attr_set_idchk(struct device *dev,
++			       struct device_attribute *attr,
++			       const char *buf, size_t size)
++{
++	struct QMC6983_data *qmc6983 = dev_get_drvdata(dev);
++	unsigned long val;
++
++	if (kstrtoul(buf, 10, &val))
++		return -EINVAL;
++
++	dev_dbg(&qmc6983->client->dev, "val=%lu\n", val);
++
++	mutex_lock(&qmc6983->lock);
++	id = i2c_smbus_read_word_data(qmc6983->client, (int)val);
++	if ((id & 0x00FF) == 0x0048)
++		pr_info("%s:I2C driver registered!\n", __func__);
++
++	id = id & 0x00FF;
++	mutex_unlock(&qmc6983->lock);
++
++	return size;
++}
++
++static DEVICE_ATTR(idchk, S_IRUGO | S_IWUSR, attr_get_idchk, attr_set_idchk);
++
++
++static int qmc6983_poll_delay_set(struct sensors_classdev *sensors_cdev,
++		unsigned int delay_msec)
++{
++	struct QMC6983_data *data = container_of(sensors_cdev,
++			struct QMC6983_data, cdev);
++
++	mutex_lock(&data->lock);
++	data->delay_ms = (int)delay_msec;
++	mutex_unlock(&data->lock);
++
++	return 0;
++}
++
++static int qmc6983_enable_sensor(struct i2c_client *client, unsigned int enable)
++{
++	struct QMC6983_data *data = i2c_get_clientdata(client);
++	int err;
++
++	mutex_lock(&data->lock);
++	if (enable) {
++		if (data->enable_sensor == 0) {
++			data->enable_sensor = 1;
++			err = qmc6983_power_set(data, true);
++			if (err < 0)
++				goto exit;
++			qmc6983_enable(data);
++		}
++	} else {
++		if (data->enable_sensor == 1) {
++			data->enable_sensor = 0;
++			qmc6983_disable(data);
++			err = qmc6983_power_set(data, false);
++			if (err < 0)
++				goto exit;
++		}
++	}
++
++	mutex_unlock(&data->lock);
++
++exit:
++	return 0;
++}
++
++static int qmc6983_enable_set(struct sensors_classdev *sensors_cdev,
++		unsigned int enable)
++{
++	struct QMC6983_data *data = container_of(sensors_cdev,
++			struct QMC6983_data, cdev);
++
++	if ((enable != 0) && (enable != 1)) {
++		pr_err("%s: invalid value(%d)\n", __func__, enable);
++		return -EINVAL;
++	}
++
++	return qmc6983_enable_sensor(data->client, enable);
++}
++
++/******************liufa add 20140605*************/
++#ifdef QCOM_PLATFORM
++static unsigned char regbuf[2] = {0};
++static ssize_t show_temperature_value(struct device *dev,
++	struct device_attribute *attr, char *buf)
++{
++	char strbuf[QMC6983_BUFSIZE];
++	unsigned char mag_temperature[2];
++	unsigned char data;
++	int hw_temperature = 0;
++	unsigned char rdy = 0;
++	struct QMC6983_data *qmc6983 = dev_get_drvdata(dev);
++
++	/* Check status register for data availability */
++	int t1 = 0;
++	while (!(rdy & 0x07) && t1 < 3) {
++		QMC6983_i2c_read(STA_REG_ONE, &data, 1);
++		rdy = data;
++		t1++;
++	}
++
++	mutex_lock(&qmc6983->lock);
++	QMC6983_i2c_read(TEMP_L_REG, &data, 1);
++	mag_temperature[0] = data;
++	QMC6983_i2c_read(TEMP_H_REG, &data, 1);
++	mag_temperature[1] = data;
++	mutex_unlock(&qmc6983->lock);
++	hw_temperature = ((mag_temperature[1]) << 8) | mag_temperature[0];
++
++	snprintf(strbuf, PAGE_SIZE, "temperature = %d\n", hw_temperature);
++
++	return snprintf(buf, PAGE_SIZE, "%s\n", strbuf);
++}
++
++static DEVICE_ATTR(temperature, S_IRUGO, show_temperature_value, NULL);
++
++static ssize_t show_WRregisters_value(struct device *dev,
++	struct device_attribute *attr, char *buf)
++{
++	char strbuf[QMC6983_BUFSIZE];
++	unsigned char data;
++	unsigned char rdy = 0;
++	struct QMC6983_data *qmc6983 = dev_get_drvdata(dev);
++
++	/* Check status register for data availability */
++	int t1 = 0;
++	while (!(rdy & 0x07) && t1 < 3) {
++		QMC6983_i2c_read(STA_REG_ONE, &data, 1);
++		rdy = data;
++		t1++;
++	}
++
++	mutex_lock(&qmc6983->lock);
++	QMC6983_i2c_read(regbuf[0], &data, 1);
++	mutex_unlock(&qmc6983->lock);
++	snprintf(strbuf, PAGE_SIZE, "hw_registers = 0x%02x\n", data);
++
++	return snprintf(buf, PAGE_SIZE, "%s\n", strbuf);
++}
++
++static ssize_t store_WRregisters_value(struct device *dev,
++	struct device_attribute *attr, const char *buf, size_t count)
++{
++	struct QMC6983_data *qmc6983 = dev_get_drvdata(dev);
++	int err = 0;
++	unsigned char data;
++	if (NULL == qmc6983)
++		return 0;
++
++	mutex_lock(&qmc6983->lock);
++	data = *buf;
++	err = QMC6983_i2c_write(regbuf[0], &data, 1);
++	mutex_unlock(&qmc6983->lock);
++
++	return count;
++}
++
++static DEVICE_ATTR(WRregisters, S_IRUGO | S_IWUSR | S_IWGRP |
++	S_IWOTH, show_WRregisters_value, store_WRregisters_value);
++
++static ssize_t show_registers_value(struct device *dev,
++	struct device_attribute *attr, char *buf)
++{
++	char strbuf[QMC6983_BUFSIZE];
++	snprintf(strbuf, PAGE_SIZE, "hw_registers = 0x%02x\n", regbuf[0]);
++
++	return snprintf(buf, PAGE_SIZE, "%s\n", strbuf);
++}
++static ssize_t store_registers_value(struct device *dev,
++	struct device_attribute *attr, const char *buf, size_t count)
++{
++	struct QMC6983_data *qmc6983 = dev_get_drvdata(dev);
++	if (NULL == qmc6983)
++		return 0;
++
++	regbuf[0] = *buf;
++
++	return count;
++}
++static DEVICE_ATTR(registers,   S_IRUGO | S_IWUSR | S_IWGRP |
++	S_IWOTH, show_registers_value, store_registers_value);
++
++static ssize_t show_dumpallreg_value(struct device *dev,
++	struct device_attribute *attr, char *buf)
++{
++	char strbuf[300];
++	char tempstrbuf[24];
++	unsigned char data;
++	int length = 0;
++	unsigned char rdy = 0;
++	int i;
++
++	/* Check status register for data availability */
++	int t1 = 0;
++	while (!(rdy & 0x07) && t1 < 3) {
++		QMC6983_i2c_read(STA_REG_ONE, &data, 1);
++		rdy = data;
++		t1++;
++	}
++
++	for (i = 0; i < 12; i++) {
++		QMC6983_i2c_read(i, &data, 1);
++		length = snprintf(tempstrbuf, PAGE_SIZE,
++			"reg[0x%2x] =  0x%2x\n", i, data);
++		snprintf(strbuf+length*i, PAGE_SIZE, "%s\n", tempstrbuf);
++	}
++
++	return snprintf(buf, PAGE_SIZE, "%s\n", strbuf);
++}
++static DEVICE_ATTR(dumpallreg,  S_IRUGO , show_dumpallreg_value, NULL);
++#endif
++/********	END	  **********/
++
++static struct attribute *qmc6983_attributes[] = {
++/*****liufa add at 20140605**************/
++#ifdef QCOM_PLATFORM
++	&dev_attr_dumpallreg.attr,
++	&dev_attr_WRregisters.attr,
++	&dev_attr_registers.attr,
++	&dev_attr_temperature.attr,
++#endif
++/*************end********************/
++	&dev_attr_enable.attr,
++	&dev_attr_poll.attr,
++	&dev_attr_idchk.attr,
++	NULL
++};
++
++static struct attribute_group qmc6983_attr_group = {
++	.name = "qmc6983",
++	.attrs = qmc6983_attributes
++};
++
++
++static struct device_attribute attributes[] = {
++/*****liufa add at 20140605**************/
++#ifdef QCOM_PLATFORM
++	__ATTR(dumpallreg,  S_IRUGO , show_dumpallreg_value, NULL),
++	__ATTR(WRregisters, S_IRUGO | S_IWUSR | S_IWGRP | S_IWOTH,
++		show_WRregisters_value, store_WRregisters_value),
++	__ATTR(registers,   S_IRUGO | S_IWUSR | S_IWGRP | S_IWOTH,
++		show_registers_value, store_registers_value),
++	__ATTR(temperature, S_IRUGO, show_temperature_value, NULL),
++#endif
++/*************end****************/
++	__ATTR(pollrate_ms, S_IRUGO | S_IWUSR, attr_get_poll, attr_set_poll),
++	__ATTR(enable, S_IRUGO | S_IWUSR, attr_get_enable, attr_set_enable),
++	__ATTR(idchk, S_IRUGO | S_IWUSR, attr_get_idchk, attr_set_idchk),
++};
++
++static int create_sysfs_interfaces(struct device *dev)
++{
++	int i;
++	for (i = 0; i < ARRAY_SIZE(attributes); i++) {
++		if (device_create_file(dev, attributes + i))
++			goto error;
++	}
++	return 0;
++
++error:
++	for (; i >= 0; i--)
++		device_remove_file(dev, attributes + i);
++	dev_err(dev, "%s:Unable to create interface\n", __func__);
++	return -ENODEV;
++}
++
++static int remove_sysfs_interfaces(struct device *dev)
++{
++	int i;
++	for (i = 0; i < ARRAY_SIZE(attributes); i++)
++		device_remove_file(dev, attributes + i);
++	return 0;
++}
++
++/*  ioctl command for QMC6983 device file */
++static long qmc_misc_ioctl(struct file *file,
++	unsigned int cmd, unsigned long arg)
++{
++	int err = 0;
++	unsigned char data[6];
++
++	/* check QMC6983_client */
++	if (&qmc6983->client == NULL)
++		return -EFAULT;
++
++	switch (cmd) {
++	case QMC6983_SET_RANGE:
++		if (copy_from_user(data, (unsigned char *)arg, 1) != 0)
++			return -EFAULT;
++
++		err = QMC6983_set_range(*data);
++		return err;
++
++	case QMC6983_SET_MODE:
++		if (copy_from_user(data, (unsigned char *)arg, 1) != 0)
++			return -EFAULT;
++		err = QMC6983_set_mode(data[0]);
++		return err;
++
++	case QMC6983_READ_MAGN_XYZ:
++		err = QMC6983_read_mag_xyz((struct QMC6983_t *)data);
++		if (copy_to_user((struct hmc5883_t *)arg,
++			(struct hmc5883_t *)data, 6) != 0)
++			return -EFAULT;
++
++		return err;
++
++	case QMC6983_SET_OUTPUT_DATA_RATE:
++		if (copy_from_user(data, (unsigned char *)arg, 1) != 0)
++			return -EFAULT;
++		err = QMC6983_set_output_data_rate(data[0]);
++		return err;
++
++	case QMC6983_SET_OVERSAMPLE_RATIO:
++		if (copy_from_user(data, (unsigned char *)arg, 1) != 0)
++			return -EFAULT;
++
++		err = QMC6983_set_oversample_ratio(data[0]);
++		return err;
++
++	case QMC6983_SELF_TEST:
++		return err;
++
++	default:
++		return 0;
++	}
++
++}
++
++static const struct file_operations qmc_misc_fops = {
++	.owner = THIS_MODULE,
++	.open = nonseekable_open,
++	.unlocked_ioctl = qmc_misc_ioctl,
++};
++
++static int qmc6983_parse_dt(struct device *dev,
++		struct QMC6983_platform_data *pdata)
++{
++	struct device_node *np = dev->of_node;
++	const char *tmp;
++	int rc = 0;
++	unsigned int delay;
++
++	/* set functions of platform data */
++/*	pdata->init = sensor_platform_hw_init;
++	pdata->exit = sensor_platform_hw_exit;
++	pdata->power_on = sensor_platform_hw_power_on;
++*/
++
++	rc = of_property_read_string(np, "qst,dir", &tmp);
++
++	/* does not have a value or the string is not null-terminated */
++	if (rc && (rc != -EINVAL)) {
++		pr_info("%s,Unable to read qst,dir\n", __func__);
++		return rc;
++	}
++
++	if (of_property_read_bool(np, "qst,auto-report"))
++		pdata->auto_report = 1;
++	else
++		pdata->auto_report = 0;
++
++	rc = of_property_read_u32(np, "qst,delay_ms", &delay);
++	 if (rc) {
++		dev_err(dev, "Unable to read ps hysteresis threshold\n");
++		return rc;
++	}
++	pdata->delay_ms = delay;
++
++	return 0;
++}
++
++static int QMC6983_probe(struct i2c_client *client,
++	const struct i2c_device_id *devid)
++{
++	struct i2c_adapter *adapter = to_i2c_adapter(client->dev.parent);
++	struct QMC6983_data *data;
++	struct QMC6983_platform_data *pdata;
++	int err = 0;
++
++	pr_debug("%s\n", __func__);
++
++	if (!i2c_check_functionality(adapter, I2C_FUNC_SMBUS_BYTE)) {
++		err = -EIO;
++		goto exit;
++	}
++
++	if (client->dev.of_node) {
++		pdata = devm_kzalloc(&client->dev,
++				sizeof(struct QMC6983_platform_data),
++				GFP_KERNEL);
++		if (!pdata) {
++			dev_err(&client->dev, "Failed to allocate memory\n");
++			return -ENOMEM;
++		}
++
++		client->dev.platform_data = pdata;
++		err = qmc6983_parse_dt(&client->dev, pdata);
++		if (err) {
++			pr_err("%s: sensor_parse_dt() err\n", __func__);
++			return err;
++		}
++	} else {
++		pdata = client->dev.platform_data;
++		if (!pdata) {
++			dev_err(&client->dev, "No platform data\n");
++			return -ENODEV;
++		}
++	}
++
++	data = kzalloc(sizeof(struct QMC6983_data), GFP_KERNEL);
++	if (!data) {
++		dev_err(&client->dev, "Failed to allocate memory\n");
++		err = -ENOMEM;
++		goto exit;
++	}
++
++	qmc6983 = data;
++	data->client = client;
++	data->delay_ms = pdata->delay_ms;
++
++	i2c_set_clientdata(client, data);
++	data->client = client;
++
++	mutex_init(&data->lock);
++	INIT_DELAYED_WORK(&data->work, qmc6983_work);
++
++	/* check connection */
++	err = qmc6983_power_init(data, true);
++	if (err < 0)
++		goto exit_kfree;
++
++	err = qmc6983_power_set(data, true);
++	if (err < 0)
++		goto err_compass_pwr_init;
++
++	/* Create input device for qmc6983 */
++	err = qmc6983_input_init(data);
++	if (err < 0) {
++		dev_err(&client->dev, "error init input dev interface\n");
++		goto exit_kfree;
++	}
++
++	err = sysfs_create_group(&client->dev.kobj, &qmc6983_attr_group);
++	if (err < 0) {
++		dev_err(&client->dev, "sysfs register failed\n");
++		goto exit_kfree_input;
++	}
++
++	err = create_sysfs_interfaces(&data->input->dev);
++	if (err < 0) {
++		dev_err(&client->dev, "sysfs register failed\n");
++		goto exit_kfree_input;
++	}
++
++	data->cdev = sensors_cdev;
++	data->cdev.sensors_enable = qmc6983_enable_set;
++	data->cdev.sensors_poll_delay = qmc6983_poll_delay_set;
++
++	err = sensors_classdev_register(&client->dev, &data->cdev);
++	if (err) {
++		dev_err(&client->dev, "class device create failed: %d\n", err);
++		goto remove_sysfs;
++	}
++
++	qmc_mag_dev_class = class_create(THIS_MODULE, "compass");
++	if (IS_ERR(qmc_mag_dev_class)) {
++		err = PTR_ERR(qmc_mag_dev_class);
++		goto exit_class_create_failed;
++	}
++
++	data->qmc_misc.minor = MISC_DYNAMIC_MINOR;
++	data->qmc_misc.name = "qmc6983";
++	data->qmc_misc.fops = &qmc_misc_fops;
++
++	err = misc_register(&data->qmc_misc);
++	if (err)
++		dev_err(&client->dev, "misc register failed\n");
++
++	init_completion(&data->data_updated);
++	init_waitqueue_head(&data->state_wq);
++
++	dev_info(&client->dev, "QMC6983_probe --- 12\n");
++
++	err = qmc6983_power_set(data, false);
++	if (err)
++		dev_err(&client->dev,
++			"Fail to disable power after probe: %d\n", err);
++
++	return 0;
++
++remove_sysfs:
++	remove_sysfs_interfaces(&data->input->dev);
++exit_kfree_input:
++	input_unregister_device(data->input);
++exit_kfree:
++	kfree(data);
++err_compass_pwr_init:
++	qmc6983_power_init(data, false);
++exit_class_create_failed:
++	qmc_mag_dev_class = NULL;
++exit:
++	return err;
++}
++
++static int QMC6983_remove(struct i2c_client *client)
++{
++	struct QMC6983_data *dev = i2c_get_clientdata(client);
++
++	if (qmc6983_power_set(dev, false))
++		dev_err(&client->dev, "power off failed.\n");
++	if (qmc6983_power_init(dev, false))
++		dev_err(&client->dev, "power deinit failed.\n");
++
++	device_destroy(qmc_mag_dev_class, MKDEV(QMC6983_MAJOR, 0));
++	class_destroy(qmc_mag_dev_class);
++	unregister_chrdev(QMC6983_MAJOR, "QMC6983");
++
++	kfree(dev);
++	qmc6983 = NULL;
++
++	return 0;
++}
++
++static int qmc6983_power_set(struct QMC6983_data *data, bool on)
++{
++	int rc = 0;
++
++	if (!on && data->enabled) {
++		rc = regulator_disable(data->vdd);
++		if (rc) {
++			dev_err(&data->client->dev,
++				"Regulator vdd disable failed rc=%d\n", rc);
++			goto err_vdd_disable;
++		}
++
++		rc = regulator_disable(data->vio);
++		if (rc) {
++			dev_err(&data->client->dev,
++				"Regulator vio disable failed rc=%d\n", rc);
++			goto err_vio_disable;
++		}
++		data->enabled = false;
++		return rc;
++	} else if (on && !data->enabled) {
++		rc = regulator_enable(data->vdd);
++		if (rc) {
++			dev_err(&data->client->dev,
++				"Regulator vdd enable failed rc=%d\n", rc);
++			goto err_vdd_enable;
++		}
++
++		rc = regulator_enable(data->vio);
++		if (rc) {
++			dev_err(&data->client->dev,
++				"Regulator vio enable failed rc=%d\n", rc);
++			goto err_vio_enable;
++		}
++		data->enabled = true;
++
++		/*
++		 * The max time for the power supply rise time is 50ms.
++		 * Use 80ms to make sure it meets the requirements.
++		 */
++		msleep(50);
++		return rc;
++	} else {
++		dev_warn(&data->client->dev,
++				"Power on=%d. enabled=%d\n",
++				on, data->enabled);
++		return rc;
++	}
++
++err_vio_enable:
++	regulator_disable(data->vio);
++err_vdd_enable:
++	return rc;
++
++err_vio_disable:
++	if (regulator_enable(data->vdd))
++		dev_warn(&data->client->dev, "Regulator vdd enable failed\n");
++err_vdd_disable:
++	return rc;
++}
++
++static int qmc6983_power_init(struct QMC6983_data *data, bool on)
++{
++	int rc;
++
++	if (!on) {
++		if (regulator_count_voltages(data->vdd) > 0)
++			regulator_set_voltage(data->vdd, 0,
++				QMC6983_VDD_MAX_UV);
++
++		regulator_put(data->vdd);
++
++		if (regulator_count_voltages(data->vio) > 0)
++			regulator_set_voltage(data->vio, 0,
++				QMC6983_VIO_MAX_UV);
++
++		regulator_put(data->vio);
++
++	} else {
++		data->vdd = regulator_get(&data->client->dev, "vdd");
++		if (IS_ERR(data->vdd)) {
++			rc = PTR_ERR(data->vdd);
++			dev_err(&data->client->dev,
++				"Regulator get failed vdd rc=%d\n", rc);
++			return rc;
++		}
++
++		if (regulator_count_voltages(data->vdd) > 0) {
++			rc = regulator_set_voltage(data->vdd,
++				QMC6983_VDD_MIN_UV, QMC6983_VDD_MAX_UV);
++			if (rc) {
++				dev_err(&data->client->dev,
++					"Regulator set failed vdd rc=%d\n",
++					rc);
++				goto reg_vdd_put;
++			}
++		}
++
++		data->vio = regulator_get(&data->client->dev, "vio");
++		if (IS_ERR(data->vio)) {
++			rc = PTR_ERR(data->vio);
++			dev_err(&data->client->dev,
++				"Regulator get failed vio rc=%d\n", rc);
++			goto reg_vdd_set;
++		}
++
++		if (regulator_count_voltages(data->vio) > 0) {
++			rc = regulator_set_voltage(data->vio,
++				QMC6983_VIO_MIN_UV, QMC6983_VIO_MAX_UV);
++			if (rc) {
++				dev_err(&data->client->dev,
++				"Regulator set failed vio rc=%d\n", rc);
++				goto reg_vio_put;
++			}
++		}
++	}
++
++	return 0;
++
++reg_vio_put:
++	regulator_put(data->vio);
++reg_vdd_set:
++	if (regulator_count_voltages(data->vdd) > 0)
++		regulator_set_voltage(data->vdd, 0, QMC6983_VDD_MAX_UV);
++reg_vdd_put:
++	regulator_put(data->vdd);
++	return rc;
++}
++
++static int QMC6983_suspend(struct device *dev)
++{
++	struct QMC6983_data *qmc6983 = dev_get_drvdata(dev);
++
++	pr_info("%s:QMC6983_suspend\n", __func__);
++
++	qmc6983->state.power_on = qmc6983->enable_sensor;
++
++	if (qmc6983->state.power_on)
++		qmc6983_enable_sensor(qmc6983->client, 0);
++
++	return 0;
++}
++
++static int QMC6983_resume(struct device *dev)
++{
++	struct QMC6983_data *qmc6983 = dev_get_drvdata(dev);
++
++	pr_info("%s:QMC6983_resume\n", __func__);
++
++	if (qmc6983->state.power_on)
++		qmc6983_enable_sensor(qmc6983->client, 1);
++
++	return 0;
++}
++
++static const struct i2c_device_id QMC6983_id[] = {
++	{ "QMC6983", 0 },
++	{ },
++};
++
++MODULE_DEVICE_TABLE(i2c, QMC6983_id);
++
++/* fae support modify */
++static const struct dev_pm_ops qmc_compass_pm_ops = {
++	.suspend = QMC6983_suspend,
++	.resume = QMC6983_resume,
++};
++
++static struct of_device_id qmc6983_match_table[] = {
++	{ .compatible = "qst,qmc6983", },
++	{ },
++};
++/* fae support modify end */
++static struct i2c_driver QMC6983_driver = {
++	.class = I2C_CLASS_HWMON,
++	.probe = QMC6983_probe,
++	.remove = QMC6983_remove,
++	.id_table = QMC6983_id,
++	.driver = {
++		.owner = THIS_MODULE,
++		.name = "qmc6983",
++		.of_match_table = qmc6983_match_table,
++		.pm		= &qmc_compass_pm_ops,
++	},
++	/*
++	.detect = QMC6983_detect,
++	*/
++};
++
++static int __init QMC6983_init(void)
++{
++	int ret;
++
++	/* add i2c driver for QMC6983 magnetometer */
++	ret = i2c_add_driver(&QMC6983_driver);
++
++	return ret;
++}
++
++static void __exit QMC6983_exit(void)
++{
++	i2c_del_driver(&QMC6983_driver);
++	return;
++}
++
++module_init(QMC6983_init);
++module_exit(QMC6983_exit);
++
++MODULE_DESCRIPTION("QMC6983 magnetometer driver");
++MODULE_AUTHOR("QST");
++MODULE_LICENSE("GPL");
++MODULE_VERSION("1.0.1");
+diff --git a/include/linux/input/qmc6983.h b/include/linux/input/qmc6983.h
+new file mode 100644
+index 0000000..b4001c5
+--- /dev/null
++++ b/include/linux/input/qmc6983.h
+@@ -0,0 +1,102 @@
++/****************************************************************************
++*   This software is licensed under the terms of the GNU General Public License version 2,
++*   as published by the Free Software Foundation,
++*	and may be copied, distributed, and
++*   modified under those terms.
++*	This program is distributed in the hope that it will be useful,
++*	but WITHOUT ANY
++*   WARRANTY; without even the implied warranty of MERCHANTABILITY or
++*	FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License
++*   for more details.
++*
++*	Copyright (C) 2012-2014 by QST(Shanghai XiRui Keji) Corporation
++****************************************************************************/
++
++#ifndef __QMC6983_H__
++#define __QMC6983_H__
++
++#include <linux/ioctl.h>  /* For IOCTL macros */
++
++#define QMC6983_IOCTL_BASE 'm'
++/* The following define the IOCTL command values via the ioctl macros */
++#define QMC6983_SET_MODE		_IOW(QMC6983_IOCTL_BASE, 1, int)
++#define QMC6983_SET_RANGE		_IOW(QMC6983_IOCTL_BASE, 2, int)
++#define QMC6983_READ_MAGN_XYZ		_IOR(QMC6983_IOCTL_BASE, 3, char *)
++#define QMC6983_SET_OUTPUT_DATA_RATE	_IOR(QMC6983_IOCTL_BASE, 4, char *)
++#define QMC6983_SELF_TEST	_IOWR(QMC6983_IOCTL_BASE, 5, char *)
++#define QMC6983_SET_OVERSAMPLE_RATIO	_IOWR(QMC6983_IOCTL_BASE, 6, char *)
++
++#define QMC6983_READ_ACC_XYZ	_IOR(QMC6983_IOCTL_BASE, 21, short[3])
++#define QMC6983_READ_QMC_XYZ	_IOR(QMC6983_IOCTL_BASE, 22, short[4])
++#define QMC6983_READ_ORI_XYZ	_IOR(QMC6983_IOCTL_BASE, 23, short[4])
++#define QMC6983_READ_ALL_REG	_IOR(QMC6983_IOCTL_BASE, 25, short[10])
++
++
++/************************************************/
++/*	Magnetometer section defines	*/
++/************************************************/
++
++/* Magnetic Sensor Operating Mode */
++#define QMC6983_STANDBY_MODE		0x00
++#define QMC6983_CC_MODE			0x01
++#define QMC6983_SELFTEST_MODE		0x02
++#define QMC6983_RESERVE_MODE		0x03
++
++
++/* Magnetometer output data rate  */
++#define QMC6983_ODR_10		0x00	/* 0.75Hz output data rate */
++#define QMC6983_ODR_50		0x01	/* 1.5Hz output data rate */
++#define QMC6983_ODR_100		0x02	/* 3Hz output data rate */
++#define QMC6983_ODR7_200		0x03	/* 7.5Hz output data rate */
++
++
++/* Magnetometer full scale  */
++#define QMC6983_RNG_2G		0x00
++#define QMC6983_RNG_8G		0x01
++#define QMC6983_RNG_12G		0x02
++#define QMC6983_RNG_20G		0x03
++
++#define RNG_2G		2
++#define RNG_8G		8
++#define RNG_12G		12
++#define RNG_20G		20
++
++/*data output rate HZ*/
++#define DATA_OUTPUT_RATE_10HZ	0x00
++#define DATA_OUTPUT_RATE_50HZ	0x01
++#define DATA_OUTPUT_RATE_100HZ	0x02
++#define DATA_OUTPUT_RATE_200HZ	0x03
++
++/*oversample Ratio */
++#define OVERSAMPLE_RATIO_512	0x00
++#define OVERSAMPLE_RATIO_256	0x01
++#define OVERSAMPLE_RATIO_128	0x02
++#define OVERSAMPLE_RATIO_64	0x03
++
++#ifdef __KERNEL__
++
++struct QMC6983_platform_data {
++
++	u8 h_range;
++
++	u8 axis_map_x;
++	u8 axis_map_y;
++	u8 axis_map_z;
++
++	u8 negate_x;
++	u8 negate_y;
++	u8 negate_z;
++
++	int (*init)(void);
++	void (*exit)(void);
++	int (*power_on)(void);
++	int (*power_off)(void);
++
++	int auto_report;
++	int delay_ms;
++
++};
++#endif /* __KERNEL__ */
++
++
++#endif  /* __QMC6983_H__ */
+-- 
+1.7.9.5
+

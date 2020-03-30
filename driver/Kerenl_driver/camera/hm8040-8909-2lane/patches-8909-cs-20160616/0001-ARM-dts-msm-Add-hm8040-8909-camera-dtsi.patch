@@ -1,0 +1,171 @@
+From 2c035c05c7154e2476147ccde26089bf7fe2d309 Mon Sep 17 00:00:00 2001
+From: chenqingfeng <chenqf0228@thundersoft.com>
+Date: Mon, 13 Jun 2016 11:30:18 +0800
+Subject: [PATCH] ARM: dts: msm: Add hm8040 8909 camera dtsi.
+
+Add hm8040 8909 camera dtsi.
+
+Change-Id: Icab1e239333b2bdb20ab7d4f12b166490ac2d222
+Signed-off-by: chenqingfeng <chenqf0228@thundersoft.com>
+---
+ .../boot/dts/qcom/msm8909-camera-sensor-skue.dtsi  |   47 +++++++++++++++-
+ .../platform/msm/camera_v2/sensor/msm_sensor.c     |   59 +++++++++++++++++++-
+ 2 files changed, 103 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8909-camera-sensor-skue.dtsi b/arch/arm/boot/dts/qcom/msm8909-camera-sensor-skue.dtsi
+index 7f7882a..a4242f1 100644
+--- a/arch/arm/boot/dts/qcom/msm8909-camera-sensor-skue.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8909-camera-sensor-skue.dtsi
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (c) 2014-2015, The Linux Foundation. All rights reserved.
++ * Copyright (c) 2014-2016, The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 and
+@@ -143,7 +143,7 @@
+ 		clock-names = "cam_src_clk", "cam_clk";
+ 	};
+ 
+-	qcom,camera@0 {
++/*	qcom,camera@0 {
+ 		cell-index = <0>;
+ 		compatible = "qcom,camera";
+ 		reg = <0x2>;
+@@ -184,6 +184,49 @@
+ 		clocks = <&clock_gcc clk_mclk0_clk_src>,
+ 			<&clock_gcc clk_gcc_camss_mclk0_clk>;
+ 		clock-names = "cam_src_clk", "cam_clk";
++	};*/
++
++	qcom,camera@0 {
++		cell-index = <0>;
++		compatible = "qcom,camera";
++		reg = <0x2>;
++		qcom,special-support-sensors="ov5670_30010a3", "hm8040";
++		/*qcom,eeprom-src = <&eeprom0>;*/
++		qcom,csiphy-sd-index = <0>;
++		qcom,csid-sd-index = <0>;
++		qcom,mount-angle = <90>;
++		qcom,actuator-src = <&actuator0>;
++		qcom,led-flash-src = <&led_flash0>;
++		cam_vana-supply = <&pm8909_l17>;
++		cam_vio-supply = <&pm8909_l6>;
++		cam_vaf-supply = <&pm8909_l8>;
++		qcom,cam-vreg-name = "cam_vio", "cam_vana",
++			"cam_vaf";
++		qcom,cam-vreg-type = <1 0 0>;
++		qcom,cam-vreg-min-voltage = <0 2800000 2850000>;
++		qcom,cam-vreg-max-voltage = <0 2850000 2900000>;
++		qcom,cam-vreg-op-mode = <0 80000 100000>;
++		pinctrl-names = "cam_default", "cam_suspend";
++		pinctrl-0 = <&cam_sensor_mclk0_default
++			&cam_sensor_rear_default>;
++		pinctrl-1 = <&cam_sensor_mclk0_sleep &cam_sensor_rear_sleep>;
++		gpios = <&msm_gpio 26 0>,
++			<&msm_gpio 35 0>,
++			<&msm_gpio 34 0>;
++		qcom,gpio-reset = <1>;
++		qcom,gpio-standby = <2>;
++		qcom,gpio-req-tbl-num = <0 1 2>;
++		qcom,gpio-req-tbl-flags = <1 0 0>;
++		qcom,gpio-req-tbl-label = "CAMIF_MCLK",
++			"CAM_RESET1",
++			"CAM_STANDBY";
++		qcom,sensor-position = <0>;
++		qcom,sensor-mode = <0>;
++		qcom,cci-master = <0>;
++		status = "ok";
++		clocks = <&clock_gcc clk_mclk0_clk_src>,
++			<&clock_gcc clk_gcc_camss_mclk0_clk>;
++		clock-names = "cam_src_clk", "cam_clk";
+ 	};
+ 
+ 	qcom,camera@1 {
+diff --git a/drivers/media/platform/msm/camera_v2/sensor/msm_sensor.c b/drivers/media/platform/msm/camera_v2/sensor/msm_sensor.c
+index a6dd834..8c1ba30 100644
+--- a/drivers/media/platform/msm/camera_v2/sensor/msm_sensor.c
++++ b/drivers/media/platform/msm/camera_v2/sensor/msm_sensor.c
+@@ -1,4 +1,4 @@
+-/* Copyright (c) 2011-2015, The Linux Foundation. All rights reserved.
++/* Copyright (c) 2011-2016, The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 and
+@@ -999,6 +999,9 @@ int msm_sensor_config(struct msm_sensor_ctrl_t *s_ctrl, void __user *argp)
+ 		struct msm_camera_i2c_reg_setting conf_array;
+ 		struct msm_camera_i2c_reg_array *reg_setting = NULL;
+ 
++		/* add for hm8040 */
++		int num = 0;
++
+ 		if (s_ctrl->sensor_state != MSM_SENSOR_POWER_UP) {
+ 			pr_err("%s:%d failed: invalid state %d\n", __func__,
+ 				__LINE__, s_ctrl->sensor_state);
+@@ -1038,9 +1041,63 @@ int msm_sensor_config(struct msm_sensor_ctrl_t *s_ctrl, void __user *argp)
+ 		}
+ 
+ 		conf_array.reg_setting = reg_setting;
++
++		/* add i2c_write for hm8040 */
++		if (strcmp(s_ctrl->sensordata->sensor_name,
++			"hm8040") == 0) {
++			CDBG("%s:%d	 name = %s\n", __func__, __LINE__,
++				s_ctrl->sensordata->sensor_name);
++			if (conf_array.reg_setting[0].reg_addr == 0x34c) {
++				CDBG("%s:%d skip 0x%x command\n",
++					__func__, __LINE__,
++					conf_array.reg_setting[0].reg_addr);
++				rc = 0;
++				msleep(20);
++			} else {
++
++				num = conf_array.size;
++				for (i = 0; i < num; ++i) {
++					s_ctrl->sensor_i2c_client->addr_type =
++						conf_array.addr_type;
++			rc =
++		s_ctrl->sensor_i2c_client->i2c_func_tbl->i2c_write(
++					s_ctrl->sensor_i2c_client,
++					conf_array.reg_setting[i].reg_addr,
++					conf_array.reg_setting[i].reg_data,
++					conf_array.data_type);
++			if (rc < 0) {
++				pr_err("%s:%d res rc = %d, 0x%x(%d)\n",
++				__func__, __LINE__, rc,
++				conf_array.reg_setting[i].reg_addr,
++				conf_array.reg_setting[i].reg_data);
++			} else {
++				CDBG("%s:%d 0x%x(%d) success\n",
++				__func__, __LINE__,
++				conf_array.reg_setting[i].reg_addr,
++				conf_array.reg_setting[i].reg_data);
++
++				if (conf_array.reg_setting[i].delay > 20)
++					msleep(conf_array.reg_setting[i].delay);
++				else if (conf_array.reg_setting[i].delay)
++					usleep_range(
++					conf_array.reg_setting[i].delay * 1000,
++					(conf_array.reg_setting[i].delay
++					* 1000) + 1000);
++
++			}
++				}
++				if (conf_array.delay > 20)
++					msleep(conf_array.delay);
++				else if (conf_array.delay)
++					usleep_range(conf_array.delay * 1000,
++					(conf_array.delay * 1000) + 1000);
++			}
++		} else {
+ 		rc = s_ctrl->sensor_i2c_client->i2c_func_tbl->i2c_write_table(
+ 			s_ctrl->sensor_i2c_client, &conf_array);
+ 		kfree(reg_setting);
++		}
++
+ 		break;
+ 	}
+ 	case CFG_SLAVE_READ_I2C: {
+-- 
+1.7.9.5
+

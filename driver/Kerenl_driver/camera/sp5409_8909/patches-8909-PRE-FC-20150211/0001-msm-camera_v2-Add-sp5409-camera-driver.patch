@@ -1,0 +1,65 @@
+From 77bcd1ab0387c9f51bcd43e5abc1e931e1b3be4d Mon Sep 17 00:00:00 2001
+From: lizj <lizj0715@thundersoft.com>
+Date: Fri, 9 Jan 2015 16:13:57 +0800
+Subject: [PATCH] msm: camera_v2: Add sp5409 camera driver.
+
+Add sp5409 camera driver for msm8909.
+
+Change-Id: I8e9bab578a1e66a0222d44583e2450c75523be57
+Signed-off-by: Zhenjie Li <lizj0715@thundersoft.com>
+---
+ .../boot/dts/qcom/msm8909-camera-sensor-skuc.dtsi    | 20 ++++++++++++++------
+ 1 file changed, 14 insertions(+), 6 deletions(-)
+ mode change 100755 => 100644 arch/arm/boot/dts/qcom/msm8909-camera-sensor-skuc.dtsi
+
+diff --git a/arch/arm/boot/dts/qcom/msm8909-camera-sensor-skuc.dtsi b/arch/arm/boot/dts/qcom/msm8909-camera-sensor-skuc.dtsi
+old mode 100755
+new mode 100644
+index 46e38ba..4d58a95
+--- a/arch/arm/boot/dts/qcom/msm8909-camera-sensor-skuc.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8909-camera-sensor-skuc.dtsi
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (c) 2014, The Linux Foundation. All rights reserved.
++ * Copyright (c) 2014-2015, The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 and
+@@ -47,6 +47,12 @@
+ };
+ 
+ &i2c_3 {
++    actuator0: qcom,actuator@6e {
++		cell-index = <3>;
++		reg = <0x6c>;
++		compatible = "qcom,actuator";
++		qcom,cci-master = <0>;
++	};
+ 
+ 	qcom,camera@42 {
+ 		compatible = "shinetech,gc0310";
+@@ -98,14 +104,16 @@
+ 		qcom,csiphy-sd-index = <0>;
+ 		qcom,csid-sd-index = <0>;
+ 		qcom,mount-angle = <90>;
++		qcom,actuator-src = <&actuator0>;
+ 		qcom,led-flash-src = <&led_flash0>;
+ 		cam_vana-supply = <&pm8909_l17>;
+ 		cam_vio-supply = <&pm8909_l6>;
+-		qcom,cam-vreg-name = "cam_vio", "cam_vana";
+-		qcom,cam-vreg-type = <1 0>;
+-		qcom,cam-vreg-min-voltage = <0 2800000>;
+-		qcom,cam-vreg-max-voltage = <0 2850000>;
+-		qcom,cam-vreg-op-mode = <0 80000>;
++		cam_vaf-supply = <&pm8909_l8>;
++		qcom,cam-vreg-name = "cam_vio", "cam_vana", "cam_vaf";
++		qcom,cam-vreg-type = <1 0 0>;
++		qcom,cam-vreg-min-voltage = <0 2800000 2850000>;
++		qcom,cam-vreg-max-voltage = <0 2850000 2900000>;
++		qcom,cam-vreg-op-mode = <0 80000 100000>;
+ 		pinctrl-names = "cam_default", "cam_suspend";
+ 		pinctrl-0 = <&cam_sensor_mclk0_default
+ 				&cam_sensor_rear_default>;
+-- 
+1.9.1
+

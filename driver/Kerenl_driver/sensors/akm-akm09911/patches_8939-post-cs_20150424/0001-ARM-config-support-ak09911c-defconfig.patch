@@ -1,0 +1,33 @@
+From 3b98f84f996fe9a3119af043fedad6c9ac811ff1 Mon Sep 17 00:00:00 2001
+From: Li Zhanchao <lizc1023@thundersoft.com>
+Date: Fri, 24 Apr 2015 10:27:35 +0800
+Subject: [PATCH 1/2] ARM:config: support ak09911c defconfig
+
+Defconfig support ak09911c
+
+Change-Id: I37dba95d82e049f055061291b366320282c4f7d7
+Signed-off-by: Li Zhanchao <lizc1023@thundersoft.com>
+---
+ arch/arm/configs/msm8916-perf_defconfig | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/configs/msm8916-perf_defconfig b/arch/arm/configs/msm8916-perf_defconfig
+index 7dd8192..62c62e7 100644
+--- a/arch/arm/configs/msm8916-perf_defconfig
++++ b/arch/arm/configs/msm8916-perf_defconfig
+@@ -265,10 +265,10 @@ CONFIG_INPUT_MISC=y
+ CONFIG_INPUT_UINPUT=y
+ CONFIG_INPUT_GPIO=m
+ CONFIG_SENSORS_LIS3DH=y
+-CONFIG_SENSORS_MPU6050=y
++#CONFIG_SENSORS_MPU6050 is not set
+ CONFIG_SENSORS_AKM09911=y
+ CONFIG_SENSORS_BMA2X2=y
+-CONFIG_SENSORS_MMC3416X=y
++#CONFIG_SENSORS_MMC3416X is not set
+ CONFIG_SENSORS_AKM8963=y
+ # CONFIG_SERIAL_MSM_HSL is not set
+ # CONFIG_SERIAL_MSM_HSL_CONSOLE is not set
+-- 
+1.9.1
+

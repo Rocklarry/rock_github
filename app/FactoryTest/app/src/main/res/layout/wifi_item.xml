@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+    >
+    <TextView
+        android:id="@+id/ssid"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="8903821908"
+        android:textSize="18sp"
+        />
+
+    <TextView
+        android:id="@+id/level"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="200dp"
+        android:text="8903821908"
+        android:textSize="18sp"
+        />
+
+    <TextView
+        android:id="@+id/connect"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:text="connected"
+        android:textColor="#008B00"
+        android:textSize="25sp"
+        android:visibility="invisible"/>
+
+    <TextView
+        android:id="@+id/disconnect"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:text="connect fail"
+        android:textColor="#ee0000"
+        android:textSize="25sp"
+        android:visibility="invisible"/>
+</RelativeLayout>

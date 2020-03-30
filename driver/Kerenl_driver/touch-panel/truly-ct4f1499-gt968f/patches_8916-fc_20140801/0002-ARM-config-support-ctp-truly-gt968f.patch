@@ -1,0 +1,31 @@
+From f75beb8dbe4c7c78d56ff5164ec482c583aa5dcb Mon Sep 17 00:00:00 2001
+From: Deng Yequan <dengyq0603@thundersoft.com>
+Date: Fri, 25 Jul 2014 15:11:07 +0800
+Subject: [PATCH 2/4] ARM:config: support ctp truly gt968f
+
+Add CTP IHV-TRULY@CT4F1499@GT968F config
+
+Change-Id: Id9ae8b8da0f70cf898b09c1f5d9b2f22ed73ca06
+Signed-off-by: Yequan Deng <dengyq0603@thundersoft.com>
+---
+ arch/arm/configs/msm8916_defconfig | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/arch/arm/configs/msm8916_defconfig b/arch/arm/configs/msm8916_defconfig
+index 3d19788..a3f05d3 100644
+--- a/arch/arm/configs/msm8916_defconfig
++++ b/arch/arm/configs/msm8916_defconfig
+@@ -255,6 +255,10 @@ CONFIG_TOUCHSCREEN_GEN_VKEYS=y
+ CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI4=y
+ CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_RMI4_DEV=y
+ CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE=y
++CONFIG_TOUCHSCREEN_GT9XX=y
++CONFIG_GT9XX_TOUCHPANEL_DRIVER=y
++CONFIG_GT9XX_TOUCHPANEL_UPDATE=y
++CONFIG_GT9XX_TOUCHPANEL_DEBUG=y
+ CONFIG_INPUT_MISC=y
+ CONFIG_INPUT_UINPUT=y
+ CONFIG_INPUT_GPIO=m
+-- 
+1.9.1
+

@@ -1,0 +1,33 @@
+From 69af423e7208f875721eaa190aa06fab5bc9631b Mon Sep 17 00:00:00 2001
+From: Yukun Wan <wanyk0402@thundersoft.com>
+Date: Wed, 22 Apr 2015 16:31:31 +0800
+Subject: [PATCH 3/3] ARM:config: support kxcjk-1013 defconfig
+
+Defconfig support kxcjk-1013
+
+Change-Id: Ibf22b6c65bfa0f4f8ab71c287fdf2c0a551f39bd
+Signed-off-by: Yukun Wan <wanyk0402@thundersoft.com>
+---
+ arch/arm/configs/msm8916-perf_defconfig | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/configs/msm8916-perf_defconfig b/arch/arm/configs/msm8916-perf_defconfig
+index 7dd8192..3f39d3c 100644
+--- a/arch/arm/configs/msm8916-perf_defconfig
++++ b/arch/arm/configs/msm8916-perf_defconfig
+@@ -265,9 +265,10 @@ CONFIG_INPUT_MISC=y
+ CONFIG_INPUT_UINPUT=y
+ CONFIG_INPUT_GPIO=m
+ CONFIG_SENSORS_LIS3DH=y
+-CONFIG_SENSORS_MPU6050=y
++#CONFIG_SENSORS_MPU6050 is not set
+ CONFIG_SENSORS_AKM09911=y
+-CONFIG_SENSORS_BMA2X2=y
++#CONFIG_SENSORS_BMA2X2 is not set
++CONFIG_INPUT_KIONIX_ACCEL=y
+ CONFIG_SENSORS_MMC3416X=y
+ CONFIG_SENSORS_AKM8963=y
+ # CONFIG_SERIAL_MSM_HSL is not set
+-- 
+2.2.2
+

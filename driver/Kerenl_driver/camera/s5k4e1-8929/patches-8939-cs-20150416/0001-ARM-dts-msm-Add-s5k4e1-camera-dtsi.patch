@@ -1,0 +1,29 @@
+From f42cd02115ee6af18ef43655201c7af084355f7e Mon Sep 17 00:00:00 2001
+From: zhangss <zhangss1028@thundersoft.com>
+Date: Thu, 16 Apr 2015 13:14:44 +0800
+Subject: [PATCH] ARM: dts: msm: Add s5k4e1 camera dtsi
+
+add s5k4e1 camera dtsi for msm8929
+
+Change-Id: Id40933e99494f02b6957aa17e23bf3da0d43abcf
+Signed-off-by: Shaosong Zhang <zhangss1028@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8929-camera-sensor-qrd.dtsi | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8929-camera-sensor-qrd.dtsi b/arch/arm/boot/dts/qcom/msm8929-camera-sensor-qrd.dtsi
+index d5ae42a..655f00e 100644
+--- a/arch/arm/boot/dts/qcom/msm8929-camera-sensor-qrd.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8929-camera-sensor-qrd.dtsi
+@@ -209,7 +209,7 @@
+ 		cell-index = <0>;
+ 		compatible = "qcom,camera";
+ 		reg = <0x0>;
+-		qcom,special-support-sensors="ov13850_q13v06k";
++		qcom,special-support-sensors="s5k4e1_13p1ba_8929";
+ 		qcom,csiphy-sd-index = <0>;
+ 		qcom,csid-sd-index = <0>;
+ 		qcom,mount-angle = <90>;
+-- 
+1.9.1
+

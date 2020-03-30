@@ -1,0 +1,46 @@
+From e2e4256545a45e36e8394a3ee0a1bc50ea9fac39 Mon Sep 17 00:00:00 2001
+From: Xiaowu Long <longxw0410@thundersoft.com>
+Date: Mon, 23 Mar 2015 15:50:56 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support ap3426 devicetree
+
+Devicetree support ap3426
+
+Change-Id: I44560036749740f76718b23d05ab35a58a6f9504
+Signed-off-by: Xiaowu Long <longxw0410@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi | 12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi b/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
+index 5bb6734..307b430 100644
+--- a/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
+@@ -87,7 +87,7 @@
+ 		akm,gpio_rstn = <&msm_gpio 36 0x0>;
+ 		akm,auto-report;
+ 	};
+-
++/*
+ 	avago@39 {
+ 		compatible = "avago,apds9930";
+ 		reg = <0x39>;
+@@ -108,6 +108,16 @@
+ 		avago,als-D = <129>;
+ 		avago,ga-value = <98>;
+ 	};
++*/
++	di_ap3426@1e {/* Ambient light and proximity sensor */
++		compatible = "dyna_image,ap3426";
++		reg = <0x1e>;
++		interrupt-parent = <&msm_gpio>;
++		interrupts = <113 0x2002>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++		ap3426,irq-gpio = <&msm_gpio 113 0x2002>;
++	};
+ 
+ 	st@18 {
+ 		compatible = "st,lis3dh";
+-- 
+2.2.2
+

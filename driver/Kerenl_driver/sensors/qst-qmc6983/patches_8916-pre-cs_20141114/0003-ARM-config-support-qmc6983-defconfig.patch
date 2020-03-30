@@ -1,0 +1,34 @@
+From cfc9432119bb0308ffcf1e4cb18f22210303e8df Mon Sep 17 00:00:00 2001
+From: Yukun Wan <wanyk0402@thundersoft.com>
+Date: Thu, 20 Nov 2014 13:29:36 +0800
+Subject: [PATCH 3/3] ARM:config: support qmc6983 defconfig
+
+Defconfig support qmc6983
+
+Change-Id: I766401b84bc50b05504216c55dec62a7da09d973
+Signed-off-by: Yukun Wan <wanyk0402@thundersoft.com>
+---
+ arch/arm/configs/msm8916_defconfig |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/configs/msm8916_defconfig b/arch/arm/configs/msm8916_defconfig
+index 3d19788..c1fddbe 100644
+--- a/arch/arm/configs/msm8916_defconfig
++++ b/arch/arm/configs/msm8916_defconfig
+@@ -259,10 +259,11 @@ CONFIG_INPUT_MISC=y
+ CONFIG_INPUT_UINPUT=y
+ CONFIG_INPUT_GPIO=m
+ CONFIG_SENSORS_LIS3DH=y
+-CONFIG_SENSORS_MPU6050=y
++#CONFIG_SENSORS_MPU6050 is not set
+ CONFIG_SENSORS_AKM09911=y
+ CONFIG_SENSORS_BMA2X2=y
+-CONFIG_SENSORS_MMC3416X=y
++#CONFIG_SENSORS_MMC3416X is not set
++CONFIG_SENSORS_QMC6983=y
+ CONFIG_SENSORS_AKM8963=y
+ CONFIG_SERIAL_MSM_HSL=y
+ CONFIG_SERIAL_MSM_HSL_CONSOLE=y
+-- 
+1.7.9.5
+

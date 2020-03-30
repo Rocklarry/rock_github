@@ -1,0 +1,28 @@
+From af787993462e3ae425ce4ee33f4390553738e9ea Mon Sep 17 00:00:00 2001
+From: Lin Zhang <zhanglin0425@thundersoft.com>
+Date: Fri, 14 Feb 2014 14:48:16 +0800
+Subject: [PATCH 3/3] defconfig: msm: Add CONFIG_S5K4E1_P5S07A
+
+Add CONFIG_S5K4E1_P5S07A=y to the defconfig file of msm8610
+
+Change-Id: I00d4d4128f07f3a7aeb078341245cbd6617309c5
+Signed-off-by: Lin Zhang <zhanglin0425@thundersoft.com>
+---
+ arch/arm/configs/msm8610_defconfig |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/configs/msm8610_defconfig b/arch/arm/configs/msm8610_defconfig
+index 1ca7ed6..b154ce2 100644
+--- a/arch/arm/configs/msm8610_defconfig
++++ b/arch/arm/configs/msm8610_defconfig
+@@ -328,6 +328,7 @@ CONFIG_MSM_ISPIF=y
+ CONFIG_MSM_ISPIF_V1=y
+ CONFIG_MSMB_CAMERA=y
+ CONFIG_MSM_CSI22_HEADER=y
++CONFIG_S5K4E1_P5S07A=y
+ CONFIG_OV9724=y
+ CONFIG_SP1628=y
+ CONFIG_GC0339=y
+-- 
+1.7.4.1
+

@@ -1,0 +1,1870 @@
+From 74f4eb788e7007dd8bbaa1efd307a85fed9e80f5 Mon Sep 17 00:00:00 2001
+From: Li Zhanchao <lizc1023@thundersoft.com>
+Date: Mon, 27 Apr 2015 17:23:37 +0800
+Subject: [PATCH 1/3] drivers:input:misc: support isl29147 driver
+
+Driver support isl29147
+
+Change-Id: I00e53d50d05c8e99ff7100d8bb8c25e153817fbd
+Signed-off-by: Li Zhanchao <lizc1023@thundersoft.com>
+---
+ drivers/input/misc/Kconfig    |    9 +
+ drivers/input/misc/Makefile   |    1 +
+ drivers/input/misc/isl29147.c | 1814 +++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 1824 insertions(+)
+ create mode 100644 drivers/input/misc/isl29147.c
+
+diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
+index b358471..082f6c7 100644
+--- a/drivers/input/misc/Kconfig
++++ b/drivers/input/misc/Kconfig
+@@ -819,5 +819,14 @@ config SENSORS_BMI058
+ 	 If you say yes here, you get support for Bosch Sensortec's
+ 	 sensor driver of BMI058.
+ 
++config INTERSIL_ISL29147
++	tristate "INTERSIL P/L sensor"
++	depends on I2C
++	help
++	 This option enables support for the INTERSIL ISL29147 P/L sensor.
++
++	 To compile this driver as a module, choose M here: the
++	 module will be called isl29147.
++
+ endif
+ 
+diff --git a/drivers/input/misc/Makefile b/drivers/input/misc/Makefile
+index 139a4fb..e4a39d7 100644
+--- a/drivers/input/misc/Makefile
++++ b/drivers/input/misc/Makefile
+@@ -72,6 +72,7 @@ obj-$(CONFIG_SENSORS_MPU6050)		+= mpu6050.o
+ obj-$(CONFIG_SENSORS_AKM8963)		+= akm8963.o
+ obj-$(CONFIG_SENSORS_AKM09911)		+= akm09911.o
+ obj-$(CONFIG_SENSORS_LIS3DH)		+= lis3dh_acc.o
++obj-$(CONFIG_INTERSIL_ISL29147)		+= isl29147.o
+ obj-$(CONFIG_SENSORS_BMA2X2)	+= bstclass.o
+ 
+ obj-$(CONFIG_SENSORS_BMA2X2)	+= bma2x2.o
+diff --git a/drivers/input/misc/isl29147.c b/drivers/input/misc/isl29147.c
+new file mode 100644
+index 0000000..fc82024
+--- /dev/null
++++ b/drivers/input/misc/isl29147.c
+@@ -0,0 +1,1814 @@
++/******************************************************************************
++ * isl29147.c - Linux kernel module for Intersil isl29147 ambient light sensor
++ *				and proximity sensor
++ *
++ * Copyright 2008-2015 Intersil Inc..
++ *
++ * DESCRIPTION:
++ *	- This is the linux driver for isl29147.
++ *		Kernel version 3.0.8
++ *
++ * modification history
++ * --------------------
++ * V1.3	  2013/05/06, Shouxian Chen(Simon Chen) for isl29147.
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; either version 2 of the License, or
++ *  (at your option) any later version.
++ *
++ *  This program is distributed in the hope that it will be useful,
++ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *  GNU General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License
++ *  along with this program; if not, write to the Free Software
++ *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
++ ******************************************************************************/
++
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/errno.h>
++#include <linux/slab.h>
++#include <linux/i2c.h>
++#include <linux/init.h>
++#include <linux/input.h>
++#include <linux/idr.h>
++#include <linux/fs.h>
++#include <linux/timer.h>
++#include <linux/sched.h>
++#include <linux/seq_file.h>
++#include <linux/io.h>
++#include <linux/ioctl.h>
++#include <linux/types.h>
++#include <linux/spinlock.h>
++#include <linux/uaccess.h>
++#include <linux/workqueue.h>
++#include <linux/device.h>
++#include <linux/cdev.h>
++#include <linux/delay.h>
++#include <linux/sensors.h>
++
++/* chip config struct */
++struct isl29147_cfg_t {
++	u8 als_range;	/* als range, 0: 125 Lux, 1: 250, 2:2000, 3:4000 */
++	u8 ps_lt;			/* ps low limit */
++	u8 ps_ht;			/* ps high limit */
++	/* led driver current, 0:31.25mA, 1:62.5mA, 2:125mA, 3:250mA*/
++	u8 ps_led_drv_cur;
++	u8 ps_offset;		/* ps offset comp */
++	u8 als_ir_comp;		/* als ir comp */
++	int glass_factor;	/* glass factor for als, percent */
++};
++
++#define ISL_IOCTL_MAGIC		0xCF
++#define ISL_IOCTL_ALS_ON	_IO(ISL_IOCTL_MAGIC, 1)
++#define ISL_IOCTL_ALS_OFF		_IO(ISL_IOCTL_MAGIC, 2)
++#define ISL_IOCTL_ALS_DATA		_IOR(ISL_IOCTL_MAGIC, 3, short)
++#define ISL_IOCTL_ALS_CALIBRATE	_IO(ISL_IOCTL_MAGIC, 4)
++#define ISL_IOCTL_CONFIG_GET	_IOR(ISL_IOCTL_MAGIC, 5, struct isl29147_cfg_t)
++#define ISL_IOCTL_CONFIG_SET	_IOW(ISL_IOCTL_MAGIC, 6, struct isl29147_cfg_t)
++#define ISL_IOCTL_PROX_ON		_IO(ISL_IOCTL_MAGIC, 7)
++#define ISL_IOCTL_PROX_OFF		_IO(ISL_IOCTL_MAGIC, 8)
++#define ISL_IOCTL_PROX_DATA		_IO(ISL_IOCTL_MAGIC, 9)
++#define ISL_IOCTL_PROX_EVENT	_IO(ISL_IOCTL_MAGIC, 10)
++#define ISL_IOCTL_PROX_CALIBRATE	_IO(ISL_IOCTL_MAGIC, 11)
++/*#define ISL_IOCTL_PROX_STARTUP_CALIBRATE	_IO(ISL_IOCTL_MAGIC, 12)*/
++#define ISL_IOCTL_PROX_GET_ENABLED	_IO(ISL_IOCTL_MAGIC, 13)
++#define ISL_IOCTL_ALS_GET_ENABLED	_IO(ISL_IOCTL_MAGIC, 14)
++
++#define ISL29147_ADDR	0x44
++#define	DEVICE_NAME		"isl"
++#define	DRIVER_VERSION	"1.3"
++
++#define ALS_EN_MSK		(1 << 0)
++#define PS_EN_MSK		(1 << 1)
++
++#define PS_POLL_TIME		100	/* unit is ms */
++#define ISL29147_PS_MAX_DELAY	1000
++#define ISL29147_ALS_MAX_DELAY	1000
++#define PROX_THRESHOLD_DELTA_LO		15
++#define PROX_THRESHOLD_DELTA_HI		15
++#define MAX_STARTUP_CALIB_OVER_RANGE	50
++#define IS_DO_START_UP_CALIB		1
++
++/* char device number */
++dev_t dev_num;
++
++/* class structure for this device */
++struct class *isl_class;
++
++/* calibaration output data */
++struct isl29147_calib_out_t {
++	int ret;
++	u8 ps_offset;
++	u8 ps_lt;
++	u8 ps_ht;
++};
++
++/* Each client has this additional data */
++struct isl29147_data_t {
++	struct i2c_client *client;
++	struct isl29147_cfg_t *cfg;
++	struct sensors_classdev als_cdev;
++	struct sensors_classdev ps_cdev;
++	u8 als_pwr_status;
++	u8 ps_pwr_status;
++	int poll_delay;		/* poll delay set by hal */
++	atomic_t als_delay;
++	atomic_t ps_delay;
++	u8 show_als_raw;	/* show als raw data flag, used for debug */
++	u8 show_ps_raw;	/* show als raw data flag, used for debug */
++	struct timer_list als_timer;	/* als poll timer */
++	struct timer_list ps_timer;	/* ps poll timer */
++	spinlock_t als_timer_lock;
++	spinlock_t ps_timer_lock;
++	struct work_struct als_work;
++	struct work_struct ps_work;
++	struct work_struct calib_work;
++	struct workqueue_struct *als_wq;
++	struct workqueue_struct *ps_wq;
++	struct input_dev *als_input_dev;
++	struct input_dev *ps_input_dev;
++	int last_ps;
++	u8 als_range_using;		/* the als range using now */
++	u8 als_pwr_before_suspend;
++	u8 ps_pwr_before_suspend;
++
++	u8 ps_filter_cnt;
++	int last_lux;
++	int last_ps_raw;
++
++	int als_chg_range_delay_cnt;
++	u8 is_do_factory_calib;
++
++	struct cdev cdev;
++};
++
++/* Do not scan isl29147 automatic */
++static const unsigned short normal_i2c[] = {ISL29147_ADDR, I2C_CLIENT_END };
++
++/* board and address info */
++struct i2c_board_info isl_board_info[] = {
++	{I2C_BOARD_INFO(DEVICE_NAME, ISL29147_ADDR)}
++};
++
++static struct sensors_classdev sensors_light_cdev = {
++	.name = "isl29147-light",
++	.vendor = "intersil",
++	.version = 1,
++	.handle = SENSORS_LIGHT_HANDLE,
++	.type = SENSOR_TYPE_LIGHT,
++	.max_range = "30000",
++	.resolution = "0.0125",
++	.sensor_power = "0.20",
++	.min_delay = 1000,
++	.fifo_reserved_event_count = 0,
++	.fifo_max_event_count = 0,
++	.enabled = 0,
++	.delay_msec = 100,
++	.sensors_enable = NULL,
++	.sensors_poll_delay = NULL,
++};
++
++static struct sensors_classdev sensors_proximity_cdev = {
++	.name = "isl29147-proximity",
++	.vendor = "intersil",
++	.version = 1,
++	.handle = SENSORS_PROXIMITY_HANDLE,
++	.type = SENSOR_TYPE_PROXIMITY,
++	.max_range = "5",
++	.resolution = "5.0",
++	.sensor_power = "3",
++	.min_delay = 1000,
++	.fifo_reserved_event_count = 0,
++	.fifo_max_event_count = 0,
++	.enabled = 0,
++	.delay_msec = 100,
++	.sensors_enable = NULL,
++	.sensors_poll_delay = NULL,
++};
++
++/* gobal var */
++struct isl29147_calib_out_t calib_out;
++static atomic_t is_calib_done = ATOMIC_INIT(0);
++
++static void do_als_timer(unsigned long arg)
++{
++	struct isl29147_data_t *dev_dat;
++
++	dev_dat = (struct isl29147_data_t *)arg;
++
++	/* timer handler is atomic context, so don't need sinp_lock() */
++	if (dev_dat->als_pwr_status == 0)
++		return;
++
++	/* start a work queue, I cannot do i2c oepration in timer context for
++	   this context is atomic and i2c function maybe sleep. */
++	queue_work(dev_dat->als_wq, &dev_dat->als_work);
++}
++
++static void do_ps_timer(unsigned long arg)
++{
++	struct isl29147_data_t *dev_dat;
++
++	dev_dat = (struct isl29147_data_t *)arg;
++
++	if (dev_dat->ps_pwr_status == 0)
++		return;
++
++	/* start a work queue, I cannot do i2c oepration in timer context for
++	   this context is atomic and i2c function maybe sleep. */
++	/*schedule_work(&dev_dat->ps_work);*/
++	queue_work(dev_dat->ps_wq, &dev_dat->ps_work);
++}
++
++static int do_factory_calib(struct isl29147_data_t *dev_dat)
++{
++	int i;
++	u8 ir_data;
++	u8 ps_data;
++	int ret;
++	u8 offset = 0;
++	u8 reg;
++
++	pr_info("start isl29147 factory mode calibration...");
++
++	for (i = 0; i < 25; i++) {
++		msleep(20);
++
++		ret = i2c_smbus_read_byte_data(dev_dat->client, 0x0a);
++		if (ret < 0)
++			goto err_rd;
++		ps_data = (u8)ret;
++
++		ret = i2c_smbus_read_byte_data(dev_dat->client, 0x0d);
++		if (ret < 0)
++			goto err_rd;
++		ir_data = (u8)ret >> 1;
++
++		if (ir_data >= 0x7f)
++			continue;
++		if (ps_data > 40) {
++			offset = offset + (ps_data - 15) / 15;
++			if (offset > 15)
++				offset = 15;
++		} else {
++			if ((ps_data < 5) && (offset > 0))
++				offset--;
++			else
++				return offset;
++		}
++
++		reg = (offset & 0xf) << 3;
++		ret = i2c_smbus_write_byte_data(dev_dat->client, 0x02, offset);
++		if (ret < 0)
++			goto err_wr;
++	}
++
++	pr_info("calibration ps offset comp failed");
++	return -EINVAL;
++
++err_rd:
++	pr_info("calibration failed, read sensor reg error, ret = %d\n", ret);
++	return -EINVAL;
++
++err_wr:
++	pr_info("calibration failed, write sensor reg error, ret = %d\n", ret);
++	return -EINVAL;
++
++}
++
++static void do_calib_work(struct work_struct *work)
++{
++	struct isl29147_data_t *dev_dat;
++	struct isl29147_cfg_t *cfg;
++	int ret;
++	u8 reg;
++	int calib_cnt = 10;
++	int i;
++	u16 sum = 0;
++	u8 ps_dat;
++	u16 ps_lt, ps_ht;
++
++	pr_info("start isl29147 calibration...");
++
++	dev_dat = container_of(work, struct isl29147_data_t, calib_work);
++	cfg = dev_dat->cfg;
++
++	if (dev_dat->is_do_factory_calib)
++		reg = 0;
++	else
++		reg = (dev_dat->cfg->ps_offset & 0xf) << 3;
++	ret = i2c_smbus_write_byte_data(dev_dat->client, 0x02, reg);
++	if (ret < 0)
++		goto err_wr;
++
++	reg = 0;
++	ret = i2c_smbus_write_byte_data(dev_dat->client, 0x05, reg);
++	if (ret < 0)
++		goto err_wr;
++
++	reg = 0xff;
++	ret = i2c_smbus_write_byte_data(dev_dat->client, 0x06, reg);
++	if (ret < 0)
++		goto err_wr;
++
++	reg = 0x30;
++	reg |= dev_dat->cfg->ps_led_drv_cur & 0x3;
++	ret = i2c_smbus_write_byte_data(dev_dat->client, 0x01, reg);
++	if (ret < 0)
++		goto err_wr;
++
++	if (dev_dat->is_do_factory_calib) {
++		ret = do_factory_calib(dev_dat);
++		if (ret < 0) {
++			reg = 0x0;
++			i2c_smbus_write_byte_data(dev_dat->client, 0x01, reg);
++			calib_out.ret = ret;
++			atomic_set(&is_calib_done, 1);
++			return;
++		}
++		calib_out.ps_offset = (u8)ret;
++	}
++
++	for (i = 0; i < calib_cnt; i++) {
++		msleep(20);
++		ret = i2c_smbus_read_byte_data(dev_dat->client, 0x0a);
++		if (ret < 0)
++			goto err_rd;
++		sum = sum + (u8)ret;
++	}
++
++	reg = 0x0;
++	ret = i2c_smbus_write_byte_data(dev_dat->client, 0x01, reg);
++	if (ret < 0)
++		goto err_wr;
++
++	ps_dat = sum / i;
++	ps_lt = ps_dat + PROX_THRESHOLD_DELTA_LO;
++	ps_ht = ps_lt + PROX_THRESHOLD_DELTA_HI;
++	if (ps_lt > 255)
++		ps_lt = 255;
++	if (ps_ht > 255)
++		ps_ht = 255;
++
++	calib_out.ret = 0;
++	calib_out.ps_ht = ps_ht;
++	calib_out.ps_lt = ps_lt;
++
++	atomic_set(&is_calib_done, 1);
++
++	pr_info("end isl29147 calibration, ps_lt=%d, ps_ht=%d", ps_lt, ps_ht);
++	return;
++
++err_rd:
++	calib_out.ret = -1;
++	pr_info("calibration failed, read sensor reg error, ret = %d\n", ret);
++	atomic_set(&is_calib_done, 1);
++	return;
++
++err_wr:
++	calib_out.ret = -1;
++	pr_info("calibration failed, write sensor reg error, ret = %d\n", ret);
++	atomic_set(&is_calib_done, 1);
++	return;
++}
++
++static void do_calib(struct isl29147_data_t *dev_dat)
++{
++	if (dev_dat->als_pwr_status || dev_dat->ps_pwr_status) {
++		calib_out.ret = -2;
++		pr_info("Cannot do calibration when als or ps is working");
++		return;
++	}
++
++	atomic_set(&is_calib_done, 0);
++	dev_dat->is_do_factory_calib = 1;
++	queue_work(dev_dat->ps_wq, &dev_dat->calib_work);
++
++	while (1) {
++		msleep(100);
++		if (atomic_read(&is_calib_done) > 0)
++			break;
++	}
++
++	if (calib_out.ret >= 0) {
++		dev_dat->cfg->ps_lt = calib_out.ps_lt;
++		dev_dat->cfg->ps_ht = calib_out.ps_ht;
++		dev_dat->cfg->ps_offset = calib_out.ps_offset;
++	}
++}
++
++static int do_startup_calib(struct isl29147_data_t *dev_dat)
++{
++	if (dev_dat->als_pwr_status || dev_dat->ps_pwr_status) {
++		calib_out.ret = -2;
++		pr_info("Cannot do calibration when als or ps is working");
++		return -EINVAL;
++	}
++
++	atomic_set(&is_calib_done, 0);
++	dev_dat->is_do_factory_calib = 0;
++	queue_work(dev_dat->ps_wq, &dev_dat->calib_work);
++
++	while (1) {
++		msleep(100);
++		if (atomic_read(&is_calib_done) > 0)
++			break;
++	}
++
++	if (calib_out.ret < 0)
++		return -EINVAL;
++
++	if ((calib_out.ps_lt > (dev_dat->cfg->ps_lt +
++		MAX_STARTUP_CALIB_OVER_RANGE)) ||
++		(calib_out.ps_ht > (dev_dat->cfg->ps_ht +
++		MAX_STARTUP_CALIB_OVER_RANGE))) {
++		pr_info("startup calibration result is too large, use default value");
++		return -EINVAL;
++	} else {
++		dev_dat->cfg->ps_lt = calib_out.ps_lt;
++		dev_dat->cfg->ps_ht = calib_out.ps_ht;
++		return 0;
++	}
++}
++
++static void do_als_work(struct work_struct *work)
++{
++	struct isl29147_data_t *dev_dat;
++	struct isl29147_cfg_t *cfg;
++	int ret;
++	static int als_dat;
++	u8 show_raw_dat;
++	int lux;
++	u8 als_range;
++	int is_chg_range = 0;
++	u8 new_range;
++
++	dev_dat = container_of(work, struct isl29147_data_t, als_work);
++	cfg = dev_dat->cfg;
++
++	spin_lock(&dev_dat->ps_timer_lock);
++	show_raw_dat = dev_dat->show_als_raw;
++	spin_unlock(&dev_dat->ps_timer_lock);
++
++	als_range = dev_dat->als_range_using;
++
++	ret = i2c_smbus_read_byte_data(dev_dat->client, 0x0c);
++	if (ret < 0)
++		goto err_rd;
++	als_dat = (u8)ret;
++
++	ret = i2c_smbus_read_byte_data(dev_dat->client, 0x0b);
++	if (ret < 0)
++		goto err_rd;
++	als_dat = als_dat + (((u8)ret & 0x0f) << 8);
++
++	if (dev_dat->als_chg_range_delay_cnt == 0) {
++		/* als measurment is done */
++		if (als_range == 0) {
++			lux = (als_dat * 125) / 4096*1000;
++			lux = lux * 100 / cfg->glass_factor/1000;
++		} else if (als_range == 1) {
++			lux = als_dat;
++		} else if (als_range == 2) {
++			lux = als_dat;
++		} else {
++			lux = (als_dat * 4000) / 4096;
++		}
++
++		/* change range */
++		if (als_range == 0) {
++			if (als_dat > 3600) {
++				cfg->als_range = 3;
++				is_chg_range = 1;
++			}
++		} else if (als_range == 1) {
++			if (als_dat < 1500)  {
++				cfg->als_range = 3;
++				is_chg_range = 1;
++			} else if (als_dat > 3600) {
++				cfg->als_range = 3;
++				is_chg_range = 1;
++			}
++		} else if (als_range == 2) {
++			if (als_dat < 400) {
++				cfg->als_range = 3;
++				is_chg_range = 1;
++			} else if (als_dat > 3600) {
++				cfg->als_range = 3;
++				is_chg_range = 1;
++			}
++		} else {
++			if (als_dat < 1500) {
++				cfg->als_range = 3;
++				is_chg_range = 1;
++			}
++		}
++
++		if (is_chg_range) {
++			ret = i2c_smbus_read_byte_data(dev_dat->client, 0x02);
++			if (ret < 0)
++				goto err_rd;
++
++			new_range = (u8)ret;
++			new_range &= ~(0x03);
++			new_range |= cfg->als_range & 0x3;
++
++			ret = i2c_smbus_write_byte_data(dev_dat->client, 0x02,
++				new_range);
++			if (ret < 0)
++				goto err_wr;
++
++			dev_dat->als_chg_range_delay_cnt = 2;
++		}
++
++		input_report_abs(dev_dat->als_input_dev, ABS_MISC, lux);
++		input_sync(dev_dat->als_input_dev);
++		if (show_raw_dat)
++			pr_info("now als raw data is = %d, LUX = %d\n",
++				als_dat, lux);
++		dev_dat->last_lux = lux;
++	} else if (dev_dat->als_chg_range_delay_cnt > 0) {
++		dev_dat->als_chg_range_delay_cnt--;
++	}
++
++	/* restart timer */
++	spin_lock(&dev_dat->als_timer_lock);
++	if (dev_dat->als_pwr_status == 0) {
++		spin_unlock(&dev_dat->als_timer_lock);
++		return;
++	}
++	dev_dat->als_timer.expires =
++		jiffies + (HZ * atomic_read(&dev_dat->als_delay) / 2) / 1000;
++	spin_unlock(&dev_dat->als_timer_lock);
++	add_timer(&dev_dat->als_timer);
++
++	return;
++
++err_rd:
++	pr_info("Read als sensor error, ret = %d\n", ret);
++	return;
++
++err_wr:
++	pr_info("write sensor reg error, ret = %d\n", ret);
++	return;
++
++}
++
++static void do_ps_work(struct work_struct *work)
++{
++	struct isl29147_data_t *dev_dat;
++	struct isl29147_cfg_t *cfg;
++	int last_ps;
++	int ret;
++	u8 show_raw_dat;
++
++	dev_dat = container_of(work, struct isl29147_data_t, ps_work);
++	cfg = dev_dat->cfg;
++	spin_lock(&dev_dat->ps_timer_lock);
++	show_raw_dat = dev_dat->show_ps_raw;
++	spin_unlock(&dev_dat->ps_timer_lock);
++
++	ret = i2c_smbus_read_byte_data(dev_dat->client, 0x0a);
++	if (ret < 0)
++		goto err_rd;
++
++	last_ps = dev_dat->last_ps;
++
++	if (ret >= cfg->ps_ht)
++		dev_dat->last_ps = 0;
++	else if (ret < cfg->ps_lt)
++		dev_dat->last_ps = 1;
++
++	dev_dat->last_ps_raw = ret;
++	if (show_raw_dat)
++		pr_info("ps raw data = %d\n", dev_dat->last_ps_raw);
++
++	if (last_ps != dev_dat->last_ps) {
++		if (dev_dat->last_ps == 0)
++			input_report_abs(dev_dat->ps_input_dev,
++			ABS_DISTANCE, 0);
++		else
++			input_report_abs(dev_dat->ps_input_dev,
++			ABS_DISTANCE, 1);
++		input_sync(dev_dat->ps_input_dev);
++		if (show_raw_dat)
++			pr_info("ps status changed, now = %d\n",
++			dev_dat->last_ps);
++	}
++
++	/* restart timer */
++	spin_lock(&dev_dat->ps_timer_lock);
++	if (dev_dat->ps_pwr_status == 0) {
++		spin_unlock(&dev_dat->ps_timer_lock);
++		return;
++	}
++	dev_dat->ps_timer.expires = jiffies +
++		(HZ * atomic_read(&dev_dat->ps_delay) / 2) / 1000;
++	spin_unlock(&dev_dat->ps_timer_lock);
++	add_timer(&dev_dat->ps_timer);
++	return;
++
++err_rd:
++	pr_info("Read ps sensor error, ret = %d\n", ret);
++	return;
++}
++
++/* enable to run als */
++static int set_sensor_reg(struct isl29147_data_t *dev_dat)
++{
++	struct isl29147_cfg_t *cfg;
++	u8 reg_dat[16];
++	int i, ret;
++
++	cfg = dev_dat->cfg;
++
++	reg_dat[4] = 0x22;
++	/*reg_dat[3] = cfg->ps_lt;*/
++	/*reg_dat[4] = cfg->ps_ht;*/
++	reg_dat[5] = 0;
++	reg_dat[6] = 255;
++
++	reg_dat[1] = 0x8;	/* set ps sleep time to 50ms */
++
++	reg_dat[2] = 0x80;	/* ps int is hystersis */
++	spin_lock(&dev_dat->als_timer_lock);
++	reg_dat[2] |= cfg->als_range & 0x3;
++	reg_dat[2] |= (cfg->ps_offset & 0xf) << 3;
++	if (dev_dat->als_pwr_status) {
++		/* measurement als */
++		reg_dat[2] |= 0x04;
++	}
++	reg_dat[3] = cfg->als_ir_comp & 0xf;
++	spin_unlock(&dev_dat->als_timer_lock);
++
++	spin_lock(&dev_dat->ps_timer_lock);
++	if (dev_dat->ps_pwr_status)
++		reg_dat[1] |= 0x20;
++	reg_dat[1] |= cfg->ps_led_drv_cur & 0x3;
++	spin_unlock(&dev_dat->ps_timer_lock);
++
++	/* first, do a software reset for if there is a brown out */
++	ret = i2c_smbus_write_byte_data(dev_dat->client, 0x0e, 0x38);
++	if (ret < 0) {
++		/*set enable value 0 when power off*/
++		dev_dat->als_cdev.enabled = 0;
++		dev_dat->ps_cdev.enabled = 0;
++
++		return ret;
++	}
++
++	for (i = 3; i <= 6; i++) {
++		ret = i2c_smbus_write_byte_data(dev_dat->client, i, reg_dat[i]);
++		if (ret < 0)
++			return ret;
++	}
++
++	ret = i2c_smbus_write_byte_data(dev_dat->client, 0x02, reg_dat[2]);
++	if (ret < 0)
++		return ret;
++
++
++	ret = i2c_smbus_write_byte_data(dev_dat->client, 0x01, reg_dat[1]);
++	if (ret < 0)
++		return ret;
++
++	return 0;
++}
++
++/* set power status */
++static int set_als_pwr_st(u8 state, struct isl29147_data_t *dat)
++{
++	int ret = 0;
++
++	if (state) {
++		spin_lock(&dat->als_timer_lock);
++		if (dat->als_pwr_status) {
++			spin_unlock(&dat->als_timer_lock);
++			return ret;
++		}
++		dat->als_pwr_status = 1;
++		spin_unlock(&dat->als_timer_lock);
++		ret = set_sensor_reg(dat);
++		if (ret < 0) {
++			pr_info("set light sensor reg error, ret = %d\n", ret);
++			return ret;
++		}
++
++		/* start timer */
++		dat->als_timer.function = &do_als_timer;
++		dat->als_timer.data = (unsigned long)dat;
++		spin_lock(&dat->als_timer_lock);
++		dat->als_timer.expires = jiffies + (HZ * 250) / 1000;
++		spin_unlock(&dat->als_timer_lock);
++		dat->als_range_using = dat->cfg->als_range;
++
++		add_timer(&dat->als_timer);
++	} else{
++		spin_lock(&dat->als_timer_lock);
++		if (dat->als_pwr_status == 0) {
++			spin_unlock(&dat->als_timer_lock);
++			return ret;
++		}
++		dat->als_pwr_status = 0;
++		spin_unlock(&dat->als_timer_lock);
++		ret = set_sensor_reg(dat);
++
++		/* delete timer */
++		del_timer_sync(&dat->als_timer);
++	}
++
++	return ret;
++}
++
++static int set_ps_pwr_st(u8 state, struct isl29147_data_t *dat)
++{
++	int ret = 0;
++
++	if (state) {
++		spin_lock(&dat->ps_timer_lock);
++		if (dat->ps_pwr_status) {
++			spin_unlock(&dat->ps_timer_lock);
++			return ret;
++		}
++		dat->ps_pwr_status = 1;
++		spin_unlock(&dat->ps_timer_lock);
++
++		dat->last_ps = -1;
++		dat->ps_filter_cnt = 0;
++		ret = set_sensor_reg(dat);
++		if (ret < 0) {
++			pr_info("set proximity sensor reg error, ret = %d\n",
++				ret);
++			return ret;
++		}
++
++		/* start timer */
++		dat->ps_timer.function = &do_ps_timer;
++		dat->ps_timer.data = (unsigned long)dat;
++		dat->ps_timer.expires = jiffies + (HZ * PS_POLL_TIME) / 1000;
++		add_timer(&dat->ps_timer);
++	} else {
++		spin_lock(&dat->ps_timer_lock);
++		if (dat->ps_pwr_status == 0) {
++			spin_unlock(&dat->ps_timer_lock);
++			return ret;
++		}
++		dat->ps_pwr_status = 0;
++		spin_unlock(&dat->ps_timer_lock);
++
++		ret = set_sensor_reg(dat);
++
++		/* delete timer */
++		del_timer_sync(&dat->ps_timer);
++	}
++
++	return ret;
++}
++
++/* device attribute */
++/* enable als attribute */
++static ssize_t show_enable_als_sensor(struct device *dev,
++			  struct device_attribute *attr, char *buf)
++{
++	struct isl29147_data_t *dat;
++	u8 pwr_status;
++
++	dat = (struct isl29147_data_t *)dev->platform_data;
++	spin_lock(&dat->als_timer_lock);
++	pwr_status = dat->als_pwr_status;
++	spin_unlock(&dat->als_timer_lock);
++
++	return snprintf(buf, PAGE_SIZE, "%d\n", pwr_status);
++}
++static ssize_t store_enable_als_sensor(struct device *dev,
++	struct device_attribute *attr, const char *buf, size_t count)
++{
++	struct isl29147_data_t *dat;
++	ssize_t ret;
++	unsigned long val;
++
++	dat = (struct isl29147_data_t *)dev->platform_data;
++
++	/*val = simple_strtoul(buf, NULL, 10);*/
++	val = kstrtoul(buf, 10, NULL);
++	ret = set_als_pwr_st(val, dat);
++
++	if (ret == 0)
++		ret = count;
++	return ret;
++}
++static DEVICE_ATTR(enable_als_sensor, S_IRUGO|S_IWUSR|S_IWGRP|S_IWOTH,
++	show_enable_als_sensor, store_enable_als_sensor);
++
++/* enable ps attribute */
++static ssize_t show_enable_ps_sensor(struct device *dev,
++			  struct device_attribute *attr, char *buf)
++{
++	struct isl29147_data_t *dat;
++	u8 pwr_status;
++
++	dat = (struct isl29147_data_t *)dev->platform_data;
++	spin_lock(&dat->ps_timer_lock);
++	pwr_status = dat->ps_pwr_status;
++	spin_unlock(&dat->ps_timer_lock);
++
++	return snprintf(buf, PAGE_SIZE, "%d\n", pwr_status);
++}
++static ssize_t store_enable_ps_sensor(struct device *dev,
++	struct device_attribute *attr, const char *buf, size_t count)
++{
++	struct isl29147_data_t *dat;
++	ssize_t ret;
++	unsigned long val;
++
++	dat = (struct isl29147_data_t *)dev->platform_data;
++
++	/*val = simple_strtoul(buf, NULL, 10);*/
++	val = kstrtoul(buf, 10, NULL);
++	ret = set_ps_pwr_st(val, dat);
++
++	if (ret == 0)
++		ret = count;
++	return ret;
++}
++static DEVICE_ATTR(enable_ps_sensor, S_IRUGO|S_IWUSR|S_IWGRP|S_IWOTH,
++	show_enable_ps_sensor, store_enable_ps_sensor);
++
++/* ps led driver current attribute */
++static ssize_t show_ps_led_drv(struct device *dev,
++			  struct device_attribute *attr, char *buf)
++{
++	struct isl29147_data_t *dat;
++
++	dat = (struct isl29147_data_t *)dev->platform_data;
++	return snprintf(buf, PAGE_SIZE, "%d\n", dat->cfg->ps_led_drv_cur);
++}
++static ssize_t store_ps_led_drv(struct device *dev,
++	struct device_attribute *attr, const char *buf, size_t count)
++{
++	struct isl29147_data_t *dat;
++	int val;
++
++	if (sscanf(buf, "%d", &val) != 1)
++		return -EINVAL;
++
++	dat = (struct isl29147_data_t *)dev->platform_data;
++	dat->cfg->ps_led_drv_cur = val & 0x3;
++
++	return count;
++}
++static DEVICE_ATTR(ps_led_driver_current, S_IRUGO|S_IWUSR|S_IWGRP|S_IWOTH,
++	show_ps_led_drv, store_ps_led_drv);
++
++/* als range attribute */
++static ssize_t show_als_range(struct device *dev,
++			  struct device_attribute *attr, char *buf)
++{
++	struct isl29147_data_t *dat;
++	u8 range;
++
++	dat = (struct isl29147_data_t *)dev->platform_data;
++	spin_lock(&dat->als_timer_lock);
++	range = dat->cfg->als_range;
++	spin_unlock(&dat->als_timer_lock);
++
++	return snprintf(buf, PAGE_SIZE, "%d\n", range);
++}
++static ssize_t store_als_range(struct device *dev,
++	struct device_attribute *attr, const char *buf, size_t count)
++{
++	struct isl29147_data_t *dat;
++	int val;
++
++	if (sscanf(buf, "%d", &val) != 1)
++		return -EINVAL;
++
++	dat = (struct isl29147_data_t *)dev->platform_data;
++
++	spin_lock(&dat->als_timer_lock);
++	dat->cfg->als_range = val & 0x3;
++	spin_unlock(&dat->als_timer_lock);
++
++	return count;
++}
++static DEVICE_ATTR(als_range, S_IRUGO|S_IWUSR|S_IWGRP|S_IWOTH,
++	show_als_range, store_als_range);
++
++/* ps limit range attribute */
++static ssize_t show_ps_limit(struct device *dev,
++			  struct device_attribute *attr, char *buf)
++{
++	struct isl29147_data_t *dat;
++
++	dat = (struct isl29147_data_t *)dev->platform_data;
++	return snprintf(buf, PAGE_SIZE, "%d %d\n",
++		dat->cfg->ps_lt, dat->cfg->ps_ht);
++}
++static ssize_t store_ps_limit(struct device *dev,
++	struct device_attribute *attr, const char *buf, size_t count)
++{
++	struct isl29147_data_t *dat;
++	int lt, ht;
++
++	if (sscanf(buf, "%d %d", &lt, &ht) != 2)
++		return -EINVAL;
++
++	dat = (struct isl29147_data_t *)dev->platform_data;
++
++	if (lt > 255)
++		dat->cfg->ps_lt = 255;
++	else if (lt < 0)
++		dat->cfg->ps_lt = 0;
++	else
++		dat->cfg->ps_lt = lt;
++
++	if (ht > 255)
++		dat->cfg->ps_ht = 255;
++	else if (ht < 0)
++		dat->cfg->ps_ht = 0;
++	else
++		dat->cfg->ps_ht = ht;
++
++	return count;
++}
++static DEVICE_ATTR(ps_limit, S_IRUGO|S_IWUSR|S_IWGRP|S_IWOTH,
++	show_ps_limit, store_ps_limit);
++
++/* poll delay attribute */
++static ssize_t show_poll_delay(struct device *dev,
++			  struct device_attribute *attr, char *buf)
++{
++	struct isl29147_data_t *dat;
++	int delay;
++
++	dat = (struct isl29147_data_t *)dev->platform_data;
++	spin_lock(&dat->als_timer_lock);
++	delay = dat->poll_delay;
++	spin_unlock(&dat->als_timer_lock);
++
++	return snprintf(buf, PAGE_SIZE, "%d\n", delay);
++}
++static ssize_t store_poll_delay(struct device *dev,
++	struct device_attribute *attr, const char *buf, size_t count)
++{
++	struct isl29147_data_t *dat;
++	int delay;
++
++	if (sscanf(buf, "%d", &delay) != 1)
++		return -EINVAL;
++
++	dat = (struct isl29147_data_t *)dev->platform_data;
++
++	spin_lock(&dat->als_timer_lock);
++	if (delay  < 120)
++		dat->poll_delay = 120;
++	else if (delay > 65535)
++		dat->poll_delay = 65535;
++	else
++		dat->poll_delay = delay;
++	spin_unlock(&dat->als_timer_lock);
++
++	return count;
++/*
++	unsigned long data;
++	int error;
++	struct i2c_client *client = to_i2c_client(dev);
++	struct isl29147_data_t *dat = i2c_get_clientdata(client);
++
++	error = kstrtoul(buf, 10, &data);
++	if (error)
++		return error;
++	if (data > ISL29147_ALS_MAX_DELAY)
++		data = ISL29147_ALS_MAX_DELAY;
++	atomic_set(&dat->delay, (unsigned int) data);
++
++	return count;*/
++}
++static DEVICE_ATTR(poll_delay, S_IRUGO|S_IWUSR|S_IWGRP|S_IWOTH,
++	show_poll_delay, store_poll_delay);
++
++/* show als raw data attribute */
++static ssize_t show_als_show_raw(struct device *dev,
++			  struct device_attribute *attr, char *buf)
++{
++	struct isl29147_data_t *dat;
++	u8 flag;
++
++	dat = (struct isl29147_data_t *)dev->platform_data;
++	spin_lock(&dat->als_timer_lock);
++	flag = dat->show_als_raw;
++	spin_unlock(&dat->als_timer_lock);
++
++	return snprintf(buf, PAGE_SIZE, "%d\n", flag);
++}
++static ssize_t store_als_show_raw(struct device *dev,
++	struct device_attribute *attr, const char *buf, size_t count)
++{
++	struct isl29147_data_t *dat;
++	int flag;
++
++	if (sscanf(buf, "%d", &flag) != 1)
++		return -EINVAL;
++
++	dat = (struct isl29147_data_t *)dev->platform_data;
++
++	spin_lock(&dat->als_timer_lock);
++	if (flag == 0)
++		dat->show_als_raw = 0;
++	else
++		dat->show_als_raw = 1;
++	spin_unlock(&dat->als_timer_lock);
++
++	return count;
++}
++static DEVICE_ATTR(als_show_raw, S_IRUGO|S_IWUSR|S_IWGRP|S_IWOTH,
++	show_als_show_raw, store_als_show_raw);
++
++/* show ps raw data attribute */
++static ssize_t show_ps_show_raw(struct device *dev,
++			  struct device_attribute *attr, char *buf)
++{
++	struct isl29147_data_t *dat;
++	u8 flag;
++
++	dat = (struct isl29147_data_t *)dev->platform_data;
++	spin_lock(&dat->als_timer_lock);
++	flag = dat->show_ps_raw;
++	spin_unlock(&dat->als_timer_lock);
++
++	return snprintf(buf, PAGE_SIZE, "%d\n", flag);
++}
++static ssize_t store_ps_show_raw(struct device *dev,
++	struct device_attribute *attr, const char *buf, size_t count)
++{
++	struct isl29147_data_t *dat;
++	int flag;
++
++	if (sscanf(buf, "%d", &flag) != 1)
++		return -EINVAL;
++
++	dat = (struct isl29147_data_t *)dev->platform_data;
++
++	spin_lock(&dat->als_timer_lock);
++	if (flag == 0)
++		dat->show_ps_raw = 0;
++	else
++		dat->show_ps_raw = 1;
++	spin_unlock(&dat->als_timer_lock);
++
++	return count;
++}
++static DEVICE_ATTR(ps_show_raw, S_IRUGO|S_IWUSR|S_IWGRP|S_IWOTH,
++	show_ps_show_raw, store_ps_show_raw);
++
++/* show ps offset comp data attribute */
++static ssize_t show_ps_offset_comp(struct device *dev,
++			  struct device_attribute *attr, char *buf)
++{
++	struct isl29147_data_t *dat;
++	u8 offset;
++
++	dat = (struct isl29147_data_t *)dev->platform_data;
++	spin_lock(&dat->als_timer_lock);
++	offset = dat->cfg->ps_offset;
++	spin_unlock(&dat->als_timer_lock);
++
++	return snprintf(buf, PAGE_SIZE, "%d\n", offset);
++}
++static ssize_t store_ps_offset_comp(struct device *dev,
++	struct device_attribute *attr, const char *buf, size_t count)
++{
++	struct isl29147_data_t *dat;
++	int offset;
++
++	if (sscanf(buf, "%d", &offset) != 1)
++		return -EINVAL;
++
++	dat = (struct isl29147_data_t *)dev->platform_data;
++
++	spin_lock(&dat->als_timer_lock);
++	dat->cfg->ps_offset = offset & 0xf;
++	spin_unlock(&dat->als_timer_lock);
++
++	return count;
++}
++static DEVICE_ATTR(ps_offset_comp, S_IRUGO|S_IWUSR|S_IWGRP|S_IWOTH,
++	show_ps_offset_comp, store_ps_offset_comp);
++
++/* show als ir comp data attribute */
++static ssize_t show_als_ir_comp(struct device *dev,
++			  struct device_attribute *attr, char *buf)
++{
++	struct isl29147_data_t *dat;
++	u8 comp;
++
++	dat = (struct isl29147_data_t *)dev->platform_data;
++	spin_lock(&dat->als_timer_lock);
++	comp = dat->cfg->als_ir_comp;
++	spin_unlock(&dat->als_timer_lock);
++
++	return snprintf(buf, PAGE_SIZE, "%d\n", comp);
++}
++static ssize_t store_als_ir_comp(struct device *dev,
++	struct device_attribute *attr, const char *buf, size_t count)
++{
++	struct isl29147_data_t *dat;
++	int comp;
++
++	if (sscanf(buf, "%d", &comp) != 1)
++		return -EINVAL;
++
++	dat = (struct isl29147_data_t *)dev->platform_data;
++
++	spin_lock(&dat->als_timer_lock);
++	dat->cfg->als_ir_comp = comp & 0xf;
++	spin_unlock(&dat->als_timer_lock);
++
++	return count;
++}
++static DEVICE_ATTR(als_ir_comp, S_IRUGO|S_IWUSR|S_IWGRP|S_IWOTH,
++	show_als_ir_comp, store_als_ir_comp);
++
++static int isl29147_als_set_enable(struct sensors_classdev *sensors_cdev,
++		unsigned int enable)
++{
++	int ret = 0;
++
++	struct isl29147_data_t *dat = container_of(sensors_cdev,
++			struct isl29147_data_t, als_cdev);
++	if ((enable != 0) && (enable != 1)) {
++		pr_err("%s: invalid value(%d)\n", __func__, enable);
++		return -EINVAL;
++	}
++
++	if (enable) {
++		spin_lock(&dat->als_timer_lock);
++		if (dat->als_pwr_status) {
++			spin_unlock(&dat->als_timer_lock);
++			return ret;
++		}
++		dat->als_pwr_status = 1;
++		spin_unlock(&dat->als_timer_lock);
++		ret = set_sensor_reg(dat);
++		if (ret < 0) {
++			pr_info("set light sensor reg error, ret = %d\n", ret);
++			return ret;
++		}
++
++		/* start timer */
++		dat->als_timer.function = &do_als_timer;
++		dat->als_timer.data = (unsigned long)dat;
++		spin_lock(&dat->als_timer_lock);
++		dat->als_timer.expires = jiffies + (HZ * 250) / 1000;
++		spin_unlock(&dat->als_timer_lock);
++		dat->als_range_using = dat->cfg->als_range;
++
++		add_timer(&dat->als_timer);
++	} else {
++		spin_lock(&dat->als_timer_lock);
++		if (dat->als_pwr_status == 0) {
++			spin_unlock(&dat->als_timer_lock);
++			return ret;
++		}
++		dat->als_pwr_status = 0;
++		spin_unlock(&dat->als_timer_lock);
++		ret = set_sensor_reg(dat);
++
++		/* delete timer */
++		del_timer_sync(&dat->als_timer);
++	}
++	return ret;
++
++};
++
++static int isl29147_ps_set_enable(struct sensors_classdev *sensors_cdev,
++		unsigned int enable)
++{
++	int ret = 0;
++
++	struct isl29147_data_t *dat = container_of(sensors_cdev,
++			struct isl29147_data_t, ps_cdev);
++	if ((enable != 0) && (enable != 1)) {
++		pr_err("%s: invalid value(%d)\n", __func__, enable);
++		return -EINVAL;
++	}
++
++	if (enable) {
++		spin_lock(&dat->ps_timer_lock);
++		if (dat->ps_pwr_status) {
++			spin_unlock(&dat->ps_timer_lock);
++			return ret;
++		}
++		dat->ps_pwr_status = 1;
++		spin_unlock(&dat->ps_timer_lock);
++
++		dat->last_ps = -1;
++		dat->ps_filter_cnt = 0;
++		ret = set_sensor_reg(dat);
++		if (ret < 0) {
++			pr_info("enable set proximity sensor  reg error, ret = %d\n",
++				ret);
++			return ret;
++		}
++
++		/* start timer */
++		dat->ps_timer.function = &do_ps_timer;
++		dat->ps_timer.data = (unsigned long)dat;
++		dat->ps_timer.expires = jiffies + (HZ * PS_POLL_TIME) / 1000;
++		add_timer(&dat->ps_timer);
++	} else {
++		spin_lock(&dat->ps_timer_lock);
++		if (dat->ps_pwr_status == 0) {
++			spin_unlock(&dat->ps_timer_lock);
++			return ret;
++		}
++		dat->ps_pwr_status = 0;
++		spin_unlock(&dat->ps_timer_lock);
++
++		ret = set_sensor_reg(dat);
++		if (ret < 0) {
++			pr_info("disable set proximity sensor reg error, ret = %d\n",
++				ret);
++			return ret;
++		}
++		/* delete timer */
++		del_timer_sync(&dat->ps_timer);
++	}
++
++	return ret;
++};
++
++static int isl29147_als_poll_delay_enable(struct sensors_classdev *sensors_cdev,
++				unsigned int delay_ms)
++{
++		struct isl29147_data_t *dat = container_of(sensors_cdev,
++			struct isl29147_data_t, als_cdev);
++
++		if (delay_ms > ISL29147_ALS_MAX_DELAY)
++			delay_ms = ISL29147_ALS_MAX_DELAY;
++		atomic_set(&dat->als_delay, (unsigned int) delay_ms);
++
++		return 0;
++}
++
++static int isl29147_ps_poll_delay_enable(struct sensors_classdev *sensors_cdev,
++				unsigned int delay_ms)
++{
++		struct isl29147_data_t *dat = container_of(sensors_cdev,
++			struct isl29147_data_t, ps_cdev);
++
++		if (delay_ms > ISL29147_PS_MAX_DELAY)
++			delay_ms = ISL29147_PS_MAX_DELAY;
++		atomic_set(&dat->ps_delay, (unsigned int) delay_ms);
++
++		return 0;
++}
++
++static struct attribute *als_attr[] = {
++	&dev_attr_enable_als_sensor.attr,
++	&dev_attr_als_range.attr,
++	&dev_attr_poll_delay.attr,
++	&dev_attr_als_show_raw.attr,
++	&dev_attr_als_ir_comp.attr,
++	NULL
++};
++
++static struct attribute_group als_attr_grp = {
++	.name = "light sensor",
++	.attrs = als_attr
++};
++
++static struct attribute *ps_attr[] = {
++	&dev_attr_enable_ps_sensor.attr,
++	&dev_attr_ps_led_driver_current.attr,
++	&dev_attr_ps_limit.attr,
++	&dev_attr_ps_show_raw.attr,
++	&dev_attr_ps_offset_comp.attr,
++	NULL
++};
++
++static struct attribute_group ps_attr_grp = {
++	.name = "proximity sensor",
++	.attrs = ps_attr
++};
++
++/* initial and register a input device for sensor */
++static int init_input_dev(struct isl29147_data_t *dev_dat)
++{
++	int err;
++	struct input_dev *als_dev;
++	struct input_dev *ps_dev;
++
++	als_dev = input_allocate_device();
++	if (!als_dev)
++		return -ENOMEM;
++	ps_dev = input_allocate_device();
++	if (!ps_dev) {
++		err = -ENOMEM;
++		goto err_free_als;
++	}
++
++	als_dev->name = "light";
++	als_dev->id.bustype = BUS_I2C;
++	als_dev->id.vendor  = 0x0001;
++	als_dev->id.product = 0x0001;
++	als_dev->id.version = 0x0100;
++	als_dev->evbit[0] = BIT_MASK(EV_ABS);
++	als_dev->absbit[BIT_WORD(ABS_MISC)] |= BIT_MASK(ABS_MISC);
++	als_dev->dev.platform_data = dev_dat;
++	input_set_abs_params(als_dev, ABS_MISC, 0, 65535, 0, 0);
++
++	ps_dev->name = "proximity";
++	ps_dev->id.bustype = BUS_I2C;
++	ps_dev->id.vendor  = 0x0001;
++	ps_dev->id.product = 0x0002;
++	ps_dev->id.version = 0x0100;
++	ps_dev->evbit[0] = BIT_MASK(EV_ABS);
++	ps_dev->absbit[BIT_WORD(ABS_DISTANCE)] |= BIT_MASK(ABS_DISTANCE);
++	ps_dev->dev.platform_data = dev_dat;
++	input_set_abs_params(ps_dev, ABS_DISTANCE, 0, 65535, 0, 0);
++	err = input_register_device(als_dev);
++	if (err)
++		goto err_free_ps;
++
++	err = input_register_device(ps_dev);
++	if (err)
++		goto err_free_ps;
++
++	err = sysfs_create_group(&als_dev->dev.kobj, &als_attr_grp);
++	if (err) {
++		dev_err(&als_dev->dev, "isl29147: device create als file failed\n");
++		goto err_free_ps;
++	}
++
++	err = sysfs_create_group(&ps_dev->dev.kobj, &ps_attr_grp);
++	if (err) {
++		dev_err(&ps_dev->dev, "isl29147: device create ps file failed\n");
++		goto err_free_ps;
++	}
++
++	dev_dat->als_input_dev = als_dev;
++	dev_dat->ps_input_dev = ps_dev;
++
++	return 0;
++
++err_free_ps:
++	input_free_device(ps_dev);
++err_free_als:
++	input_free_device(als_dev);
++
++	return err;
++}
++
++
++/* Return 0 if detection is successful, -ENODEV otherwise */
++static int isl29147_detect(struct i2c_client *client,
++	struct i2c_board_info *info)
++{
++	struct i2c_adapter *adapter = client->adapter;
++
++	pr_info("In isl29147_detect()\n");
++	if (!i2c_check_functionality(adapter, I2C_FUNC_SMBUS_WRITE_BYTE_DATA
++				     | I2C_FUNC_SMBUS_READ_BYTE)) {
++		pr_info("I2c adapter don't support ISL29147\n");
++		return -ENODEV;
++	}
++
++	/* probe that if isl29147 is at the i2 address */
++	if (i2c_smbus_xfer(adapter, client->addr, 0, I2C_SMBUS_WRITE,
++		0, I2C_SMBUS_QUICK, NULL) < 0)
++		return -ENODEV;
++
++	strlcpy(info->type, "isl29147", I2C_NAME_SIZE);
++	pr_info("%s is found at i2c device address %d\n",
++		info->type, client->addr);
++
++	return 0;
++}
++
++static int sensor_parse_dt(struct device *dev,
++	struct isl29147_cfg_t *cfg)
++{
++	struct device_node *np = dev->of_node;
++	unsigned int tmp;
++	int rc = 0;
++
++	rc = of_property_read_u32(np, "intersil,als_range", &tmp);
++	if (rc) {
++		dev_err(dev, "Unable to read als_range\n");
++		return rc;
++	}
++	cfg->als_range = tmp;
++
++	rc = of_property_read_u32(np, "intersil,ps_ht", &tmp);
++	 if (rc) {
++		dev_err(dev, "Unable to read intersil,ps_ht\n");
++		return rc;
++	}
++	cfg->ps_ht = tmp;
++
++	rc = of_property_read_u32(np, "intersil,ps_lt", &tmp);
++	if (rc) {
++		dev_err(dev, "Unable to read intersil,ps_lt\n");
++		return rc;
++	}
++	cfg->ps_lt = tmp;
++
++	return 0;
++}
++
++
++/* isl29147 probed */
++static int isl29147_probe(struct i2c_client *client,
++			 const struct i2c_device_id *id)
++{
++	int err, i;
++	u8 reg_dat[16];
++
++	struct isl29147_data_t *isl29147_data;
++	struct isl29147_cfg_t *cfgdata;
++
++	if (client->dev.of_node) {
++		cfgdata = devm_kzalloc(&client->dev,
++				sizeof(struct isl29147_cfg_t),
++				GFP_KERNEL);
++		if (!cfgdata) {
++			dev_err(&client->dev, "Failed to allocate memory\n");
++			return -ENOMEM;
++		}
++
++		client->dev.platform_data = cfgdata;
++		err = sensor_parse_dt(&client->dev, cfgdata);
++		if (err) {
++			pr_err("%s: sensor_parse_dt() err\n", __func__);
++			return err;
++		}
++	} else {
++		cfgdata = client->dev.platform_data;
++		if (!cfgdata) {
++			dev_err(&client->dev, "No platform data\n");
++			return -ENODEV;
++		}
++	}
++
++	isl29147_data = kzalloc(sizeof(struct isl29147_data_t), GFP_KERNEL);
++	if (!isl29147_data) {
++		dev_err(&client->dev,
++			"failed to allocate memory for module data:""%d\n",
++			err);
++		return -ENOMEM;
++	}
++
++	isl29147_data->cfg = cfgdata;
++	isl29147_data->client = client;
++
++	isl29147_data->als_pwr_status = 0;
++	isl29147_data->ps_pwr_status = 0;
++	isl29147_data->poll_delay = 100;
++	isl29147_data->show_als_raw = 1;
++	isl29147_data->show_ps_raw = 1;
++	isl29147_data->ps_filter_cnt = 0;
++	isl29147_data->last_lux = 10;
++	isl29147_data->last_ps_raw = 255;
++	isl29147_data->als_chg_range_delay_cnt = 0;
++	isl29147_data->cfg->ps_led_drv_cur = 0;
++	isl29147_data->cfg->ps_offset = 0;
++	isl29147_data->cfg->als_ir_comp = 0;
++	isl29147_data->cfg->glass_factor = 10;
++
++	spin_lock_init(&isl29147_data->als_timer_lock);
++	spin_lock_init(&isl29147_data->ps_timer_lock);
++	INIT_WORK(&isl29147_data->als_work, &do_als_work);
++	INIT_WORK(&isl29147_data->ps_work, &do_ps_work);
++	INIT_WORK(&isl29147_data->calib_work, &do_calib_work);
++	init_timer(&isl29147_data->als_timer);
++	init_timer(&isl29147_data->ps_timer);
++
++	isl29147_data->als_wq = create_workqueue("als wq");
++	if (!isl29147_data->als_wq) {
++		destroy_workqueue(isl29147_data->als_wq);
++		return -ENOMEM;
++	}
++
++	isl29147_data->ps_wq = create_workqueue("ps wq");
++	if (!isl29147_data->ps_wq) {
++		destroy_workqueue(isl29147_data->als_wq);
++		return -ENOMEM;
++	}
++
++	i2c_set_clientdata(client, isl29147_data);
++
++	err = set_sensor_reg(isl29147_data);
++	if (err < 0)
++		return -ENOMEM;
++
++	reg_dat[7] = 0x00;
++	reg_dat[8] = 0x0f;
++	reg_dat[9] = 0xff;
++	for (i = 7; i <= 9; i++) {
++		err = i2c_smbus_write_byte_data(client, i, reg_dat[i]);
++		if (err < 0)
++			return -EINVAL;
++	}
++
++	err = init_input_dev(isl29147_data);
++	if (err < 0) {
++		destroy_workqueue(isl29147_data->als_wq);
++		destroy_workqueue(isl29147_data->ps_wq);
++		return -ENOMEM;
++	}
++
++	isl29147_data->als_cdev = sensors_light_cdev;
++	isl29147_data->als_cdev.sensors_enable = isl29147_als_set_enable;
++	isl29147_data->als_cdev.sensors_poll_delay =
++		isl29147_als_poll_delay_enable;
++
++	isl29147_data->ps_cdev = sensors_proximity_cdev;
++	isl29147_data->ps_cdev.sensors_enable = isl29147_ps_set_enable;
++	isl29147_data->ps_cdev.sensors_poll_delay =
++		isl29147_ps_poll_delay_enable;
++
++	err = sensors_classdev_register(&client->dev, &isl29147_data->als_cdev);
++	if (err) {
++		dev_err(&client->dev, "create als_cdev class device file failed!\n");
++		err = -EINVAL;
++		sensors_classdev_unregister(&isl29147_data->als_cdev);
++	}
++
++	err = sensors_classdev_register(&client->dev, &isl29147_data->ps_cdev);
++	if (err) {
++		dev_err(&client->dev, "create pc_cdev class device file failed!\n");
++		err = -EINVAL;
++		sensors_classdev_unregister(&isl29147_data->ps_cdev);
++	}
++
++	return err;
++
++}
++
++static int isl29147_remove(struct i2c_client *client)
++{
++	struct input_dev *als_dev;
++	struct input_dev *ps_dev;
++	struct isl29147_data_t *isl29147_data = i2c_get_clientdata(client);
++	pr_info("%s at address %d is removed\n", client->name, client->addr);
++
++	/* clean the isl29147 data struct when isl29147 device remove */
++	isl29147_data->client = NULL;
++	isl29147_data->als_pwr_status = 0;
++	isl29147_data->ps_pwr_status = 0;
++
++	als_dev = isl29147_data->als_input_dev;
++	ps_dev = isl29147_data->ps_input_dev;
++
++	sysfs_remove_group(&als_dev->dev.kobj, &als_attr_grp);
++	sysfs_remove_group(&ps_dev->dev.kobj, &ps_attr_grp);
++
++	input_unregister_device(als_dev);
++	input_unregister_device(ps_dev);
++
++	destroy_workqueue(isl29147_data->ps_wq);
++	destroy_workqueue(isl29147_data->als_wq);
++
++	isl29147_data->als_input_dev = NULL;
++	isl29147_data->ps_input_dev = NULL;
++
++	return 0;
++}
++
++#ifdef CONFIG_PM
++/* if define power manager, define suspend and resume function */
++static int isl29147_suspend(struct i2c_client *client, pm_message_t mesg)
++{
++	struct isl29147_data_t *dat;
++	int ret;
++
++	dat = i2c_get_clientdata(client);
++
++	spin_lock(&dat->als_timer_lock);
++	dat->als_pwr_before_suspend = dat->als_pwr_status;
++	spin_unlock(&dat->als_timer_lock);
++	ret = set_als_pwr_st(0, dat);
++	if (ret < 0)
++		return ret;
++
++	spin_lock(&dat->ps_timer_lock);
++	dat->ps_pwr_before_suspend = dat->ps_pwr_status;
++	spin_unlock(&dat->ps_timer_lock);
++	ret = set_ps_pwr_st(0, dat);
++	if (ret < 0)
++		return ret;
++
++	return 0;
++}
++
++static int isl29147_resume(struct i2c_client *client)
++{
++	struct isl29147_data_t *dat;
++	int ret;
++
++	dat = i2c_get_clientdata(client);
++
++	ret = set_als_pwr_st(dat->als_pwr_before_suspend, dat);
++	if (ret < 0)
++		return ret;
++
++	ret = set_ps_pwr_st(dat->ps_pwr_before_suspend, dat);
++	if (ret < 0)
++		return ret;
++
++	return 0;
++}
++#else
++#define	isl29147_suspend		NULL
++#define	isl29147_resume		NULL
++#endif		/*ifdef CONFIG_PM end*/
++
++static const struct i2c_device_id isl29147_id[] = {
++	{DEVICE_NAME, 0 },
++	{}
++};
++
++static struct of_device_id intersil_match_table[] = {
++	{ .compatible = "intersil,isl29147",},
++	{ },
++};
++
++MODULE_DEVICE_TABLE(i2c, isl29147_id);
++
++static struct i2c_driver isl29147_driver = {
++	.driver = {
++		.name			= "isl29147",
++		.of_match_table	= intersil_match_table,
++	},
++	.probe		= isl29147_probe,
++	.remove		= isl29147_remove,
++	.id_table		= isl29147_id,
++	.detect		= isl29147_detect,
++	/*.address_list= normal_i2c,*/
++	.suspend		= isl29147_suspend,
++	.resume		= isl29147_resume
++};
++
++/* define IOCTL interface */
++static int isl29147_open(struct inode *inode, struct file *filp)
++{
++	return 0;
++}
++
++static int isl29147_close(struct inode *inode, struct file *filp)
++{
++	return 0;
++}
++
++static long isl29147_ioctl(struct file *filp,
++	unsigned int cmd, unsigned long arg)
++{
++	long ret = 0;
++	struct isl29147_data_t *dat;
++	struct isl29147_cfg_t *cfg;
++	dat = container_of(filp->f_dentry->d_inode->i_cdev,
++		struct isl29147_data_t, cdev);
++	cfg = dat->cfg;
++
++	switch (cmd) {
++	case ISL_IOCTL_ALS_ON:
++			ret = set_als_pwr_st(1, dat);
++			return ret;
++			break;
++
++	case ISL_IOCTL_ALS_OFF:
++			ret = set_als_pwr_st(0, dat);
++			return ret;
++			break;
++
++	case ISL_IOCTL_ALS_DATA:
++			return dat->last_lux;
++			break;
++
++	case ISL_IOCTL_ALS_CALIBRATE:
++			/* don't support als calbrate now */
++			return 0;
++			break;
++
++	case ISL_IOCTL_CONFIG_GET:
++			ret = copy_to_user((struct isl29147_cfg_t *)arg, cfg,
++				sizeof(struct isl29147_cfg_t));
++			if (ret) {
++				pr_info("ISL: copy_to_user failed in ioctl config_get\n");
++				return -ENODATA;
++			}
++			return ret;
++			break;
++
++	case ISL_IOCTL_CONFIG_SET:
++			ret = copy_from_user(cfg, (struct isl29147_cfg_t *)arg,
++			sizeof(struct isl29147_cfg_t));
++
++#if (IS_DO_START_UP_CALIB)
++			do_startup_calib(dat);
++#endif
++			return ret;
++			break;
++
++	case ISL_IOCTL_PROX_ON:
++			ret = set_ps_pwr_st(1, dat);
++			return ret;
++			break;
++
++	case ISL_IOCTL_PROX_OFF:
++			ret = set_ps_pwr_st(0, dat);
++			return ret;
++			break;
++
++	case ISL_IOCTL_PROX_DATA:
++			return dat->last_ps_raw;
++				break;
++
++	case ISL_IOCTL_PROX_EVENT:
++			if (dat->last_ps > 0)
++				return 1;
++			else
++				return 0;
++				break;
++
++	case ISL_IOCTL_PROX_CALIBRATE:
++			do_calib(dat);
++			ret = copy_to_user((struct isl29147_calib_out_t *)arg,
++				&calib_out,
++				sizeof(struct isl29147_calib_out_t));
++			if (ret) {
++				pr_info("ISL: copy_to_user failed in ioctl config_get\n");
++				return -ENODATA;
++			}
++			return ret;
++			break;
++
++/*
++	case ISL_IOCTL_PROX_STARTUP_CALIBRATE:
++			ret = do_startup_calib(dat);
++			ret = put_user(ret, (unsigned int __user *)arg);
++			return (ret);
++			break;
++*/
++
++	case ISL_IOCTL_PROX_GET_ENABLED:
++			return put_user(dat->ps_pwr_status,
++				(unsigned long __user *)arg);
++			break;
++
++	case ISL_IOCTL_ALS_GET_ENABLED:
++			return put_user(dat->als_pwr_status,
++				(unsigned long __user *)arg);
++			break;
++
++
++	default:
++			return -EINVAL;
++			break;
++	}
++
++	return ret;
++
++}
++
++static const struct file_operations isl29147_fops = {
++	.owner = THIS_MODULE,
++	.open = isl29147_open,
++	.release = isl29147_close,
++	.unlocked_ioctl = isl29147_ioctl
++};
++
++
++struct i2c_client *isl29147_client;
++
++static int __init isl29147_init(void)
++{
++	int ret;
++
++	/* register the i2c driver for isl29147 */
++	ret = i2c_add_driver(&isl29147_driver);
++	if (ret < 0)
++		pr_info("Add isl29147 driver error, ret = %d\n", ret);
++	pr_info("init isl29147 module\n");
++
++	return ret;
++}
++
++static void __exit isl29147_exit(void)
++{
++	pr_info("exit isl29147 module\n");
++	i2c_del_driver(&isl29147_driver);
++}
++
++
++MODULE_AUTHOR("Chen Shouxian");
++MODULE_LICENSE("GPL v2");
++MODULE_DESCRIPTION("isl29147 ambient light sensor driver");
++MODULE_VERSION(DRIVER_VERSION);
++
++module_init(isl29147_init);
++module_exit(isl29147_exit);
+-- 
+1.9.1
+

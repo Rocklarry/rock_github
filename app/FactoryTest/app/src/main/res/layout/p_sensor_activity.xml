@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:orientation="vertical"
+    android:layout_height="match_parent">
+    <TextView
+        android:id="@+id/test"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="40sp"
+        android:text="P-SENSOR TEST"/>
+    <TextView
+        android:layout_below="@id/test"
+        android:id="@+id/lux_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="30sp"
+        />
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Calibration"
+        android:textSize="25sp"
+        android:padding="20dp"
+        android:visibility="gone"
+        android:layout_centerInParent="true"
+        />
+    <include
+        android:id="@+id/layout_psensor_result"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        layout="@layout/layout_result"/>
+    <TextView
+        android:id="@+id/tv_psensor_status"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="24sp"
+        android:layout_above="@+id/layout_psensor_result"
+        />
+</RelativeLayout>

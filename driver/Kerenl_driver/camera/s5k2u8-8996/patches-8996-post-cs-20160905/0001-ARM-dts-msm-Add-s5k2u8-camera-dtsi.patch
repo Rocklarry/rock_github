@@ -1,0 +1,46 @@
+From 0e855577d37cc92d8b4440ca0696b1020da43ab9 Mon Sep 17 00:00:00 2001
+From: Wei Ding <weiding@qti.qualcomm.com>
+Date: Mon, 5 Sep 2016 14:20:32 +0800
+Subject: [PATCH] ARM: dts: msm: Add s5k2u8 camera dtsi
+
+Add s5k2u8 devicetree description for msm8996
+Change-Id: I2a43e10e92bf6a748fe15359c485079f75fdb227
+Signed-off-by: Wei Ding <weiding@qti.qualcomm.com>
+---
+ arch/arm/boot/dts/qcom/msm8996-camera.dtsi | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8996-camera.dtsi b/arch/arm/boot/dts/qcom/msm8996-camera.dtsi
+index b16d8a6..21a2c63 100644
+--- a/arch/arm/boot/dts/qcom/msm8996-camera.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8996-camera.dtsi
+@@ -39,7 +39,7 @@
+ 			"ispif_ahb_clk", "csiphy_timer_src_clk",
+ 			"csiphy_timer_clk", "camss_ahb_clk",
+ 			"csiphy_3p_clk_src", "csi_phy_3p_clk";
+-		qcom,clock-rates = <0 0 200000000 0 0 100000000 0>;
++		qcom,clock-rates = <0 0 266700000 0 0 320000000 0>;
+ 	};
+ 
+ 	qcom,csiphy@a35000 {
+@@ -110,7 +110,7 @@
+ 			"ispif_ahb_clk", "csi_src_clk", "csi_clk",
+ 			"csi_phy_clk", "csi_ahb_clk", "csi_rdi_clk",
+ 			"csi_pix_clk", "camss_ahb_clk";
+-		qcom,clock-rates = <0 0 0 200000000 0 0 0 0 0 0>;
++		qcom,clock-rates = <0 0 0 480000000 0 0 0 0 0 0>;
+ 		status = "ok";
+ 	};
+ 
+@@ -256,7 +256,7 @@
+ 			"vfe0_clk_src", "camss_vfe_vfe0_clk", "camss_csi_vfe0_clk",
+ 			"vfe1_clk_src", "camss_vfe_vfe1_clk", "camss_csi_vfe1_clk";
+ 		qcom,clock-rates = <0 0 0 0
+-			200000000 0 0 0
++			480000000 0 0 0
+ 			200000000 0 0 0
+ 			200000000 0 0 0
+ 			200000000 0 0 0
+--
+1.9.1
+

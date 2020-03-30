@@ -1,0 +1,28 @@
+From 8059e83415962aecc8d6469d7135f8cc8470bbe2 Mon Sep 17 00:00:00 2001
+From: yanqy <yanqy0911@thundersoft.com>
+Date: Thu, 23 Apr 2015 16:24:43 +0800
+Subject: [PATCH 2/3] ARM:config: support ctp byd ssd6030
+
+Add CTP IHV-BYD@BYD-TP1089A-V2@SSD6030QN5 config
+
+Change-Id: Ic57f01759ba5ca853bbc75d566739ff00a89540d
+Signed-off-by: Qiyang Yan <yanqy0911@thundersoft.com>
+---
+ arch/arm/configs/msm8916-perf_defconfig |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm/configs/msm8916-perf_defconfig b/arch/arm/configs/msm8916-perf_defconfig
+index 7dd8192..b2fa99e 100644
+--- a/arch/arm/configs/msm8916-perf_defconfig
++++ b/arch/arm/configs/msm8916-perf_defconfig
+@@ -252,6 +252,7 @@ CONFIG_JOYSTICK_XPAD=y
+ CONFIG_INPUT_TOUCHSCREEN=y
+ CONFIG_TOUCHSCREEN_ATMEL_MXT=y
+ CONFIG_TOUCHSCREEN_FT5X06=y
++CONFIG_TOUCHSCREEN_SSD6030=y
+ CONFIG_TOUCHSCREEN_GEN_VKEYS=y
+ CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI4=y
+ CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_RMI4_DEV=y
+-- 
+1.7.9.5
+

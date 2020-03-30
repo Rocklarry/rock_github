@@ -1,0 +1,65 @@
+From f00a5a9449b457838202f20f2cabd750104705f9 Mon Sep 17 00:00:00 2001
+From: Yukun Wan <wanyk0402@thundersoft.com>
+Date: Wed, 11 Mar 2015 11:32:32 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support ltr558 devicetree
+
+Devicetree support ltr558
+
+Change-Id: Ie656a58828c101ff1a3ad0771169a154d6f865ba
+Signed-off-by: Yukun Wan <wanyk0402@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi | 31 ++++++++++++++++++++++++++++
+ 1 file changed, 31 insertions(+)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi b/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
+index 5bb6734..b1919a8 100644
+--- a/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
+@@ -72,6 +72,21 @@
+ 		};
+ 	};
+ 
++	ltr558_int_pin {
++		qcom,pins = <&gp 113>;
++		qcom,pin-func = <0>;
++		qcom,num-grp-pins = <1>;
++		label = "ltr558-irq";
++		ltr558_default: ltr558_default {
++			drive-strength = <6>;
++			bias-pull-up;
++		};
++		ltr558_sleep: ltr558_sleep {
++			drive-strength = <2>;
++			bias-pull-down;
++		};
++	};
++
+ };
+ 
+ &i2c_0 { /* BLSP1 QUP2 */
+@@ -109,6 +124,22 @@
+ 		avago,ga-value = <98>;
+ 	};
+ 
++	liteon@23 {
++		compatible = "liteon,ltr558";
++		reg = <0x23>;
++		pinctrl-names = "default","sleep";
++		pinctrl-0 = <&ltr558_default>;
++		pinctrl-1 = <&ltr558_sleep>;
++		interrupt-parent = <&msm_gpio>;
++		interrupts = <113 0x2>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++		liteon,intr = <&msm_gpio 113 0x2>;
++		liteon,highthr = <800>;
++		liteon,lowthr = <300>;
++		liteon,als_delay = <10>;
++	};
++
+ 	st@18 {
+ 		compatible = "st,lis3dh";
+ 		reg = <0x18>;
+-- 
+2.2.2
+

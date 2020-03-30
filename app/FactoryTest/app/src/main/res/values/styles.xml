@@ -1,0 +1,12 @@
+<resources>
+
+    <!-- Base application theme. -->
+    <style name="bg_ccc">
+        <item name="android:background">#ccc</item>
+    </style>
+
+
+    <style name="AppTheme" parent="@android:style/Theme.Light.NoTitleBar.Fullscreen">
+        <item name="android:typeface">monospace</item>
+    </style>
+</resources>

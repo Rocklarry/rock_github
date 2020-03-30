@@ -1,0 +1,29 @@
+From 1b6beb9909dac3e21703ce43c19ad7820612e34b Mon Sep 17 00:00:00 2001
+From: Shaosong Zhang <zhangss1028@thundersoft.com>
+Date: Tue, 8 Sep 2015 13:31:22 +0800
+Subject: [PATCH] ARM: dts: msm: Add ov13853 camera dtsi
+
+Add ov13853 devicetree description for msm8952
+
+Change-Id: I0a7cdd9fa7ea99f449f0f9bf4dc836e7668966be
+Signed-off-by: Shaosong Zhang <zhangss1028@thundersoft.com>
+---
+ .../boot/dts/qcom/msm8952-camera-sensor-qrd.dtsi   |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8952-camera-sensor-qrd.dtsi b/arch/arm/boot/dts/qcom/msm8952-camera-sensor-qrd.dtsi
+index f155ef5..c4054b1 100644
+--- a/arch/arm/boot/dts/qcom/msm8952-camera-sensor-qrd.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8952-camera-sensor-qrd.dtsi
+@@ -190,7 +190,7 @@
+ 		cell-index = <0>;
+ 		compatible = "qcom,camera";
+ 		reg = <0x0>;
+-		qcom,special-support-sensors = "ov13850_q13v06k";
++		qcom,special-support-sensors = "ov13853_q13853a";
+ 		qcom,csiphy-sd-index = <0>;
+ 		qcom,csid-sd-index = <0>;
+ 		qcom,mount-angle = <90>;
+-- 
+1.7.9.5
+

@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context="com.a3nod.lenovo.sparrowfactory.mmi.MainActivity">
+
+    <!--<ListView-->
+        <!--android:id="@+id/item_id"-->
+        <!--android:layout_width="match_parent"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:divider="@android:color/black"-->
+        <!--android:dividerHeight="1dp"-->
+        <!--&gt;-->
+    <!--</ListView>-->
+    <include layout="@layout/layout_title"/>
+    <RelativeLayout
+        android:layout_marginLeft="40dp"
+        android:layout_marginRight="10dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <RadioGroup
+            android:id="@+id/test_type"
+            android:layout_marginTop="30dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
+            android:orientation="horizontal">
+            <RadioButton
+                android:id="@+id/mmi1"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="MMI1"
+                android:textSize="25sp"
+                />
+            <RadioButton
+                android:id="@+id/mmi2"
+                android:layout_marginLeft="40dp"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="MMI2"
+                android:textSize="25sp"
+                />
+        </RadioGroup>
+    </RelativeLayout>
+    <Button
+        android:id="@+id/start_test"
+        android:layout_marginTop="20dp"
+        android:layout_marginLeft="10dp"
+        android:layout_marginRight="10dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="20sp"
+        android:text="Start Test"
+        />
+  <!--  <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="150dp">
+        <CheckBox
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:textSize="30dp"
+            android:text="MMI1"/>
+        <CheckBox
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:textSize="30dp"
+            android:text="MMI2"/>
+    </LinearLayout>-->
+
+    <GridView
+        android:id="@+id/item_id"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:horizontalSpacing="2dp"
+        android:verticalSpacing="2dp"
+        android:padding="2dp"
+        android:numColumns="2">
+    </GridView>
+
+</LinearLayout>

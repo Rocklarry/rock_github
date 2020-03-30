@@ -1,0 +1,40 @@
+From 12b52429538049477a6fa7f47e3aae5dd59e7d22 Mon Sep 17 00:00:00 2001
+From: yangzh <yangzh0324@thundersoft.com>
+Date: Wed, 2 Jul 2014 17:28:41 +0800
+Subject: [PATCH 1/3] ARM:dts:msm: support ctp GSL2682
+
+add CTP TOPTOUCH@TTCT045030@GSL2682 device tree
+
+Change-Id: Ib95f37f8d8ff0d33375fbd4af82a8e995f0514e5
+Signed-off-by: yangzh <yagnzh0324@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8916-qrd.dtsi |   13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8916-qrd.dtsi b/arch/arm/boot/dts/qcom/msm8916-qrd.dtsi
+index acbbc74..9e02970 100644
+--- a/arch/arm/boot/dts/qcom/msm8916-qrd.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8916-qrd.dtsi
+@@ -41,6 +41,19 @@
+ 			synaptics,disable-gpios;
+ 			synaptics,fw-image-name = "PR1601177-s3207_8916_qrd_00430000.img";
+ 		};
++
++		gsl@40 {
++			 compatible = "gsl,2688";
++			 reg = <0x40>;
++			 interrupt-parent = <&msm_gpio>;
++			 interrupts = <13 0x2008>;
++			 vdd-supply = <&pm8916_l17>;
++			 vcc_i2c-supply = <&pm8916_l16>;
++			 gsl,reset-gpio = <&msm_gpio 12 0x00>;
++			 gsl,irq-gpio = <&msm_gpio 13 0x00>;
++			 gsl,fw-name = "gsl2680.h";
++			 gsl,fw-vkey-support;
++		 };
+ 	};
+ 
+ 	vdd_vreg: vdd_vreg {
+-- 
+1.7.9.5
+

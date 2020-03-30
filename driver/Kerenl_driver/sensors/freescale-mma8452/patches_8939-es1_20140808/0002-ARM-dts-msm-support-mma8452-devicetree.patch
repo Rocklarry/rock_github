@@ -1,0 +1,64 @@
+From dbf4612453e28f7ab7f7bbcd803412a892daf5c3 Mon Sep 17 00:00:00 2001
+From: chenqingfeng <chenqf0228@thundersoft.com>
+Date: Thu, 9 Oct 2014 14:20:50 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support mma8452 devicetree
+
+Devicetree support mma8452
+
+Change-Id: I3ee18ab7c54b2a7f6778fafbe135e118ac7e08c0
+Signed-off-by: Qingfeng Chen <chenqf0228@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi |   30 ++++++++++++++++++++++++++
+ 1 file changed, 30 insertions(+)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+index e9902b8..81903c8 100755
+--- a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+@@ -58,6 +58,22 @@
+ 			bias-pull-down;
+ 		};
+ 	};
++
++	mma8452_int_pin {
++		qcom,pins = <&gp 112>;
++		qcom,pin-func = <0>;
++		qcom,num-grp-pins = <1>;
++		label = "mma8452-irq";
++		mma8452_default: mma8452_default {
++			drive-strength = <6>;
++			bias-pull-up;
++		};
++		mma8452_sleep: mma8452_sleep {
++			drive-strength = <2>;
++			bias-pull-down;
++		};
++	};
++
+ };
+ 
+ &i2c_0 { /* BLSP1 QUP2 */
+@@ -98,6 +114,20 @@
+ 		bosch,gpio-int2 = <&msm_gpio 114 0x2002>;
+ 	};
+ 
++	fsl@1d {
++		compatible = "fsl,mma845x";
++		reg = <0x1d>;
++		pinctrl-names = "default","sleep";
++		pinctrl-0 = <&mma8452_default>;
++		pinctrl-1 = <&mma8452_sleep>;
++		interrupt-parent = <&msm_gpio>;
++		vdd-supply = <&pm8916_l17>;
++		vddio-supply = <&pm8916_l6>;
++		fsl,g_range = <0>;
++		fsl,sensors_position = <0>;
++	};
++
++
+ 	memsic@30 { /* Magnetic field sensor */
+ 		compatible = "memsic,mmc3416x";
+ 		reg = <0x30>;
+-- 
+1.7.9.5
+

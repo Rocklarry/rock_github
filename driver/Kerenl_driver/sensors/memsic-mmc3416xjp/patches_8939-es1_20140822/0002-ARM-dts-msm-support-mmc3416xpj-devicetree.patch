@@ -1,0 +1,38 @@
+From 357c455a41908633a993d7826e6704e87e8ce866 Mon Sep 17 00:00:00 2001
+From: chenqingfeng <chenqf0228@thundersoft.com>
+Date: Thu, 21 Aug 2014 13:39:23 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support mmc3416xpj devicetree
+
+Devicetree support mmc3416xpj
+
+Change-Id: Ib918ec47ee3208811194777b953d236b9c55cfa6
+Signed-off-by: Qingfeng Chen <chenqf0228@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+index e9902b8..f878f64 100755
+--- a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+@@ -105,6 +105,7 @@
+ 		vio-supply = <&pm8916_l6>;
+ 		memsic,dir = "obverse-x-axis-forward";
+ 		memsic,auto-report;
++		memsic,poll_interval = <100>;
+ 	};
+ 
+ 	mpu6050@68 { /* Gyroscope and accelerometer sensor combo */
+@@ -119,7 +120,8 @@
+ 		vlogic-supply = <&pm8916_l16>;
+ 		vi2c-supply = <&pm8916_l6>;
+ 		invn,gpio-int = <&msm_gpio 115 0x2002>;
+-		invn,place = "Portrait Down Back Side";
++		/* invn,place = "Portrait Down Back Side"; */
++		invn,place = "Landscape Left Back Side";
+ 	};
+ 
+ 	tps65132@3e {
+-- 
+1.7.9.5
+

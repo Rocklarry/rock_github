@@ -1,0 +1,38 @@
+From 0c4bfd0fcfd102b8931d4ed6d51527ae58a8da37 Mon Sep 17 00:00:00 2001
+From: liuyan <liuyan0429@thundersoft.com>
+Date: Fri, 30 May 2014 15:07:41 +0800
+Subject: [PATCH 2/3]         ARM:config: support ctp ekth3248ay
+
+        Add ctp TRULY@CT4F0258@EKTH3248AY driver
+
+Change-Id: Id6352a0a088814cdedb54aed8322b6fb195002b3
+Signed-off-by: Yan Liu <liuyan0429@thundersoft.com>
+---
+ arch/arm/configs/msm8916_defconfig |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
+
+diff --git a/arch/arm/configs/msm8916_defconfig b/arch/arm/configs/msm8916_defconfig
+index adf74a4..14f2ea5 100644
+--- a/arch/arm/configs/msm8916_defconfig
++++ b/arch/arm/configs/msm8916_defconfig
+@@ -244,11 +244,12 @@ CONFIG_INPUT_JOYSTICK=y
+ CONFIG_JOYSTICK_XPAD=y
+ CONFIG_INPUT_TOUCHSCREEN=y
+ CONFIG_TOUCHSCREEN_ATMEL_MXT=y
+-CONFIG_TOUCHSCREEN_FT5X06=y
+-CONFIG_TOUCHSCREEN_GEN_VKEYS=y
+-CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI4=y
+-CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_RMI4_DEV=y
+-CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE=y
++#CONFIG_TOUCHSCREEN_FT5X06=y
++#CONFIG_TOUCHSCREEN_GEN_VKEYS=y
++#CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI4=y
++#CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_RMI4_DEV=y
++#CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE=y
++CONFIG_TOUCHSCREEN_ELAN_EKTF3XXX=y
+ CONFIG_INPUT_MISC=y
+ CONFIG_INPUT_UINPUT=y
+ CONFIG_INPUT_GPIO=m
+-- 
+1.7.9.5
+

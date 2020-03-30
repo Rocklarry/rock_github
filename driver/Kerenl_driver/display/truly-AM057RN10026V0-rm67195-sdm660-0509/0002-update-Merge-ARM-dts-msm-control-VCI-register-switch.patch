@@ -1,0 +1,43 @@
+From d4724f01fa35052d48f1d9fcf96af88292812b9a Mon Sep 17 00:00:00 2001
+From: wengzm0704 <wengzm0704@thundersoft.com>
+Date: Sat, 6 May 2017 11:31:41 +0800
+Subject: [PATCH 2/2] update & Merge 'ARM: dts: msm: control VCI register
+ switch for rm67195'
+
+Change-Id: I0a0f86bebba25691e3da6971b4f56c3ba01a4320
+---
+ arch/arm/boot/dts/qcom/dsi-panel-rm67195-amoled-fhd-cmd.dtsi | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+ mode change 100644 => 100755 arch/arm/boot/dts/qcom/dsi-panel-rm67195-amoled-fhd-cmd.dtsi
+
+diff --git a/arch/arm/boot/dts/qcom/dsi-panel-rm67195-amoled-fhd-cmd.dtsi b/arch/arm/boot/dts/qcom/dsi-panel-rm67195-amoled-fhd-cmd.dtsi
+old mode 100644
+new mode 100755
+index 49ae94e..6ed6a1b
+--- a/arch/arm/boot/dts/qcom/dsi-panel-rm67195-amoled-fhd-cmd.dtsi
++++ b/arch/arm/boot/dts/qcom/dsi-panel-rm67195-amoled-fhd-cmd.dtsi
+@@ -37,6 +37,7 @@
+ 		qcom,mdss-dsi-color-order = "rgb_swap_rgb";
+ 		qcom,mdss-dsi-on-command = [
+ 				15 01 00 00 00 00 02 fe 0d
++				15 01 00 00 00 00 02 0b c0
+ 				15 01 00 00 00 00 02 42 00
+ 				15 01 00 00 00 00 02 18 08
+ 				15 01 00 00 00 00 02 08 41
+@@ -52,8 +53,12 @@
+ 				15 01 00 00 00 00 02 28 40
+ 				15 01 00 00 02 00 02 29 4f
+ 				15 01 00 00 00 00 02 fe 04
++				15 01 00 00 00 00 02 0a d8
++				15 01 00 00 00 00 02 0c e6
++				15 01 00 00 00 00 02 4e 20
+ 				15 01 00 00 00 00 02 4f 1b
+-				15 01 00 00 02 00 02 50 2f
++				15 01 00 00 00 00 02 50 2f
++				15 01 00 00 02 00 02 51 08
+ 				15 01 00 00 00 00 02 fe 09
+ 				15 01 00 00 00 00 02 00 08
+ 				15 01 00 00 00 00 02 01 08
+-- 
+1.9.1
+

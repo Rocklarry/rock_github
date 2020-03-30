@@ -1,0 +1,29 @@
+From 74f7b1f9d0012d803a8b70d160ece55a68e9d1d4 Mon Sep 17 00:00:00 2001
+From: Wei Ding <weiding@qti.qualcomm.com>
+Date: Wed, 23 Dec 2015 15:42:29 +0800
+Subject: [PATCH] ARM: dts: msm: Add ov5675 2lane camera dtsi
+
+Add ov5675 devicetree description for msm8952
+
+Change-Id: I8be48ad2e497987b53474cc71b49d1a2f47adadb
+Signed-off-by: Wei Ding <weiding@qti.qualcomm.com>
+---
+ .../boot/dts/qcom/msm8952-camera-sensor-qrd.dtsi   |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8952-camera-sensor-qrd.dtsi b/arch/arm/boot/dts/qcom/msm8952-camera-sensor-qrd.dtsi
+index f155ef5..1c2e03c 100644
+--- a/arch/arm/boot/dts/qcom/msm8952-camera-sensor-qrd.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8952-camera-sensor-qrd.dtsi
+@@ -190,7 +190,7 @@
+ 		cell-index = <0>;
+ 		compatible = "qcom,camera";
+ 		reg = <0x0>;
+-		qcom,special-support-sensors = "ov13850_q13v06k";
++		qcom,special-support-sensors = "ov13850_q13v06k","ov5675_d5v15b";
+ 		qcom,csiphy-sd-index = <0>;
+ 		qcom,csid-sd-index = <0>;
+ 		qcom,mount-angle = <90>;
+-- 
+1.7.9.5
+

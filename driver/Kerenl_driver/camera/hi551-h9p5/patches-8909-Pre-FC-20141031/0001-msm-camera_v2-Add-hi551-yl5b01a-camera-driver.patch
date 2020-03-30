@@ -1,0 +1,32 @@
+From f5557632d3fa7f8af8e38e2999d24aef0f41a0e4 Mon Sep 17 00:00:00 2001
+From: Shaosong Zhang <zhangss1028@thundersoft.com>
+Date: Thu, 30 Oct 2014 14:57:52 +0800
+Subject: [PATCH] msm: camera_v2: Add hi551 yl5b01a camera driver
+
+Add hi551 yl5b01a camera driver for msm8909
+
+Change-Id: Id4cc4ada81f0771a9d18dcbcc55b1a0c4a624a97
+Signed-off-by: Shaosong Zhang <zhangss1028@thundersoft.com>
+---
+ .../msm/camera_v2/sensor/csiphy/msm_csiphy.c       |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/media/platform/msm/camera_v2/sensor/csiphy/msm_csiphy.c b/drivers/media/platform/msm/camera_v2/sensor/csiphy/msm_csiphy.c
+index 69f0b2d..77b4c3d 100644
+--- a/drivers/media/platform/msm/camera_v2/sensor/csiphy/msm_csiphy.c
++++ b/drivers/media/platform/msm/camera_v2/sensor/csiphy/msm_csiphy.c
+@@ -145,6 +145,11 @@ static int msm_csiphy_lane_config(struct csiphy_device *csiphy_dev,
+ 		msm_camera_io_w(csiphy_params->settle_cnt,
+ 			csiphybase + csiphy_dev->ctrl_reg->csiphy_reg.
+ 			mipi_csiphy_lnn_cfg3_addr + 0x40*j);
++		/* fix for hi551 */
++		msm_camera_io_w(0x0d,
++		csiphybase + csiphy_dev->ctrl_reg->csiphy_reg.
++		mipi_csiphy_lnn_cfg4_addr + 0x40*j);
++		/* */
+ 		msm_camera_io_w(csiphy_dev->ctrl_reg->csiphy_reg.
+ 			mipi_csiphy_interrupt_mask_val, csiphybase +
+ 			csiphy_dev->ctrl_reg->csiphy_reg.
+-- 
+1.7.4.1
+

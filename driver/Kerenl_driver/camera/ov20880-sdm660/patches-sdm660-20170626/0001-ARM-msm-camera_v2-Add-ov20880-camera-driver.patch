@@ -1,0 +1,31 @@
+From 3efffceed454ade21458a46a90a25cd729539daf Mon Sep 17 00:00:00 2001
+From: panzaoyan <panzy0926@thundersoft.com>
+Date: Mon, 26 Jun 2017 17:25:22 +0800
+Subject: [PATCH] ARM: msm: camera_v2: Add ov20880 camera driver
+
+Add ov20880 driver for sdm660
+
+Change-Id: Id8626bfd4a737d9481d470260c974c853c2d88c2
+Signed-off-by: panzaoyan <panzy0926@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/sdm660-camera.dtsi | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/boot/dts/qcom/sdm660-camera.dtsi b/arch/arm/boot/dts/qcom/sdm660-camera.dtsi
+index f3b81b5..dfb24b8 100644
+--- a/arch/arm/boot/dts/qcom/sdm660-camera.dtsi
++++ b/arch/arm/boot/dts/qcom/sdm660-camera.dtsi
+@@ -131,8 +131,8 @@
+ 			"csiphy_timer_src_clk", "csiphy_timer_clk",
+ 			"camss_ispif_ahb_clk", "csiphy_clk_src", "csiphy_clk",
+ 			"csiphy_ahb2crif";
+-		qcom,clock-rates = <0 0 0 0 0 0 310000000 0 0 269333333 0
+-			0 200000000 0 0>;
++		qcom,clock-rates = <0 0 0 0 0 0 310000000 0 0 310000000 0
++			0 310000000 0 0>;
+ 		status = "ok";
+ 	};
+ 
+-- 
+1.9.1
+

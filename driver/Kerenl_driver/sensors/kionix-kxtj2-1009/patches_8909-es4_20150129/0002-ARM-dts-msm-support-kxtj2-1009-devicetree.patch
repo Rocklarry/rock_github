@@ -1,0 +1,45 @@
+From 39965b425af7d2577075c9f4448e09f61caa99be Mon Sep 17 00:00:00 2001
+From: chenx <chenxiang0527@thundersoft.com>
+Date: Fri, 23 Jan 2015 13:08:19 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support kxtj2-1009 devicetree
+
+Devicetree support kxtj2-1009
+
+Change-Id: I5020fee51f9dce8ae97874fc2ecc7edadf39c643
+Signed-off-by: Xiang Chen <chenxiang0527@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8909-qrd-skue.dtsi |   15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
+ mode change 100755 => 100644 arch/arm/boot/dts/qcom/msm8909-qrd-skue.dtsi
+
+diff --git a/arch/arm/boot/dts/qcom/msm8909-qrd-skue.dtsi b/arch/arm/boot/dts/qcom/msm8909-qrd-skue.dtsi
+old mode 100755
+new mode 100644
+index cd313a1..0ad0000
+--- a/arch/arm/boot/dts/qcom/msm8909-qrd-skue.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8909-qrd-skue.dtsi
+@@ -138,6 +138,21 @@
+ 			bosch,gpio-int1 = <&msm_gpio 96 0x2002>;
+ 			bosch,gpio-int2 = <&msm_gpio 65 0x2002>;
+ 		};
++
++		kionix@e {
++			compatible = "kionix,kxtj2-1009";
++			reg = <0x0e>;
++			interrupt-parent = <&msm_gpio>;
++			interrupts = <94 0x2002>;
++			vdd-supply = <&pm8909_l17>;
++			vio-supply = <&pm8909_l6>;
++			kionix,min_interval = <5>;
++			kionix,poll_interval = <100>;
++			kionix,accel_direction = <1>;
++			kionix,accel_irq_use_drdy = <0>;
++			kionix,accel_res = <12>;
++			kionix,accel_g_range = <2>;
++		};
+ 	};
+ 
+ 	sound {
+-- 
+1.7.9.5
+

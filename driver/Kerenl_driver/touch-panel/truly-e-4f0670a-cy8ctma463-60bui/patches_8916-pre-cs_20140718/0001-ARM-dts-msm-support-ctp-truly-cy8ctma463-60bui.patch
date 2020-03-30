@@ -1,0 +1,136 @@
+From 965f5f066227ef1097f71868df9570b955992393 Mon Sep 17 00:00:00 2001
+From: Deng Yequan <dengyq0603@thundersoft.com>
+Date: Wed, 16 Jul 2014 13:45:32 +0800
+Subject: [PATCH 1/3] ARM:dts:msm: support ctp truly cy8ctma463-60bui
+
+Add CTP truly cy8ctma445-60bui device tree
+
+Change-Id: Idceb79f488d70a86fd907bf191dda8f99fb7e1e3
+Signed-off-by: Yequan Deng <dengyq0603@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8916-qrd.dtsi | 81 +++++++++++++++++++++++++++++++--
+ 1 file changed, 77 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8916-qrd.dtsi b/arch/arm/boot/dts/qcom/msm8916-qrd.dtsi
+index acbbc74..0d47623 100644
+--- a/arch/arm/boot/dts/qcom/msm8916-qrd.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8916-qrd.dtsi
+@@ -21,7 +21,7 @@
+ 
+ &soc {
+ 	i2c@78b9000 { /* BLSP1 QUP5 */
+-		synaptics@70 {
++		/*synaptics@70 {
+ 			compatible = "synaptics,rmi4";
+ 			reg = <0x70>;
+ 			interrupt-parent = <&msm_gpio>;
+@@ -29,7 +29,7 @@
+ 			vdd-supply = <&vdd_vreg>;
+ 			vcc_i2c-supply = <&pm8916_l16>;
+ 			/* pins used by touchscreen */
+-			pinctrl-names = "pmx_ts_active","pmx_ts_suspend";
++		/*	pinctrl-names = "pmx_ts_active","pmx_ts_suspend";
+ 			pinctrl-0 = <&ts_int_active &ts_reset_active>;
+ 			pinctrl-1 = <&ts_int_suspend &ts_reset_suspend>;
+ 			synaptics,display-coords = <0 0 1100 1756>;
+@@ -40,6 +40,79 @@
+ 			synaptics,power-down;
+ 			synaptics,disable-gpios;
+ 			synaptics,fw-image-name = "PR1601177-s3207_8916_qrd_00430000.img";
++		};*/
++		tsc@1a {
++			compatible = "cy,cyttsp4_i2c_adapter";
++			reg = <0x1a>;
++			interrupts = <13 0x2008>;
++			interrupt-parent = <&msm_gpio>;
++			vdd-supply = <&pm8916_l17>;
++			vcc_i2c-supply = <&pm8916_l16>;
++			cy,adapter_id = "cyttsp4_i2c_adapter";
++			cy,core {
++				cy,name = "cyttsp4_core";
++				cy,id = "main_ttsp_core";
++				cy,num-max-touches = <5>;
++
++				cy,irq_gpio = <&msm_gpio 13 0x00>;
++				cy,rst_gpio = <&msm_gpio 12 0x00>;
++
++				/* Enable cy,max_xfer_len to limit max I2C/SPI transfer length */
++				/* cy,max_xfer_len = <0x100>; */
++
++				/* CY_CORE_FLAG_WAKE_ON_GESTURE */
++				cy,flags = <1>;
++				/* CY_CORE_EWG_TAP_TAP | CY_CORE_EWG_TWO_FINGER_SLIDE */
++				cy,easy_wakeup_gesture = <3>;
++				cy,btn_keys = <158 /* KEY_BACK */
++					172 /* KEY_HOME */
++					139 /* KEY_MENU */
++					217 /* KEY_SEARCH */
++					114 /* KEY_VOLUMEDOWN */
++					115 /* KEY_VOLUMEUP */
++					212 /* KEY_CAMERA */
++					116>; /* KEY_POWER */
++				cy,btn_keys-tag = <0>;
++
++				cy,mt {
++					cy,name = "cyttsp4_mt";
++					cy,inp_dev_name = "cyttsp4_mt";
++					/* CY_MT_FLAG_FLIP | CY_MT_FLAG_INV_X | CY_MT_FLAG_INV_Y */
++					cy,flags = <0x40>;
++					cy,abs =
++					/* ABS_MT_POSITION_X, CY_ABS_MIN_X, CY_ABS_MAX_X, 0, 0 */
++					<0x35 0 720 0 0
++					/* ABS_MT_POSITION_Y, CY_ABS_MIN_Y, CY_ABS_MAX_Y, 0, 0 */
++					0x36 0 1280 0 0
++					/* ABS_MT_PRESSURE, CY_ABS_MIN_P, CY_ABS_MAX_P, 0, 0 */
++					0x3a 0 255 0 0
++					/* CY_IGNORE_VALUE, CY_ABS_MIN_W, CY_ABS_MAX_W, 0, 0 */
++					0xffff 0 255 0 0
++					/* ABS_MT_TRACKING_ID, CY_ABS_MIN_T, CY_ABS_MAX_T, 0, 0 */
++					0x39 0 15 0 0
++					/* ABS_MT_TOUCH_MAJOR, 0, 255, 0, 0 */
++					0x30 0 255 0 0
++					/* ABS_MT_TOUCH_MINOR, 0, 255, 0, 0 */
++					0x31 0 255 0 0
++					/* ABS_MT_ORIENTATION, -128, 127, 0, 0 */
++					0x34 0xfffffed7 127 0 0>;
++
++					cy,vkeys_x = <720>;
++					cy,vkeys_y = <1280>;
++					cy,virtual_keys = /* KeyCode CenterX CenterY Width Height */
++					/* KEY_BACK */
++					<158 150 1350 120 100
++					/* KEY_HOME */
++					/*modify the key value of KEY_HOME*/
++					172 360 1350 120 100
++					/* KEY_MENU */
++					139 570 1350 120 100>;
++				};
++				cy,btn {
++					cy,name = "cyttsp4_btn";
++					cy,inp_dev_name = "cyttsp4_btn";
++				};
++			};
+ 		};
+ 	};
+ 
+@@ -49,7 +122,7 @@
+ 		regulator-name = "vdd_vreg";
+ 	};
+ 
+-	gen-vkeys {
++	/*gen-vkeys {
+ 		compatible = "qcom,gen-vkeys";
+ 		label = "synaptics_rmi4_i2c";
+ 		qcom,disp-maxx = <720>;
+@@ -57,7 +130,7 @@
+ 		qcom,panel-maxx = <720>;
+ 		qcom,panel-maxy = <1369>;
+ 		qcom,key-codes = <158 172 139>;
+-	};
++	};*/
+ 
+ 	i2c@78ba000 { /* BLSP1 QUP6 */
+ 		nfc-nci@e {
+-- 
+1.9.1
+

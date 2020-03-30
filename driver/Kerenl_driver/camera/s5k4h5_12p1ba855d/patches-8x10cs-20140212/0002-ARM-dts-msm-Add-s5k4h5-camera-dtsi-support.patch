@@ -1,0 +1,195 @@
+From cf81073704acbf3e2c2187e6925e5096fdad8559 Mon Sep 17 00:00:00 2001
+From: Lin Zhang <zhanglin0425@thundersoft.com>
+Date: Mon, 27 Jan 2014 17:33:53 +0800
+Subject: [PATCH 2/3] ARM: dts: msm: Add s5k4h5 camera dtsi support
+
+Add s5k4h5 devicetree description
+
+Change-Id: I84d393bcffdc0b58c711dcd3d94023f971378234
+Signed-off-by: Lin Zhang <zhanglin0425@thundersoft.com>
+---
+ arch/arm/boot/dts/msm8610-regulator.dtsi           |    4 +-
+ arch/arm/boot/dts/msm8610-v1-qrd-skuac.dts         |    3 +-
+ .../boot/dts/msm861x-qrd-camera-sensor-skuac.dtsi  |  139 ++++++++++++++++++++
+ 3 files changed, 143 insertions(+), 3 deletions(-)
+ create mode 100644 arch/arm/boot/dts/msm861x-qrd-camera-sensor-skuac.dtsi
+
+diff --git a/arch/arm/boot/dts/msm8610-regulator.dtsi b/arch/arm/boot/dts/msm8610-regulator.dtsi
+index 7eb6a22..e63a26d 100644
+--- a/arch/arm/boot/dts/msm8610-regulator.dtsi
++++ b/arch/arm/boot/dts/msm8610-regulator.dtsi
+@@ -1,4 +1,4 @@
+-/* Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
++/* Copyright (c) 2012-2014, The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 and
+@@ -234,7 +234,7 @@
+ 	rpm-regulator-ldoa7 {
+ 		status = "okay";
+ 		pm8110_l7: regulator-l7 {
+-			regulator-min-microvolt = <2050000>;
++			regulator-min-microvolt = <1800000>;
+ 			regulator-max-microvolt = <2050000>;
+ 			qcom,init-voltage = <2050000>;
+ 			status = "okay";
+diff --git a/arch/arm/boot/dts/msm8610-v1-qrd-skuac.dts b/arch/arm/boot/dts/msm8610-v1-qrd-skuac.dts
+index f03e19e..d4bd049 100644
+--- a/arch/arm/boot/dts/msm8610-v1-qrd-skuac.dts
++++ b/arch/arm/boot/dts/msm8610-v1-qrd-skuac.dts
+@@ -14,6 +14,7 @@
+ 
+ /include/ "msm8610-v1.dtsi"
+ /include/ "msm8610-qrd.dtsi"
++/include/ "msm861x-qrd-camera-sensor-skuac.dtsi"
+ 
+ / {
+         model = "Qualcomm MSM 8610 QRD";
+diff --git a/arch/arm/boot/dts/msm861x-qrd-camera-sensor-skuac.dtsi b/arch/arm/boot/dts/msm861x-qrd-camera-sensor-skuac.dtsi
+new file mode 100644
+index 0000000..3ea9af9
+--- /dev/null
++++ b/arch/arm/boot/dts/msm861x-qrd-camera-sensor-skuac.dtsi
+@@ -0,0 +1,139 @@
++/*
++ * Copyright (c) 2014, The Linux Foundation. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++&soc {
++	gpio-leds {
++		compatible = "gpio-leds";
++		status = "disabled";
++
++		gpio_flash: gpio-flash {
++			gpios = <&pm8110_gpios 1 0>;
++			label = "gpio-flash";
++			linux,default-trigger = "gpio_flash_trigger";
++		};
++	};
++	led_flash0: qcom,camera-led-flash {
++		cell-index = <0>;
++		compatible = "qcom,camera-led-flash";
++		qcom,flash-type = <3>;
++		qcom,flash-source = <&gpio_flash>;
++		qcom,torch-source = <&gpio_flash>;
++		status = "disabled";
++	};
++};
++
++&i2c {
++	actuator0: qcom,actuator@18 {
++		cell-index = <4>;
++		reg = <0x18>;
++		compatible = "qcom,actuator";
++		qcom,cci-master = <0>;
++	};
++
++	eeprom0: qcom,eeprom@22 {
++		cell-index = <0>;
++		reg = <0x22 0x0>;
++		qcom,eeprom-name = "s5k4h5_12p1ba855d";
++		compatible = "qcom,msm_eeprom";
++		qcom,slave-addr = <0x20>;
++		qcom,cci-master = <0>;
++		qcom,num-blocks = <4>;
++		qcom,page0 = <1 0x3A02 2 0x00 1 1>;
++		qcom,pageen0 = <1 0x3A00 2 0x01 1 10>;
++		qcom,poll0 = <0 0x0 2 0 1 1>;
++		qcom,mem0 = <4 0x3A09 2 0 1 0>;
++		qcom,page1 = <1 0x3A02 2 0x01 1 1>;
++		qcom,pageen1 = <1 0x3A00 2 0x01 1 10>;
++		qcom,poll1 = <0 0x0 2 0 1 1>;
++		qcom,mem1 = <4 0x3A09 2 0 1 0>;
++		qcom,page2 = <1 0x3A02 2 0x02 1 1>;
++		qcom,pageen2 = <1 0x3A00 2 0x01 1 10>;
++		qcom,poll2 = <0 0x0 2 0 1 1>;
++		qcom,mem2 = <4 0x3A09 2 0 1 0>;
++		qcom,page3 = <1 0x3A02 2 0x03 1 1>;
++		qcom,pageen3 = <1 0x3A00 2 0x01 1 10>;
++		qcom,poll3 = <0 0x0 2 0 1 1>;
++		qcom,mem3 = <4 0x3A09 2 0 1 0>;
++
++		cam_vdig-supply = <&pm8110_l2>;
++		cam_vio-supply = <&pm8110_l7>;
++		cam_vana-supply = <&pm8110_l22>;
++		qcom,cam-vreg-name = "cam_vdig", "cam_vio", "cam_vana";
++		qcom,cam-vreg-type = <0 0 0>;
++		qcom,cam-vreg-min-voltage = <0 1800000 2850000>;
++		qcom,cam-vreg-max-voltage = <0 1800000 2850000>;
++		qcom,cam-vreg-op-mode = <0 200000 100000>;
++
++		qcom,gpio-no-mux = <0>;
++		gpios = <&msmgpio 13 0>,
++			<&msmgpio 21 0>,//reset
++			<&msmgpio 101 0>; //dvdd_en
++		qcom,gpio-reset = <1>;
++		qcom,gpio-vdig  = <2>;
++		qcom,gpio-req-tbl-num = <0 1 2>;
++		qcom,gpio-req-tbl-flags = <1 0 0>;
++		qcom,gpio-req-tbl-label = "CAMIF_MCLK",
++			"CAM_RESET1",
++			"CAM_DVDD_EN";
++		qcom,cam-power-seq-type = "sensor_gpio",
++			"sensor_vreg", "sensor_vreg",
++			"sensor_vreg", "sensor_clk",
++			"sensor_gpio";
++		qcom,cam-power-seq-val = "sensor_gpio_vdig",
++			"cam_vdig", "cam_vana",
++			"cam_vio", "sensor_cam_mclk",
++			"sensor_gpio_reset";
++		qcom,cam-power-seq-cfg-val = <1 1 1 1 24000000 1>;
++		qcom,cam-power-seq-delay =   <1 1 1 1 5 5>;
++	};
++	qcom,camera@20 {
++		compatible = "qcom,s5k4h5";
++		reg = <0x20>;
++		qcom,slave-id = <0x20 0x0000 0x485B>;
++		qcom,csiphy-sd-index = <0>;
++		qcom,csid-sd-index = <0>;
++		qcom,actuator-src = <&actuator0>;
++		qcom,led-flash-src = <&led_flash0>;
++		qcom,eeprom-src = <&eeprom0>;
++		qcom,mount-angle = <90>;
++		qcom,sensor-name = "s5k4h5";
++		cam_vdig-supply = <&pm8110_l2>;
++		cam_vio-supply = <&pm8110_l7>;
++		cam_vana-supply = <&pm8110_l22>;
++		qcom,cam-vreg-name = "cam_vdig", "cam_vio", "cam_vana";
++		qcom,cam-vreg-type = <0 0 0>;
++		qcom,cam-vreg-min-voltage = <0 1800000 2850000>;
++		qcom,cam-vreg-max-voltage = <0 1800000 2850000>;
++		qcom,cam-vreg-op-mode = <0 200000 100000>;
++		qcom,gpio-no-mux = <0>;
++		gpios = <&msmgpio 13 0>,
++			<&msmgpio 21 0>,//reset
++			<&msmgpio 101 0>, //dvdd_en
++			<&msmgpio 79 0>; //vcm_pwdn
++		qcom,gpio-reset = <1>;
++		qcom,gpio-vdig = <2>;
++		qcom,gpio-af-pwdm = <3>;
++		qcom,gpio-req-tbl-num = <0 1 2 3>;
++		qcom,gpio-req-tbl-flags = <1 0 0 0>;
++		qcom,gpio-req-tbl-label = "CAMIF_MCLK",
++			"CAM_RESET1",
++			"CAM_DVDD_EN",
++			"CAM_AF_PWDM";
++		qcom,csi-lane-assign = <0xe4>;
++		qcom,csi-lane-mask = <0x3>;
++		qcom,sensor-position = <0>;
++		qcom,sensor-mode = <0>;
++		qcom,cci-master = <0>;
++		status = "ok";
++	};
++};
+-- 
+1.7.4.1
+

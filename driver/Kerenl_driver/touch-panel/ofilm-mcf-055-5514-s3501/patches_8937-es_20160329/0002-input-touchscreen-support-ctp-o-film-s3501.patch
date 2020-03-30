@@ -1,0 +1,1613 @@
+From f057bec03429f2aa5b5e5927b9f6b954d5604605 Mon Sep 17 00:00:00 2001
+From: Li Zhanchao <lizc1023@thundersoft.com>
+Date: Tue, 29 Mar 2016 14:29:55 +0800
+Subject: [PATCH 2/2] input:touchscreen: support ctp o-film s3501
+
+Add CTP O-FILM@MCF-055-5514@S3501 driver
+
+Change-Id: Ic35be70cce0f5b150d024c97e1c86e78b6a553e2
+Signed-off-by: Li Zhanchao <lizc1023@thundersoft.com>
+---
+ .../touchscreen/synaptics_dsx/synaptics_dsx_core.c | 564 ++++++++++++++-------
+ .../touchscreen/synaptics_dsx/synaptics_dsx_core.h |  24 +-
+ .../synaptics_dsx/synaptics_dsx_fw_update.c        |  25 +-
+ .../touchscreen/synaptics_dsx/synaptics_dsx_i2c.c  |  25 +-
+ .../synaptics_dsx/synaptics_dsx_proximity.c        |  35 +-
+ .../synaptics_dsx/synaptics_dsx_rmi_dev.c          |  22 +-
+ .../touchscreen/synaptics_dsx/synaptics_dsx_spi.c  |  22 +-
+ 7 files changed, 415 insertions(+), 302 deletions(-)
+ mode change 100755 => 100644 drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_proximity.c
+ mode change 100755 => 100644 drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_spi.c
+
+diff --git a/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_core.c b/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_core.c
+index 0ea6c6a..7882a04 100644
+--- a/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_core.c
++++ b/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_core.c
+@@ -1,10 +1,10 @@
+ /*
+  * Synaptics DSX touchscreen driver
+  *
+- * Copyright (C) 2012 Synaptics Incorporated
++ * Copyright (C) 2012-2016 Synaptics Incorporated
+  *
+- * Copyright (C) 2012 Alexandra Chin <alexandra.chin@tw.synaptics.com>
+- * Copyright (C) 2012 Scott Lin <scott.lin@tw.synaptics.com>
++ * Copyright (C) 2012-2016 Alexandra Chin <alexandra.chin@tw.synaptics.com>
++ * Copyright (C) 2012-2016 Scott Lin <scott.lin@tw.synaptics.com>
+  * Copyright (c) 2014-2016, The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+@@ -29,22 +29,25 @@
+ #include <linux/regulator/consumer.h>
+ #include <linux/input/synaptics_dsx_v2.h>
+ #include "synaptics_dsx_core.h"
++
+ #ifdef KERNEL_ABOVE_2_6_38
+ #include <linux/input/mt.h>
+ #endif
+ #if defined(CONFIG_SECURE_TOUCH)
+ #include <linux/errno.h>
+-#include <soc/qcom/scm.h>
+-enum subsystem {
+-	TZ = 1,
+-	APSS = 3
+-};
+-
+-#define TZ_BLSP_MODIFY_OWNERSHIP_ID 3
+ #endif
+ 
+ #define INPUT_PHYS_NAME "synaptics_dsx/input0"
+ #define DEBUGFS_DIR_NAME "ts_debug"
++#define RMI4_INFO_MAX_LEN 200
++#define RMI4_STORE_TS_INFO(buf, id, rev, max_tch, fw_ver) \
++			snprintf(buf, RMI4_INFO_MAX_LEN, \
++					"controller\t= synaptics\n" \
++					"model\t\t= %d rev %d\n" \
++					"max_touches\t= %d\n" \
++					"fw_vkey_support\t= NO\n" \
++					"fw_ver\t\t= %d\n", id, \
++					rev, max_tch, fw_ver)
+ 
+ #ifdef KERNEL_ABOVE_2_6_38
+ #define TYPE_B_PROTOCOL
+@@ -113,9 +116,23 @@ static ssize_t synaptics_rmi4_full_pm_cycle_show(struct device *dev,
+ 
+ static ssize_t synaptics_rmi4_full_pm_cycle_store(struct device *dev,
+ 		struct device_attribute *attr, const char *buf, size_t count);
++static ssize_t synaptics_rmi4_enable_show(struct device *dev,
++		struct device_attribute *attr, char *buf);
++
++static ssize_t synaptics_rmi4_enable_store(struct device *dev,
++		struct device_attribute *attr, const char *buf, size_t count);
++
++static ssize_t synaptics_rmi4_mt_protocol_type_show(struct device *dev,
++		struct device_attribute *attr, char *buf);
++
++static ssize_t synaptics_rmi4_ts_info_show(struct device *dev,
++		struct device_attribute *attr, char *buf);
++static void synaptics_rmi4_sensor_sleep(struct synaptics_rmi4_data *rmi4_data);
++static void synaptics_rmi4_sensor_wake(struct synaptics_rmi4_data *rmi4_data);
++static int synaptics_rmi4_irq_enable(struct synaptics_rmi4_data *rmi4_data,
++		bool enable);
+ 
+ #if defined(CONFIG_FB)
+-static void fb_notify_resume_work(struct work_struct *work);
+ static int fb_notifier_callback(struct notifier_block *self,
+ 				unsigned long event, void *data);
+ #elif defined(CONFIG_HAS_EARLYSUSPEND)
+@@ -396,6 +413,15 @@ static struct device_attribute attrs[] = {
+ 	__ATTR(0dbutton, (S_IRUGO | S_IWUSR | S_IWGRP),
+ 			synaptics_rmi4_0dbutton_show,
+ 			synaptics_rmi4_0dbutton_store),
++	__ATTR(enable, (S_IRUGO | S_IWUSR | S_IWGRP),
++			synaptics_rmi4_enable_show,
++			synaptics_rmi4_enable_store),
++	__ATTR(mt_protocol_type, S_IRUGO,
++			synaptics_rmi4_mt_protocol_type_show,
++			NULL),
++	__ATTR(ts_info, S_IRUGO,
++			synaptics_rmi4_ts_info_show,
++			NULL),
+ #if defined(CONFIG_SECURE_TOUCH)
+ 	__ATTR(secure_touch_enable, (S_IRUGO | S_IWUSR | S_IWGRP),
+ 			synaptics_secure_touch_enable_show,
+@@ -442,6 +468,223 @@ static struct attribute *vkey_attr[] = {
+ static struct attribute_group vkey_grp = {
+ 	.attrs = vkey_attr,
+ };
++/**
++ * synaptics_rmi4_release_all()
++ *
++ * Called by synaptics_rmi4_suspend()
++ *
++ * Release all touch data during the touch device switch to suspend state.
++ */
++
++static void synaptics_rmi4_release_all(struct synaptics_rmi4_data *rmi4_data)
++{
++	int finger;
++	int max_num_fingers = rmi4_data->num_of_fingers;
++
++	for (finger = 0; finger < max_num_fingers; finger++) {
++		input_mt_slot(rmi4_data->input_dev, finger);
++		input_mt_report_slot_state(rmi4_data->input_dev,
++				MT_TOOL_FINGER, 0);
++	}
++
++	input_report_key(rmi4_data->input_dev, BTN_TOUCH, 0);
++	input_report_key(rmi4_data->input_dev,
++			BTN_TOOL_FINGER, 0);
++
++	input_sync(rmi4_data->input_dev);
++}
++
++/***************add  sysfy 20150820****************************/
++static bool synaptics_rmi4_debug_addr_is_valid(int addr)
++{
++	if (addr < 0 || addr > 0xFFFF) {
++		pr_err("synaptics_rmi4 reg address is invalid: 0x%x\n", addr);
++		return false;
++	}
++
++	return true;
++}
++static int debug_dump_info(struct seq_file *m, void *v)
++{
++	struct synaptics_rmi4_data *data = m->private;
++
++	seq_printf(m, "%s\n", data->ts_info);
++
++	return 0;
++}
++
++static int debugfs_dump_info_open(struct inode *inode, struct file *file)
++{
++	return single_open(file, debug_dump_info, inode->i_private);
++}
++
++static const struct file_operations debug_dump_info_fops = {
++	.owner = THIS_MODULE,
++	.open = debugfs_dump_info_open,
++	.read = seq_read,
++	.release = single_release,
++};
++
++static ssize_t synaptics_rmi4_enable_show(struct device *dev,
++		struct device_attribute *attr, char *buf)
++{
++	struct synaptics_rmi4_data *rmi4_data = dev_get_drvdata(dev);
++
++	if (rmi4_data->suspended) {
++		dev_info(rmi4_data->pdev->dev.parent, "Already in suspend state\n");
++		return snprintf(buf, 4, "%s\n", "0");
++	}
++
++	return snprintf(buf, 4, "%s\n", rmi4_data->enable ? "1" : "0");
++}
++
++
++static ssize_t synaptics_rmi4_enable_store(struct device *dev,
++		struct device_attribute *attr, const char *buf, size_t count)
++{
++	struct synaptics_rmi4_data *data = dev_get_drvdata(dev);
++	unsigned long val;
++	int rc;
++
++	if (count > 2)
++		return -EINVAL;
++
++	if (data->suspended) {
++		dev_info(data->pdev->dev.parent, "Already in suspend state\n");
++		goto no_operation;
++	}
++
++	rc = kstrtoul(buf, 10, &val);
++	if (rc != 0)
++		return rc;
++
++	if (val) {
++		synaptics_rmi4_sensor_wake(data);
++		data->touch_stopped = false;
++		synaptics_rmi4_irq_enable(data, true);
++
++		data->enable = true;
++	} else {
++		if (!data->sensor_sleep) {
++			data->touch_stopped = true;
++			synaptics_rmi4_irq_enable(data, false);
++			synaptics_rmi4_sensor_sleep(data);
++		}
++
++		synaptics_rmi4_release_all(data);
++		data->enable = false;
++	}
++no_operation:
++	return count;
++}
++
++static ssize_t synaptics_rmi4_mt_protocol_type_show(struct device *dev,
++		struct device_attribute *attr, char *buf)
++{
++	return snprintf(buf, 16, "%s\n", "MT Protocol B");
++}
++
++static ssize_t synaptics_rmi4_ts_info_show(struct device *dev,
++		 struct device_attribute *attr, char *buf)
++{
++	struct synaptics_rmi4_data *data = dev_get_drvdata(dev);
++
++	return snprintf(buf, RMI4_INFO_MAX_LEN, "%s\n", data->ts_info);
++}
++
++/********************debug*************************/
++static void synaptics_rmi4_update_ts_info(struct synaptics_rmi4_data *rmi4_data)
++{
++	unsigned char pkg_id[4];
++	unsigned int build_id;
++	struct synaptics_rmi4_device_info *rmi;
++	/* read device package id */
++	synaptics_rmi4_reg_read(rmi4_data,
++			rmi4_data->f01_query_base_addr + 17,
++			pkg_id,
++			sizeof(pkg_id));
++	rmi = &(rmi4_data->rmi4_mod_info);
++
++	build_id = (unsigned int)rmi->build_id[0] +
++		(unsigned int)rmi->build_id[1] * 0x100 +
++		(unsigned int)rmi->build_id[2] * 0x10000;
++
++	RMI4_STORE_TS_INFO(rmi4_data->ts_info, pkg_id[1] << 8 | pkg_id[0],
++			pkg_id[3] << 8 | pkg_id[2], rmi4_data->num_of_fingers,
++			build_id);
++}
++
++static int synaptics_rmi4_debug_data_set(void *_data, u64 val)
++{
++	struct synaptics_rmi4_data *data = _data;
++
++	mutex_lock(&data->input_dev->mutex);
++
++	if (synaptics_rmi4_debug_addr_is_valid(data->addr))
++		dev_info(data->pdev->dev.parent,
++				"Writing into synaptics_rmi4 registers not supported\n");
++
++	mutex_unlock(&data->input_dev->mutex);
++
++	return 0;
++}
++
++static int synaptics_rmi4_debug_data_get(void *_data, u64 *val)
++{
++	struct synaptics_rmi4_data *data = _data;
++	int rc;
++	unsigned char reg;
++
++	mutex_lock(&data->input_dev->mutex);
++
++	if (synaptics_rmi4_debug_addr_is_valid(data->addr)) {
++		rc = synaptics_rmi4_reg_read(data, data->addr,
++						&reg, sizeof(reg));
++		if (rc < 0)
++			dev_err(data->pdev->dev.parent,
++					"synaptics_rmi4 read register 0x%x failed (%d)\n",
++					data->addr, rc);
++		else
++			*val = reg;
++	}
++
++	mutex_unlock(&data->input_dev->mutex);
++
++	return 0;
++}
++
++DEFINE_SIMPLE_ATTRIBUTE(debug_data_fops, synaptics_rmi4_debug_data_get,
++			synaptics_rmi4_debug_data_set, "0x%02llX\n");
++
++static int synaptics_rmi4_debug_addr_set(void *_data, u64 val)
++{
++	struct synaptics_rmi4_data *data = _data;
++
++	if (synaptics_rmi4_debug_addr_is_valid(val)) {
++		mutex_lock(&data->input_dev->mutex);
++		data->addr = val;
++		mutex_unlock(&data->input_dev->mutex);
++	}
++
++	return 0;
++}
++
++static int synaptics_rmi4_debug_addr_get(void *_data, u64 *val)
++{
++	struct synaptics_rmi4_data *data = _data;
++
++	mutex_lock(&data->input_dev->mutex);
++
++	if (synaptics_rmi4_debug_addr_is_valid(data->addr))
++		*val = data->addr;
++
++	mutex_unlock(&data->input_dev->mutex);
++
++	return 0;
++}
++
++DEFINE_SIMPLE_ATTRIBUTE(debug_addr_fops, synaptics_rmi4_debug_addr_get,
++		synaptics_rmi4_debug_addr_set, "0x%04llX\n");
+ 
+ static int synaptics_rmi4_debug_suspend_set(void *_data, u64 val)
+ {
+@@ -468,31 +711,10 @@ DEFINE_SIMPLE_ATTRIBUTE(debug_suspend_fops, synaptics_rmi4_debug_suspend_get,
+ 			synaptics_rmi4_debug_suspend_set, "%lld\n");
+ 
+ #if defined(CONFIG_SECURE_TOUCH)
+-static int synaptics_i2c_change_pipe_owner(
+-	struct synaptics_rmi4_data *rmi4_data, enum subsystem subsystem)
+-{
+-	/*scm call descriptor */
+-	struct scm_desc desc;
+-	struct i2c_client *i2c = to_i2c_client(rmi4_data->pdev->dev.parent);
+-	int ret = 0;
+-
+-	/* number of arguments */
+-	desc.arginfo = SCM_ARGS(2);
+-	/* BLSPID (1-12) */
+-	desc.args[0] = i2c->adapter->nr - 1;
+-	 /* Owner if TZ or APSS */
+-	desc.args[1] = subsystem;
+-	ret = scm_call2(SCM_SIP_FNID(SCM_SVC_TZ, TZ_BLSP_MODIFY_OWNERSHIP_ID),
+-			&desc);
+-	if (ret)
+-		return ret;
+-
+-	return desc.ret[0];
+-}
+-
+ static void synaptics_secure_touch_init(struct synaptics_rmi4_data *data)
+ {
+ 	int ret = 0;
++
+ 	data->st_initialized = 0;
+ 	init_completion(&data->st_powerdown);
+ 	init_completion(&data->st_irq_processed);
+@@ -571,6 +793,7 @@ static ssize_t synaptics_secure_touch_enable_show(struct device *dev,
+ 				struct device_attribute *attr, char *buf)
+ {
+ 	struct synaptics_rmi4_data *rmi4_data = dev_get_drvdata(dev);
++
+ 	return scnprintf(
+ 		buf,
+ 		PAGE_SIZE,
+@@ -614,7 +837,6 @@ static ssize_t synaptics_secure_touch_enable_store(struct device *dev,
+ 		if (atomic_read(&rmi4_data->st_enabled) == 0)
+ 			break;
+ 
+-		synaptics_i2c_change_pipe_owner(rmi4_data, APSS);
+ 		synaptics_rmi4_bus_put(rmi4_data);
+ 		atomic_set(&rmi4_data->st_enabled, 0);
+ 		synaptics_secure_touch_notify(rmi4_data);
+@@ -638,7 +860,6 @@ static ssize_t synaptics_secure_touch_enable_store(struct device *dev,
+ 			err = -EIO;
+ 			break;
+ 		}
+-		synaptics_i2c_change_pipe_owner(rmi4_data, TZ);
+ 		reinit_completion(&rmi4_data->st_powerdown);
+ 		reinit_completion(&rmi4_data->st_irq_processed);
+ 		atomic_set(&rmi4_data->st_enabled, 1);
+@@ -671,6 +892,7 @@ static ssize_t synaptics_secure_touch_show(struct device *dev,
+ {
+ 	struct synaptics_rmi4_data *rmi4_data = dev_get_drvdata(dev);
+ 	int val = 0;
++
+ 	if (atomic_read(&rmi4_data->st_enabled) == 0)
+ 		return -EBADF;
+ 
+@@ -702,7 +924,7 @@ static ssize_t synaptics_rmi4_full_pm_cycle_store(struct device *dev,
+ 	unsigned int input;
+ 	struct synaptics_rmi4_data *rmi4_data = dev_get_drvdata(dev);
+ 
+-	if (sscanf(buf, "%u", &input) != 1)
++	if (kstrtouint(buf, 10, &input) != 1)
+ 		return -EINVAL;
+ 
+ 	rmi4_data->full_pm_cycle = input > 0 ? 1 : 0;
+@@ -716,7 +938,7 @@ static ssize_t synaptics_rmi4_set_abs_x_axis(struct device *dev,
+ 	unsigned int input;
+ 	struct synaptics_rmi4_data *rmi4_data = dev_get_drvdata(dev);
+ 
+-	if (sscanf(buf, "%u", &input) != 1)
++	if (kstrtouint(buf, 10, &input) != 1)
+ 		return -EINVAL;
+ 
+ 	if (input == 0)
+@@ -734,7 +956,7 @@ static ssize_t synaptics_rmi4_set_abs_y_axis(struct device *dev,
+ 	unsigned int input;
+ 	struct synaptics_rmi4_data *rmi4_data = dev_get_drvdata(dev);
+ 
+-	if (sscanf(buf, "%u", &input) != 1)
++	if (kstrtouint(buf, 10, &input) != 1)
+ 		return -EINVAL;
+ 
+ 	if (input == 0)
+@@ -753,7 +975,7 @@ static ssize_t synaptics_rmi4_f01_reset_store(struct device *dev,
+ 	unsigned int reset;
+ 	struct synaptics_rmi4_data *rmi4_data = dev_get_drvdata(dev);
+ 
+-	if (sscanf(buf, "%u", &reset) != 1)
++	if (kstrtouint(buf, 10, &reset) != 1)
+ 		return -EINVAL;
+ 
+ 	if (reset != 1)
+@@ -833,7 +1055,7 @@ static ssize_t synaptics_rmi4_0dbutton_store(struct device *dev,
+ 
+ 	rmi = &(rmi4_data->rmi4_mod_info);
+ 
+-	if (sscanf(buf, "%u", &input) != 1)
++	if (kstrtouint(buf, 10, &input) != 1)
+ 		return -EINVAL;
+ 
+ 	input = input > 0 ? 1 : 0;
+@@ -1300,8 +1522,6 @@ static void synaptics_rmi4_f1a_report(struct synaptics_rmi4_data *rmi4_data,
+ 
+ 	if (touch_count)
+ 		input_sync(rmi4_data->input_dev);
+-
+-	return;
+ }
+ 
+  /**
+@@ -1347,8 +1567,6 @@ static void synaptics_rmi4_report_touch(struct synaptics_rmi4_data *rmi4_data,
+ 	default:
+ 		break;
+ 	}
+-
+-	return;
+ }
+ 
+  /**
+@@ -1425,8 +1643,6 @@ static void synaptics_rmi4_sensor_report(struct synaptics_rmi4_data *rmi4_data)
+ 		}
+ 	}
+ 	mutex_unlock(&exp_data.mutex);
+-
+-	return;
+ }
+ 
+  /**
+@@ -1522,8 +1738,6 @@ static void synaptics_rmi4_set_intr_mask(struct synaptics_rmi4_fn *fhandler,
+ 			intr_offset);
+ 			ii++)
+ 		fhandler->intr_mask |= 1 << ii;
+-
+-	return;
+ }
+ 
+ static int synaptics_rmi4_f01_init(struct synaptics_rmi4_data *rmi4_data,
+@@ -1824,12 +2038,8 @@ static int synaptics_rmi4_f12_init(struct synaptics_rmi4_data *rmi4_data,
+ 	size_of_2d_data = sizeof(struct synaptics_rmi4_f12_finger_data);
+ 
+ 	fhandler->extra = kmalloc(sizeof(*extra_data), GFP_KERNEL);
+-	if (!fhandler->extra) {
+-		dev_err(rmi4_data->pdev->dev.parent,
+-			"%s: Failed to alloc mem for function handler\n",
+-			__func__);
++	if (!fhandler->extra)
+ 		return -ENOMEM;
+-	}
+ 	extra_data = (struct synaptics_rmi4_f12_extra_data *)fhandler->extra;
+ 
+ 	retval = synaptics_rmi4_reg_read(rmi4_data,
+@@ -1880,8 +2090,8 @@ static int synaptics_rmi4_f12_init(struct synaptics_rmi4_data *rmi4_data,
+ 		goto free_function_handler_mem;
+ 
+ 	/* Maximum number of fingers supported */
+-	fhandler->num_of_data_points = min(ctrl_23.max_reported_objects,
+-			(unsigned char)F12_FINGERS_TO_SUPPORT);
++	fhandler->num_of_data_points = min_t(unsigned char,
++		 ctrl_23.max_reported_objects,	F12_FINGERS_TO_SUPPORT);
+ 
+ 	num_of_fingers = fhandler->num_of_data_points;
+ 	rmi4_data->num_of_fingers = num_of_fingers;
+@@ -1969,12 +2179,8 @@ static int synaptics_rmi4_f1a_alloc_mem(struct synaptics_rmi4_data *rmi4_data,
+ 	struct synaptics_rmi4_f1a_handle *f1a;
+ 
+ 	f1a = kzalloc(sizeof(*f1a), GFP_KERNEL);
+-	if (!f1a) {
+-		dev_err(rmi4_data->pdev->dev.parent,
+-				"%s: Failed to alloc mem for function handle\n",
+-				__func__);
++	if (!f1a)
+ 		return -ENOMEM;
+-	}
+ 
+ 	fhandler->data = (void *)f1a;
+ 	fhandler->extra = NULL;
+@@ -1993,32 +2199,20 @@ static int synaptics_rmi4_f1a_alloc_mem(struct synaptics_rmi4_data *rmi4_data,
+ 	f1a->max_count = f1a->button_query.max_button_count + 1;
+ 
+ 	f1a->button_control.txrx_map = kzalloc(f1a->max_count * 2, GFP_KERNEL);
+-	if (!f1a->button_control.txrx_map) {
+-		dev_err(rmi4_data->pdev->dev.parent,
+-				"%s: Failed to alloc mem for tx rx mapping\n",
+-				__func__);
++	if (!f1a->button_control.txrx_map)
+ 		return -ENOMEM;
+-	}
+ 
+ 	f1a->button_bitmask_size = (f1a->max_count + 7) / 8;
+ 
+ 	f1a->button_data_buffer = kcalloc(f1a->button_bitmask_size,
+ 			sizeof(*(f1a->button_data_buffer)), GFP_KERNEL);
+-	if (!f1a->button_data_buffer) {
+-		dev_err(rmi4_data->pdev->dev.parent,
+-				"%s: Failed to alloc mem for data buffer\n",
+-				__func__);
++	if (!f1a->button_data_buffer)
+ 		return -ENOMEM;
+-	}
+ 
+ 	f1a->button_map = kcalloc(f1a->max_count,
+ 			sizeof(*(f1a->button_map)), GFP_KERNEL);
+-	if (!f1a->button_map) {
+-		dev_err(rmi4_data->pdev->dev.parent,
+-				"%s: Failed to alloc mem for button map\n",
+-				__func__);
++	if (!f1a->button_map)
+ 		return -ENOMEM;
+-	}
+ 
+ 	return 0;
+ }
+@@ -2086,8 +2280,6 @@ static void synaptics_rmi4_f1a_kfree(struct synaptics_rmi4_fn *fhandler)
+ 		kfree(f1a);
+ 		fhandler->data = NULL;
+ 	}
+-
+-	return;
+ }
+ 
+ static int synaptics_rmi4_f1a_init(struct synaptics_rmi4_data *rmi4_data,
+@@ -2144,8 +2336,6 @@ static void synaptics_rmi4_empty_fn_list(struct synaptics_rmi4_data *rmi4_data)
+ 		}
+ 	}
+ 	INIT_LIST_HEAD(&rmi->support_fn_list);
+-
+-	return;
+ }
+ 
+ static int synaptics_rmi4_check_status(struct synaptics_rmi4_data *rmi4_data,
+@@ -2177,8 +2367,12 @@ static int synaptics_rmi4_check_status(struct synaptics_rmi4_data *rmi4_data,
+ 	while (status.status_code == STATUS_CRC_IN_PROGRESS) {
+ 		if (timeout > 0)
+ 			msleep(20);
+-		else
+-			return -1;
++		else {
++			dev_err(rmi4_data->pdev->dev.parent,
++				"%s: Failed to read interrupt status\n",
++				__func__);
++			return -EINVAL;
++		}
+ 
+ 		retval = synaptics_rmi4_reg_read(rmi4_data,
+ 				rmi4_data->f01_data_base_addr,
+@@ -2244,8 +2438,6 @@ static void synaptics_rmi4_set_configured(struct synaptics_rmi4_data *rmi4_data)
+ 				"%s: Failed to set configured\n",
+ 				__func__);
+ 	}
+-
+-	return;
+ }
+ 
+ static int synaptics_rmi4_alloc_fh(struct synaptics_rmi4_fn **fhandler,
+@@ -2325,6 +2517,7 @@ static int synaptics_rmi4_query_device(struct synaptics_rmi4_data *rmi4_data)
+ 	struct synaptics_rmi4_fn *fhandler;
+ 	struct synaptics_rmi4_device_info *rmi;
+ 	unsigned char pkg_id[PACKAGE_ID_SIZE];
++
+ 	rmi = &(rmi4_data->rmi4_mod_info);
+ 
+ rescan_pdt:
+@@ -2606,12 +2799,12 @@ static void synaptics_rmi4_set_params(struct synaptics_rmi4_data *rmi4_data)
+ 				0, bdata->disp_maxx, 0, 0);
+ 		input_set_abs_params(rmi4_data->input_dev, ABS_MT_POSITION_Y,
+ 				0, bdata->disp_maxy, 0, 0);
+-	} else {
++	} /* else {
+ 		input_set_abs_params(rmi4_data->input_dev, ABS_MT_POSITION_X,
+ 				0, rmi4_data->sensor_max_x, 0, 0);
+ 		input_set_abs_params(rmi4_data->input_dev, ABS_MT_POSITION_Y,
+ 				0, rmi4_data->sensor_max_y, 0, 0);
+-	}
++	}*/
+ 
+ #ifdef REPORT_2D_W
+ 	input_set_abs_params(rmi4_data->input_dev,
+@@ -2643,8 +2836,6 @@ static void synaptics_rmi4_set_params(struct synaptics_rmi4_data *rmi4_data)
+ 					EV_KEY, f1a->button_map[ii]);
+ 		}
+ 	}
+-
+-	return;
+ }
+ 
+ static int synaptics_dsx_virtual_keys_init(struct device *dev,
+@@ -2654,10 +2845,8 @@ static int synaptics_dsx_virtual_keys_init(struct device *dev,
+ 	int x1 = 0, x2 = 0, i, c = 0, rc = 0, border;
+ 
+ 	vkey_buf = devm_kzalloc(dev, MAX_BUF_SIZE, GFP_KERNEL);
+-	if (!vkey_buf) {
+-		dev_err(dev, "Failed to allocate memory\n");
++	if (!vkey_buf)
+ 		return -ENOMEM;
+-	}
+ 
+ 	border = (rmi4_pdata->panel_maxx - rmi4_pdata->disp_maxx) * 2;
+ 	width = ((rmi4_pdata->disp_maxx -
+@@ -2820,10 +3009,8 @@ static int synaptics_rmi4_parse_dt_children(struct device *dev,
+ 						"synaptics,panel-coords",
+ 						rmi4_pdata, child);
+ 				dev_info(dev,
+-					"%s Synaptics package id matches %d %d,"
+-					"but bypassing the comparison of sensor"
+-					"coordinates.\n", __func__,
+-					rmi4_pdata->package_id,
++					"%s Synaptics package id matches %d %d",
++					__func__, rmi4_pdata->package_id,
+ 					rmi->package_id);
+ 				dev_info(dev, "Pmax_x Pmax_y = %d:%d\n",
+ 					rmi4_pdata->panel_maxx,
+@@ -2930,9 +3117,6 @@ static int synaptics_rmi4_set_input_dev(struct synaptics_rmi4_data *rmi4_data)
+ 
+ 	rmi4_data->input_dev = input_allocate_device();
+ 	if (rmi4_data->input_dev == NULL) {
+-		dev_err(rmi4_data->pdev->dev.parent,
+-				"%s: Failed to allocate input device\n",
+-				__func__);
+ 		retval = -ENOMEM;
+ 		goto err_input_device;
+ 	}
+@@ -3133,10 +3317,8 @@ static int synaptics_dsx_gpio_configure(struct synaptics_rmi4_data *rmi4_data,
+ 					bool on)
+ {
+ 	int retval = 0;
+-	struct synaptics_rmi4_device_info *rmi;
+ 	const struct synaptics_dsx_board_data *bdata =
+ 			rmi4_data->hw_if->board_data;
+-	rmi = &(rmi4_data->rmi4_mod_info);
+ 
+ 	if (on) {
+ 		if (gpio_is_valid(bdata->irq_gpio)) {
+@@ -3184,8 +3366,6 @@ static int synaptics_dsx_gpio_configure(struct synaptics_rmi4_data *rmi4_data,
+ 			gpio_set_value(bdata->reset_gpio, 1);
+ 			msleep(bdata->reset_delay_ms);
+ 		}
+-
+-		return 0;
+ 	} else {
+ 		if (bdata->disable_gpios) {
+ 			if (gpio_is_valid(bdata->irq_gpio))
+@@ -3197,30 +3377,20 @@ static int synaptics_dsx_gpio_configure(struct synaptics_rmi4_data *rmi4_data,
+ 				 * fails, only leakage current will be more but
+ 				 * functionality will not be affected.
+ 				 */
+-				if (rmi->package_id ==
+-						SYNA_S332U_PACKAGE_ID &&
+-					rmi->package_id_rev ==
+-						SYNA_S332U_PACKAGE_ID_REV) {
+-					gpio_set_value(bdata->
+-						reset_gpio,
+-						0);
+-				} else {
+-					retval = gpio_direction_input(
+-						bdata->reset_gpio);
+-					if (retval) {
+-						dev_err(rmi4_data->pdev->
+-						dev.parent,
+-						"unable to set direction for gpio [%d]\n",
+-						bdata->irq_gpio);
+-					}
++				retval = gpio_direction_input(
++							bdata->reset_gpio);
++				if (retval) {
++					dev_err(rmi4_data->pdev->dev.parent,
++					"unable to set direction for gpio %d\n",
++					bdata->irq_gpio);
+ 				}
+ 				gpio_free(bdata->reset_gpio);
+ 			}
+ 		}
+-
+-		return 0;
+ 	}
+ 
++	return 0;
++
+ err_reset_gpio_dir:
+ 	if (gpio_is_valid(bdata->reset_gpio))
+ 		gpio_free(bdata->reset_gpio);
+@@ -3420,8 +3590,6 @@ static void synaptics_rmi4_exp_fn_work(struct work_struct *work)
+ 		}
+ 	}
+ 	mutex_unlock(&exp_data.mutex);
+-
+-	return;
+ }
+ 
+ /**
+@@ -3477,8 +3645,6 @@ exit:
+ 				&exp_data.work,
+ 				msecs_to_jiffies(EXP_FN_WORK_DELAY_MS));
+ 	}
+-
+-	return;
+ }
+ EXPORT_SYMBOL(synaptics_rmi4_dsx_new_function);
+ 
+@@ -3486,6 +3652,7 @@ static int synaptics_dsx_regulator_configure(struct synaptics_rmi4_data
+ 			*rmi4_data)
+ {
+ 	int retval;
++
+ 	rmi4_data->regulator_vdd = regulator_get(rmi4_data->pdev->dev.parent,
+ 			"vdd");
+ 	if (IS_ERR(rmi4_data->regulator_vdd)) {
+@@ -3579,12 +3746,8 @@ static int synaptics_rmi4_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	rmi4_data = kzalloc(sizeof(*rmi4_data), GFP_KERNEL);
+-	if (!rmi4_data) {
+-		dev_err(&pdev->dev,
+-				"%s: Failed to alloc mem for rmi4_data\n",
+-				__func__);
++	if (!rmi4_data)
+ 		return -ENOMEM;
+-	}
+ 
+ 	rmi4_data->pdev = pdev;
+ 	rmi4_data->current_page = MASK_8BIT;
+@@ -3670,7 +3833,9 @@ static int synaptics_rmi4_probe(struct platform_device *pdev)
+ 	}
+ 
+ #ifdef CONFIG_FB
+-	INIT_WORK(&rmi4_data->fb_notify_work, fb_notify_resume_work);
++#ifdef FIRST_FLAG
++	rmi4_data->flag = 0;
++#endif
+ 	rmi4_data->fb_notif.notifier_call = fb_notifier_callback;
+ 
+ 	retval = fb_register_client(&rmi4_data->fb_notif);
+@@ -3686,14 +3851,6 @@ static int synaptics_rmi4_probe(struct platform_device *pdev)
+ 
+ 	rmi4_data->irq = gpio_to_irq(bdata->irq_gpio);
+ 
+-	retval = synaptics_rmi4_irq_enable(rmi4_data, true);
+-	if (retval < 0) {
+-		dev_err(&pdev->dev,
+-				"%s: Failed to enable attention interrupt\n",
+-				__func__);
+-		goto err_enable_irq;
+-	}
+-
+ 	if (!exp_data.initialized) {
+ 		mutex_init(&exp_data.mutex);
+ 		INIT_LIST_HEAD(&exp_data.list);
+@@ -3726,9 +3883,45 @@ static int synaptics_rmi4_probe(struct platform_device *pdev)
+ 			__func__, retval);
+ 		goto err_create_debugfs_file;
+ 	}
++	temp = debugfs_create_file("addr", S_IRUSR | S_IWUSR, rmi4_data->dir,
++					rmi4_data, &debug_addr_fops);
++	if (temp == NULL || IS_ERR(temp)) {
++		dev_err(&pdev->dev,
++			"%s: Failed to create addr debugfs file, rc = %ld\n",
++			__func__, PTR_ERR(temp));
++		retval = PTR_ERR(temp);
++		goto err_create_debugfs_file;
++	}
++
++	temp = debugfs_create_file("data", S_IRUSR | S_IWUSR, rmi4_data->dir,
++					rmi4_data, &debug_data_fops);
++	if (temp == NULL || IS_ERR(temp)) {
++		dev_err(&pdev->dev,
++			"%s: Failed to create data debugfs file, rc = %ld\n",
++			__func__, PTR_ERR(temp));
++		retval = PTR_ERR(temp);
++		goto err_create_debugfs_file;
++	}
++	temp = debugfs_create_file("dump_info", S_IRUSR | S_IWUSR,
++					rmi4_data->dir,
++					rmi4_data, &debug_dump_info_fops);
++	if (temp == NULL || IS_ERR(temp)) {
++		dev_err(&pdev->dev,
++			"%s: Failed to create data debugfs file, rc = %ld\n",
++			__func__, PTR_ERR(temp));
++		retval = PTR_ERR(temp);
++		goto err_create_debugfs_file;
++	}
++
++	rmi4_data->ts_info = kzalloc(RMI4_INFO_MAX_LEN, GFP_KERNEL);
++	if (!rmi4_data->ts_info) {
++		/*dev_err(&pdev->dev, "Not enough memory\n");*/
++		goto err_alloc_ts_info_mem;
++	}
++	synaptics_rmi4_update_ts_info(rmi4_data);
+ 
+ 	for (attr_count = 0; attr_count < ARRAY_SIZE(attrs); attr_count++) {
+-		retval = sysfs_create_file(&rmi4_data->input_dev->dev.kobj,
++		retval = sysfs_create_file(&rmi4_data->pdev->dev.kobj,
+ 				&attrs[attr_count].attr);
+ 		if (retval < 0) {
+ 			dev_err(&pdev->dev,
+@@ -3738,6 +3931,14 @@ static int synaptics_rmi4_probe(struct platform_device *pdev)
+ 		}
+ 	}
+ 
++	retval = synaptics_rmi4_irq_enable(rmi4_data, true);
++	if (retval < 0) {
++		dev_err(&pdev->dev,
++				"%s: Failed to enable attention interrupt\n",
++				__func__);
++		goto err_enable_irq;
++	}
++
+ 	synaptics_secure_touch_init(rmi4_data);
+ 	synaptics_secure_touch_stop(rmi4_data, 1);
+ 
+@@ -3748,6 +3949,9 @@ err_sysfs:
+ 		sysfs_remove_file(&rmi4_data->input_dev->dev.kobj,
+ 				&attrs[attr_count].attr);
+ 	}
++	kfree(rmi4_data->ts_info);
++	rmi4_data->ts_info = NULL;
++err_alloc_ts_info_mem:
+ err_create_debugfs_file:
+ 	debugfs_remove_recursive(rmi4_data->dir);
+ err_create_debugfs_dir:
+@@ -3913,13 +4117,6 @@ static int synaptics_rmi4_remove(struct platform_device *pdev)
+ }
+ 
+ #if defined(CONFIG_FB)
+-static void fb_notify_resume_work(struct work_struct *work)
+-{
+-	struct synaptics_rmi4_data *rmi4_data =
+-		container_of(work, struct synaptics_rmi4_data, fb_notify_work);
+-	synaptics_rmi4_resume(&(rmi4_data->input_dev->dev));
+-}
+-
+ static int fb_notifier_callback(struct notifier_block *self,
+ 				unsigned long event, void *data)
+ {
+@@ -3929,31 +4126,16 @@ static int fb_notifier_callback(struct notifier_block *self,
+ 		container_of(self, struct synaptics_rmi4_data, fb_notif);
+ 
+ 	if (evdata && evdata->data && rmi4_data) {
+-		blank = evdata->data;
+-		if (rmi4_data->hw_if->board_data->resume_in_workqueue) {
+-			if (event == FB_EARLY_EVENT_BLANK) {
+-				synaptics_secure_touch_stop(rmi4_data, 0);
+-				if (*blank == FB_BLANK_UNBLANK)
+-					schedule_work(
+-						&(rmi4_data->fb_notify_work));
+-			} else if (event == FB_EVENT_BLANK &&
+-					*blank == FB_BLANK_POWERDOWN) {
+-					flush_work(
+-						&(rmi4_data->fb_notify_work));
+-					synaptics_rmi4_suspend(
+-						&(rmi4_data->input_dev->dev));
+-			}
+-		} else {
+-			if (event == FB_EARLY_EVENT_BLANK) {
+-				synaptics_secure_touch_stop(rmi4_data, 0);
+-			} else if (event == FB_EVENT_BLANK) {
+-				if (*blank == FB_BLANK_UNBLANK)
+-					synaptics_rmi4_resume(
+-						&(rmi4_data->input_dev->dev));
+-				else if (*blank == FB_BLANK_POWERDOWN)
+-					synaptics_rmi4_suspend(
+-						&(rmi4_data->input_dev->dev));
+-			}
++		if (event == FB_EARLY_EVENT_BLANK)
++			synaptics_secure_touch_stop(rmi4_data, 0);
++		else if (event == FB_EVENT_BLANK) {
++			blank = evdata->data;
++			if (*blank == FB_BLANK_UNBLANK)
++				synaptics_rmi4_resume(
++					&(rmi4_data->input_dev->dev));
++			else if (*blank == FB_BLANK_POWERDOWN)
++				synaptics_rmi4_suspend(
++					&(rmi4_data->input_dev->dev));
+ 		}
+ 	}
+ 
+@@ -3976,11 +4158,11 @@ static void synaptics_rmi4_early_suspend(struct early_suspend *h)
+ 			container_of(h, struct synaptics_rmi4_data,
+ 			early_suspend);
+ 
+-	if (rmi4_data->stay_awake) {
++	if (!rmi4_data->stay_awake) {
++		rmi4_data->staying_awake = false;
++	} else {
+ 		rmi4_data->staying_awake = true;
+ 		return;
+-	} else {
+-		rmi4_data->staying_awake = false;
+ 	}
+ 
+ 	synaptics_secure_touch_stop(rmi4_data, 0);
+@@ -4000,8 +4182,6 @@ static void synaptics_rmi4_early_suspend(struct early_suspend *h)
+ 
+ 	if (rmi4_data->full_pm_cycle)
+ 		synaptics_rmi4_suspend(&(rmi4_data->input_dev->dev));
+-
+-	return;
+ }
+ 
+  /**
+@@ -4049,8 +4229,6 @@ static void synaptics_rmi4_late_resume(struct early_suspend *h)
+ 	mutex_unlock(&exp_data.mutex);
+ 
+ 	rmi4_data->touch_stopped = false;
+-
+-	return;
+ }
+ #endif
+ 
+@@ -4091,12 +4269,9 @@ static void synaptics_rmi4_sensor_sleep(struct synaptics_rmi4_data *rmi4_data)
+ 				"%s: Failed to enter sleep mode\n",
+ 				__func__);
+ 		rmi4_data->sensor_sleep = false;
+-		return;
+ 	} else {
+ 		rmi4_data->sensor_sleep = true;
+ 	}
+-
+-	return;
+ }
+ 
+  /**
+@@ -4136,12 +4311,9 @@ static void synaptics_rmi4_sensor_wake(struct synaptics_rmi4_data *rmi4_data)
+ 				"%s: Failed to wake from sleep mode\n",
+ 				__func__);
+ 		rmi4_data->sensor_sleep = true;
+-		return;
+ 	} else {
+ 		rmi4_data->sensor_sleep = false;
+ 	}
+-
+-	return;
+ }
+ 
+  /**
+@@ -4162,11 +4334,11 @@ static int synaptics_rmi4_suspend(struct device *dev)
+ 			rmi4_data->hw_if->board_data;
+ 	int retval;
+ 
+-	if (rmi4_data->stay_awake) {
++	if (!rmi4_data->stay_awake) {
++		rmi4_data->staying_awake = false;
++	} else {
+ 		rmi4_data->staying_awake = true;
+ 		return 0;
+-	} else {
+-		rmi4_data->staying_awake = false;
+ 	}
+ 
+ 	if (rmi4_data->suspended) {
+@@ -4184,14 +4356,21 @@ static int synaptics_rmi4_suspend(struct device *dev)
+ 			synaptics_rmi4_free_fingers(rmi4_data);
+ 		}
+ 
++#ifdef FIRST_FLAG
++	if (rmi4_data->flag) {
++#endif
+ 		mutex_lock(&exp_data.mutex);
+ 		if (!list_empty(&exp_data.list)) {
+-			list_for_each_entry(exp_fhandler, &exp_data.list, link)
+-			if (exp_fhandler->exp_fn->suspend != NULL)
+-				exp_fhandler->exp_fn->suspend(rmi4_data);
++			list_for_each_entry(exp_fhandler, &exp_data.list,
++				link)
++				if (exp_fhandler->exp_fn->suspend != NULL)
++					exp_fhandler->exp_fn->suspend(
++						rmi4_data);
+ 		}
+ 		mutex_unlock(&exp_data.mutex);
+-
++#ifdef FIRST_FLAG
++	}
++#endif
+ 		retval = synaptics_dsx_regulator_enable(rmi4_data, false);
+ 		if (retval < 0) {
+ 			dev_err(dev, "failed to enter low power mode\n");
+@@ -4300,6 +4479,9 @@ static int synaptics_rmi4_resume(struct device *dev)
+ 		return retval;
+ 	}
+ 
++#ifdef FIRST_FLAG
++	rmi4_data->flag = 1;
++#endif
+ 	mutex_lock(&exp_data.mutex);
+ 	if (!list_empty(&exp_data.list)) {
+ 		list_for_each_entry(exp_fhandler, &exp_data.list, link)
+@@ -4381,8 +4563,6 @@ static void __exit synaptics_rmi4_exit(void)
+ 	platform_driver_unregister(&synaptics_rmi4_driver);
+ 
+ 	synaptics_rmi4_bus_exit();
+-
+-	return;
+ }
+ 
+ module_init(synaptics_rmi4_init);
+diff --git a/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_core.h b/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_core.h
+index 97802e9..fb29ee9 100644
+--- a/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_core.h
++++ b/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_core.h
+@@ -1,11 +1,11 @@
+ /*
+  * Synaptics DSX touchscreen driver
+  *
+- * Copyright (C) 2012 Synaptics Incorporated
++ * Copyright (C) 2012-2016 Synaptics Incorporated
+  *
+- * Copyright (C) 2012 Alexandra Chin <alexandra.chin@tw.synaptics.com>
+- * Copyright (C) 2012 Scott Lin <scott.lin@tw.synaptics.com>
+- * Copyright (c) 2014, 2016, The Linux Foundation. All rights reserved.
++ * Copyright (C) 2012-2016 Alexandra Chin <alexandra.chin@tw.synaptics.com>
++ * Copyright (C) 2012-2016 Scott Lin <scott.lin@tw.synaptics.com>
++ * Copyright (c) 2014-2016, The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License as published by
+@@ -40,14 +40,14 @@
+ #include <linux/clk.h>
+ #endif
+ 
+-#if (LINUX_VERSION_CODE > KERNEL_VERSION(2, 6, 38))
++/*#if (LINUX_VERSION_CODE > KERNEL_VERSION(2, 6, 38))*/
+ #define KERNEL_ABOVE_2_6_38
+-#endif
++/*#endif*/
+ 
+ #ifdef KERNEL_ABOVE_2_6_38
+ #define sstrtoul(...) kstrtoul(__VA_ARGS__)
+ #else
+-#define sstrtoul(...) strict_strtoul(__VA_ARGS__)
++/*#define sstrtoul(...) strict_strtoul(__VA_ARGS__)*/
+ #endif
+ 
+ #define PDT_PROPS (0X00EF)
+@@ -102,6 +102,8 @@
+ 
+ #define SYNA_FW_NAME_MAX_LEN	50
+ 
++/*#define FIRST_FLAG
++*/
+ enum exp_fn {
+ 	RMI_DEV = 0,
+ 	RMI_F54,
+@@ -248,7 +250,6 @@ struct synaptics_rmi4_data {
+ 	struct mutex rmi4_reset_mutex;
+ 	struct mutex rmi4_io_ctrl_mutex;
+ #if defined(CONFIG_FB)
+-	struct work_struct fb_notify_work;
+ 	struct notifier_block fb_notif;
+ #elif defined(CONFIG_HAS_EARLYSUSPEND)
+ 	struct early_suspend early_suspend;
+@@ -265,6 +266,7 @@ struct synaptics_rmi4_data {
+ 	unsigned char no_sleep_setting;
+ 	unsigned char intr_mask[MAX_INTR_REGISTERS];
+ 	unsigned char *button_txrx_mapping;
++	unsigned char *ts_info;
+ 	unsigned short num_of_intr_regs;
+ 	unsigned short f01_query_base_addr;
+ 	unsigned short f01_cmd_base_addr;
+@@ -293,6 +295,8 @@ struct synaptics_rmi4_data {
+ 	struct pinctrl_state *pinctrl_state_release;
+ 	char fw_name[SYNA_FW_NAME_MAX_LEN];
+ 	bool suspended;
++	bool enable;
++	unsigned short addr;
+ #if defined(CONFIG_SECURE_TOUCH)
+ 	atomic_t st_enabled;
+ 	atomic_t st_pending_irqs;
+@@ -302,6 +306,10 @@ struct synaptics_rmi4_data {
+ 	struct clk *core_clk;
+ 	struct clk *iface_clk;
+ #endif
++
++#ifdef FIRST_FLAG
++	int flag;
++#endif
+ };
+ 
+ struct synaptics_dsx_bus_access {
+diff --git a/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_fw_update.c b/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_fw_update.c
+index 2282fe0..d18c3aa 100644
+--- a/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_fw_update.c
++++ b/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_fw_update.c
+@@ -1,10 +1,10 @@
+ /*
+  * Synaptics DSX touchscreen driver
+  *
+- * Copyright (C) 2012 Synaptics Incorporated
++ * Copyright (C) 2012-2016 Synaptics Incorporated
+  *
+- * Copyright (C) 2012 Alexandra Chin <alexandra.chin@tw.synaptics.com>
+- * Copyright (C) 2012 Scott Lin <scott.lin@tw.synaptics.com>
++ * Copyright (C) 2012-2016 Alexandra Chin <alexandra.chin@tw.synaptics.com>
++ * Copyright (C) 2014-2016 Scott Lin <scott.lin@tw.synaptics.com>
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License as published by
+@@ -389,8 +389,6 @@ static void parse_header(struct image_header_data *header,
+ 	header->contains_firmware_id = data->options_firmware_id;
+ 	if (header->contains_firmware_id)
+ 		header->firmware_id = extract_uint_le(data->firmware_id);
+-
+-	return;
+ }
+ 
+ static int fwu_read_f01_device_status(struct f01_device_status *status)
+@@ -1622,7 +1620,7 @@ static ssize_t fwu_sysfs_force_reflash_store(struct device *dev,
+ 	unsigned int input;
+ 	struct synaptics_rmi4_data *rmi4_data = fwu->rmi4_data;
+ 
+-	if (sscanf(buf, "%u", &input) != 1) {
++	if (kstrtouint(buf, 10, &input) != 1) {
+ 		retval = -EINVAL;
+ 		goto exit;
+ 	}
+@@ -1660,7 +1658,7 @@ static ssize_t fwu_sysfs_do_reflash_store(struct device *dev,
+ 	unsigned int input;
+ 	struct synaptics_rmi4_data *rmi4_data = fwu->rmi4_data;
+ 
+-	if (sscanf(buf, "%u", &input) != 1) {
++	if (kstrtouint(buf, 10, &input) != 1) {
+ 		retval = -EINVAL;
+ 		goto exit;
+ 	}
+@@ -1703,7 +1701,7 @@ static ssize_t fwu_sysfs_write_config_store(struct device *dev,
+ 	unsigned int input;
+ 	struct synaptics_rmi4_data *rmi4_data = fwu->rmi4_data;
+ 
+-	if (sscanf(buf, "%u", &input) != 1) {
++	if (kstrtouint(buf, 10, &input) != 1) {
+ 		retval = -EINVAL;
+ 		goto exit;
+ 	}
+@@ -1736,7 +1734,7 @@ static ssize_t fwu_sysfs_read_config_store(struct device *dev,
+ 	unsigned int input;
+ 	struct synaptics_rmi4_data *rmi4_data = fwu->rmi4_data;
+ 
+-	if (sscanf(buf, "%u", &input) != 1)
++	if (kstrtouint(buf, 10, &input) != 1)
+ 		return -EINVAL;
+ 
+ 	if (input != 1)
+@@ -1905,8 +1903,6 @@ static void synaptics_rmi4_fwu_attn(struct synaptics_rmi4_data *rmi4_data,
+ 
+ 	if (fwu->intr_mask & intr_mask)
+ 		fwu_read_f34_flash_status();
+-
+-	return;
+ }
+ 
+ static int synaptics_rmi4_fwu_init(struct synaptics_rmi4_data *rmi4_data)
+@@ -1917,9 +1913,6 @@ static int synaptics_rmi4_fwu_init(struct synaptics_rmi4_data *rmi4_data)
+ 
+ 	fwu = kzalloc(sizeof(*fwu), GFP_KERNEL);
+ 	if (!fwu) {
+-		dev_err(rmi4_data->pdev->dev.parent,
+-				"%s: Failed to alloc mem for fwu\n",
+-				__func__);
+ 		retval = -ENOMEM;
+ 		goto exit;
+ 	}
+@@ -2028,8 +2021,6 @@ static void synaptics_rmi4_fwu_remove(struct synaptics_rmi4_data *rmi4_data)
+ 
+ exit:
+ 	complete(&fwu_dsx_remove_complete);
+-
+-	return;
+ }
+ 
+ static struct synaptics_rmi4_exp_fn fwu_module = {
+@@ -2057,8 +2048,6 @@ static void __exit rmi4_fw_update_module_exit(void)
+ 	synaptics_rmi4_dsx_new_function(&fwu_module, false);
+ 
+ 	wait_for_completion(&fwu_dsx_remove_complete);
+-
+-	return;
+ }
+ 
+ module_init(rmi4_fw_update_module_init);
+diff --git a/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_i2c.c b/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_i2c.c
+index 0b3fbaf..5438b99 100644
+--- a/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_i2c.c
++++ b/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_i2c.c
+@@ -6,10 +6,10 @@
+  * Linux foundation chooses to take subject only to the GPLv2 license terms,
+  * and distributes only under these terms.
+  *
+- * Copyright (C) 2012 Synaptics Incorporated
++ * Copyright (C) 2012-2016 Synaptics Incorporated
+  *
+- * Copyright (C) 2012 Alexandra Chin <alexandra.chin@tw.synaptics.com>
+- * Copyright (C) 2012 Scott Lin <scott.lin@tw.synaptics.com>
++ * Copyright (C) 2012-2016 Alexandra Chin <alexandra.chin@tw.synaptics.com>
++ * Copyright (C) 2012-2016 Scott Lin <scott.lin@tw.synaptics.com>
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License as published by
+@@ -56,12 +56,9 @@ static int synaptics_rmi4_i2c_set_page(struct synaptics_rmi4_data *rmi4_data,
+ 		buf[1] = page;
+ 		for (retry = 0; retry < SYN_I2C_RETRY_TIMES; retry++) {
+ 			retval = i2c_master_send(i2c, buf, PAGE_SELECT_LEN);
+-			if (retval != PAGE_SELECT_LEN) {
+-				dev_err(rmi4_data->pdev->dev.parent,
+-						"%s: I2C retry %d\n",
+-						__func__, retry + 1);
++			if (retval != PAGE_SELECT_LEN)
+ 				msleep(20);
+-			} else {
++			else {
+ 				rmi4_data->current_page = page;
+ 				break;
+ 			}
+@@ -110,10 +107,10 @@ static int synaptics_rmi4_i2c_read(struct synaptics_rmi4_data *rmi4_data,
+ 			retval = length;
+ 			break;
+ 		}
+-		dev_err(rmi4_data->pdev->dev.parent,
++/*		dev_err(rmi4_data->pdev->dev.parent,
+ 				"%s: I2C retry %d\n",
+ 				__func__, retry + 1);
+-		msleep(20);
++*/		msleep(20);
+ 	}
+ 
+ 	if (retry == SYN_I2C_RETRY_TIMES) {
+@@ -185,6 +182,7 @@ static int synaptics_rmi4_clk_prepare_enable(
+ 		struct synaptics_rmi4_data *rmi4_data)
+ {
+ 	int ret;
++
+ 	ret = clk_prepare_enable(rmi4_data->iface_clk);
+ 	if (ret) {
+ 		dev_err(rmi4_data->pdev->dev.parent,
+@@ -253,8 +251,6 @@ static struct platform_device *synaptics_dsx_i2c_device;
+ static void synaptics_rmi4_i2c_dev_release(struct device *dev)
+ {
+ 	kfree(synaptics_dsx_i2c_device);
+-
+-	return;
+ }
+ #ifdef CONFIG_OF
+ int synaptics_dsx_get_dt_coords(struct device *dev, char *name,
+@@ -320,9 +316,6 @@ static int synaptics_dsx_parse_dt(struct device *dev,
+ 	rmi4_pdata->bypass_packrat_id_check = of_property_read_bool(np,
+ 			"synaptics,bypass-packrat-id-check");
+ 
+-	rmi4_pdata->resume_in_workqueue = of_property_read_bool(np,
+-			"synaptics,resume-in-workqueue");
+-
+ 	rmi4_pdata->reset_delay_ms = RESET_DELAY;
+ 	rc = of_property_read_u32(np, "synaptics,reset-delay-ms", &temp_val);
+ 	if (!rc)
+@@ -520,8 +513,6 @@ EXPORT_SYMBOL(synaptics_rmi4_bus_init);
+ void synaptics_rmi4_bus_exit(void)
+ {
+ 	i2c_del_driver(&synaptics_rmi4_i2c_driver);
+-
+-	return;
+ }
+ EXPORT_SYMBOL(synaptics_rmi4_bus_exit);
+ 
+diff --git a/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_proximity.c b/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_proximity.c
+old mode 100755
+new mode 100644
+index 99c05e6..5aba991
+--- a/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_proximity.c
++++ b/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_proximity.c
+@@ -1,10 +1,10 @@
+ /*
+  * Synaptics DSX touchscreen driver
+  *
+- * Copyright (C) 2012 Synaptics Incorporated
++ * Copyright (C) 2012-2016 Synaptics Incorporated
+  *
+- * Copyright (C) 2012 Alexandra Chin <alexandra.chin@tw.synaptics.com>
+- * Copyright (C) 2012 Scott Lin <scott.lin@tw.synaptics.com>
++ * Copyright (C) 2012-2016 Alexandra Chin <alexandra.chin@tw.synaptics.com>
++ * Copyright (C) 2012-2016 Scott Lin <scott.lin@tw.synaptics.com>
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License as published by
+@@ -141,8 +141,6 @@ static void prox_hover_finger_lift(void)
+ 	input_report_key(prox->prox_dev, BTN_TOOL_FINGER, 0);
+ 	input_sync(prox->prox_dev);
+ 	prox->hover_finger_present = false;
+-
+-	return;
+ }
+ 
+ static void prox_hover_finger_report(void)
+@@ -191,8 +189,6 @@ static void prox_hover_finger_report(void)
+ 			__func__, x, y, z);
+ 
+ 	prox->hover_finger_present = true;
+-
+-	return;
+ }
+ 
+ static int prox_set_hover_finger_en(void)
+@@ -239,8 +235,6 @@ static void prox_set_params(void)
+ 			prox->rmi4_data->sensor_max_y, 0, 0);
+ 	input_set_abs_params(prox->prox_dev, ABS_DISTANCE, 0,
+ 			HOVER_Z_MAX, 0, 0);
+-
+-	return;
+ }
+ 
+ static int prox_reg_init(void)
+@@ -330,7 +324,6 @@ static int prox_scan_pdt(void)
+ 				switch (fd.fn_number) {
+ 				case SYNAPTICS_RMI4_F12:
+ 					goto f12_found;
+-					break;
+ 				}
+ 			} else {
+ 				break;
+@@ -407,7 +400,7 @@ static ssize_t synaptics_rmi4_hover_finger_en_store(struct device *dev,
+ 	if (!prox)
+ 		return -ENODEV;
+ 
+-	if (sscanf(buf, "%x", &input) != 1)
++	if (kstrtouint(buf, 10, &input) != 1)
+ 		return -EINVAL;
+ 
+ 	if (input == 1)
+@@ -453,8 +446,6 @@ static void synaptics_rmi4_prox_attn(struct synaptics_rmi4_data *rmi4_data,
+ 
+ 	if (prox->intr_mask & intr_mask)
+ 		prox_hover_finger_report();
+-
+-	return;
+ }
+ 
+ static int synaptics_rmi4_prox_init(struct synaptics_rmi4_data *rmi4_data)
+@@ -464,18 +455,12 @@ static int synaptics_rmi4_prox_init(struct synaptics_rmi4_data *rmi4_data)
+ 
+ 	prox = kzalloc(sizeof(*prox), GFP_KERNEL);
+ 	if (!prox) {
+-		dev_err(rmi4_data->pdev->dev.parent,
+-				"%s: Failed to alloc mem for prox\n",
+-				__func__);
+ 		retval = -ENOMEM;
+ 		goto exit;
+ 	}
+ 
+ 	prox->finger_data = kzalloc(sizeof(*(prox->finger_data)), GFP_KERNEL);
+ 	if (!prox->finger_data) {
+-		dev_err(rmi4_data->pdev->dev.parent,
+-				"%s: Failed to alloc mem for finger_data\n",
+-				__func__);
+ 		retval = -ENOMEM;
+ 		goto exit_free_prox;
+ 	}
+@@ -582,8 +567,6 @@ static void synaptics_rmi4_prox_remove(struct synaptics_rmi4_data *rmi4_data)
+ 
+ exit:
+ 	complete(&prox_remove_complete);
+-
+-	return;
+ }
+ 
+ static void synaptics_rmi4_prox_reset(struct synaptics_rmi4_data *rmi4_data)
+@@ -598,8 +581,6 @@ static void synaptics_rmi4_prox_reset(struct synaptics_rmi4_data *rmi4_data)
+ 	prox_set_hover_finger_en();
+ 
+ 	prox_set_params();
+-
+-	return;
+ }
+ 
+ static void synaptics_rmi4_prox_reinit(struct synaptics_rmi4_data *rmi4_data)
+@@ -610,8 +591,6 @@ static void synaptics_rmi4_prox_reinit(struct synaptics_rmi4_data *rmi4_data)
+ 	prox_hover_finger_lift();
+ 
+ 	prox_set_hover_finger_en();
+-
+-	return;
+ }
+ 
+ static void synaptics_rmi4_prox_e_suspend(struct synaptics_rmi4_data *rmi4_data)
+@@ -620,8 +599,6 @@ static void synaptics_rmi4_prox_e_suspend(struct synaptics_rmi4_data *rmi4_data)
+ 		return;
+ 
+ 	prox_hover_finger_lift();
+-
+-	return;
+ }
+ 
+ static void synaptics_rmi4_prox_suspend(struct synaptics_rmi4_data *rmi4_data)
+@@ -630,8 +607,6 @@ static void synaptics_rmi4_prox_suspend(struct synaptics_rmi4_data *rmi4_data)
+ 		return;
+ 
+ 	prox_hover_finger_lift();
+-
+-	return;
+ }
+ 
+ static struct synaptics_rmi4_exp_fn proximity_module = {
+@@ -659,8 +634,6 @@ static void __exit rmi4_proximity_module_exit(void)
+ 	synaptics_rmi4_dsx_new_function(&proximity_module, false);
+ 
+ 	wait_for_completion(&prox_remove_complete);
+-
+-	return;
+ }
+ 
+ module_init(rmi4_proximity_module_init);
+diff --git a/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_rmi_dev.c b/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_rmi_dev.c
+index 4c341ff..2a374ec 100644
+--- a/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_rmi_dev.c
++++ b/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_rmi_dev.c
+@@ -1,10 +1,10 @@
+ /*
+  * Synaptics DSX touchscreen driver
+  *
+- * Copyright (C) 2012 Synaptics Incorporated
++ * Copyright (C) 2012-2016 Synaptics Incorporated
+  *
+- * Copyright (C) 2012 Alexandra Chin <alexandra.chin@tw.synaptics.com>
+- * Copyright (C) 2012 Scott Lin <scott.lin@tw.synaptics.com>
++ * Copyright (C) 2012-2016 Alexandra Chin <alexandra.chin@tw.synaptics.com>
++ * Copyright (C) 2012-2016 Scott Lin <scott.lin@tw.synaptics.com>
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License as published by
+@@ -224,7 +224,7 @@ static ssize_t rmidev_sysfs_open_store(struct device *dev,
+ 	unsigned int input;
+ 	struct synaptics_rmi4_data *rmi4_data = rmidev->rmi4_data;
+ 
+-	if (sscanf(buf, "%u", &input) != 1)
++	if (kstrtouint(buf, 10, &input) != 1)
+ 		return -EINVAL;
+ 
+ 	if (input != 1)
+@@ -246,7 +246,7 @@ static ssize_t rmidev_sysfs_release_store(struct device *dev,
+ 	unsigned int input;
+ 	struct synaptics_rmi4_data *rmi4_data = rmidev->rmi4_data;
+ 
+-	if (sscanf(buf, "%u", &input) != 1)
++	if (kstrtouint(buf, 10, &input) != 1)
+ 		return -EINVAL;
+ 
+ 	if (input != 1)
+@@ -518,8 +518,6 @@ static void rmidev_device_cleanup(struct rmidev_data *dev_data)
+ 				"%s: rmidev device removed\n",
+ 				__func__);
+ 	}
+-
+-	return;
+ }
+ 
+ static char *rmi_char_devnode(struct device *dev, umode_t *mode)
+@@ -559,9 +557,6 @@ static int rmidev_init_device(struct synaptics_rmi4_data *rmi4_data)
+ 
+ 	rmidev = kzalloc(sizeof(*rmidev), GFP_KERNEL);
+ 	if (!rmidev) {
+-		dev_err(rmi4_data->pdev->dev.parent,
+-				"%s: Failed to alloc mem for rmidev\n",
+-				__func__);
+ 		retval = -ENOMEM;
+ 		goto err_rmidev;
+ 	}
+@@ -596,9 +591,6 @@ static int rmidev_init_device(struct synaptics_rmi4_data *rmi4_data)
+ 
+ 	dev_data = kzalloc(sizeof(*dev_data), GFP_KERNEL);
+ 	if (!dev_data) {
+-		dev_err(rmi4_data->pdev->dev.parent,
+-				"%s: Failed to alloc mem for dev_data\n",
+-				__func__);
+ 		retval = -ENOMEM;
+ 		goto err_dev_data;
+ 	}
+@@ -740,8 +732,6 @@ static void rmidev_remove_device(struct synaptics_rmi4_data *rmi4_data)
+ 
+ exit:
+ 	complete(&rmidev_remove_complete);
+-
+-	return;
+ }
+ 
+ static struct synaptics_rmi4_exp_fn rmidev_module = {
+@@ -769,8 +759,6 @@ static void __exit rmidev_module_exit(void)
+ 	synaptics_rmi4_dsx_new_function(&rmidev_module, false);
+ 
+ 	wait_for_completion(&rmidev_remove_complete);
+-
+-	return;
+ }
+ 
+ module_init(rmidev_module_init);
+diff --git a/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_spi.c b/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_spi.c
+old mode 100755
+new mode 100644
+index dd797ee..7bab860
+--- a/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_spi.c
++++ b/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_spi.c
+@@ -1,10 +1,10 @@
+ /*
+  * Synaptics DSX touchscreen driver
+  *
+- * Copyright (C) 2012 Synaptics Incorporated
++ * Copyright (C) 2012-2016 Synaptics Incorporated
+  *
+- * Copyright (C) 2012 Alexandra Chin <alexandra.chin@tw.synaptics.com>
+- * Copyright (C) 2012 Scott Lin <scott.lin@tw.synaptics.com>
++ * Copyright (C) 2012-2016 Alexandra Chin <alexandra.chin@tw.synaptics.com>
++ * Copyright (C) 2012-2016 Scott Lin <scott.lin@tw.synaptics.com>
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License as published by
+@@ -97,9 +97,6 @@ static int synaptics_rmi4_spi_read(struct synaptics_rmi4_data *rmi4_data,
+ 
+ 	xfers = kcalloc(xfer_count, sizeof(struct spi_transfer), GFP_KERNEL);
+ 	if (!xfers) {
+-		dev_err(rmi4_data->pdev->dev.parent,
+-				"%s: Failed to allocate memory for xfers\n",
+-				__func__);
+ 		retval = -ENOMEM;
+ 		goto exit;
+ 	}
+@@ -109,9 +106,6 @@ static int synaptics_rmi4_spi_read(struct synaptics_rmi4_data *rmi4_data,
+ 
+ 	rxbuf = kmalloc(length, GFP_KERNEL);
+ 	if (!rxbuf) {
+-		dev_err(rmi4_data->pdev->dev.parent,
+-				"%s: Failed to allocate memory for rxbuf\n",
+-				__func__);
+ 		retval = -ENOMEM;
+ 		goto exit;
+ 	}
+@@ -173,18 +167,12 @@ static int synaptics_rmi4_spi_write(struct synaptics_rmi4_data *rmi4_data,
+ 
+ 	xfers = kcalloc(xfer_count, sizeof(struct spi_transfer), GFP_KERNEL);
+ 	if (!xfers) {
+-		dev_err(rmi4_data->pdev->dev.parent,
+-				"%s: Failed to allocate memory for xfers\n",
+-				__func__);
+ 		retval = -ENOMEM;
+ 		goto exit;
+ 	}
+ 
+ 	txbuf = kmalloc(xfer_count, GFP_KERNEL);
+ 	if (!txbuf) {
+-		dev_err(rmi4_data->pdev->dev.parent,
+-				"%s: Failed to allocate memory for txbuf\n",
+-				__func__);
+ 		retval = -ENOMEM;
+ 		goto exit;
+ 	}
+@@ -242,8 +230,6 @@ static struct platform_device *synaptics_dsx_spi_device;
+ static void synaptics_rmi4_spi_dev_release(struct device *dev)
+ {
+ 	kfree(synaptics_dsx_spi_device);
+-
+-	return;
+ }
+ 
+ static int synaptics_rmi4_spi_probe(struct spi_device *spi)
+@@ -325,8 +311,6 @@ EXPORT_SYMBOL(synaptics_rmi4_bus_init);
+ void synaptics_rmi4_bus_exit(void)
+ {
+ 	spi_unregister_driver(&synaptics_rmi4_spi_driver);
+-
+-	return;
+ }
+ EXPORT_SYMBOL(synaptics_rmi4_bus_exit);
+ 
+-- 
+1.9.1
+

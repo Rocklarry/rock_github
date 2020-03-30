@@ -1,0 +1,114 @@
+From 4cac6cb271b638a88d5ce949710ba25f5da4ddb9 Mon Sep 17 00:00:00 2001
+From: Zhang Zhenzhen <zhangzz6687@thundersoft.com>
+Date: Tue, 1 Apr 2014 14:57:37 +0800
+Subject: [PATCH 1/3] ARM:dts:msm: support ctp truly e-4f0670a
+
+Add CTP TRULY@E-4F0670A@CY8CTMA463-60BUI device tree
+
+Change-Id: Ic004f20d9239f1e12e4c4f0f8a7d33e6826bb320
+Signed-off-by: Zhang Zhenzhen <zhangzz6687@thundersoft.com>
+---
+ arch/arm/boot/dts/msm8226-qrd.dtsi | 80 +++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 78 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/boot/dts/msm8226-qrd.dtsi b/arch/arm/boot/dts/msm8226-qrd.dtsi
+index 7ff97f6..58eb2f2 100644
+--- a/arch/arm/boot/dts/msm8226-qrd.dtsi
++++ b/arch/arm/boot/dts/msm8226-qrd.dtsi
+@@ -18,7 +18,7 @@
+ 	};
+ 
+ 	i2c@f9927000 { /* BLSP1 QUP5 */
+-		synaptics@20 {
++		/*synaptics@20 {
+ 			compatible = "synaptics,rmi4";
+ 			reg = <0x20>;
+ 			interrupt-parent = <&msmgpio>;
+@@ -61,7 +61,83 @@
+ 			focaltech,fw-upgrade-id2 = <0x03>;
+ 			focaltech,fw-delay-readid-ms = <10>;
+ 			focaltech,fw-delay-era-flsh-ms = <2000>;
+-		};
++		};*/
++        tsc@1a {
++            compatible = "cy,cyttsp4_i2c_adapter";
++            reg = <0x1a>;
++            /* GPIO 17, high-to-low edge triggered */
++            interrupts = <17 0x2>;
++            interrupt-parent = <&msmgpio>;
++            vdd-supply = <&pm8226_l19>;
++            vcc_i2c-supply = <&pm8226_lvs1>;
++            cy,adapter_id = "cyttsp4_i2c_adapter";
++
++            cy,core {
++                cy,name = "cyttsp4_core";
++                cy,id = "main_ttsp_core";
++                cy,num-max-touches = <5>;
++
++                cy,irq_gpio = <17>;
++                cy,rst_gpio = <16>;
++
++                /* Enable cy,max_xfer_len to limit max I2C/SPI transfer length */
++                /* cy,max_xfer_len = <0x100>; */
++
++                /* CY_CORE_FLAG_WAKE_ON_GESTURE */
++                cy,flags = <1>;
++                /* CY_CORE_EWG_TAP_TAP | CY_CORE_EWG_TWO_FINGER_SLIDE */
++                cy,easy_wakeup_gesture = <3>;
++                cy,btn_keys = <158 /* KEY_BACK */
++                    172 /* KEY_HOME */
++                    139 /* KEY_MENU */
++                    217 /* KEY_SEARCH */
++                    114 /* KEY_VOLUMEDOWN */
++                    115 /* KEY_VOLUMEUP */
++                    212 /* KEY_CAMERA */
++                    116>; /* KEY_POWER */
++                cy,btn_keys-tag = <0>;
++
++                cy,mt {
++                    cy,name = "cyttsp4_mt";
++                    cy,inp_dev_name = "cyttsp4_mt";
++                    /* CY_MT_FLAG_FLIP | CY_MT_FLAG_INV_X | CY_MT_FLAG_INV_Y */
++                    cy,flags = <0x40>;
++                    cy,abs =
++                        /* ABS_MT_POSITION_X, CY_ABS_MIN_X, CY_ABS_MAX_X, 0, 0 */
++                        <0x35 0 720 0 0
++                        /* ABS_MT_POSITION_Y, CY_ABS_MIN_Y, CY_ABS_MAX_Y, 0, 0 */
++                        0x36 0 1280 0 0
++                        /* ABS_MT_PRESSURE, CY_ABS_MIN_P, CY_ABS_MAX_P, 0, 0 */
++                        0x3a 0 255 0 0
++                        /* CY_IGNORE_VALUE, CY_ABS_MIN_W, CY_ABS_MAX_W, 0, 0 */
++                        0xffff 0 255 0 0
++                        /* ABS_MT_TRACKING_ID, CY_ABS_MIN_T, CY_ABS_MAX_T, 0, 0 */
++                        0x39 0 15 0 0
++                        /* ABS_MT_TOUCH_MAJOR, 0, 255, 0, 0 */
++                        0x30 0 255 0 0
++                        /* ABS_MT_TOUCH_MINOR, 0, 255, 0, 0 */
++                        0x31 0 255 0 0
++                        /* ABS_MT_ORIENTATION, -128, 127, 0, 0 */
++                        0x34 0xfffffed7 127 0 0>;
++
++                    cy,vkeys_x = <720>;
++                    cy,vkeys_y = <1280>;
++                    cy,virtual_keys = /* KeyCode CenterX CenterY Width Height */
++                        /* KEY_BACK */
++                        <158 150 1350 120 100
++                        /* KEY_HOME */
++                        /*modify the key value of KEY_HOME*/
++                        172 360 1350 120 100
++                        /* KEY_MENU */
++                        139 570 1350 120 100>;
++                };
++
++                   cy,btn {
++                   cy,name = "cyttsp4_btn";
++                   cy,inp_dev_name = "cyttsp4_btn";
++                   };
++            };
++        };
+ 	};
+ 
+ 	gen-vkeys {
+-- 
+1.8.3.1
+

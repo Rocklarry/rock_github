@@ -1,0 +1,64 @@
+From 356f468f92583bd6937de4621fa5e0c9e1404fab Mon Sep 17 00:00:00 2001
+From: chenqingfeng <chenqf0228@thundersoft.com>
+Date: Fri, 7 Nov 2014 16:17:23 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support ltr559als devicetree
+
+Devicetree support ltr559als
+
+Change-Id: I676377b763b017ec9a1119c4b495ae868bb9f4c4
+Signed-off-by: Qingfeng Chen <chenqf0228@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi |   30 ++++++++++++++++++++++++++
+ 1 file changed, 30 insertions(+)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+index 8691993..14e1bc8 100755
+--- a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+@@ -47,6 +47,21 @@
+ 		};
+ 	};
+ 
++	ltr559_int_pin {
++		qcom,pins = <&gp 113>;
++		qcom,pin-func = <0>;
++		qcom,num-grp-pins = <1>;
++		label = "ltr559-irq";
++		ltr559_default: ltr559_default {
++			drive-strength = <6>;
++			bias-pull-up;
++		};
++		ltr559_sleep: ltr559_sleep {
++			drive-strength = <2>;
++			bias-pull-down;
++		};
++	};
++
+ 	tps65132-en-pin {
+ 		qcom,pins = <&gp 97>, <&gp 98>;
+ 		qcom,num-grp-pins = <2>;
+@@ -82,6 +97,21 @@
+ 		avago,ga-value = <560>;
+ 	};
+ 
++	liteon@23 {
++		compatible = "liteon,ltr559";
++		reg = <0x23>;
++		pinctrl-names = "default","sleep";
++		pinctrl-0 = <&ltr559_default>;
++		pinctrl-1 = <&ltr559_sleep>;
++		interrupt-parent = <&msm_gpio>;
++		interrupts = <113 0x2002>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++		liteon,intr = <&msm_gpio 113 0x2002>;
++		liteon,highthr = <800>;
++		liteon,lowthr = <300>;
++	};
++
+ 	bosch@18 { /* Accelerometer sensor */
+ 		compatible = "bosch,bma2x2";
+ 		reg = <0x18>;
+-- 
+1.7.9.5
+

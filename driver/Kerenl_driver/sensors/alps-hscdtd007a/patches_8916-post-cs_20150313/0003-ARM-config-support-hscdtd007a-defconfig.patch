@@ -1,0 +1,35 @@
+From 8a45dc5e82182df9c4c00bbfd04d2cd11152eadc Mon Sep 17 00:00:00 2001
+From: Xiaowu Long <longxw0410@thundersoft.com>
+Date: Thu, 12 Mar 2015 14:56:34 +0800
+Subject: [PATCH 3/3] ARM:config: support hscdtd007a defconfig
+
+Defconfig support hscdtd007a
+
+Change-Id: I25c6b9c62e3904daad135547e4cbeb4f79f9d55b
+Signed-off-by: Xiaowu Long <longxw0410@thundersoft.com>
+---
+ arch/arm/configs/msm8916_defconfig | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm/configs/msm8916_defconfig b/arch/arm/configs/msm8916_defconfig
+index 08fd762..c808bfff 100644
+--- a/arch/arm/configs/msm8916_defconfig
++++ b/arch/arm/configs/msm8916_defconfig
+@@ -262,10 +262,11 @@ CONFIG_INPUT_MISC=y
+ CONFIG_INPUT_UINPUT=y
+ CONFIG_INPUT_GPIO=m
+ CONFIG_SENSORS_LIS3DH=y
+-CONFIG_SENSORS_MPU6050=y
+-CONFIG_SENSORS_AKM09911=y
++#CONFIG_SENSORS_MPU6050 is not set
++#CONFIG_SENSORS_AKM09911 is not set
++CONFIG_SENSORS_HSCDTD007A=y
+ CONFIG_SENSORS_BMA2X2=y
+-CONFIG_SENSORS_MMC3416X=y
++#CONFIG_SENSORS_MMC3416X is not set
+ CONFIG_SENSORS_AKM8963=y
+ CONFIG_SERIAL_MSM_HSL=y
+ CONFIG_SERIAL_MSM_HSL_CONSOLE=y
+-- 
+2.2.2
+

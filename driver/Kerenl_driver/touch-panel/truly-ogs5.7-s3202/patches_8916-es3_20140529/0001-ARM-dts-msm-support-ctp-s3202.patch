@@ -1,0 +1,49 @@
+From 93f2b03f7e4a2f152cb68a9b862b064051b8a232 Mon Sep 17 00:00:00 2001
+From: yangzh <yangzh0324@thundersoft.com>
+Date: Thu, 22 May 2014 17:24:57 +0800
+Subject: [PATCH 1/2] ARM:dts:msm: support ctp s3202
+
+Add CTP TRULY@OGS5.7@S3202 device tree
+
+Change-Id: I2b838f478e5b1f72b0fcc1ef5b53e49f9dbc9ea6
+---
+ arch/arm/boot/dts/qcom/msm8916-qrd.dtsi |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8916-qrd.dtsi b/arch/arm/boot/dts/qcom/msm8916-qrd.dtsi
+index 936ed4d..bafb934 100644
+--- a/arch/arm/boot/dts/qcom/msm8916-qrd.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8916-qrd.dtsi
+@@ -21,9 +21,9 @@
+ 
+ &soc {
+ 	i2c@78b9000 { /* BLSP1 QUP5 */
+-		synaptics@70 {
++		synaptics@22 {
+ 			compatible = "synaptics,rmi4";
+-			reg = <0x70>;
++			reg = <0x22>;
+ 			interrupt-parent = <&msm_gpio>;
+ 			interrupts = <13 0x2008>;
+ 			vdd-supply = <&pm8916_l17>;
+@@ -32,13 +32,15 @@
+ 			pinctrl-names = "pmx_ts_active","pmx_ts_suspend";
+ 			pinctrl-0 = <&ts_int_active &ts_reset_active>;
+ 			pinctrl-1 = <&ts_int_suspend &ts_reset_suspend>;
+-			synaptics,display-coords = <0 0 1100 1775>;
+-                        synaptics,panel-coords = <0 0 1100 1899>;
++			synaptics,display-coords = <0 0 1432 2537>;
++                        synaptics,panel-coords = <0 0 1432 2685>;
+ 			synaptics,irq-gpio = <&msm_gpio 13 0x2008>;
+ 			synaptics,reset-gpio = <&msm_gpio 12 0x0>;
++			synaptics,button-map = <139 102 158>;
+ 			synaptics,i2c-pull-up;
+ 			synaptics,power-down;
+ 			synaptics,disable-gpios;
++			synaptics,fw-vkey-support;
+ 		};
+ 	};
+ 
+-- 
+1.7.9.5
+

@@ -1,0 +1,47 @@
+From 94e8783206e2b9c91fb0b358944c1f83427055c6 Mon Sep 17 00:00:00 2001
+From: Deng Yequan <dengyq0603@thundersoft.com>
+Date: Fri, 25 Jul 2014 15:08:58 +0800
+Subject: [PATCH 1/4] ARM:dts:msm: support ctp truly gt968f
+
+Add CTP IHV-TRULY@CT4F1499@GT968F device tree
+
+Change-Id: I42c7698877306cd877176070d4ac33bc56456ba1
+Signed-off-by: Yequan Deng <dengyq0603@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8916-qrd.dtsi | 20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8916-qrd.dtsi b/arch/arm/boot/dts/qcom/msm8916-qrd.dtsi
+index acbbc74..427c237 100644
+--- a/arch/arm/boot/dts/qcom/msm8916-qrd.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8916-qrd.dtsi
+@@ -41,6 +41,26 @@
+ 			synaptics,disable-gpios;
+ 			synaptics,fw-image-name = "PR1601177-s3207_8916_qrd_00430000.img";
+ 		};
++		goodix@5d {
++			compatible = "goodix,gt9xx";
++			reg = <0x5d>;
++			interrupt-parent = <&msm_gpio>;
++			interrupts = <13 0x2008>;
++			reset-gpios = <&msm_gpio 12 0x00>;
++			interrupt-gpios = <&msm_gpio 13 0x00>;
++			vdd-supply = <&pm8916_l17>;
++			vcc-i2c-supply = <&pm8916_l16>;
++			goodix,button-map = <139 102 158>;
++			goodix,panel-coords = <0 0 720 1200>;
++			goodix,display-coords = <0 0 720 1080>;
++			goodix,product-id = "968F";
++			goodix,num_max_touches = <5>;
++			goodix,soft_rst_dly = <20>;
++			goodix,fw_name = "gtp_fw.bin";
++			goodix,fw-vkey-support;
++			goodix,i2c-pull-up;
++			goodix,no-force-update;
++                };
+ 	};
+ 
+ 	vdd_vreg: vdd_vreg {
+-- 
+1.9.1
+

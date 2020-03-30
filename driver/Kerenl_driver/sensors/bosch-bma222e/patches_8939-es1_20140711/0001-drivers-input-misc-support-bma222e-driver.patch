@@ -1,0 +1,37 @@
+From 715821d8a4f45125fd7066c79df0ef58b697ea71 Mon Sep 17 00:00:00 2001
+From: chenqingfeng <chenqf0228@thundersoft.com>
+Date: Tue, 8 Jul 2014 18:16:25 +0800
+Subject: [PATCH 1/2] drivers:input:misc: support bma222e driver
+
+Driver support bma222e
+
+Change-Id: Iae284a7da4c4aa92f92b115407dfa0c765fa7428
+Signed-off-by: Qingfeng Chen <chenqf0228@thundersoft.com>
+---
+ drivers/input/misc/bma2x2.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/input/misc/bma2x2.c b/drivers/input/misc/bma2x2.c
+index 0c59884..da60a9b 100644
+--- a/drivers/input/misc/bma2x2.c
++++ b/drivers/input/misc/bma2x2.c
+@@ -1,6 +1,6 @@
+ /*!
+  * @section LICENSE
+- * (C) Copyright 2013 Bosch Sensortec GmbH All Rights Reserved
++ * (C) Copyright 2013-2014 Bosch Sensortec GmbH All Rights Reserved
+  *
+  * This software program is licensed subject to the GNU General
+  * Public License (GPL).Version 2,June 1991,
+@@ -74,7 +74,7 @@
+ #define SLOPE_Y_INDEX               6
+ #define SLOPE_Z_INDEX               7
+ #define BMA2X2_MIN_DELAY            1
+-#define BMA2X2_MAX_DELAY            200
++#define BMA2X2_MAX_DELAY            400
+ #define BMA2X2_RANGE_SET            3 /* +/- 2G */
+ #define BMA2X2_RANGE_SHIFT          4 /* shift 4 bits for 2G */
+ #define BMA2X2_BW_SET               12 /* 125HZ  */
+-- 
+1.7.9.5
+

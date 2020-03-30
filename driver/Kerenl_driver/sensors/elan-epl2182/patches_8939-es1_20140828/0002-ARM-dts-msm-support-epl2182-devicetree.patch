@@ -1,0 +1,64 @@
+From 9be6852c549612adb947b4732cca83bb80bb25a1 Mon Sep 17 00:00:00 2001
+From: chenqingfeng <chenqf0228@thundersoft.com>
+Date: Tue, 28 Oct 2014 10:48:02 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support epl2182 devicetree
+
+Devicetree support epl2182
+
+Change-Id: I1e4531f97923d9a5b6806272302c0ec1577f5557
+Signed-off-by: Qingfeng Chen <chenqf0228@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi |   30 ++++++++++++++++++++++++++
+ 1 file changed, 30 insertions(+)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+index e9902b8..14b59a5 100755
+--- a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+@@ -47,6 +47,21 @@
+ 		};
+ 	};
+ 
++	epl2182_int_pin {
++		qcom,pins = <&gp 113>;
++		qcom,pin-func = <0>;
++		qcom,num-grp-pins = <1>;
++		label = "epl2182-irq";
++		epl2182_default: epl2182_default {
++			drive-strength = <6>;
++			bias-pull-up;
++		};
++		epl2182_sleep: epl2182_sleep {
++			drive-strength = <2>;
++			bias-pull-down;
++		};
++	};
++
+ 	tps65132-en-pin {
+ 		qcom,pins = <&gp 97>, <&gp 98>;
+ 		qcom,num-grp-pins = <2>;
+@@ -82,6 +97,21 @@
+ 		avago,ga-value = <48>;
+ 	};
+ 
++	elan@49 { /* Ambient light and proximity sensor */
++		compatible = "elan,epl2182";
++		reg = <0x49>;
++		pinctrl-names = "default","sleep";
++		pinctrl-0 = <&epl2182_default>;
++		pinctrl-1 = <&epl2182_sleep>;
++		interrupt-parent = <&msm_gpio>;
++		interrupts = <113 0x2002>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++		epl2182,irq-gpio = <&msm_gpio 113 0x2002>;
++		epl2182,prox_th_min = <500>;
++		epl2182,prox_th_max = <1000>;
++	};
++
+ 	bosch@18 { /* Accelerometer sensor */
+ 		compatible = "bosch,bma2x2";
+ 		reg = <0x18>;
+-- 
+1.7.9.5
+

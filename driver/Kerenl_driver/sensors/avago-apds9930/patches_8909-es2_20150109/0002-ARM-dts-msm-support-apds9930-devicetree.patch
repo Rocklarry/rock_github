@@ -1,0 +1,70 @@
+From 5d208a737a1a9275cf3bac54d52d55a51595cee1 Mon Sep 17 00:00:00 2001
+From: chenx <chenxiang0527@thundersoft.com>
+Date: Thu, 8 Jan 2015 13:45:36 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support apds9930 devicetree
+
+Devicetree support apds9930
+
+Change-Id: I629f1acf6820a2c64d636d463ffed23650b8a376
+Signed-off-by: Xiang Chen <chenxiang0527@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8909-qrd-skuc.dtsi |   36 ++++++++++++++++++++++++++
+ 1 file changed, 36 insertions(+)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8909-qrd-skuc.dtsi b/arch/arm/boot/dts/qcom/msm8909-qrd-skuc.dtsi
+index 8030789..3a4a55f 100644
+--- a/arch/arm/boot/dts/qcom/msm8909-qrd-skuc.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8909-qrd-skuc.dtsi
+@@ -53,6 +53,21 @@
+ 			bias-pull-up;
+ 		};
+ 	};
++
++	apds99xx_int_pin {
++		qcom,pins = <&gp 94>;
++		qcom,pin-func = <0>;
++		qcom,num-grp-pins = <1>;
++		label = "apds99xx-irq";
++		apds99xx_default: apds99xx_default {
++			drive-strength = <6>;
++			bias-pull-up;
++		};
++		apds99xx_sleep: apds99xx_sleep {
++			drive-strength = <2>;
++			bias-pull-down;
++		};
++	};
+ };
+ 
+ &soc {
+@@ -130,6 +145,27 @@
+ 			bosch,gpio-int1 = <&msm_gpio 96 0x2002>;
+ 			bosch,gpio-int2 = <&msm_gpio 65 0x2002>;
+ 		};
++
++		avago@39 {
++			compatible = "avago,apds9930";
++			reg = <0x39>;
++			pinctrl-names = "default","sleep";
++			pinctrl-0 = <&apds99xx_default>;
++			pinctrl-1 = <&apds99xx_sleep>;
++			interrupt-parent = <&msm_gpio>;
++			interrupts = <94 0x2>;
++			vdd-supply = <&pm8909_l17>;
++			vio-supply = <&pm8909_l6>;
++			avago,irq-gpio = <&msm_gpio 94 0x2>;
++			avago,ps-threshold = <600>;
++			avago,ps-hysteresis-threshold = <500>;
++			avago,ps-pulse = <8>;
++			avago,ps-pgain = <0>;
++			avago,als-B = <186>;
++			avago,als-C = <75>;
++			avago,als-D = <129>;
++			avago,ga-value = <98>;
++		};
+ 	};
+ 
+ 	gen-vkeys {
+-- 
+1.7.9.5
+

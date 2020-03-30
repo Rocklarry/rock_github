@@ -1,0 +1,95 @@
+From afd10ccaf541eaa28e0b2fca4dee0e6e20e5b5f1 Mon Sep 17 00:00:00 2001
+From: Li Zhanchao <lizc1023@thundersoft.com>
+Date: Mon, 27 Apr 2015 17:24:40 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support isl29147 devicetree
+
+Devicetree support isl29147
+
+Change-Id: If54f3b9152b6509a7001a128048970606b09a8ce
+Signed-off-by: Li Zhanchao <lizc1023@thundersoft.com>
+---
+ .../devicetree/bindings/input/misc/isl29147.txt    | 28 ++++++++++++++++++++++
+ arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi       | 18 +++++++++++---
+ 2 files changed, 43 insertions(+), 3 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/input/misc/isl29147.txt
+ mode change 100755 => 100644 arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+
+diff --git a/Documentation/devicetree/bindings/input/misc/isl29147.txt b/Documentation/devicetree/bindings/input/misc/isl29147.txt
+new file mode 100644
+index 0000000..3695fa1
+--- /dev/null
++++ b/Documentation/devicetree/bindings/input/misc/isl29147.txt
+@@ -0,0 +1,28 @@
++Intersil isl29147 ambient light + proximity combo driver
++
++Required properties:
++
++ - compatible		: Should be "intersil,isl29147".
++ - reg			: i2c slave address of the device.
++ - interrupt-parent	: Parent of interrupt.
++ - interupts		: L/P sample interrupt to indicate new data ready.
++ - vdd-supply		: Power supply needed to power up the device.
++ - vio-supply		: IO power supply needed for IO and I2C.
++ - intersil,als_range	: The range of light sensor.
++ - intersil,ps_lt	: The threshold adc value for proximity sensor to trigger away interrupt.
++ - intersil,ps_ht	: The hysteresis threshold adc value for proximity sensor to trigger  close interrupt.
++
++Example:
++
++	intersil@44 { /* Ambient light and proximity sensor */
++			compatible = "intersil,isl29147";
++			reg = <0x44>;
++			interrupt-parent = <&msm_gpio>;
++			interrupts = <113 0x2>;
++			vdd-supply = <&pm8916_l17>;
++			vio-supply = <&pm8916_l6>;
++			intersil,als_range = <3>;
++			intersil,ps_lt = <9>;
++			intersil,ps_ht = <35>;
++	};
++
+diff --git a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+old mode 100755
+new mode 100644
+index 1039722..904e27e
+--- a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+@@ -1,4 +1,4 @@
+-/* Copyright (c) 2014, The Linux Foundation. All rights reserved.
++/* Copyright (c) 2014-2015, The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 and
+@@ -61,8 +61,8 @@
+ };
+ 
+ &i2c_0 { /* BLSP1 QUP2 */
+-	avago@39 { /* Ambient light and proximity sensor */
+-		compatible = "avago,apds9930";
++/*	avago@39 { /* Ambient light and proximity sensor */
++/*		compatible = "avago,apds9930";
+ 		reg = <0x39>;
+ 		pinctrl-names = "default","sleep";
+ 		pinctrl-0 = <&apds99xx_default>;
+@@ -81,6 +81,18 @@
+ 		avago,als-D = <129>;
+ 		avago,ga-value = <560>;
+ 	};
++*/
++	intersil@44 { /* Ambient light and proximity sensor */
++		compatible = "intersil,isl29147";
++		reg = <0x44>;
++		interrupt-parent = <&msm_gpio>;
++		interrupts = <113 0x2>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++		intersil,als_range = <3>;
++		intersil,ps_lt = <9>;
++		intersil,ps_ht = <35>;
++	};
+ 
+ 	bosch@18 { /* Accelerometer sensor */
+ 		compatible = "bosch,bma2x2";
+-- 
+1.9.1
+

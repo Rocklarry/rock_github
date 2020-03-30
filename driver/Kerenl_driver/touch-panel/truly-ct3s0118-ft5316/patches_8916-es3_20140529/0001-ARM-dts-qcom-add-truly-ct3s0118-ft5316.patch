@@ -1,0 +1,72 @@
+From 9c42ff29c796b979b7e3fa90815382f80ac1c6c1 Mon Sep 17 00:00:00 2001
+From: yangzh <yangzh0324@thundersoft.com>
+Date: Thu, 22 May 2014 11:16:52 +0800
+Subject: [PATCH 1/2] ARM:dts:qcom: add truly ct3s0118 ft5316
+
+Add device tree file for ft5316
+
+Change-Id: I0ac02b467871281f9b1adc5fec9aab376a5caa6c
+---
+ arch/arm/boot/dts/qcom/msm8916-qrd.dtsi |   39 ++++++++++++++++++++++++++++---
+ 1 file changed, 36 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8916-qrd.dtsi b/arch/arm/boot/dts/qcom/msm8916-qrd.dtsi
+index 936ed4d..9c2136c 100644
+--- a/arch/arm/boot/dts/qcom/msm8916-qrd.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8916-qrd.dtsi
+@@ -40,16 +40,49 @@
+ 			synaptics,power-down;
+ 			synaptics,disable-gpios;
+ 		};
++		
++		focaltech@38 {
++			compatible = "focaltech,5x06";
++			reg = <0x38>;
++			interrupt-parent = <&msm_gpio>;
++			interrupts = <13 0x2008>;
++			vdd-supply = <&pm8916_l17>;
++			vcc_i2c-supply = <&pm8916_l16>;
++			focaltech,name = "ft5316";
++			focaltech,family-id = <0xa>;
++			focaltech,reset-gpio = <&msm_gpio 12 0x0>;
++			focaltech,irq-gpio = <&msm_gpio 13 0x2008>;
++			focaltech,display-coords = <0 0 720 1280>;
++			focaltech,panel-coords = <0 0 720 1380>;
++			focaltech,button-map= <139 172 158>;
++			focaltech,no-force-update;
++			focaltech,i2c-pull-up;
++			focaltech,fw-vkey-support;
++			focaltech,group-id = <1>;
++			focaltech,hard-reset-delay-ms = <20>;
++			focaltech,soft-reset-delay-ms = <150>;
++			focaltech,num-max-touches = <5>;
++			focaltech,fw-name = "ft_8916_qrd_fw.bin";
++			focaltech,fw-delay-aa-ms = <50>;
++			focaltech,fw-delay-55-ms = <30>;
++			focaltech,fw-upgrade-id1 = <0x79>;
++			focaltech,fw-upgrade-id2 = <0x03>;
++			focaltech,fw-delay-readid-ms = <10>;
++			focaltech,fw-delay-era-flsh-ms = <2000>;
++			focaltech,fw-auto-cal;
++			focaltech,ignore-id-check;
++			};
+ 	};
+ 
+ 	gen-vkeys {
+ 		compatible = "qcom,gen-vkeys";
+-		label = "synaptics_rmi4_i2c";
++		label = "ft5x06_ts";
+ 		qcom,disp-maxx = <720>;
+ 		qcom,disp-maxy = <1280>;
+ 		qcom,panel-maxx = <720>;
+-		qcom,panel-maxy = <1369>;
+-		qcom,key-codes = <158 172 139>;
++		qcom,panel-maxy = <1404>;
++		qcom,key-codes = <139 172 158>;
++		qcom,y-offset = <0>;
+ 	};
+ 
+ 	i2c@78ba000 { /* BLSP1 QUP6 */
+-- 
+1.7.9.5
+

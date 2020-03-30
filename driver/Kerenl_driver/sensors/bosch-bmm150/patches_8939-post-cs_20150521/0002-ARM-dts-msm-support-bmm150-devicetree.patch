@@ -1,0 +1,95 @@
+From 53e5d3efd645e5c7f8c0a75f61f1f0613f5fba8f Mon Sep 17 00:00:00 2001
+From: Li Zhanchao <lizc1023@thundersoft.com>
+Date: Thu, 21 May 2015 16:49:40 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support bmm150 devicetree
+
+Devicetree support bmm150
+
+Change-Id: I4332f8ba90c12e4589cdf4a1ea021d61a7fe7c46
+Signed-off-by: Li Zhanchao <lizc1023@thundersoft.com>
+---
+ .../devicetree/bindings/input/misc/bmm150.txt         | 18 ++++++++++++++++++
+ arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi          | 19 +++++++++++++------
+ 2 files changed, 31 insertions(+), 6 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/input/misc/bmm150.txt
+ mode change 100755 => 100644 arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+
+diff --git a/Documentation/devicetree/bindings/input/misc/bmm150.txt b/Documentation/devicetree/bindings/input/misc/bmm150.txt
+new file mode 100644
+index 0000000..53687a3
+--- /dev/null
++++ b/Documentation/devicetree/bindings/input/misc/bmm150.txt
+@@ -0,0 +1,18 @@
++Bosch BMC156-series altimeter driver
++
++Required properties:
++
++ - compatible		: Should be "bosch,bmm150".
++ - reg			: i2c slave address of the device.
++ - vdd-supply		: Analog power supply needed to power device.
++ - vio-supply		: Digital IO power supply needed for IO and I2C.
++
++Example:
++	&i2c_0 { /* BLSP1 QUP2 */
++		bosch@12 { /* Magnetic field sensor */
++			compatible = "bosch,bmm150";
++			reg = <0x12>;
++			vdd-supply = <&pm8916_l17>;
++			vio-supply = <&pm8916_l6>;
++		};
++	};
+diff --git a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+old mode 100755
+new mode 100644
+index 1039722..3714ee0
+--- a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+@@ -61,6 +61,13 @@
+ };
+ 
+ &i2c_0 { /* BLSP1 QUP2 */
++	bosch@12 { /* Magnetic field sensor */
++		compatible = "bosch,bmm150";
++		reg = <0x12>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++	};
++
+ 	avago@39 { /* Ambient light and proximity sensor */
+ 		compatible = "avago,apds9930";
+ 		reg = <0x39>;
+@@ -98,17 +105,17 @@
+ 		bosch,gpio-int2 = <&msm_gpio 114 0x2002>;
+ 	};
+ 
+-	memsic@30 { /* Magnetic field sensor */
+-		compatible = "memsic,mmc3416x";
++/*	memsic@30 { /* Magnetic field sensor */
++/*		compatible = "memsic,mmc3416x";
+ 		reg = <0x30>;
+ 		vdd-supply = <&pm8916_l17>;
+ 		vio-supply = <&pm8916_l6>;
+ 		memsic,dir = "obverse-x-axis-forward";
+ 		memsic,auto-report;
+ 	};
+-
+-	mpu6050@68 { /* Gyroscope and accelerometer sensor combo */
+-		compatible = "invn,mpu6050";
++*/
++/*	mpu6050@68 { /* Gyroscope and accelerometer sensor combo */
++/*		compatible = "invn,mpu6050";
+ 		reg = <0x68>;
+ 		pinctrl-names = "mpu_default","mpu_sleep";
+ 		pinctrl-0 = <&mpu6050_default>;
+@@ -121,7 +128,7 @@
+ 		invn,gpio-int = <&msm_gpio 115 0x2002>;
+ 		invn,place = "Portrait Down Back Side";
+ 	};
+-
++*/
+ 	tps65132@3e {
+ 		compatible = "ti,tps65132";
+ 		reg = <0x3e>;
+-- 
+1.9.1
+

@@ -1,0 +1,32 @@
+From 61e84d3731b5b98026bcd3a0868a9abf8aa4f7ab Mon Sep 17 00:00:00 2001
+From: chenxl0723 <chenxl0723@thundersoft.com>
+Date: Wed, 2 Apr 2014 14:12:47 +0800
+Subject: [PATCH 2/3] ARM:config: support ctp truly ct4f0258
+
+Add CTP TRULY@CT4F0258@EKTH3248 config
+
+Change-Id: I6af1b94df844b0293dec497aa0c18d538b4fe651
+Signed-off-by: Chen Xuelong <chenxl0723@thundersoft.com>
+---
+ arch/arm/configs/msm8610_defconfig |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/configs/msm8610_defconfig b/arch/arm/configs/msm8610_defconfig
+index 02db2f2..64f31ab 100644
+--- a/arch/arm/configs/msm8610_defconfig
++++ b/arch/arm/configs/msm8610_defconfig
+@@ -232,8 +232,9 @@ CONFIG_INPUT_EVBUG=m
+ CONFIG_KEYBOARD_GPIO=y
+ CONFIG_INPUT_TOUCHSCREEN=y
+ CONFIG_TOUCHSCREEN_ATMEL_MXT=y
+-CONFIG_TOUCHSCREEN_FT5X06=y
+-CONFIG_TOUCHSCREEN_GEN_VKEYS=y
++#CONFIG_TOUCHSCREEN_FT5X06=y
++#CONFIG_TOUCHSCREEN_GEN_VKEYS=y
++CONFIG_TOUCHSCREEN_ELAN_EKTF3XXX=y
+ CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI4=y
+ CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_RMI4_DEV=y
+ CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE=y
+-- 
+1.7.9.5
+

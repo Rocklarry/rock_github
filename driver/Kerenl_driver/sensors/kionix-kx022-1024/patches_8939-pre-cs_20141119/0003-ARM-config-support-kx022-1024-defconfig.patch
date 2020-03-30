@@ -1,0 +1,35 @@
+From acf1b94ea907cf935294bfac9f6781092b018a07 Mon Sep 17 00:00:00 2001
+From: zhang shu <zhangshu1009@thundersoft.com>
+Date: Tue, 18 Nov 2014 18:12:02 +0800
+Subject: [PATCH 3/3] ARM:config: support kx022-1024 defconfig
+
+Defconfig support kx022-1024
+
+Change-Id: I9e3faca1627ab3eda612aacdf1c8e85adfdccfc8
+Signed-off-by: zhang shu <zhangshu1009@thundersoft.com>
+---
+ arch/arm/configs/msm8916_defconfig |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm/configs/msm8916_defconfig b/arch/arm/configs/msm8916_defconfig
+index c476b05..6a34f45 100644
+--- a/arch/arm/configs/msm8916_defconfig
++++ b/arch/arm/configs/msm8916_defconfig
+@@ -264,10 +264,11 @@ CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE_v21=y
+ CONFIG_INPUT_MISC=y
+ CONFIG_INPUT_UINPUT=y
+ CONFIG_INPUT_GPIO=m
+-CONFIG_SENSORS_LIS3DH=y
+-CONFIG_SENSORS_MPU6050=y
++#CONFIG_SENSORS_LIS3DH=y
++#CONFIG_SENSORS_MPU6050=y
+ CONFIG_SENSORS_AKM09911=y
+-CONFIG_SENSORS_BMA2X2=y
++#CONFIG_SENSORS_BMA2X2=y
++CONFIG_INPUT_KIONIX_ACCEL=y
+ CONFIG_SENSORS_MMC3416X=y
+ CONFIG_SENSORS_AKM8963=y
+ CONFIG_SERIAL_MSM_HSL=y
+-- 
+1.7.4.1
+

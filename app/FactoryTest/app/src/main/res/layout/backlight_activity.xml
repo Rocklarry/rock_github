@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+    <TextView
+        android:id="@+id/background_icon"
+        android:layout_marginTop="10dp"
+        android:layout_centerHorizontal="true"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:textSize="40sp"
+        android:text="BackLight Test"/>
+    <TextView
+        android:layout_marginTop="5dp"
+        android:layout_below="@id/background_icon"
+        android:layout_centerInParent="true"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="20sp"
+        android:text="wait for 5 seconds"/>
+
+  <!--  <SeekBar
+        android:id="@+id/sb_light"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:layout_margin="10dp"
+        android:max="255"
+        />
+
+    <TextView
+        android:id="@+id/tv_brightness"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/sb_light"
+        android:layout_centerHorizontal="true"
+        android:textColor="#000"
+        />-->
+
+    <include
+        layout="@layout/layout_result"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        />
+</RelativeLayout>

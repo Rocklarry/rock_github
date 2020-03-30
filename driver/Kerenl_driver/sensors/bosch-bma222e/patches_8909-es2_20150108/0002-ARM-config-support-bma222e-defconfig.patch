@@ -1,0 +1,29 @@
+From 16bc0a5b3cb4cdaba71f3b6babd08325fe922c18 Mon Sep 17 00:00:00 2001
+From: Xiaowu Long <longxw0410@thundersoft.com>
+Date: Thu, 8 Jan 2015 10:44:19 +0800
+Subject: [PATCH 2/2] ARM:config: support bma222e defconfig
+
+Defconfig support bma222e
+
+Change-Id: I3adac3c33b350ebe50fa55f53f41c9a767b60ab3
+Signed-off-by: Xiaowu Long <longxw0410@thundersoft.com>
+---
+ arch/arm/configs/msm8909_defconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/configs/msm8909_defconfig b/arch/arm/configs/msm8909_defconfig
+index a94587e..5b430b7 100644
+--- a/arch/arm/configs/msm8909_defconfig
++++ b/arch/arm/configs/msm8909_defconfig
+@@ -291,7 +291,7 @@ CONFIG_INPUT_UINPUT=y
+ CONFIG_INPUT_GPIO=m
+ CONFIG_SENSORS=y
+ CONFIG_APDS9930=y
+-CONFIG_SENSORS_MPU6050=y
++#CONFIG_SENSORS_MPU6050 is not set
+ CONFIG_SENSORS_MMC3416X=y
+ CONFIG_SENSORS_AKM8963=y
+ CONFIG_SENSORS_BMA2X2=y
+-- 
+2.2.1
+

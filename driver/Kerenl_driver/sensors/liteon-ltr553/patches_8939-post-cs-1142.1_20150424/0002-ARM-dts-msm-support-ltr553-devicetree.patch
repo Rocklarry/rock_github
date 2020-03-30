@@ -1,0 +1,98 @@
+From 9204a873d38d91a2dfc5d9e288986556174c1f89 Mon Sep 17 00:00:00 2001
+From: Yukun Wan <wanyk0402@thundersoft.com>
+Date: Fri, 24 Apr 2015 14:56:18 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support ltr553 devicetree
+
+Devicetree support ltr553
+
+Change-Id: Ifd42cdbb083cadb15d3ddbb64178a1527eaff2fc
+Signed-off-by: Yukun Wan <wanyk0402@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi | 51 ++++++++++++++++++++++++++--
+ 1 file changed, 48 insertions(+), 3 deletions(-)
+ mode change 100755 => 100644 arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+
+diff --git a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+old mode 100755
+new mode 100644
+index 1039722..11e1d18
+--- a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+@@ -47,6 +47,21 @@
+ 		};
+ 	};
+ 
++	ltr553_int_pin {
++		qcom,pins = <&gp 113>;
++		qcom,pin-func = <0>;
++		qcom,num-grp-pins = <1>;
++		label = "ltr553-irq";
++		ltr553_default: ltr553_default {
++			drive-strength = <6>;
++			bias-pull-up;
++		};
++		ltr553_sleep: ltr553_sleep {
++			drive-strength = <2>;
++			bias-pull-down;
++		};
++	};
++
+ 	tps65132-en-pin {
+ 		qcom,pins = <&gp 97>, <&gp 98>;
+ 		qcom,num-grp-pins = <2>;
+@@ -58,11 +73,26 @@
+ 			bias-pull-down;
+ 		};
+ 	};
++
++	ltr553_int_pin {
++		qcom,pins = <&gp 113>;
++		qcom,pin-func = <0>;
++		qcom,num-grp-pins = <1>;
++		label = "ltr553-irq";
++		ltr553_default: ltr553_default {
++			drive-strength = <6>;
++			bias-pull-up;
++		};
++		ltr553_sleep: ltr553_sleep {
++			drive-strength = <2>;
++			bias-pull-down;
++		};
++	};
+ };
+ 
+ &i2c_0 { /* BLSP1 QUP2 */
+-	avago@39 { /* Ambient light and proximity sensor */
+-		compatible = "avago,apds9930";
++/*	avago@39 { /* Ambient light and proximity sensor */
++/*		compatible = "avago,apds9930";
+ 		reg = <0x39>;
+ 		pinctrl-names = "default","sleep";
+ 		pinctrl-0 = <&apds99xx_default>;
+@@ -80,7 +110,22 @@
+ 		avago,als-C = <75>;
+ 		avago,als-D = <129>;
+ 		avago,ga-value = <560>;
+-	};
++	};*/
++
++	liteon@23 {
++		compatible = "liteon,ltr553";
++		reg = <0x23>;
++		pinctrl-names = "default","sleep";
++		pinctrl-0 = <&ltr553_default>;
++		pinctrl-1 = <&ltr553_sleep>;
++		interrupt-parent = <&msm_gpio>;
++		interrupts = <113 0x2002>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++		liteon,intr = <&msm_gpio 113 0x2002>;
++		liteon,highthr = <800>;
++		liteon,lowthr = <300>;
++ 	};
+ 
+ 	bosch@18 { /* Accelerometer sensor */
+ 		compatible = "bosch,bma2x2";
+-- 
+2.2.2
+

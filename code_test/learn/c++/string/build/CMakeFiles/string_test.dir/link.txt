@@ -1,0 +1,1 @@
+/usr/bin/c++   -std=c++11 -O3   CMakeFiles/string_test.dir/src/string.cpp.o  -o string_test -rdynamic -lm 

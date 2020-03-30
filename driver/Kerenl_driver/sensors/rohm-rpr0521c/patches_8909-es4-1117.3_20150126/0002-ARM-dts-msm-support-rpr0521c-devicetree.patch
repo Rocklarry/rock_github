@@ -1,0 +1,67 @@
+From 0703e45989e17934201daadb87185e656f42ed24 Mon Sep 17 00:00:00 2001
+From: Yukun Wan <wanyk0402@thundersoft.com>
+Date: Mon, 26 Jan 2015 17:56:28 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support rpr0521c devicetree
+
+Devicetree support rpr0521c
+
+Change-Id: Ib9c176d034ed2ce8b942345721447fdd97f1b3c1
+Signed-off-by: Yukun Wan <wanyk0402@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8909-qrd-skue.dtsi | 30 ++++++++++++++++++++++++++++
+ 1 file changed, 30 insertions(+)
+ mode change 100755 => 100644 arch/arm/boot/dts/qcom/msm8909-qrd-skue.dtsi
+
+diff --git a/arch/arm/boot/dts/qcom/msm8909-qrd-skue.dtsi b/arch/arm/boot/dts/qcom/msm8909-qrd-skue.dtsi
+old mode 100755
+new mode 100644
+index cd313a1..01036ea
+--- a/arch/arm/boot/dts/qcom/msm8909-qrd-skue.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8909-qrd-skue.dtsi
+@@ -54,6 +54,21 @@
+ 			  bias-pull-up;
+ 		};
+ 	};
++
++	rpr0521c_int_pin {
++		qcom,pins = <&gp 94>;
++		qcom,pin-func = <0>;
++		qcom,num-grp-pins = <1>;
++		label = "rpr0521c-irq";
++		rpr0521c_default: rpr0521c_default {
++			drive-strength = <6>;
++			bias-pull-up;
++		};
++		rpr0521c_sleep: rpr0521c_sleep {
++			drive-strength = <2>;
++			bias-pull-down;
++		};
++	};
+ };
+ 
+ &soc {
+@@ -138,6 +153,21 @@
+ 			bosch,gpio-int1 = <&msm_gpio 96 0x2002>;
+ 			bosch,gpio-int2 = <&msm_gpio 65 0x2002>;
+ 		};
++
++		rohm@38 { /* Ambient light and proximity sensor */
++			compatible = "rohm,rpr0521c";
++			reg = <0x38>;
++			pinctrl-names = "default","sleep";
++			pinctrl-0 = <&rpr0521c_default>;
++			pinctrl-1 = <&rpr0521c_sleep>;
++			interrupt-parent = <&msm_gpio>;
++			interrupts = <94 0x2002>;
++			vdd-supply = <&pm8909_l17>;
++			vio-supply = <&pm8909_l6>;
++			rpr0521c,irq-gpio = <&msm_gpio 94 0x2002>;
++			rpr0521c,prox_th_min = <50>;
++			rpr0521c,prox_th_max = <150>;
++		};
+ 	};
+ 
+ 	sound {
+-- 
+2.2.2
+

@@ -1,0 +1,6056 @@
+From 7252bbd267122211e1561e4ca98af638ce704263 Mon Sep 17 00:00:00 2001
+From: Li Zhanchao <lizc1023@thundersoft.com>
+Date: Wed, 29 Jun 2016 17:10:46 +0800
+Subject: [PATCH 3/3] input:touchscreen: support ctp unknown mms458
+
+Add CTP UNKNOWN@AMS568AT41@MMS458 driver
+
+Change-Id: I8eb5896bed2d600a112171dd9fcb54a8980c9bbb
+Signed-off-by: Li Zhanchao <lizc1023@thundersoft.com>
+---
+ drivers/input/touchscreen/Kconfig                  |   11 +
+ drivers/input/touchscreen/Makefile                 |    1 +
+ drivers/input/touchscreen/melfas_mip4/Kconfig      |   48 +
+ drivers/input/touchscreen/melfas_mip4/Makefile     |   15 +
+ drivers/input/touchscreen/melfas_mip4/melfas_mms.h |   44 +
+ .../input/touchscreen/melfas_mip4/melfas_mms400.c  | 1699 ++++++++++++++++++++
+ .../input/touchscreen/melfas_mip4/melfas_mms400.h  |  371 +++++
+ .../touchscreen/melfas_mip4/melfas_mms400_cmd.c    |  963 +++++++++++
+ .../touchscreen/melfas_mip4/melfas_mms400_mod.c    |  460 ++++++
+ .../touchscreen/melfas_mip4/melfas_mms400_reg.h    |  132 ++
+ .../touchscreen/melfas_mip4/melfas_mms400_test.c   | 1677 +++++++++++++++++++
+ .../melfas_mip4/melfas_mms438_fw_update.c          |  519 ++++++
+ 12 files changed, 5940 insertions(+)
+ create mode 100644 drivers/input/touchscreen/melfas_mip4/Kconfig
+ create mode 100644 drivers/input/touchscreen/melfas_mip4/Makefile
+ create mode 100644 drivers/input/touchscreen/melfas_mip4/melfas_mms.h
+ create mode 100644 drivers/input/touchscreen/melfas_mip4/melfas_mms400.c
+ create mode 100644 drivers/input/touchscreen/melfas_mip4/melfas_mms400.h
+ create mode 100644 drivers/input/touchscreen/melfas_mip4/melfas_mms400_cmd.c
+ create mode 100644 drivers/input/touchscreen/melfas_mip4/melfas_mms400_mod.c
+ create mode 100644 drivers/input/touchscreen/melfas_mip4/melfas_mms400_reg.h
+ create mode 100644 drivers/input/touchscreen/melfas_mip4/melfas_mms400_test.c
+ create mode 100644 drivers/input/touchscreen/melfas_mip4/melfas_mms438_fw_update.c
+
+diff --git a/drivers/input/touchscreen/Kconfig b/drivers/input/touchscreen/Kconfig
+index 3cc1d6c..e9e13c2 100644
+--- a/drivers/input/touchscreen/Kconfig
++++ b/drivers/input/touchscreen/Kconfig
+@@ -1126,6 +1126,17 @@ config TOUCHSCREEN_MAXIM_STI
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called maxim_sti.
+ 
++config TOUCHSCREEN_MELFAS_MMS458
++	bool "MELFAS touchpanel MMS458 series"
++	depends on I2C
++	help
++	  Say Y here if you have a MELFAS MMS458 touchscreen.
++	  MMS458 controllers are multi touch controllers which can
++	  report 5 touches at a time.
++
++	  If unsure, say N.
++
++source "drivers/input/touchscreen/melfas_mip4/Kconfig"
+ source "drivers/input/touchscreen/gt9xx/Kconfig"
+ 
+ endif
+diff --git a/drivers/input/touchscreen/Makefile b/drivers/input/touchscreen/Makefile
+index 8dacb2e..8402fc7 100644
+--- a/drivers/input/touchscreen/Makefile
++++ b/drivers/input/touchscreen/Makefile
+@@ -91,3 +91,4 @@ obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI4)		+= synaptics_i2c_rmi4.o
+ obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_RMI4_DEV)	+= synaptics_rmi_dev.o
+ obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE) 	+= synaptics_fw_update.o
+ obj-$(CONFIG_TOUCHSCREEN_GT9XX)		+= gt9xx/
++obj-$(CONFIG_TOUCHSCREEN_MELFAS_MMS458)	+= melfas_mip4/
+diff --git a/drivers/input/touchscreen/melfas_mip4/Kconfig b/drivers/input/touchscreen/melfas_mip4/Kconfig
+new file mode 100644
+index 0000000..b1d5f5e
+--- /dev/null
++++ b/drivers/input/touchscreen/melfas_mip4/Kconfig
+@@ -0,0 +1,48 @@
++#
++# Kconfig for MELFAS MMS400 Touchscreen driver
++#
++
++if INPUT_TOUCHSCREEN
++
++config TOUCHSCREEN_MELFAS_MMS458
++	tristate "MELFAS MMS458 Touchscreen"
++	depends on I2C
++	help
++	  Say Y here if you have a MELFAS MMS458 touchscreen device in your system.
++
++	  If unsure, say N.
++
++	  To compile this driver as a module, choose M here: the module will be called mms_ts.
++
++#config TOUCHSCREEN_MELFAS_MMS438
++#	tristate "MELFAS MMS438 Touchscreen"
++#	depends on I2C
++#	help
++#	  Say Y here if you have a MELFAS MMS438 touchscreen device in your system.
++
++#	  If unsure, say N.
++
++#	  To compile this driver as a module, choose M here: the module will be called mms_ts.
++
++#config TOUCHSCREEN_MELFAS_MMS449
++#	tristate "MELFAS MMS449 Touchscreen"
++#	depends on I2C
++#	help
++#	  Say Y here if you have a MELFAS MMS449 touchscreen device in your system.
++
++#	  If unsure, say N.
++
++#	  To compile this driver as a module, choose M here: the module will be called mms_ts.
++
++#config TOUCHSCREEN_MELFAS_MMS492
++#	tristate "MELFAS MMS492 Touchscreen"
++#	depends on I2C
++#	help
++#	  Say Y here if you have a MELFAS MMS492 touchscreen device in your system.
++
++#	  If unsure, say N.
++
++#	  To compile this driver as a module, choose M here: the module will be called mms_ts.
++
++endif
++
+diff --git a/drivers/input/touchscreen/melfas_mip4/Makefile b/drivers/input/touchscreen/melfas_mip4/Makefile
+new file mode 100644
+index 0000000..5101143
+--- /dev/null
++++ b/drivers/input/touchscreen/melfas_mip4/Makefile
+@@ -0,0 +1,15 @@
++#
++# Makefile for MELFAS MMS400 Touchscreen driver
++#
++
++obj-$(CONFIG_TOUCHSCREEN_MELFAS_MMS438) += melfas_mms400.o melfas_mms400_mod.o melfas_mms400_test.o melfas_mms400_cmd.o melfas_mms438_fw_update.o
++obj-$(CONFIG_TOUCHSCREEN_MELFAS_MMS449)	+= melfas_mms400.o melfas_mms400_mod.o melfas_mms400_test.o melfas_mms400_cmd.o melfas_mms438_fw_update.o
++obj-$(CONFIG_TOUCHSCREEN_MELFAS_MMS458)	+= melfas_mms400.o melfas_mms400_mod.o melfas_mms400_test.o melfas_mms400_cmd.o melfas_mms438_fw_update.o
++obj-$(CONFIG_TOUCHSCREEN_MELFAS_MMS492)	+= melfas_mms400.o melfas_mms400_mod.o melfas_mms400_test.o melfas_mms400_cmd.o melfas_mms492_fw_update.o
++
++#CFLAGS_melfas_mms400.o += -Wno-unused-variable -Wno-unused-but-set-variable -Wno-unused-function -Wno-unused-label
++#CFLAGS_melfas_mms400_test.o += -Wno-unused-variable -Wno-unused-but-set-variable -Wno-unused-function -Wno-unused-label
++#CFLAGS_melfas_mms400_cmd.o += -Wno-unused-variable -Wno-unused-but-set-variable -Wno-unused-function -Wno-unused-label
++#CFLAGS_melfas_mms438_fw_update.o += -Wno-unused-variable -Wno-unused-but-set-variable -Wno-unused-function -Wno-unused-label
++#CFLAGS_melfas_mms492_fw_update.o += -Wno-unused-variable -Wno-unused-but-set-variable -Wno-unused-function -Wno-unused-label
++
+diff --git a/drivers/input/touchscreen/melfas_mip4/melfas_mms.h b/drivers/input/touchscreen/melfas_mip4/melfas_mms.h
+new file mode 100644
+index 0000000..b87cce3
+--- /dev/null
++++ b/drivers/input/touchscreen/melfas_mip4/melfas_mms.h
+@@ -0,0 +1,44 @@
++/*
++ * MELFAS MMS Touchscreen
++ *
++ * Copyright (C) 2014-2016 MELFAS Inc.
++ *
++ *
++ * Platform Data
++ *
++ * Default path : linux/platform_data/melfas_mms.h
++ *
++ */
++
++#ifndef _LINUX_MMS_TOUCH_H
++#define _LINUX_MMS_TOUCH_H
++
++#ifdef CONFIG_OF
++#define MMS_USE_DEVICETREE		1
++#else
++#define MMS_USE_DEVICETREE		0
++#endif
++
++/* 0 or 1 : Callback for inform charger, display, power, etc... */
++#define MMS_USE_CALLBACK	0
++
++#define MMS_DEVICE_NAME	"mms_ts"
++
++/**
++* Platform Data
++*/
++struct mms_platform_data {
++	unsigned int max_x;
++	unsigned int max_y;
++
++	int gpio_intr;		/* Required (interrupt signal) */
++	int gpio_vdd_en;	/* Optional (power control) */
++	int gpio_reset;		/* Optional */
++
++#if MMS_USE_CALLBACK
++	void (*register_callback)(void *);
++#endif
++};
++
++#endif
++
+diff --git a/drivers/input/touchscreen/melfas_mip4/melfas_mms400.c b/drivers/input/touchscreen/melfas_mip4/melfas_mms400.c
+new file mode 100644
+index 0000000..c697b40
+--- /dev/null
++++ b/drivers/input/touchscreen/melfas_mip4/melfas_mms400.c
+@@ -0,0 +1,1699 @@
++/*
++ * MELFAS MMS400 Touchscreen
++ *
++ * Copyright (C) 2014-2016 MELFAS Inc.
++ *
++ *
++ * This module is tested on the Google AOSP (Nexus) platforms.
++ *
++ * Board Type : Maguro (Google Galaxy Nexus) - Android 4.3 with Kernel 3.0
++ * DeviceTree Type : Hammerhead (Google Nexus 5) - Android 5.0 with Kernel 3.4
++ *
++ */
++
++#include "melfas_mms400.h"
++
++#define PINCTRL_STATE_ACTIVE	"pmx_ts_active"
++#define PINCTRL_STATE_SUSPEND	"pmx_ts_suspend"
++#define PINCTRL_STATE_RELEASE	"pmx_ts_release"
++
++#if MMS_USE_NAP_MODE
++struct wake_lock mms_wake_lock;
++#endif
++
++static unsigned int mms_wakeup_control_flag;
++
++static ssize_t ctp_enable_show(struct device *dev,
++				  struct device_attribute *attr, char *buf)
++{
++	struct mms_ts_info *ts = dev_get_drvdata(dev);
++
++	if (!(ts->power_hall)) {
++		dev_err(&ts->client->dev, "Already in suspend state");
++		return snprintf(buf, 4, "%s\n", "0");
++	}
++
++	return snprintf(buf, 4, "%s\n", ts->enabled ? "1" : "0");
++}
++
++static ssize_t ctp_enable_store(struct device *dev,
++				   struct device_attribute *attr,
++				   const char *buf, size_t size)
++{
++	unsigned long val;
++	int rc;
++
++	struct mms_ts_info *ts = dev_get_drvdata(dev);
++
++	if (size > 2)
++		return -EINVAL;
++
++	if (!(ts->power_hall)) {
++		dev_err(&ts->client->dev, "Already in suspend state\n");
++		goto no_operation;
++	}
++
++	rc = kstrtoul(buf, 10, &val);
++	if (rc != 0)
++		return rc;
++
++	dev_err(&ts->client->dev, "%s: val is %lu, rc is %d, size is %zu",
++		__func__, val, rc, size);
++	if (val) {
++		if (ts->enabled != true) {
++			enable_irq(ts->client->irq);
++			ts->enabled = true;
++
++			if (ts->disable_esd == true)
++				/* Disable ESD alert */
++				mms_disable_esd_alert(ts);
++		} else
++			dev_err(&ts->client->dev, "Already in enable state.");
++	} else {
++		if (ts->enabled == true) {
++			ts->enabled = false;
++			disable_irq(ts->client->irq);
++		} else
++			dev_err(&ts->client->dev, "Already in disable state.");
++	}
++
++	return size;
++
++no_operation:
++	return size;
++}
++
++static ssize_t ctp_mt_protocol_type_show(struct device *dev,
++					    struct device_attribute *attr,
++					    char *buf)
++{
++	return snprintf(buf, 16, "%s\n", "MT Protocal B");
++}
++
++static ssize_t ctp_ts_info_show(struct device *dev,
++				   struct device_attribute *attr, char *buf)
++{
++	struct mms_ts_info *data = dev_get_drvdata(dev);
++
++	return snprintf(buf, INFO_MAX_LEN, "%s\n", data->ts_info);
++}
++
++static DEVICE_ATTR(fw_name, (S_IRUGO | S_IWUSR | S_IWGRP),
++		   NULL, NULL);
++static DEVICE_ATTR(update_fw, (S_IRUGO | S_IWUSR | S_IWGRP),
++		   NULL, NULL);
++static DEVICE_ATTR(force_update_fw, (S_IRUGO | S_IWUSR | S_IWGRP),
++		   NULL, NULL);
++static DEVICE_ATTR(enable, (S_IRUGO | S_IWUSR | S_IWGRP),
++		   ctp_enable_show, ctp_enable_store);
++static DEVICE_ATTR(mt_protocol_type, (S_IRUGO | S_IWUSR | S_IWGRP),
++		   ctp_mt_protocol_type_show, NULL);
++static DEVICE_ATTR(ts_info, (S_IRUGO | S_IWUSR | S_IWGRP),
++		   ctp_ts_info_show, NULL);
++
++static struct attribute *gtp_attrs[] = {
++	&dev_attr_fw_name.attr,
++	&dev_attr_update_fw.attr,
++	&dev_attr_force_update_fw.attr,
++	&dev_attr_enable.attr,
++	&dev_attr_mt_protocol_type.attr,
++	&dev_attr_ts_info.attr,
++	NULL
++};
++
++static const struct attribute_group gtp_attr_grp = {
++	.attrs = gtp_attrs,
++};
++
++static int gtp_debug_addr_is_valid(u16 addr)
++{
++	if (addr < GTP_VALID_ADDR_START || addr > GTP_VALID_ADDR_END) {
++		pr_err("GTP reg address is invalid: 0x%x\n", addr);
++		pr_err("and should be between 0x00 and 0xA0\n");
++		return false;
++	}
++
++	return true;
++}
++
++static int gtp_debug_data_set(void *_data, u64 val)
++{
++	struct mms_ts_info *ts = _data;
++
++	if (gtp_debug_addr_is_valid(ts->addr))
++		pr_err("Writing to GTP registers not supported.\n");
++
++	return 0;
++}
++
++static int gtp_debug_data_get(void *_data, u64 *val)
++{
++	struct mms_ts_info *ts = _data;
++	int ret;
++	u8 buf[16] = {0};
++	u8 wbuf[2];
++
++	if (gtp_debug_addr_is_valid(ts->addr)) {
++		wbuf[0] = MIP_R0_INFO;
++		wbuf[1] = MIP_R1_INFO_PRODUCT_NAME;
++
++		ret = mms_i2c_read(ts, wbuf, 2, buf, 16);
++		if (ret < 0)
++			pr_err("GTP read register 0x%x failed (%d)\n",
++				ts->addr, ret);
++		else {
++			memcpy(ts->product_name, buf, 16);
++			*val = ts->product_name[0];
++		}
++	}
++
++	return 0;
++}
++
++DEFINE_SIMPLE_ATTRIBUTE(debug_data_fops, gtp_debug_data_get,
++			gtp_debug_data_set, "%llx\n");
++
++static int gtp_debug_addr_set(void *_data, u64 val)
++{
++	struct mms_ts_info *ts = _data;
++
++	if (gtp_debug_addr_is_valid(val))
++		ts->addr = val;
++
++	return 0;
++}
++
++static int gtp_debug_addr_get(void *_data, u64 *val)
++{
++	struct mms_ts_info *ts = _data;
++
++	if (gtp_debug_addr_is_valid(ts->addr))
++		*val = ts->addr;
++
++	return 0;
++}
++
++DEFINE_SIMPLE_ATTRIBUTE(debug_addr_fops, gtp_debug_addr_get,
++			gtp_debug_addr_set, "%llx\n");
++
++static int gtp_debug_suspend_set(void *_data, u64 val)
++{
++	struct mms_ts_info *ts = _data;
++
++	if (val && ts->power_hall) {
++#if DEBUG
++		dev_dbg(&ts->client->dev, "pwr suspend [START]\n");
++#endif
++#if MMS_USE_GESTURE_WAKEUP_MODE
++		int ret = -1;
++
++		if (mms_wakeup_control_flag == 1) {
++			msleep(100);
++			mms_reset(ts);
++			msleep(100);
++			ret  = mms_enable_gesture_wakeup_mode(ts);
++			if (ret == 0)
++				pr_err("[HST] gesture open OK!!\n");
++			else
++				pr_err(" [HST] gesture open fail!!\n");
++		}
++#endif
++
++#if MMS_USE_NAP_MODE
++		/* write cmd to enter nap mode */
++		ts->nap_mode = true;
++#if DEBUG
++		dev_dbg(&ts->client->dev, "%s - nap mode : on\n", __func__);
++#endif
++		if (!wake_lock_active(&mms_wake_lock)) {
++			wake_lock(&mms_wake_lock);
++#if DEBUG
++			dev_dbg(&ts->client->dev, "%s - wake_lock\n", __func__);
++#endif
++		}
++#else
++		if (mms_wakeup_control_flag == 0) {
++			if (!ts->enabled) {
++				dev_err(&ts->client->dev,
++			"%s [ERROR] device already disabled\n", __func__);
++			} else {
++				mutex_lock(&ts->lock);
++				ts->enabled = false;
++				disable_irq(ts->client->irq);
++				gpio_direction_output(ts->pdata->gpio_reset, 0);
++				msleep(50);
++				mutex_unlock(&ts->lock);
++			}
++		}
++#endif
++		mms_clear_input(ts);
++#if DEBUG
++		dev_dbg(&ts->client->dev, "pwr suspend [DONE]\n");
++#endif
++	} else if (!(val) && ts->power_hall) {
++		int ret = -1;
++
++#if DEBUG
++		dev_dbg(&ts->client->dev, "pwr, resume[START]\n");
++#endif
++		if (ts->enabled == false)
++			ret = mms_enable(ts);
++
++#if MMS_USE_NAP_MODE
++		if (wake_lock_active(&mms_wake_lock)) {
++			wake_unlock(&mms_wake_lock);
++#if DEBUG
++			dev_dbg(&ts->client->dev, "%s - wake_unlock\n",
++				__func__);
++#endif
++		}
++
++		ts->nap_mode = false;
++#if DEBUG
++		dev_dbg(&ts->client->dev, "%s - nap mode : off\n", __func__);
++#endif
++#endif
++#if DEBUG
++		dev_dbg(&ts->client->dev, "pwr, resume[DONE]\n");
++#endif
++	}
++
++	return 0;
++}
++
++static int gtp_debug_suspend_get(void *_data, u64 *val)
++{
++	struct mms_ts_info *ts = _data;
++
++	*val = !(ts->power_hall);
++
++	return 0;
++}
++
++DEFINE_SIMPLE_ATTRIBUTE(debug_suspend_fops, gtp_debug_suspend_get,
++			gtp_debug_suspend_set, "%lld\n");
++
++static int goodix_debug_dump_info(struct seq_file *m, void *v)
++{
++	struct mms_ts_info *data = m->private;
++
++	seq_printf(m, "%s\n", data->ts_info);
++
++	return 0;
++}
++
++static int debugfs_dump_info_open(struct inode *inode, struct file *file)
++{
++	return single_open(file, goodix_debug_dump_info, inode->i_private);
++}
++
++static const struct file_operations debug_dump_info_fops = {
++	.owner = THIS_MODULE,
++	.open = debugfs_dump_info_open,
++	.read = seq_read,
++	.release = single_release,
++};
++
++static int gtp_debugfs_init(struct mms_ts_info *data)
++{
++	data->debug_base = debugfs_create_dir(GTP_DEBUGFS_DIR, NULL);
++	if (IS_ERR_OR_NULL(data->debug_base)) {
++		pr_err("Failed to create debugfs dir.\n");
++		return -EINVAL;
++	}
++
++	if ((IS_ERR_OR_NULL(debugfs_create_file(GTP_DEBUGFS_FILE_SUSPEND,
++		S_IWUSR | S_IRUSR, data->debug_base, data,
++		&debug_suspend_fops)))) {
++		pr_err("Failed to create suspend file.\n");
++		debugfs_remove_recursive(data->debug_base);
++		return -EINVAL;
++	}
++
++	if ((IS_ERR_OR_NULL(debugfs_create_file(GTP_DEBUGFS_FILE_DATA,
++		S_IWUSR | S_IWGRP | S_IRUSR | S_IRGRP, data->debug_base, data,
++		&debug_data_fops)))) {
++		pr_err("Failed to create data file.\n");
++		debugfs_remove_recursive(data->debug_base);
++		return -EINVAL;
++	}
++
++	if ((IS_ERR_OR_NULL(debugfs_create_file(GTP_DEBUGFS_FILE_ADDR,
++		S_IWUSR | S_IWGRP | S_IRUSR | S_IRGRP, data->debug_base, data,
++		&debug_addr_fops)))) {
++		pr_err("Failed to create addr file.\n");
++		debugfs_remove_recursive(data->debug_base);
++		return -EINVAL;
++	}
++
++	if ((IS_ERR_OR_NULL(debugfs_create_file(GTP_DEBUGFS_FILE_DUMP_INFO,
++		S_IWUSR | S_IWGRP | S_IRUSR | S_IRGRP, data->debug_base, data,
++		&debug_dump_info_fops)))) {
++		pr_err("Failed to create dump info file.\n");
++		debugfs_remove_recursive(data->debug_base);
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
++/**
++* Reboot chip
++*
++* Caution : IRQ must be disabled before mms_reboot and enabled after mms_reboot
++*/
++void mms_reboot(struct mms_ts_info *info)
++{
++	struct i2c_adapter *adapter = to_i2c_adapter(info->client->dev.parent);
++
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [START]\n", __func__);
++#endif
++	i2c_lock_adapter(adapter);
++
++	mms_power_off(info);
++	mms_power_on(info);
++
++	i2c_unlock_adapter(adapter);
++
++	msleep(20);
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [DONE]\n", __func__);
++#endif
++}
++
++/**
++* I2C Read
++*/
++int mms_i2c_read(struct mms_ts_info *info, char *write_buf,
++	unsigned int write_len, char *read_buf, unsigned int read_len)
++{
++	int retry = I2C_RETRY_COUNT;
++	int res;
++
++	struct i2c_msg msg[] = {
++		{
++			.addr = info->client->addr,
++			.flags = 0,
++			.buf = write_buf,
++			.len = write_len,
++		}, {
++			.addr = info->client->addr,
++			.flags = I2C_M_RD,
++			.buf = read_buf,
++			.len = read_len,
++		},
++	};
++
++	while (retry--) {
++		res = i2c_transfer(info->client->adapter, msg,
++			ARRAY_SIZE(msg));
++
++		if (res == ARRAY_SIZE(msg))
++			goto DONE;
++		else if (res < 0)
++			pr_err("mms_i2c_read [ERROR] i2c_transfer - err\n");
++		else if (res != ARRAY_SIZE(msg))
++			pr_err("i2c_read [ERROR] i2c_transfer - size err\n");
++		else
++			pr_err("[ERROR] unknown error\n");
++
++	}
++
++	goto ERROR_REBOOT;
++
++ERROR_REBOOT:
++	mms_reboot(info);
++	return 1;
++
++DONE:
++	return 0;
++}
++
++
++/**
++* I2C Read (Continue)
++*/
++int mms_i2c_read_next(struct mms_ts_info *info, char *read_buf, int start_idx,
++	unsigned int read_len)
++{
++	int retry = I2C_RETRY_COUNT;
++	int res;
++	u8 rbuf[read_len];
++
++	while (retry--) {
++		res = i2c_master_recv(info->client, rbuf, read_len);
++
++		if (res == read_len)
++			goto DONE;
++		else if (res < 0)
++			dev_err(&info->client->dev,
++				"%s [ERROR] i2c_master_recv - errno [%d]\n",
++				__func__, res);
++		else if (res != read_len)
++			dev_err(&info->client->dev,
++			"%s [ERROR] length mismatch - read[%d] result[%d]\n",
++				__func__, read_len, res);
++		else
++			dev_err(&info->client->dev,
++				"%s [ERROR] unknown error [%d]\n",
++				__func__, res);
++
++	}
++
++	goto ERROR_REBOOT;
++
++ERROR_REBOOT:
++	mms_reboot(info);
++	return 1;
++
++DONE:
++	memcpy(&read_buf[start_idx], rbuf, read_len);
++
++	return 0;
++}
++
++/**
++* I2C Write
++*/
++int mms_i2c_write(struct mms_ts_info *info, char *write_buf,
++	unsigned int write_len)
++{
++	int retry = I2C_RETRY_COUNT;
++	int res;
++
++	while (retry--) {
++		res = i2c_master_send(info->client, write_buf, write_len);
++
++		if (res == write_len)
++			goto DONE;
++		else if (res < 0)
++			dev_err(&info->client->dev,
++				"%s [ERROR] i2c_master_send - errno [%d]\n",
++				__func__, res);
++		else if (res != write_len)
++			dev_err(&info->client->dev,
++			"%s [ERROR] length mismatch - write[%d] result[%d]\n",
++				__func__, write_len, res);
++		else
++			dev_err(&info->client->dev,
++				"%s [ERROR] unknown error [%d]\n",
++				__func__, res);
++
++	}
++
++	goto ERROR_REBOOT;
++
++ERROR_REBOOT:
++	mms_reboot(info);
++	return 1;
++DONE:
++	return 0;
++}
++
++/**
++* Enable device
++*/
++int mms_enable(struct mms_ts_info *info)
++{
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [START]\n", __func__);
++#endif
++
++	if (info->enabled) {
++		dev_err(&info->client->dev,
++			"%s [ERROR] device already enabled\n", __func__);
++		goto EXIT;
++	}
++
++	mutex_lock(&info->lock);
++
++	mms_power_on(info);
++
++	enable_irq(info->client->irq);
++	info->enabled = true;
++
++	mutex_unlock(&info->lock);
++
++	/* Post-enable process */
++	if (info->disable_esd == true)
++		/* Disable ESD alert */
++		mms_disable_esd_alert(info);
++
++EXIT:
++	dev_info(&info->client->dev, MMS_DEVICE_NAME" Enabled\n");
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [DONE]\n", __func__);
++#endif
++	return 0;
++}
++
++/**
++* Disable device
++*/
++int mms_disable(struct mms_ts_info *info)
++{
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [START]\n", __func__);
++#endif
++
++	if (!info->enabled) {
++		dev_err(&info->client->dev,
++			"%s [ERROR] device already disabled\n", __func__);
++		goto EXIT;
++	}
++
++	mutex_lock(&info->lock);
++
++	info->enabled = false;
++	disable_irq(info->client->irq);
++
++	mms_power_off(info);
++
++	mutex_unlock(&info->lock);
++
++EXIT:
++	dev_info(&info->client->dev, MMS_DEVICE_NAME" Disabled\n");
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [DONE]\n", __func__);
++#endif
++	return 0;
++}
++
++#if MMS_USE_INPUT_OPEN_CLOSE
++/**
++* Open input device
++*/
++static int mms_input_open(struct input_dev *dev)
++{
++	struct mms_ts_info *info = input_get_drvdata(dev);
++
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [START]\n", __func__);
++#endif
++	if (info->init == true)
++		info->init = false;
++	else
++		mms_enable(info);
++
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [DONE]\n", __func__);
++#endif
++	return 0;
++}
++
++/**
++* Close input device
++*/
++static void mms_input_close(struct input_dev *dev)
++{
++	struct mms_ts_info *info = input_get_drvdata(dev);
++
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [START]\n", __func__);
++#endif
++	mms_disable(info);
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [DONE]\n", __func__);
++#endif
++}
++#endif
++
++/**
++* Get ready status
++*/
++int mms_get_ready_status(struct mms_ts_info *info)
++{
++	u8 wbuf[16];
++	u8 rbuf[16];
++	int ret = 0, err = -1;
++
++	wbuf[0] = MIP_R0_CTRL;
++	wbuf[1] = MIP_R1_CTRL_READY_STATUS;
++	if (mms_i2c_read(info, wbuf, 2, rbuf, 1)) {
++		dev_err(&info->client->dev, "%s [ERROR] mms_i2c_read\n",
++			__func__);
++		goto ERROR;
++	}
++	ret = rbuf[0];
++
++	/* check status */
++	if ((ret != MIP_CTRL_STATUS_NONE) && (ret != MIP_CTRL_STATUS_LOG)
++		&& (ret != MIP_CTRL_STATUS_READY)) {
++		dev_err(&info->client->dev,
++			"%s [ERROR] Unknown status [0x%02X]\n", __func__, ret);
++		goto ERROR;
++	}
++
++	if (ret == MIP_CTRL_STATUS_LOG) {
++		/* skip log event */
++		wbuf[0] = MIP_R0_LOG;
++		wbuf[1] = MIP_R1_LOG_TRIGGER;
++		wbuf[2] = 0;
++		if (mms_i2c_write(info, wbuf, 3))
++			dev_err(&info->client->dev,
++				"%s [ERROR] mms_i2c_write\n", __func__);
++
++	}
++
++	return ret;
++
++ERROR:
++	dev_err(&info->client->dev, "%s [ERROR]\n", __func__);
++	return err;
++}
++
++/**
++* Read chip firmware version
++*/
++int mms_get_fw_version(struct mms_ts_info *info, u8 *ver_buf)
++{
++	u8 rbuf[8];
++	u8 wbuf[2];
++	int i;
++
++	wbuf[0] = MIP_R0_INFO;
++	wbuf[1] = MIP_R1_INFO_VERSION_BOOT;
++	if (mms_i2c_read(info, wbuf, 2, rbuf, 8))
++		goto ERROR;
++
++	for (i = 0; i < MMS_FW_MAX_SECT_NUM; i++) {
++		ver_buf[0 + i * 2] = rbuf[1 + i * 2];
++		ver_buf[1 + i * 2] = rbuf[0 + i * 2];
++	}
++
++	return 0;
++
++ERROR:
++	dev_err(&info->client->dev, "%s [ERROR]\n", __func__);
++	return 1;
++}
++
++/**
++* Read chip firmware version for u16
++*/
++int mms_get_fw_version_u16(struct mms_ts_info *info, u16 *ver_buf_u16)
++{
++	u8 rbuf[8];
++	int i;
++
++	if (mms_get_fw_version(info, rbuf))
++		goto ERROR;
++
++	for (i = 0; i < MMS_FW_MAX_SECT_NUM; i++)
++		ver_buf_u16[i] = (rbuf[0 + i * 2] << 8) | rbuf[1 + i * 2];
++
++	return 0;
++
++ERROR:
++	dev_err(&info->client->dev, "%s [ERROR]\n", __func__);
++	return 1;
++}
++
++/**
++* Disable ESD alert
++*/
++int mms_disable_esd_alert(struct mms_ts_info *info)
++{
++	u8 wbuf[4];
++	u8 rbuf[4];
++
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [START]\n", __func__);
++#endif
++	wbuf[0] = MIP_R0_CTRL;
++	wbuf[1] = MIP_R1_CTRL_DISABLE_ESD_ALERT;
++	wbuf[2] = 1;
++	if (mms_i2c_write(info, wbuf, 3)) {
++		dev_err(&info->client->dev, "%s [ERROR] mms_i2c_write\n",
++			__func__);
++		goto ERROR;
++	}
++
++	if (mms_i2c_read(info, wbuf, 2, rbuf, 1)) {
++		dev_err(&info->client->dev, "%s [ERROR] mms_i2c_read\n",
++			__func__);
++		goto ERROR;
++	}
++
++	if (rbuf[0] != 1) {
++		dev_dbg(&info->client->dev, "%s [ERROR] failed\n", __func__);
++		goto ERROR;
++	}
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [DONE]\n", __func__);
++#endif
++	return 0;
++
++ERROR:
++	dev_err(&info->client->dev, "%s [ERROR]\n", __func__);
++	return 1;
++}
++
++/**
++* Alert event handler - ESD
++*/
++static int mms_alert_handler_esd(struct mms_ts_info *info, u8 *rbuf)
++{
++	u8 frame_cnt = rbuf[1];
++
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [START]\n", __func__);
++
++	dev_dbg(&info->client->dev, "%s - frame_cnt[%d]\n",
++		__func__, frame_cnt);
++#endif
++	if (frame_cnt == 0) {
++		/* sensor crack, not ESD */
++		info->esd_cnt++;
++		dev_dbg(&info->client->dev, "%s - esd_cnt[%d]\n",
++			__func__, info->esd_cnt);
++
++		if (info->disable_esd == true)
++			mms_disable_esd_alert(info);
++		else if (info->esd_cnt > ESD_COUNT_FOR_DISABLE) {
++			/* Disable ESD alert */
++			if (!mms_disable_esd_alert(info))
++				info->disable_esd = true;
++		} else
++			/* Reset chip */
++			mms_reboot(info);
++
++	} else {
++		/*ESD detected
++		    Reset chip */
++		mms_reboot(info);
++		info->esd_cnt = 0;
++	}
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [DONE]\n", __func__);
++#endif
++	return 0;
++
++}
++
++/**
++* Alert event handler - Wake-up
++*/
++static int mms_alert_handler_wakeup(struct mms_ts_info *info, u8 *rbuf)
++{
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [START]\n", __func__);
++#endif
++	if (mms_wakeup_event_handler(info, rbuf))
++		goto ERROR;
++
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [DONE]\n", __func__);
++#endif
++	return 0;
++
++ERROR:
++	dev_err(&info->client->dev, "%s [ERROR]\n", __func__);
++	return 1;
++}
++
++/**
++* Interrupt handler
++*/
++static irqreturn_t mms_interrupt(int irq, void *dev_id)
++{
++	struct mms_ts_info *info = dev_id;
++	struct i2c_client *client = info->client;
++	u8 wbuf[8];
++	u8 rbuf[256];
++	unsigned int size = 0;
++	u8 category = 0;
++	u8 alert_type = 0;
++
++#if DEBUG
++	dev_dbg(&client->dev, "%s [START]\n", __func__);
++#endif
++	/* Read length */
++	wbuf[0] = MIP_R0_EVENT;
++	wbuf[1] = MIP_R1_EVENT_PACKET_INFO;
++	if (mms_i2c_read(info, wbuf, 2, rbuf, 1)) {
++		dev_err(&client->dev, "%s [ERROR] Read packet info\n",
++			__func__);
++		goto ERROR;
++	}
++#if DEBUG
++	dev_dbg(&client->dev, "%s - info [0x%02X]\n", __func__, rbuf[0]);
++#endif
++	/* Check event */
++	category = ((rbuf[0] >> 7) & 0x1);
++	size = (rbuf[0] & 0x7F);
++#if DEBUG
++	dev_dbg(&client->dev, "%s - packet size [%d]\n", __func__, size);
++#endif
++	if (size == 0)
++		goto EXIT;
++
++	/* Read data */
++	wbuf[0] = MIP_R0_EVENT;
++	wbuf[1] = MIP_R1_EVENT_PACKET_DATA;
++	if (mms_i2c_read(info, wbuf, 2, rbuf, size)) {
++		dev_err(&client->dev, "%s [ERROR] Read packet data\n",
++			__func__);
++		goto ERROR;
++	}
++
++	if (category == 0) {
++		/* Touch event */
++		info->esd_cnt = 0;
++
++		mms_input_event_handler(info, size, rbuf);
++	} else {
++		/* Alert event */
++		alert_type = rbuf[0];
++
++#if DEBUG
++		dev_dbg(&client->dev, "%s - alert type [%d]\n",
++			__func__, alert_type);
++#endif
++		if (alert_type == MIP_ALERT_ESD) {
++			/* ESD detection */
++			if (mms_alert_handler_esd(info, rbuf))
++				goto ERROR;
++
++		} else if (alert_type == MIP_ALERT_WAKEUP) {
++			/* Wake-up gesture */
++			if (mms_alert_handler_wakeup(info, rbuf))
++				goto ERROR;
++
++		} else {
++			dev_err(&client->dev,
++				"%s [ERROR] Unknown alert type [%d]\n",
++				__func__, alert_type);
++			goto ERROR;
++		}
++	}
++
++EXIT:
++#if DEBUG
++	dev_dbg(&client->dev, "%s [DONE]\n", __func__);
++#endif
++	return IRQ_HANDLED;
++
++ERROR:
++	if (RESET_ON_EVENT_ERROR) {
++		dev_info(&client->dev, "%s - Reset on error\n", __func__);
++
++		mms_disable(info);
++		mms_clear_input(info);
++		mms_enable(info);
++	}
++
++	dev_err(&client->dev, "%s [ERROR]\n", __func__);
++	return IRQ_HANDLED;
++}
++
++/**
++* Update firmware from kernel built-in binary
++*/
++int mms_fw_update_from_kernel(struct mms_ts_info *info)
++{
++	const char *fw_name = INTERNAL_FW_PATH;
++	const struct firmware *fw;
++	int retires = 3;
++	int ret, err = -1;
++
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [START]\n", __func__);
++#endif
++	request_firmware(&fw, fw_name, &info->client->dev);
++
++	if (!fw) {
++		dev_err(&info->client->dev, "%s [ERROR] request_firmware\n",
++			__func__);
++		goto ERROR;
++	}
++
++	do {
++		ret = mms_flash_fw(info, fw->data, fw->size, false, true);
++		if (ret >= fw_err_none)
++			break;
++
++	} while (--retires);
++
++	if (!retires) {
++		dev_err(&info->client->dev, "%s [ERROR] mms_flash_fw failed\n",
++			__func__);
++		goto ERROR;
++	}
++
++	release_firmware(fw);
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [DONE]\n", __func__);
++#endif
++	return 0;
++
++ERROR:
++	release_firmware(fw);
++
++	dev_err(&info->client->dev, "%s [ERROR]\n", __func__);
++	return err;
++}
++
++/*#define ATTR_GROUP 0*/
++#if ATTR_GROUP
++/**
++* Update firmware from external storage
++*/
++int mms_fw_update_from_storage(struct mms_ts_info *info, bool force)
++{
++	dev_dbg(&info->client->dev, "%s isn't support<filp_open>\n", __func__);
++/*
++	struct file *fp;
++	mm_segment_t old_fs;
++	size_t fw_size, nread;
++	int ret = 0;
++
++	dev_dbg(&info->client->dev, "%s [START]\n", __func__);
++
++	mutex_lock(&info->lock);
++	disable_irq(info->client->irq);
++
++	old_fs = get_fs();
++	set_fs(KERNEL_DS);
++	fp = filp_open(EXTERNAL_FW_PATH, O_RDONLY, S_IRUSR);
++	if (IS_ERR(fp)) {
++		dev_err(&info->client->dev,
++			"%s [ERROR] file_open - path[%s]\n",
++			__func__, EXTERNAL_FW_PATH);
++		ret = fw_err_file_open;
++		goto ERROR;
++	}
++
++	fw_size = fp->f_path.dentry->d_inode->i_size;
++	if (0 < fw_size) {
++		unsigned char *fw_data;
++
++		fw_data = kzalloc(fw_size, GFP_KERNEL);
++		nread = vfs_read(fp, (char __user *)fw_data, fw_size,
++			&fp->f_pos);
++
++		if (nread != fw_size) {
++			pr_err("fw update  error for nread != fw_size\n");
++			ret = fw_err_file_read;
++		} else
++			ret = mms_flash_fw(info, fw_data, fw_size, force,
++				true);
++
++		kfree(fw_data);
++	} else {
++		pr_err("mms_fw_update_from_storage error size\n");
++		ret = fw_err_file_read;
++	}
++
++	filp_close(fp, current->files);
++
++ERROR:
++	set_fs(old_fs);
++	enable_irq(info->client->irq);
++	mutex_unlock(&info->lock);
++
++	if (ret == 0)
++		dev_dbg(&info->client->dev, "%s [DONE]\n", __func__);
++	else
++		dev_err(&info->client->dev, "%s [ERROR]\n", __func__);
++
++	return ret;
++*/
++}
++static ssize_t mms_sys_fw_update(struct device *dev,
++	struct device_attribute *attr, char *buf)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	struct mms_ts_info *info = i2c_get_clientdata(client);
++	int result = 0;
++	u8 data[255];
++	int ret = 0;
++
++	memset(info->print_buf, 0, PAGE_SIZE);
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [START]\n", __func__);
++#endif
++	ret = mms_fw_update_from_storage(info, true);
++
++	switch (ret) {
++	case fw_err_none:
++		snprintf(data, 255, "F/W update success.\n");
++		break;
++	case fw_err_uptodate:
++		snprintf(data, 255, "F/W is already up-to-date.\n");
++		break;
++	case fw_err_download:
++		snprintf(data, 255, "F/W update failed : Download error\n");
++		break;
++	case fw_err_file_type:
++		snprintf(data, 255, "F/W update failed : File type error\n");
++		break;
++	case fw_err_file_open:
++		snprintf(data, 255,
++			"F/W update failed : File open error [%s]\n",
++			EXTERNAL_FW_PATH);
++		break;
++	case fw_err_file_read:
++		snprintf(data, 255, "F/W update failed : File read error\n");
++		break;
++	default:
++		snprintf(data, 255, "F/W update failed.\n");
++		break;
++	}
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [DONE]\n", __func__);
++#endif
++	strlcat(info->print_buf, data, PAGE_SIZE);
++	result = snprintf(buf, PAGE_SIZE, "%s\n", info->print_buf);
++	return result;
++}
++static DEVICE_ATTR(fw_update, 0666, mms_sys_fw_update, NULL);
++/**
++* Sysfs attr info
++*/
++static struct attribute *mms_attrs[] = {
++	&dev_attr_fw_update.attr,
++	NULL,
++};
++
++/**
++* Sysfs attr group info
++*/
++static const struct attribute_group mms_attr_group = {
++	.attrs = mms_attrs,
++};
++#endif
++
++/**
++* Initial config
++*/
++static int mms_init_config(struct mms_ts_info *info)
++{
++	u8 wbuf[8];
++	u8 rbuf[64];
++
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [START]\n", __func__);
++#endif
++	wbuf[0] = MIP_R0_INFO;
++	wbuf[1] = MIP_R1_INFO_PRODUCT_NAME;
++	mms_i2c_read(info, wbuf, 2, rbuf, 16);
++	memcpy(info->product_name, rbuf, 16);
++	dev_dbg(&info->client->dev, "%s - product_name[%s]\n",
++		__func__, info->product_name);
++
++	mms_get_fw_version(info, rbuf);
++	memcpy(info->fw_version, rbuf, 8);
++	dev_info(&info->client->dev,
++		"%s - F/W Version : %02X.%02X %02X.%02X %02X.%02X %02X.%02X\n",
++		__func__, info->fw_version[0], info->fw_version[1],
++		info->fw_version[2], info->fw_version[3], info->fw_version[4],
++		info->fw_version[5], info->fw_version[6], info->fw_version[7]);
++
++	wbuf[0] = MIP_R0_INFO;
++	wbuf[1] = MIP_R1_INFO_RESOLUTION_X;
++	mms_i2c_read(info, wbuf, 2, rbuf, 7);
++
++	/* Set resolution using chip info */
++	info->max_x = (rbuf[0]) | (rbuf[1] << 8);
++	info->max_y = (rbuf[2]) | (rbuf[3] << 8);
++	dev_dbg(&info->client->dev, "%s - max_x[%d] max_y[%d]\n", __func__,
++		info->max_x, info->max_y);
++
++	info->node_x = rbuf[4];
++	info->node_y = rbuf[5];
++	info->node_key = rbuf[6];
++	dev_dbg(&info->client->dev, "%s node_x[%d] node_y[%d] node_key[%d]\n",
++		__func__, info->node_x, info->node_y, info->node_key);
++
++	if (info->node_key > 0)
++		/* Enable touchkey */
++		info->tkey_enable = true;
++
++	info->event_size = 6;
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [DONE]\n", __func__);
++#endif
++	return 0;
++}
++
++static int mms_ts_pinctrl_init(struct mms_ts_info *mms_data)
++{
++	int retval;
++
++	/* Get pinctrl if target uses pinctrl */
++	mms_data->ts_pinctrl = devm_pinctrl_get(&(mms_data->client->dev));
++	if (IS_ERR_OR_NULL(mms_data->ts_pinctrl)) {
++		retval = PTR_ERR(mms_data->ts_pinctrl);
++		dev_dbg(&mms_data->client->dev,
++			"Target does not use pinctrl %d\n", retval);
++		goto err_pinctrl_get;
++	}
++
++	mms_data->pinctrl_state_active
++		= pinctrl_lookup_state(mms_data->ts_pinctrl,
++				PINCTRL_STATE_ACTIVE);
++	if (IS_ERR_OR_NULL(mms_data->pinctrl_state_active)) {
++		retval = PTR_ERR(mms_data->pinctrl_state_active);
++		dev_err(&mms_data->client->dev,
++			"Can not lookup %s pinstate %d\n",
++			PINCTRL_STATE_ACTIVE, retval);
++		goto err_pinctrl_lookup;
++	}
++
++	mms_data->pinctrl_state_suspend
++		= pinctrl_lookup_state(mms_data->ts_pinctrl,
++			PINCTRL_STATE_SUSPEND);
++	if (IS_ERR_OR_NULL(mms_data->pinctrl_state_suspend)) {
++		retval = PTR_ERR(mms_data->pinctrl_state_suspend);
++		dev_err(&mms_data->client->dev,
++			"Can not lookup %s pinstate %d\n",
++			PINCTRL_STATE_SUSPEND, retval);
++		goto err_pinctrl_lookup;
++	}
++
++	mms_data->pinctrl_state_release
++		= pinctrl_lookup_state(mms_data->ts_pinctrl,
++			PINCTRL_STATE_RELEASE);
++	if (IS_ERR_OR_NULL(mms_data->pinctrl_state_release)) {
++		retval = PTR_ERR(mms_data->pinctrl_state_release);
++		dev_dbg(&mms_data->client->dev,
++			"Can not lookup %s pinstate %d\n",
++			PINCTRL_STATE_RELEASE, retval);
++	}
++
++	return 0;
++
++err_pinctrl_lookup:
++	devm_pinctrl_put(mms_data->ts_pinctrl);
++err_pinctrl_get:
++	mms_data->ts_pinctrl = NULL;
++	return retval;
++}
++
++/**
++* Initialize driver
++*/
++static int mms_probe(struct i2c_client *client, const struct i2c_device_id *id)
++{
++	struct i2c_adapter *adapter = to_i2c_adapter(client->dev.parent);
++	struct mms_ts_info *info;
++	struct input_dev *input_dev;
++	int ret = 0;
++
++	dev_dbg(&client->dev, "%s [START]\n", __func__);
++
++	if (!i2c_check_functionality(adapter, I2C_FUNC_I2C)) {
++		dev_err(&client->dev, "%s [ERROR] i2c_check_functionality\n",
++			__func__);
++		ret = -EIO;
++		goto ERROR;
++	}
++
++	info = kzalloc(sizeof(struct mms_ts_info), GFP_KERNEL);
++	input_dev = input_allocate_device();
++	if (!info || !input_dev) {
++		dev_err(&client->dev, "%s [ERROR]\n", __func__);
++		ret = -ENOMEM;
++		goto ERROR;
++	}
++
++	info->client = client;
++	info->input_dev = input_dev;
++	info->irq = -1;
++	info->init = true;
++	mutex_init(&info->lock);
++	info->power_hall = 0;
++
++	/* Get platform data */
++	if (client->dev.of_node) {
++		info->pdata  = devm_kzalloc(&client->dev,
++			sizeof(struct mms_platform_data), GFP_KERNEL);
++
++		ret = mms_parse_devicetree(&client->dev, info);
++		if (ret) {
++			dev_err(&client->dev, "%s [ERROR] mms_parse_dt\n",
++				__func__);
++			goto ERROR;
++		}
++	} else {
++		info->pdata = client->dev.platform_data;
++		if (info->pdata == NULL) {
++			dev_err(&client->dev, "%s [ERROR] pdata is null\n",
++				__func__);
++			ret = -EINVAL;
++			goto ERROR;
++		}
++	}
++
++	input_dev->name = "melfas_mms458_ts";
++	input_dev->id.bustype = BUS_I2C;
++	input_dev->dev.parent = &client->dev;
++#if MMS_USE_INPUT_OPEN_CLOSE
++	input_dev->open = mms_input_open;
++	input_dev->close = mms_input_close;
++#endif
++
++	/* Create device */
++	input_set_drvdata(input_dev, info);
++	i2c_set_clientdata(client, info);
++
++	ret = mms_ts_pinctrl_init(info);
++	if (!ret && info->ts_pinctrl) {
++		ret = pinctrl_select_state(info->ts_pinctrl,
++					info->pinctrl_state_active);
++		if (ret < 0) {
++			dev_err(&client->dev,
++				"failed to select pin to active state");
++			goto pinctrl_deinit;
++		}
++	} else
++		goto ERROR;
++
++	/* Power on */
++	mms_power_on(info);
++
++	/* Firmware update */
++#if MMS_USE_AUTO_FW_UPDATE
++	ret = mms_fw_update_from_kernel(info);
++	if (ret)
++		dev_err(&client->dev, "%s [ERROR] mms_fw_update_from_kernel\n",
++			__func__);
++#endif
++
++	/* Initial config */
++	mms_init_config(info);
++
++	/* Config input interface */
++	mms_config_input(info);
++
++	ret = input_register_device(input_dev);
++	if (ret) {
++		dev_err(&client->dev, "%s [ERROR] input_register_device\n",
++			__func__);
++		ret = -EIO;
++		goto ERROR;
++	}
++
++	dev_dbg(&client->dev, "%s - input_register_device\n", __func__);
++
++#if MMS_USE_CALLBACK
++	/* Config callback functions */
++	mms_config_callback(info);
++#endif
++
++	/* Set interrupt handler */
++	ret = request_threaded_irq(client->irq, NULL, mms_interrupt,
++		IRQF_TRIGGER_LOW | IRQF_ONESHOT, MMS_DEVICE_NAME, info);
++	if (ret) {
++		dev_err(&client->dev, "%s [ERROR] request_threaded_irq\n",
++			__func__);
++		goto ERROR;
++	}
++
++	disable_irq(client->irq);
++	info->irq = client->irq;
++
++#if MMS_USE_NAP_MODE
++	/* Wake lock for nap mode */
++	wake_lock_init(&mms_wake_lock, WAKE_LOCK_SUSPEND, "mms_wake_lock");
++#endif
++
++#ifdef CONFIG_HAS_EARLYSUSPEND
++	/* Config early suspend */
++	info->early_suspend.level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN + 1;
++	info->early_suspend.suspend = mms_early_suspend;
++	info->early_suspend.resume = mms_late_resume;
++
++	register_early_suspend(&info->early_suspend);
++
++	dev_dbg(&client->dev, "%s - register_early_suspend\n", __func__);
++#elif defined(CONFIG_FB)
++	info->fb_notif.notifier_call = fb_notifier_callback;
++
++	ret = fb_register_client(&info->fb_notif);
++
++	if (ret)
++		dev_err(&client->dev, "Unable to register fb_notifier: %d\n",
++			ret);
++#endif
++
++	/* Enable device */
++	mms_enable(info);
++
++#if MMS_USE_DEV_MODE
++	/* Create dev node (optional) */
++	if (mms_dev_create(info)) {
++		dev_err(&client->dev, "%s [ERROR] mms_dev_create\n", __func__);
++		ret = -EAGAIN;
++		goto ERROR;
++	}
++
++	/* Create dev */
++	info->class = class_create(THIS_MODULE, MMS_DEVICE_NAME);
++	device_create(info->class, NULL, info->mms_dev, NULL, MMS_DEVICE_NAME);
++#endif
++
++#if MMS_USE_TEST_MODE
++	/* Create sysfs for test mode (optional) */
++	if (mms_sysfs_create(info)) {
++		dev_err(&client->dev, "%s [ERROR] mms_sysfs_create\n",
++			__func__);
++		ret = -EAGAIN;
++		goto ERROR;
++	}
++#endif
++
++#if MMS_USE_CMD_MODE
++	/* Create sysfs for command mode (optional) */
++	if (mms_sysfs_cmd_create(info)) {
++		dev_err(&client->dev, "%s [ERROR] mms_sysfs_cmd_create\n",
++			__func__);
++		ret = -EAGAIN;
++		goto ERROR;
++	}
++
++#endif
++
++	/* Create sysfs */
++#if ATTR_GROUP
++	if (sysfs_create_group(&client->dev.kobj, &mms_attr_group)) {
++		dev_err(&client->dev, "%s [ERROR] sysfs_create_group\n",
++			__func__);
++		ret = -EAGAIN;
++		goto ERROR;
++	}
++#endif
++	if (sysfs_create_link(NULL, &client->dev.kobj, MMS_DEVICE_NAME)) {
++		dev_err(&client->dev, "%s [ERROR] sysfs_create_link\n",
++			__func__);
++		ret = -EAGAIN;
++		goto ERROR;
++	}
++
++	info->ts_info =
++		devm_kzalloc(&client->dev, INFO_MAX_LEN, GFP_KERNEL);
++	if (!info->ts_info)
++		dev_err(&client->dev, "Not enough memory\n");
++
++	STORE_TS_INFO(info->ts_info, info->name,
++		MAX_FINGER_NUM, info->product_id,
++		info->product_name, info->fw_version[0], info->fw_version[1],
++		info->fw_version[2], info->fw_version[3], info->fw_version[4],
++		info->fw_version[5], info->fw_version[6], info->fw_version[7],
++		info->fw_vkey_support ? "yes" : "no");
++
++	ret = sysfs_create_group(&client->dev.kobj, &gtp_attr_grp);
++	if (ret < 0)
++		dev_err(&client->dev, "sys file creation failed.\n");
++
++	ret = gtp_debugfs_init(info);
++	if (ret != 0)
++		dev_err(&client->dev,
++			"Failed to create debugfs entries, %d\n", ret);
++
++	dev_info(&client->dev, "MELFAS " CHIP_NAME
++		" Touchscreen is initialized successfully.\n");
++	return 0;
++
++pinctrl_deinit:
++	if (info->ts_pinctrl) {
++		if (IS_ERR_OR_NULL(info->pinctrl_state_release)) {
++			devm_pinctrl_put(info->ts_pinctrl);
++			info->ts_pinctrl = NULL;
++		} else {
++			ret = pinctrl_select_state(info->ts_pinctrl,
++					info->pinctrl_state_release);
++			if (ret)
++				pr_err("failed to select rls pinctrl state\n");
++		}
++	}
++ERROR:
++	dev_dbg(&client->dev, "%s [ERROR]\n", __func__);
++	dev_err(&client->dev, "MELFAS " CHIP_NAME
++		" Touchscreen initialization failed.\n");
++	return ret;
++}
++
++/**
++* Remove driver
++*/
++static int mms_remove(struct i2c_client *client)
++{
++	struct mms_ts_info *info = i2c_get_clientdata(client);
++	int retval;
++
++	if (info->irq >= 0)
++		free_irq(info->irq, info);
++
++#if MMS_USE_CMD_MODE
++	mms_sysfs_cmd_remove(info);
++#endif
++
++#if MMS_USE_TEST_MODE
++	mms_sysfs_remove(info);
++#endif
++
++#if ATTR_GROUP
++	sysfs_remove_group(&info->client->dev.kobj, &mms_attr_group);
++#endif
++	sysfs_remove_link(NULL, MMS_DEVICE_NAME);
++	kfree(info->print_buf);
++
++#if MMS_USE_DEV_MODE
++	device_destroy(info->class, info->mms_dev);
++	class_destroy(info->class);
++#endif
++
++#ifdef CONFIG_HAS_EARLYSUSPEND
++	unregister_early_suspend(&info->early_suspend);
++#elif defined(CONFIG_FB)
++	if (fb_unregister_client(&info->fb_notif))
++		dev_err(&client->dev,
++			"Error occurred while unregistering fb_notifier.\n");
++#endif
++
++	if (info->ts_pinctrl) {
++		if (IS_ERR_OR_NULL(info->pinctrl_state_release)) {
++			devm_pinctrl_put(info->ts_pinctrl);
++			info->ts_pinctrl = NULL;
++		} else {
++			retval = pinctrl_select_state(info->ts_pinctrl,
++					info->pinctrl_state_release);
++			if (retval < 0)
++				pr_err("failed to select rls pinctrl state\n");
++		}
++	}
++
++	input_unregister_device(info->input_dev);
++
++	kfree(info->fw_name);
++	kfree(info);
++
++	return 0;
++}
++
++#if defined(CONFIG_PM) || defined(CONFIG_HAS_EARLYSUSPEND) \
++	|| defined(CONFIG_FB)
++/**
++* Device suspend event handler
++*/
++int mms_suspend(struct device *dev)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	struct mms_ts_info *info = i2c_get_clientdata(client);
++
++#if DEBUG
++	dev_dbg(&client->dev, "%s [START]\n", __func__);
++#endif
++#if MMS_USE_GESTURE_WAKEUP_MODE
++
++	if (mms_wakeup_control_flag == 1) {
++		msleep(100);
++		mms_reset(info);
++		msleep(100);
++		ret  = mms_enable_gesture_wakeup_mode(info);
++		if (ret == 0)
++			pr_err("[HST] gesture open OK!!\n");
++		else
++			pr_err(" [HST] gesture open fail!!\n");
++
++	}
++#endif
++
++#if MMS_USE_NAP_MODE
++	/* write cmd to enter nap mode */
++
++	info->nap_mode = true;
++	dev_dbg(&client->dev, "%s - nap mode : on\n", __func__);
++
++	if (!wake_lock_active(&mms_wake_lock)) {
++		wake_lock(&mms_wake_lock);
++		dev_dbg(&client->dev, "%s - wake_lock\n", __func__);
++	}
++#else
++	if (mms_wakeup_control_flag == 0)
++		mms_disable(info);
++#endif
++
++	mms_clear_input(info);
++#if DEBUG
++	dev_dbg(&client->dev, "%s [DONE]\n", __func__);
++#endif
++	return 0;
++
++}
++
++/**
++* Device resume event handler
++*/
++int mms_resume(struct device *dev)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	struct mms_ts_info *info = i2c_get_clientdata(client);
++	int ret = 0;
++
++#if DEBUG
++	dev_dbg(&client->dev, "%s [START]\n", __func__);
++#endif
++	if (info->enabled == false)
++		ret = mms_enable(info);
++
++#if MMS_USE_NAP_MODE
++	if (wake_lock_active(&mms_wake_lock)) {
++		wake_unlock(&mms_wake_lock);
++		dev_dbg(&client->dev, "%s - wake_unlock\n", __func__);
++	}
++
++	info->nap_mode = false;
++	dev_dbg(&client->dev, "%s - nap mode : off\n", __func__);
++#endif
++#if DEBUG
++	dev_dbg(&client->dev, "%s [DONE]\n", __func__);
++#endif
++	return ret;
++}
++#endif
++
++#ifdef CONFIG_HAS_EARLYSUSPEND
++/**
++* Early suspend handler
++*/
++void mms_early_suspend(struct early_suspend *h)
++{
++	struct mms_ts_info *info =
++		container_of(h, struct mms_ts_info, early_suspend);
++
++	mms_suspend(&info->client->dev);
++}
++
++/**
++* Late resume handler
++*/
++void mms_late_resume(struct early_suspend *h)
++{
++	struct mms_ts_info *info =
++		container_of(h, struct mms_ts_info, early_suspend);
++
++	mms_resume(&info->client->dev);
++}
++#endif
++
++#if defined(CONFIG_FB)
++int fb_notifier_callback(struct notifier_block *self,
++				 unsigned long event, void *data)
++{
++	struct fb_event *evdata = data;
++	int *blank;
++
++	struct mms_ts_info *melfas_data =
++		container_of(self, struct mms_ts_info, fb_notif);
++
++	if (evdata && evdata->data && event == FB_EVENT_BLANK &&
++			melfas_data && melfas_data->client) {
++		blank = evdata->data;
++		if (*blank == FB_BLANK_UNBLANK)
++			mms_resume(&melfas_data->client->dev);
++		else if (*blank == FB_BLANK_POWERDOWN)
++			mms_suspend(&melfas_data->client->dev);
++	}
++
++	return 0;
++}
++#endif
++
++#if defined(CONFIG_PM) && !defined(CONFIG_HAS_EARLYSUSPEND) \
++	&& !defined(CONFIG_FB)
++/**
++* PM info
++*/
++const struct dev_pm_ops mms_pm_ops = {
++	.suspend	= mms_suspend,
++	.resume = mms_resume,
++};
++#endif
++
++#if MMS_USE_DEVICETREE
++/**
++* Device tree match table
++*/
++static const struct of_device_id mms_match_table[] = {
++	{ .compatible = "melfas,"MMS_DEVICE_NAME,},
++	{},
++};
++MODULE_DEVICE_TABLE(of, mms_match_table);
++#endif
++
++/**
++* I2C Device ID
++*/
++static const struct i2c_device_id mms_id[] = {
++	{MMS_DEVICE_NAME, 0},
++};
++MODULE_DEVICE_TABLE(i2c, mms_id);
++
++/**
++* I2C driver info
++*/
++static struct i2c_driver mms_driver = {
++	.id_table	= mms_id,
++	.probe = mms_probe,
++	.remove = mms_remove,
++	.driver = {
++		.name = MMS_DEVICE_NAME,
++		.owner = THIS_MODULE,
++#if MMS_USE_DEVICETREE
++		.of_match_table = mms_match_table,
++#endif
++#if defined(CONFIG_PM) && !defined(CONFIG_HAS_EARLYSUSPEND) \
++	&& !defined(CONFIG_FB)
++		.pm = &mms_pm_ops,
++#endif
++	},
++};
++
++/**
++* Init driver
++*/
++static int __init mms_init(void)
++{
++	return i2c_add_driver(&mms_driver);
++}
++
++/**
++* Exit driver
++*/
++static void __exit mms_exit(void)
++{
++	i2c_del_driver(&mms_driver);
++}
++
++module_init(mms_init);
++module_exit(mms_exit);
++
++MODULE_DESCRIPTION("MELFAS MMS400 Touchscreen");
++MODULE_VERSION("2014.12.02");
++MODULE_AUTHOR("Jee SangWon <jeesw@melfas.com>");
++MODULE_LICENSE("GPL v2");
++
+diff --git a/drivers/input/touchscreen/melfas_mip4/melfas_mms400.h b/drivers/input/touchscreen/melfas_mip4/melfas_mms400.h
+new file mode 100644
+index 0000000..b567465
+--- /dev/null
++++ b/drivers/input/touchscreen/melfas_mip4/melfas_mms400.h
+@@ -0,0 +1,371 @@
++/*
++ * MELFAS MMS400 Touchscreen Driver
++ *
++ * Copyright (C) 2014-2016 MELFAS Inc.
++ *
++ */
++
++/* Config debug msg : Must be disabled for production builds */
++/* 0 : disable, 1 : enable */
++#define DEBUG 0
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/kobject.h>
++#include <linux/init.h>
++#include <linux/delay.h>
++#include <linux/gpio.h>
++#include <linux/i2c.h>
++#include <linux/irq.h>
++#include <linux/interrupt.h>
++#include <linux/firmware.h>
++#include <linux/slab.h>
++#include <linux/input.h>
++#include <linux/input/mt.h>
++#include <linux/fs.h>
++#include <linux/sysfs.h>
++#include <linux/debugfs.h>
++#include <linux/cdev.h>
++#include <linux/err.h>
++#include <linux/limits.h>
++#include <linux/of.h>
++#include <linux/of_device.h>
++#include <linux/of_gpio.h>
++#include <linux/platform_device.h>
++#include <linux/gpio_event.h>
++#include <linux/wakelock.h>
++#include <linux/uaccess.h>
++#include <linux/regulator/consumer.h>
++
++#ifdef CONFIG_HAS_EARLYSUSPEND
++#include <linux/earlysuspend.h>
++#elif defined(CONFIG_FB)
++#include <linux/notifier.h>
++#include <linux/fb.h>
++#endif
++
++/* Include platform data */
++#include "melfas_mms.h"
++
++/* Include register map */
++#include "melfas_mms400_reg.h"
++
++#define ATTR_GROUP 0
++
++/* Chip info */
++#ifdef CONFIG_TOUCHSCREEN_MELFAS_MMS438
++#define CHIP_MMS438
++#define CHIP_NAME		"MMS438"
++#define CHIP_FW_CODE	"M4H0"
++#define FW_UPDATE_TYPE	"MMS438"
++#endif
++#ifdef CONFIG_TOUCHSCREEN_MELFAS_MMS449
++#define CHIP_MMS449
++#define CHIP_NAME		"MMS449"
++#define CHIP_FW_CODE	"M4HP"
++#define FW_UPDATE_TYPE	"MMS438"
++#endif
++#ifdef CONFIG_TOUCHSCREEN_MELFAS_MMS458
++#define CHIP_MMS458
++#define CHIP_NAME		"MMS458"
++#define CHIP_FW_CODE	"M4HN"
++#define FW_UPDATE_TYPE	"MMS438"
++#endif
++#ifdef CONFIG_TOUCHSCREEN_MELFAS_MMS492
++#define CHIP_MMS492
++#define CHIP_NAME		"MMS492"
++#define CHIP_FW_CODE	"M4HL"
++#define FW_UPDATE_TYPE	"MMS492"
++#endif
++
++/* Config driver */
++#define MMS_USE_INPUT_OPEN_CLOSE	0	/* 0 or 1 */
++#define I2C_RETRY_COUNT			3	/* 2~ */
++#define RESET_ON_EVENT_ERROR		0	/* 0 or 1 */
++#define ESD_COUNT_FOR_DISABLE		7	/* 7~ */
++#define MMS_USE_GESTURE_WAKEUP_MODE 0
++#define USE_INPUT_SLOT	1
++
++/* Features */
++#define MMS_USE_NAP_MODE			0	/* 0 or 1 */
++/* 0 or 1 (Optional - Sysfs test functions) */
++#define MMS_USE_TEST_MODE			0
++/* 0 or 1 (Optional - Sysfs command functions) */
++#define MMS_USE_CMD_MODE			0
++/* 0 or 1 (Optional - Dev mode for debugging) */
++#define MMS_USE_DEV_MODE			0
++
++/* Input value */
++#define MAX_FINGER_NUM				10
++#define INPUT_AREA_MIN				0
++#define INPUT_AREA_MAX				255
++#define INPUT_PRESSURE_MIN			0
++#define INPUT_PRESSURE_MAX			255
++#define INPUT_TOUCH_MAJOR_MIN			0
++#define INPUT_TOUCH_MAJOR_MAX			255
++#define INPUT_TOUCH_MINOR_MIN			0
++#define INPUT_TOUCH_MINOR_MAX			255
++#define INPUT_ANGLE_MIN				0
++#define INPUT_ANGLE_MAX				255
++#define INPUT_HOVER_MIN				0
++#define INPUT_HOVER_MAX				255
++#define INPUT_PALM_MIN				0
++#define INPUT_PALM_MAX				1
++
++/* Firmware update */
++/* path of firmware included in the kernel image (/firmware) */
++#define INTERNAL_FW_PATH			"melfas/melfas_mms400.mfsb"
++/* path of firmware in external storage */
++#define EXTERNAL_FW_PATH			"/sdcard/melfas_mms400.mfsb"
++#define MMS_USE_AUTO_FW_UPDATE		0	/* 0 or 1 */
++#define MMS_FW_MAX_SECT_NUM		4
++#define MMS_FW_UPDATE_DEBUG		0	/* 0 or 1 */
++#define MMS_FW_UPDATE_SECTION		1	/* 0 or 1 */
++#define MMS_EXT_FW_FORCE_UPDATE		1	/* 0 or 1 */
++
++/* Command mode */
++#define CMD_LEN				32
++#define CMD_RESULT_LEN			512
++#define CMD_PARAM_NUM			8
++
++extern struct class *melfas_class;
++
++#if MMS_USE_CALLBACK
++/* Callback functions */
++struct mms_callbacks {
++	void (*inform_charger)(struct mms_callbacks *, int);
++};
++
++extern struct mms_callbacks *mms_inform_callbacks;
++#endif
++
++#define GTP_DEBUGFS_DIR			"ts_debug"
++#define GTP_DEBUGFS_FILE_SUSPEND	"suspend"
++#define GTP_DEBUGFS_FILE_DATA		"data"
++#define GTP_DEBUGFS_FILE_ADDR		"addr"
++#define GTP_DEBUGFS_FILE_DUMP_INFO	"dump_info"
++
++#define GTP_VALID_ADDR_START    0x00
++#define GTP_VALID_ADDR_END      0xA0
++
++#define INFO_MAX_LEN	512
++#define STORE_TS_INFO(buf, name, max_tch, product_id, product_name, \
++	fw_version1, fw_version2, fw_version3, fw_version4, fw_version5, \
++	fw_version6, fw_version7, fw_version8, fw_vkey_support)	\
++	snprintf(buf, INFO_MAX_LEN, \
++	"controller\t= melfas\n" \
++	"name\t\t= %s\n" \
++	"max_touches\t= %d\n" \
++	"product_id\t= %s\n" \
++	"product_name\t= %s\n" \
++	"fw_version\t= %02x.%02x %02x.%02x %02x.%02x %02x.%02x\n" \
++	"fw_vkey_support\t= %s\n" \
++	, name, max_tch, product_id, product_name, fw_version1, \
++	fw_version2, fw_version3, fw_version4, fw_version5, \
++	fw_version6, fw_version7, fw_version8, fw_vkey_support)
++
++/**
++* Device info structure
++*/
++struct mms_ts_info {
++	struct i2c_client *client;
++	struct input_dev *input_dev;
++	char phys[32];
++	struct mms_platform_data *pdata;
++
++	dev_t mms_dev;
++	struct class *class;
++
++	struct mutex lock;
++	struct mutex lock_test;
++	struct mutex lock_cmd;
++	struct mutex lock_dev;
++
++	struct pinctrl *ts_pinctrl;
++	struct pinctrl_state *pinctrl_state_active;
++	struct pinctrl_state *pinctrl_state_suspend;
++	struct pinctrl_state *pinctrl_state_release;
++
++#ifdef CONFIG_HAS_EARLYSUSPEND
++	struct early_suspend early_suspend;
++#elif defined(CONFIG_FB)
++	struct notifier_block fb_notif;
++#endif
++
++	int irq;
++	bool enabled;
++	bool init;
++	char *fw_name;
++
++	u8 product_name[16];
++	int max_x;
++	int max_y;
++	u8 node_x;
++	u8 node_y;
++	u8 node_key;
++	u8 fw_version[8];
++	u8 event_size;
++
++	bool tkey_enable;
++
++	u8 nap_mode;
++	u8 glove_mode;
++	u8 charger_mode;
++	u8 cover_mode;
++
++	u8 esd_cnt;
++	bool disable_esd;
++
++	u8 *print_buf;
++	int *image_buf;
++
++	bool test_busy;
++	bool cmd_busy;
++	bool dev_busy;
++
++#if MMS_USE_CMD_MODE
++	dev_t cmd_dev_t;
++	struct device *cmd_dev;
++	struct class *cmd_class;
++	struct list_head cmd_list_head;
++	u8 cmd_state;
++	char cmd[CMD_LEN];
++	char cmd_result[CMD_RESULT_LEN];
++	int cmd_param[CMD_PARAM_NUM];
++	int cmd_buffer_size;
++#endif
++
++#if MMS_USE_DEV_MODE
++	struct cdev cdev;
++	u8 *dev_fs_buf;
++#endif
++
++#if MMS_USE_CALLBACK
++	void (*register_callback)(void *);
++	struct mms_callbacks callbacks;
++#endif
++
++	struct dentry *debug_base;
++	const char *product_id;
++	const char *name;
++	bool fw_vkey_support;
++	char *ts_info;
++	int power_hall;
++/*	int enable;
++*/	u16 addr;
++
++};
++
++/**
++* Firmware binary header info
++*/
++struct mms_bin_hdr {
++	char	tag[8];
++	u16	core_version;
++	u16	section_num;
++	u16	contains_full_binary;
++	u16	reserved0;
++
++	u32	binary_offset;
++	u32	binary_length;
++
++	u32	extension_offset;
++	u32	reserved1;
++} __packed;
++
++/**
++* Firmware image info
++*/
++struct mms_fw_img {
++	u16	type;
++	u16	version;
++
++	u16	start_page;
++	u16	end_page;
++
++	u32	offset;
++	u32	length;
++} __packed;
++
++/**
++* Firmware update error code
++*/
++enum fw_update_errno {
++	fw_err_file_read = -4,
++	fw_err_file_open = -3,
++	fw_err_file_type = -2,
++	fw_err_download = -1,
++	fw_err_none = 0,
++	fw_err_uptodate = 1,
++};
++
++/**
++* Declarations
++*/
++/* main */
++void mms_reboot(struct mms_ts_info *info);
++int mms_i2c_read(struct mms_ts_info *info, char *write_buf,
++	unsigned int write_len, char *read_buf, unsigned int read_len);
++int mms_i2c_read_next(struct mms_ts_info *info, char *read_buf, int start_idx,
++	unsigned int read_len);
++int mms_i2c_write(struct mms_ts_info *info, char *write_buf,
++	unsigned int write_len);
++int mms_enable(struct mms_ts_info *info);
++int mms_disable(struct mms_ts_info *info);
++int mms_get_ready_status(struct mms_ts_info *info);
++int mms_get_fw_version(struct mms_ts_info *info, u8 *ver_buf);
++int mms_get_fw_version_u16(struct mms_ts_info *info, u16 *ver_buf_u16);
++int mms_disable_esd_alert(struct mms_ts_info *info);
++int mms_fw_update_from_kernel(struct mms_ts_info *info);
++int mms_fw_update_from_storage(struct mms_ts_info *info, bool force);
++int mms_suspend(struct device *dev);
++int mms_resume(struct device *dev);
++#ifdef CONFIG_HAS_EARLYSUSPEND
++void mms_early_suspend(struct early_suspend *h);
++void mms_late_resume(struct early_suspend *h);
++#elif defined(CONFIG_FB)
++int fb_notifier_callback(struct notifier_block *self, unsigned long event,
++	void *data);
++#endif
++
++/* mod */
++int mms_regulator_control(struct i2c_client *client, int enable);
++int mms_power_on(struct mms_ts_info *info);
++int mms_power_off(struct mms_ts_info *info);
++void mms_clear_input(struct mms_ts_info *info);
++void mms_report_input_event(struct mms_ts_info *info, u8 sz, u8 *buf);
++int mms_wakeup_event_handler(struct mms_ts_info *info, u8 *rbuf);
++void mms_input_event_handler(struct mms_ts_info *info, u8 sz, u8 *buf);
++#if MMS_USE_DEVICETREE
++int mms_parse_devicetree(struct device *dev, struct mms_ts_info *info);
++#endif
++void mms_config_input(struct mms_ts_info *info);
++#if MMS_USE_CALLBACK
++void mms_config_callback(struct mms_ts_info *info);
++#endif
++
++/* fw_update */
++int mms_flash_fw(struct mms_ts_info *info, const u8 *fw_data, size_t fw_size,
++	bool force, bool section);
++
++/* test */
++#if MMS_USE_DEV_MODE
++int mms_dev_create(struct mms_ts_info *info);
++int mms_get_log(struct mms_ts_info *info);
++#endif
++int mms_run_test(struct mms_ts_info *info, u8 test_type);
++int mms_get_image(struct mms_ts_info *info, u8 image_type);
++#if MMS_USE_TEST_MODE
++int mms_sysfs_create(struct mms_ts_info *info);
++void mms_sysfs_remove(struct mms_ts_info *info);
++static const struct attribute_group mms_test_attr_group;
++#endif
++
++/* cmd */
++#if MMS_USE_CMD_MODE
++int mms_sysfs_cmd_create(struct mms_ts_info *info);
++void mms_sysfs_cmd_remove(struct mms_ts_info *info);
++static const struct attribute_group mms_cmd_attr_group;
++#endif
++
++
+diff --git a/drivers/input/touchscreen/melfas_mip4/melfas_mms400_cmd.c b/drivers/input/touchscreen/melfas_mip4/melfas_mms400_cmd.c
+new file mode 100644
+index 0000000..fc07ffd
+--- /dev/null
++++ b/drivers/input/touchscreen/melfas_mip4/melfas_mms400_cmd.c
+@@ -0,0 +1,963 @@
++/*
++ * MELFAS MMS400 Touchscreen
++ *
++ * Copyright (C) 2014-2016 MELFAS Inc.
++ *
++ *
++ * Command Functions (Optional)
++ *
++ */
++
++#include "melfas_mms400.h"
++
++#if MMS_USE_CMD_MODE
++
++#define NAME_OF_UNKNOWN_CMD "not_support_cmd"
++
++enum CMD_STATUS {
++	CMD_STATUS_WAITING = 0,
++	CMD_STATUS_RUNNING,
++	CMD_STATUS_OK,
++	CMD_STATUS_FAIL,
++	CMD_STATUS_NONE,
++};
++
++/**
++* Clear command result
++*/
++static void cmd_clear_result(struct mms_ts_info *info)
++{
++	char delim = ':';
++
++	memset(info->cmd_result, 0x00, ARRAY_SIZE(info->cmd_result));
++	memcpy(info->cmd_result, info->cmd, strnlen(info->cmd, CMD_LEN));
++	strlcat(info->cmd_result, &delim, 1);
++}
++
++/**
++* Set command result
++*/
++static void cmd_set_result(struct mms_ts_info *info, char *buf, int len)
++{
++/*	strncat(info->cmd_result, buf, len);
++*/	strlcat(info->cmd_result, buf, len);
++}
++
++/**
++* Command : Update firmware
++*/
++static void cmd_fw_update(void *device_data)
++{
++	struct mms_ts_info *info = (struct mms_ts_info *)device_data;
++	char buf[64] = { 0 };
++
++	int fw_location = info->cmd_param[0];
++
++	cmd_clear_result(info);
++
++	switch (fw_location) {
++	case 0:
++		if (mms_fw_update_from_kernel(info))
++			goto ERROR;
++
++		break;
++	case 1:
++		if (mms_fw_update_from_storage(info, true))
++			goto ERROR;
++
++		break;
++	default:
++		goto ERROR;
++	}
++
++	snprintf(buf, 64, "%s", "OK");
++	info->cmd_state = CMD_STATUS_OK;
++	goto EXIT;
++
++ERROR:
++	snprintf(buf, 64, "%s", "NG");
++	info->cmd_state = CMD_STATUS_FAIL;
++	goto EXIT;
++
++EXIT:
++	cmd_set_result(info, buf, strnlen(buf, sizeof(buf)));
++}
++
++/**
++* Command : Get firmware version from MFSB file
++*/
++static void cmd_get_fw_ver_bin(void *device_data)
++{
++	struct mms_ts_info *info = (struct mms_ts_info *)device_data;
++	char buf[64] = { 0 };
++
++	const char *fw_name = INTERNAL_FW_PATH;
++	const struct firmware *fw;
++	struct mms_bin_hdr *fw_hdr;
++	struct mms_fw_img **img;
++	u8 ver_file[MMS_FW_MAX_SECT_NUM * 2];
++	int i = 0;
++	int offset = sizeof(struct mms_bin_hdr);
++
++	cmd_clear_result(info);
++
++	request_firmware(&fw, fw_name, &info->client->dev);
++
++	if (!fw) {
++		snprintf(buf, 64, "%s", "NG");
++		info->cmd_state = CMD_STATUS_FAIL;
++		goto EXIT;
++	}
++
++	fw_hdr = (struct mms_bin_hdr *)fw->data;
++	img = kcalloc(6, sizeof(*img) * fw_hdr->section_num, GFP_KERNEL);
++
++	for (i = 0; i < fw_hdr->section_num; i++, offset +=
++		sizeof(struct mms_fw_img)) {
++		img[i] = (struct mms_fw_img *)(fw->data + offset);
++		ver_file[i * 2] = ((img[i]->version) >> 8) & 0xFF;
++		ver_file[i * 2 + 1] = (img[i]->version) & 0xFF;
++	}
++
++	release_firmware(fw);
++
++	snprintf(buf, 64, "%02X.%02X %02X.%02X %02X.%02X %02X.%02X\n",
++		ver_file[0], ver_file[1], ver_file[2], ver_file[3],
++		ver_file[4], ver_file[5], ver_file[6], ver_file[7]);
++	info->cmd_state = CMD_STATUS_OK;
++
++EXIT:
++	cmd_set_result(info, buf, strnlen(buf, sizeof(buf)));
++}
++
++/**
++* Command : Get firmware version from IC
++*/
++static void cmd_get_fw_ver_ic(void *device_data)
++{
++	struct mms_ts_info *info = (struct mms_ts_info *)device_data;
++	char buf[64] = { 0 };
++	u8 rbuf[64];
++
++	cmd_clear_result(info);
++
++	if (mms_get_fw_version(info, rbuf)) {
++		snprintf(buf, 64, "%s", "NG");
++		info->cmd_state = CMD_STATUS_FAIL;
++		goto EXIT;
++	}
++
++	snprintf(buf, 64, "%02X.%02X_%02X.%02X_%02X.%02X_%02X.%02X\n", rbuf[0],
++		rbuf[1], rbuf[2], rbuf[3], rbuf[4], rbuf[5], rbuf[6], rbuf[7]);
++	info->cmd_state = CMD_STATUS_OK;
++
++EXIT:
++	cmd_set_result(info, buf, strnlen(buf, sizeof(buf)));
++}
++
++/**
++* Command : Get chip vendor
++*/
++static void cmd_get_chip_vendor(void *device_data)
++{
++	struct mms_ts_info *info = (struct mms_ts_info *)device_data;
++	char buf[64] = { 0 };
++
++	cmd_clear_result(info);
++
++	snprintf(buf, 64, "MELFAS");
++	cmd_set_result(info, buf, strnlen(buf, sizeof(buf)));
++
++	info->cmd_state = CMD_STATUS_OK;
++}
++
++/**
++* Command : Get chip name
++*/
++static void cmd_get_chip_name(void *device_data)
++{
++	struct mms_ts_info *info = (struct mms_ts_info *)device_data;
++	char buf[64] = { 0 };
++
++	cmd_clear_result(info);
++
++	snprintf(buf, 64, CHIP_NAME);
++	cmd_set_result(info, buf, strnlen(buf, sizeof(buf)));
++
++	info->cmd_state = CMD_STATUS_OK;
++}
++
++/**
++* Command : Get X ch num
++*/
++static void cmd_get_x_num(void *device_data)
++{
++	struct mms_ts_info *info = (struct mms_ts_info *)device_data;
++	char buf[64] = { 0 };
++	u8 rbuf[64];
++	u8 wbuf[64];
++	int val;
++
++	cmd_clear_result(info);
++
++	wbuf[0] = MIP_R0_INFO;
++	wbuf[1] = MIP_R1_INFO_NODE_NUM_X;
++	if (mms_i2c_read(info, wbuf, 2, rbuf, 1)) {
++		info->cmd_state = CMD_STATUS_FAIL;
++		goto EXIT;
++	}
++
++	val = rbuf[0];
++
++	snprintf(buf, 64, "%d", val);
++	cmd_set_result(info, buf, strnlen(buf, sizeof(buf)));
++
++	info->cmd_state = CMD_STATUS_OK;
++
++EXIT:
++	return;
++}
++
++/**
++* Command : Get Y ch num
++*/
++static void cmd_get_y_num(void *device_data)
++{
++	struct mms_ts_info *info = (struct mms_ts_info *)device_data;
++	char buf[64] = { 0 };
++	u8 rbuf[64];
++	u8 wbuf[64];
++	int val;
++
++	cmd_clear_result(info);
++
++	wbuf[0] = MIP_R0_INFO;
++	wbuf[1] = MIP_R1_INFO_NODE_NUM_Y;
++	if (mms_i2c_read(info, wbuf, 2, rbuf, 1)) {
++		info->cmd_state = CMD_STATUS_FAIL;
++		goto EXIT;
++	}
++
++	val = rbuf[0];
++
++	snprintf(buf, 64, "%d", val);
++	cmd_set_result(info, buf, strnlen(buf, sizeof(buf)));
++
++	info->cmd_state = CMD_STATUS_OK;
++
++EXIT:
++	return;
++}
++
++/**
++* Command : Get X resolution
++*/
++static void cmd_get_max_x(void *device_data)
++{
++	struct mms_ts_info *info = (struct mms_ts_info *)device_data;
++	char buf[64] = { 0 };
++	u8 rbuf[64];
++	u8 wbuf[64];
++	int val;
++
++	cmd_clear_result(info);
++
++	wbuf[0] = MIP_R0_INFO;
++	wbuf[1] = MIP_R1_INFO_RESOLUTION_X;
++	if (mms_i2c_read(info, wbuf, 2, rbuf, 2)) {
++		info->cmd_state = CMD_STATUS_FAIL;
++		goto EXIT;
++	}
++
++	val = (rbuf[0] << 8) | rbuf[1];
++
++	snprintf(buf, 64, "%d", val);
++	cmd_set_result(info, buf, strnlen(buf, sizeof(buf)));
++
++	info->cmd_state = CMD_STATUS_OK;
++
++EXIT:
++	return;
++}
++
++/**
++* Command : Get Y resolution
++*/
++static void cmd_get_max_y(void *device_data)
++{
++	struct mms_ts_info *info = (struct mms_ts_info *)device_data;
++	char buf[64] = { 0 };
++	u8 rbuf[64];
++	u8 wbuf[64];
++	int val;
++
++	cmd_clear_result(info);
++
++	wbuf[0] = MIP_R0_INFO;
++	wbuf[1] = MIP_R1_INFO_RESOLUTION_Y;
++	if (mms_i2c_read(info, wbuf, 2, rbuf, 2)) {
++		info->cmd_state = CMD_STATUS_FAIL;
++		goto EXIT;
++	}
++
++	val = (rbuf[0] << 8) | rbuf[1];
++
++	snprintf(buf, 64, "%d", val);
++	cmd_set_result(info, buf, strnlen(buf, sizeof(buf)));
++
++	info->cmd_state = CMD_STATUS_OK;
++
++EXIT:
++	return;
++}
++
++/**
++* Command : Power off
++*/
++static void cmd_module_off_master(void *device_data)
++{
++	struct mms_ts_info *info = (struct mms_ts_info *)device_data;
++	char buf[64] = { 0 };
++
++	cmd_clear_result(info);
++
++	if (mms_power_off(info)) {
++		snprintf(buf, 64, "%s", "NG");
++		info->cmd_state = CMD_STATUS_FAIL;
++		goto EXIT;
++	}
++
++	snprintf(buf, 64, "%s", "OK");
++	info->cmd_state = CMD_STATUS_OK;
++
++EXIT:
++	cmd_set_result(info, buf, strnlen(buf, sizeof(buf)));
++}
++
++/**
++* Command : Power on
++*/
++static void cmd_module_on_master(void *device_data)
++{
++	struct mms_ts_info *info = (struct mms_ts_info *)device_data;
++	char buf[64] = { 0 };
++
++	cmd_clear_result(info);
++
++	if (mms_power_on(info)) {
++		snprintf(buf, 64, "%s", "NG");
++		info->cmd_state = CMD_STATUS_FAIL;
++		goto EXIT;
++	}
++
++	snprintf(buf, 64, "%s", "OK");
++	info->cmd_state = CMD_STATUS_OK;
++
++EXIT:
++	cmd_set_result(info, buf, strnlen(buf, sizeof(buf)));
++}
++
++/**
++* Command : Read intensity image
++*/
++static void cmd_read_intensity(void *device_data)
++{
++	struct mms_ts_info *info = (struct mms_ts_info *)device_data;
++	char buf[64] = { 0 };
++
++	int min = 999999;
++	int max = -999999;
++	int i = 0;
++
++	cmd_clear_result(info);
++
++	if (mms_get_image(info, MIP_IMG_TYPE_INTENSITY)) {
++		snprintf(buf, 64, "%s", "NG");
++		info->cmd_state = CMD_STATUS_FAIL;
++		goto EXIT;
++	}
++
++	for (i = 0; i < (info->node_x * info->node_y); i++) {
++		if (info->image_buf[i] > max)
++			max = info->image_buf[i];
++
++		if (info->image_buf[i] < min)
++			min = info->image_buf[i];
++
++	}
++
++	snprintf(buf, 64, "%d,%d", min, max);
++	info->cmd_state = CMD_STATUS_OK;
++
++EXIT:
++	cmd_set_result(info, buf, strnlen(buf, sizeof(buf)));
++}
++
++/**
++* Command : Get intensity data
++*/
++static void cmd_get_intensity(void *device_data)
++{
++	struct mms_ts_info *info = (struct mms_ts_info *)device_data;
++	char buf[64] = { 0 };
++
++	int x = info->cmd_param[0];
++	int y = info->cmd_param[1];
++	int idx = 0;
++
++	cmd_clear_result(info);
++
++	if ((x < 0) || (x >= info->node_x) || (y < 0) || (y >= info->node_y)) {
++		snprintf(buf, 64, "%s", "NG");
++		info->cmd_state = CMD_STATUS_FAIL;
++		goto EXIT;
++	}
++
++	idx = x + info->node_y * y;
++
++	snprintf(buf, 64, "%d", info->image_buf[idx]);
++	info->cmd_state = CMD_STATUS_OK;
++
++EXIT:
++	cmd_set_result(info, buf, strnlen(buf, sizeof(buf)));
++}
++
++/**
++* Command : Read rawdata image
++*/
++static void cmd_read_rawdata(void *device_data)
++{
++	struct mms_ts_info *info = (struct mms_ts_info *)device_data;
++	char buf[64] = { 0 };
++
++	int min = 999999;
++	int max = -999999;
++	int i = 0;
++
++	cmd_clear_result(info);
++
++	if (mms_get_image(info, MIP_IMG_TYPE_RAWDATA)) {
++		snprintf(buf, 64, "%s", "NG");
++		info->cmd_state = CMD_STATUS_FAIL;
++		goto EXIT;
++	}
++
++	for (i = 0; i < (info->node_x * info->node_y); i++) {
++		if (info->image_buf[i] > max)
++			max = info->image_buf[i];
++
++		if (info->image_buf[i] < min)
++			min = info->image_buf[i];
++
++	}
++
++	snprintf(buf, 64, "%d,%d", min, max);
++	info->cmd_state = CMD_STATUS_OK;
++
++EXIT:
++	cmd_set_result(info, buf, strnlen(buf, sizeof(buf)));
++}
++
++/**
++* Command : Get rawdata
++*/
++static void cmd_get_rawdata(void *device_data)
++{
++	struct mms_ts_info *info = (struct mms_ts_info *)device_data;
++	char buf[64] = { 0 };
++
++	int x = info->cmd_param[0];
++	int y = info->cmd_param[1];
++	int idx = 0;
++
++	cmd_clear_result(info);
++
++	if ((x < 0) || (x >= info->node_x) || (y < 0) || (y >= info->node_y)) {
++		snprintf(buf, 64, "%s", "NG");
++		info->cmd_state = CMD_STATUS_FAIL;
++		goto EXIT;
++	}
++
++	idx = x + y * info->node_y;
++
++	snprintf(buf, 64, "%d", info->image_buf[idx]);
++	info->cmd_state = CMD_STATUS_OK;
++
++EXIT:
++	cmd_set_result(info, buf, strnlen(buf, sizeof(buf)));
++}
++
++/**
++* Command : Run cm delta test
++*/
++static void cmd_run_test_cm_delta(void *device_data)
++{
++	struct mms_ts_info *info = (struct mms_ts_info *)device_data;
++	char buf[64] = { 0 };
++
++	int min = 999999;
++	int max = -999999;
++	int i = 0;
++
++	cmd_clear_result(info);
++
++	if (mms_run_test(info, MIP_TEST_TYPE_CM_DELTA)) {
++		snprintf(buf, 64, "%s", "NG");
++		info->cmd_state = CMD_STATUS_FAIL;
++		goto EXIT;
++	}
++
++	for (i = 0; i < (info->node_x * info->node_y); i++) {
++		if (info->image_buf[i] > max)
++			max = info->image_buf[i];
++
++		if (info->image_buf[i] < min)
++			min = info->image_buf[i];
++
++	}
++
++	snprintf(buf, 64, "%d,%d", min, max);
++	info->cmd_state = CMD_STATUS_OK;
++
++EXIT:
++	cmd_set_result(info, buf, strnlen(buf, sizeof(buf)));
++}
++
++/**
++* Command : Get result of cm delta test
++*/
++static void cmd_get_cm_delta(void *device_data)
++{
++	struct mms_ts_info *info = (struct mms_ts_info *)device_data;
++	char buf[64] = { 0 };
++
++	int x = info->cmd_param[0];
++	int y = info->cmd_param[1];
++	int idx = 0;
++
++	cmd_clear_result(info);
++
++	if ((x < 0) || (x >= info->node_x) || (y < 0) || (y >= info->node_y)) {
++		snprintf(buf, 64, "%s", "NG");
++		info->cmd_state = CMD_STATUS_FAIL;
++		goto EXIT;
++	}
++
++	idx = x + y * info->node_y;
++
++	snprintf(buf, 64, "%d", info->image_buf[idx]);
++	info->cmd_state = CMD_STATUS_OK;
++
++EXIT:
++	cmd_set_result(info, buf, strnlen(buf, sizeof(buf)));
++}
++
++/**
++* Command : Run cm abs test
++*/
++static void cmd_run_test_cm_abs(void *device_data)
++{
++	struct mms_ts_info *info = (struct mms_ts_info *)device_data;
++	char buf[64] = { 0 };
++
++	int min = 999999;
++	int max = -999999;
++	int i = 0;
++
++	cmd_clear_result(info);
++
++	if (mms_run_test(info, MIP_TEST_TYPE_CM_ABS)) {
++		snprintf(buf, 64, "%s", "NG");
++		info->cmd_state = CMD_STATUS_FAIL;
++		goto EXIT;
++	}
++
++	for (i = 0; i < (info->node_x * info->node_y); i++) {
++		if (info->image_buf[i] > max)
++			max = info->image_buf[i];
++
++		if (info->image_buf[i] < min)
++			min = info->image_buf[i];
++
++	}
++
++	snprintf(buf, 64, "%d,%d", min, max);
++	info->cmd_state = CMD_STATUS_OK;
++
++EXIT:
++	cmd_set_result(info, buf, strnlen(buf, sizeof(buf)));
++}
++
++/**
++* Command : Get result of cm abs test
++*/
++static void cmd_get_cm_abs(void *device_data)
++{
++	struct mms_ts_info *info = (struct mms_ts_info *)device_data;
++	char buf[64] = { 0 };
++
++	int x = info->cmd_param[0];
++	int y = info->cmd_param[1];
++	int idx = 0;
++
++	cmd_clear_result(info);
++
++	if ((x < 0) || (x >= info->node_x) || (y < 0) || (y >= info->node_y)) {
++		snprintf(buf, 64, "%s", "NG");
++		info->cmd_state = CMD_STATUS_FAIL;
++		goto EXIT;
++	}
++
++	idx = x + y * info->node_y;
++
++	snprintf(buf, 64, "%d", info->image_buf[idx]);
++	info->cmd_state = CMD_STATUS_OK;
++
++EXIT:
++	cmd_set_result(info, buf, strnlen(buf, sizeof(buf)));
++}
++
++/**
++* Command : Unknown cmd
++*/
++static void cmd_unknown_cmd(void *device_data)
++{
++	struct mms_ts_info *info = (struct mms_ts_info *)device_data;
++	char buf[16] = { 0 };
++
++	cmd_clear_result(info);
++
++	snprintf(buf, sizeof(buf), "%s", NAME_OF_UNKNOWN_CMD);
++	cmd_set_result(info, buf, strnlen(buf, sizeof(buf)));
++
++	info->cmd_state = CMD_STATUS_NONE;
++}
++
++#define MMS_CMD(name, func)	.cmd_name = name, .cmd_func = func
++
++/**
++* Info of command function
++*/
++struct mms_cmd {
++	struct list_head list;
++	const char *cmd_name;
++	void (*cmd_func)(void *device_data);
++};
++
++/**
++* List of command functions
++*/
++static struct mms_cmd mms_commands[] = {
++	{MMS_CMD("fw_update", cmd_fw_update),},
++	{MMS_CMD("get_fw_ver_bin", cmd_get_fw_ver_bin),},
++	{MMS_CMD("get_fw_ver_ic", cmd_get_fw_ver_ic),},
++	{MMS_CMD("get_chip_vendor", cmd_get_chip_vendor),},
++	{MMS_CMD("get_chip_name", cmd_get_chip_name),},
++	{MMS_CMD("get_x_num", cmd_get_x_num),},
++	{MMS_CMD("get_y_num", cmd_get_y_num),},
++	{MMS_CMD("get_max_x", cmd_get_max_x),},
++	{MMS_CMD("get_max_y", cmd_get_max_y),},
++	{MMS_CMD("module_off_master", cmd_module_off_master),},
++	{MMS_CMD("module_on_master", cmd_module_on_master),},
++	{MMS_CMD("run_intensity_read", cmd_read_intensity),},
++	{MMS_CMD("get_intensity", cmd_get_intensity),},
++	{MMS_CMD("run_rawdata_read", cmd_read_rawdata),},
++	{MMS_CMD("get_rawdata", cmd_get_rawdata),},
++	{MMS_CMD("run_inspection_read", cmd_run_test_cm_delta),},
++	{MMS_CMD("get_inspection", cmd_get_cm_delta),},
++	{MMS_CMD("run_cm_delta_read", cmd_run_test_cm_delta),},
++	{MMS_CMD("get_cm_delta", cmd_get_cm_delta),},
++	{MMS_CMD("run_cm_abs_read", cmd_run_test_cm_abs),},
++	{MMS_CMD("get_cm_abs", cmd_get_cm_abs),},
++
++	{MMS_CMD("get_config_ver", cmd_unknown_cmd),},
++	{MMS_CMD("get_threshold", cmd_unknown_cmd),},
++	{MMS_CMD("module_off_slave", cmd_unknown_cmd),},
++	{MMS_CMD("module_on_slave", cmd_unknown_cmd),},
++	{MMS_CMD(NAME_OF_UNKNOWN_CMD, cmd_unknown_cmd),},
++};
++
++/**
++* Sysfs - recv command
++*/
++static ssize_t mms_sys_cmd(struct device *dev,
++	struct device_attribute *devattr, const char *buf, size_t count)
++{
++	struct mms_ts_info *info = dev_get_drvdata(dev);
++	int ret;
++	char *cur, *start, *end;
++	char cbuf[CMD_LEN] = { 0 };
++	int len, i;
++	struct mms_cmd *mms_cmd_ptr = NULL;
++	char delim = ',';
++	bool cmd_found = false;
++	int param_cnt = 0;
++
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [START]\n", __func__);
++	dev_dbg(&info->client->dev, "%s - input [%s]\n", __func__, buf);
++#endif
++	if (!info) {
++		dev_err(&info->client->dev,
++			"%s [ERROR] mms_ts_info not found\n", __func__);
++		ret = -EINVAL;
++		goto ERROR;
++	}
++
++	if (!info->input_dev) {
++		dev_err(&info->client->dev, "%s [ERROR] input_dev not found\n",
++			__func__);
++		ret = -EINVAL;
++		goto ERROR;
++	}
++
++	if (info->cmd_busy == true) {
++		dev_err(&info->client->dev,
++			"%s [ERROR] previous command is not ended\n",
++			__func__);
++		ret = -1;
++		goto ERROR;
++	}
++
++	mutex_lock(&info->lock);
++	info->cmd_busy = true;
++	mutex_unlock(&info->lock);
++
++	info->cmd_state = 1;
++	for (i = 0; i < ARRAY_SIZE(info->cmd_param); i++)
++		info->cmd_param[i] = 0;
++
++	len = (int)count;
++	if (*(buf + len - 1) == '\n')
++		len--;
++
++	memset(info->cmd, 0x00, ARRAY_SIZE(info->cmd));
++	memcpy(info->cmd, buf, len);
++/*	cur = strchr(buf, (int)delim);
++*/	cur = strnchr(buf, count, (int)delim);
++	if (cur)
++		memcpy(cbuf, buf, cur - buf);
++	else
++		memcpy(cbuf, buf, len);
++
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s - command [%s]\n", __func__, cbuf);
++#endif
++
++	/* command */
++	list_for_each_entry(mms_cmd_ptr, &info->cmd_list_head, list) {
++		if (!strncmp(cbuf, mms_cmd_ptr->cmd_name, CMD_LEN)) {
++			cmd_found = true;
++			break;
++		}
++	}
++	if (!cmd_found) {
++		list_for_each_entry(mms_cmd_ptr, &info->cmd_list_head, list) {
++			if (!strncmp(NAME_OF_UNKNOWN_CMD,
++				mms_cmd_ptr->cmd_name, CMD_LEN))
++				break;
++
++		}
++	}
++
++	/* parameter */
++	if (cur && cmd_found) {
++		cur++;
++		start = cur;
++		memset(cbuf, 0x00, ARRAY_SIZE(cbuf));
++
++		do {
++			if (*cur == delim || cur - buf == len) {
++				end = cur;
++				memcpy(cbuf, start, end - start);
++				*(cbuf + strnlen(cbuf, ARRAY_SIZE(cbuf))) =
++					'\0';
++				if (kstrtoint(cbuf, 10,
++					info->cmd_param + param_cnt) < 0)
++					goto ERROR;
++
++				start = cur + 1;
++				memset(cbuf, 0x00, ARRAY_SIZE(cbuf));
++				param_cnt++;
++			}
++			cur++;
++		} while (cur - buf <= len);
++	}
++
++	/* print */
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s - cmd [%s]\n",
++		__func__, mms_cmd_ptr->cmd_name);
++#endif
++
++	/* execute */
++	mms_cmd_ptr->cmd_func(info);
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [DONE]\n", __func__);
++#endif
++	return count;
++
++ERROR:
++	dev_err(&info->client->dev, "%s [ERROR]\n", __func__);
++	return count;
++}
++static DEVICE_ATTR(cmd, 0666, NULL, mms_sys_cmd);
++
++/**
++* Sysfs - print command status
++*/
++static ssize_t mms_sys_cmd_status(struct device *dev,
++	struct device_attribute *devattr, char *buf)
++{
++	struct mms_ts_info *info = dev_get_drvdata(dev);
++	int ret;
++	char cbuf[32] = {0};
++
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [START]\n", __func__);
++
++	dev_dbg(&info->client->dev, "%s - status [%d]\n",
++		__func__, info->cmd_state);
++#endif
++	if (info->cmd_state == CMD_STATUS_WAITING)
++		snprintf(cbuf, sizeof(cbuf), "WAITING");
++	else if (info->cmd_state == CMD_STATUS_RUNNING)
++		snprintf(cbuf, sizeof(cbuf), "RUNNING");
++	else if (info->cmd_state == CMD_STATUS_OK)
++		snprintf(cbuf, sizeof(cbuf), "OK");
++	else if (info->cmd_state == CMD_STATUS_FAIL)
++		snprintf(cbuf, sizeof(cbuf), "FAIL");
++	else if (info->cmd_state == CMD_STATUS_NONE)
++		snprintf(cbuf, sizeof(cbuf), "NOT_APPLICABLE");
++
++	ret = snprintf(buf, PAGE_SIZE, "%s\n", cbuf);
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [DONE]\n", __func__);
++#endif
++	return ret;
++}
++static DEVICE_ATTR(cmd_status, 0666, mms_sys_cmd_status, NULL);
++
++/**
++* Sysfs - print command result
++*/
++static ssize_t mms_sys_cmd_result(struct device *dev,
++	struct device_attribute *devattr, char *buf)
++{
++	struct mms_ts_info *info = dev_get_drvdata(dev);
++	int ret;
++
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [START]\n", __func__);
++
++	dev_dbg(&info->client->dev, "%s - result [%s]\n",
++		__func__, info->cmd_result);
++#endif
++	mutex_lock(&info->lock);
++	info->cmd_busy = false;
++	mutex_unlock(&info->lock);
++
++	info->cmd_state = CMD_STATUS_WAITING;
++
++	ret = snprintf(buf, PAGE_SIZE, "%s\n", info->cmd_result);
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [DONE]\n", __func__);
++#endif
++	return ret;
++}
++static DEVICE_ATTR(cmd_result, 0666, mms_sys_cmd_result, NULL);
++
++/**
++* Sysfs - print command list
++*/
++static ssize_t mms_sys_cmd_list(struct device *dev,
++	struct device_attribute *attr, char *buf)
++{
++	struct mms_ts_info *info = dev_get_drvdata(dev);
++	int ret;
++	int i = 0;
++	char buffer[info->cmd_buffer_size];
++	char buffer_name[CMD_LEN];
++
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [START]\n", __func__);
++#endif
++	snprintf(buffer, 30, "== Command list ==\n");
++	while (strncmp(mms_commands[i].cmd_name, NAME_OF_UNKNOWN_CMD,
++		CMD_LEN) != 0) {
++		snprintf(buffer_name, CMD_LEN, "%s\n",
++			mms_commands[i].cmd_name);
++		strlcat(buffer, buffer_name, PAGE_SIZE);
++		i++;
++	}
++
++	ret = snprintf(buf, PAGE_SIZE, "%s\n", buffer);
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [DONE]\n", __func__);
++#endif
++	return ret;
++}
++static DEVICE_ATTR(cmd_list, 0666, mms_sys_cmd_list, NULL);
++
++/**
++* Sysfs - cmd attr info
++*/
++static struct attribute *mms_cmd_attr[] = {
++	&dev_attr_cmd.attr,
++	&dev_attr_cmd_status.attr,
++	&dev_attr_cmd_result.attr,
++	&dev_attr_cmd_list.attr,
++	NULL,
++};
++
++/**
++* Sysfs - cmd attr group info
++*/
++static const struct attribute_group mms_cmd_attr_group = {
++	.attrs = mms_cmd_attr,
++};
++
++/**
++* Create sysfs command functions
++*/
++int mms_sysfs_cmd_create(struct mms_ts_info *info)
++{
++	struct i2c_client *client = info->client;
++	int i = 0;
++
++	/* init cmd list */
++	INIT_LIST_HEAD(&info->cmd_list_head);
++	info->cmd_buffer_size = 0;
++
++	for (i = 0; i < ARRAY_SIZE(mms_commands); i++) {
++		list_add_tail(&mms_commands[i].list, &info->cmd_list_head);
++		if (mms_commands[i].cmd_name)
++			info->cmd_buffer_size +=
++				strlen(mms_commands[i].cmd_name) + 1;
++	}
++
++	info->cmd_busy = false;
++	info->print_buf = kzalloc(sizeof(u8) * 4096, GFP_KERNEL);
++
++	/* create sysfs */
++	if (sysfs_create_group(&client->dev.kobj, &mms_cmd_attr_group)) {
++		dev_err(&client->dev, "%s [ERROR] sysfs_create_group\n",
++			__func__);
++		return -EAGAIN;
++	}
++
++	return 0;
++}
++
++/**
++* Remove sysfs command functions
++*/
++void mms_sysfs_cmd_remove(struct mms_ts_info *info)
++{
++	sysfs_remove_group(&info->client->dev.kobj, &mms_cmd_attr_group);
++
++	kfree(info->print_buf);
++}
++
++#endif
++
+diff --git a/drivers/input/touchscreen/melfas_mip4/melfas_mms400_mod.c b/drivers/input/touchscreen/melfas_mip4/melfas_mms400_mod.c
+new file mode 100644
+index 0000000..e394c8e
+--- /dev/null
++++ b/drivers/input/touchscreen/melfas_mip4/melfas_mms400_mod.c
+@@ -0,0 +1,460 @@
++/*
++ * MELFAS MMS400 Touchscreen
++ *
++ * Copyright (C) 2014-2016 MELFAS Inc.
++ *
++ *
++ * Model dependent functions
++ *
++ */
++
++#include "melfas_mms400.h"
++
++int mms_regulator_control(struct i2c_client *client, int enable)
++{
++	int ret = 0, err = -1;
++	static struct regulator *reg_l22;
++
++#if DEBUG
++	dev_dbg(&client->dev, "%s [START]\n", __func__);
++#endif
++	if (!reg_l22) {
++		reg_l22 = regulator_get(&client->dev, "vdd");
++		if (IS_ERR(reg_l22)) {
++			dev_err(&client->dev, "%s [ERROR] vdd regulator_get\n",
++				__func__);
++			goto ERROR;
++		}
++
++		ret = regulator_set_voltage(reg_l22, 2850000, 2850000);
++		if (ret) {
++			dev_err(&client->dev,
++				"%s [ERROR]regulator_set_voltage\n", __func__);
++			goto ERROR;
++		}
++		ret = regulator_get_voltage(reg_l22);
++		dev_info(&client->dev, " regulator_get %d", ret);
++	}
++
++	if (enable) {
++		ret = regulator_enable(reg_l22);
++		if (ret) {
++			dev_err(&client->dev,
++				"%s [ERROR] regulator_enable [%d]\n",
++				__func__, ret);
++			goto ERROR;
++		}
++	} else {
++		if (regulator_is_enabled(reg_l22)) {
++			ret = regulator_disable(reg_l22);
++			if (ret) {
++				dev_err(&client->dev,
++					"%s [ERROR] regulator_disable [%d]\n",
++					__func__, ret);
++				goto ERROR;
++			}
++		}
++	}
++#if DEBUG
++	dev_dbg(&client->dev, "%s [DONE]\n", __func__);
++#endif
++	return 0;
++
++ERROR:
++	dev_err(&client->dev, "%s [ERROR]\n", __func__);
++	regulator_put(reg_l22);
++	return err;
++}
++
++/**
++* Turn off power supply
++*/
++int mms_power_off(struct mms_ts_info *info)
++{
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [START]\n", __func__);
++#endif
++	gpio_direction_output(info->pdata->gpio_reset, 0);
++
++	msleep(50);
++	info->power_hall = 0;
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [DONE]\n", __func__);
++#endif
++	return 0;
++}
++
++/**
++* Turn on power supply
++*/
++int mms_power_on(struct mms_ts_info *info)
++{
++	int ret = 0;
++
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [START]\n", __func__);
++#endif
++	/* Control regulator */
++	mms_regulator_control(info->client, 1);
++
++	ret = gpio_direction_output(info->pdata->gpio_reset, 0);
++	if (ret)
++		pr_err("mms_reset failed!\n");
++
++	msleep(20);
++	gpio_set_value_cansleep(info->pdata->gpio_reset, 1);
++
++	msleep(50);
++	info->power_hall = 1;
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [DONE]\n", __func__);
++#endif
++	return 0;
++}
++
++/**
++* Clear touch input events
++*/
++void mms_clear_input(struct mms_ts_info *info)
++{
++	int i;
++
++	for (i = 0; i < MAX_FINGER_NUM; i++) {
++#if USE_INPUT_SLOT
++		input_mt_slot(info->input_dev, i);
++		input_report_key(info->input_dev, BTN_TOUCH, 0);
++#else
++		input_report_key(info->input_dev, BTN_TOUCH, 0);
++#endif
++	}
++
++	input_sync(info->input_dev);
++}
++
++/**
++* Input event handler - Report touch input event
++*/
++void mms_input_event_handler(struct mms_ts_info *info, u8 sz, u8 *buf)
++{
++	struct i2c_client *client = info->client;
++	int i;
++
++#if DEBUG
++	dev_dbg(&client->dev, "%s [START]\n", __func__);
++	dev_dbg(&client->dev, "%s - sz[%d] buf[0x%02X]\n",
++		__func__, sz, buf[0]);
++#endif
++
++	for (i = 0; i < sz; i += info->event_size) {
++		u8 *tmp = &buf[i];
++
++		int id = (tmp[0] & 0xf) - 1;
++		int x = tmp[2] | ((tmp[1] & 0xf) << 8);
++		int y = tmp[3] | (((tmp[1] >> 4) & 0xf) << 8);
++#if DEBUG
++		int touch_major = tmp[4];
++		int pressure = tmp[5];
++#endif
++
++		x = x * 720 / 1080;
++		y = y * 1280 / 1920;
++
++		/* Report input data */
++		if ((tmp[0] & MIP_EVENT_INPUT_SCREEN) == 0) {
++			/* Touchkey Event */
++			int key = tmp[0] & 0xf;
++			int key_state =
++				(tmp[0] & MIP_EVENT_INPUT_PRESS) ? 1 : 0;
++			int key_code = 0;
++
++			if (!info->fw_vkey_support)
++				break;
++
++			/* Report touchkey event */
++			switch (key) {
++			case 1:
++				key_code = KEY_MENU;
++#if DEBUG
++				dev_dbg(&client->dev, "Key : KEY_MENU\n");
++#endif
++				break;
++			case 2:
++				key_code = 172;
++#if DEBUG
++				dev_dbg(&client->dev, "Key : KEY_HOME\n");
++#endif
++				break;
++			case 3:
++				key_code = KEY_BACK;
++#if DEBUG
++				dev_dbg(&client->dev, "Key : KEY_BACK\n");
++#endif
++				break;
++			default:
++				dev_err(&client->dev,
++					"%s [ERROR] Unknown key code [%d]\n",
++					__func__, key);
++/*				continue;
++*/				break;
++			}
++			input_report_key(info->input_dev, key_code, key_state);
++#if DEBUG
++			dev_dbg(&client->dev,
++				"%s - Key : ID[%d] Code[%d] State[%d]\n",
++				__func__, key, key_code, key_state);
++#endif
++		} else {
++			/* Touchscreen Event, Report touchscreen event */
++			if ((tmp[0] & MIP_EVENT_INPUT_PRESS) == 0) {
++				/* Release */
++#if USE_INPUT_SLOT
++				input_mt_slot(info->input_dev, id);
++				input_report_key(info->input_dev,
++					BTN_TOUCH, 0);
++				input_report_abs(info->input_dev,
++					ABS_MT_TRACKING_ID, -1);
++#else
++				input_report_key(info->input_dev,
++					BTN_TOUCH, 0);
++#endif
++
++#if DEBUG
++				dev_dbg(&client->dev,
++					"%s - Touch : ID[%d] Release\n",
++					__func__, id);
++#endif
++				continue;
++			}
++
++			/* Press or Move */
++#if USE_INPUT_SLOT
++			input_mt_slot(info->input_dev, id);
++			input_report_key(info->input_dev, BTN_TOUCH, 1);
++			input_report_abs(info->input_dev,
++				ABS_MT_TRACKING_ID, id);
++			input_report_abs(info->input_dev,
++				ABS_MT_POSITION_X, x);
++			input_report_abs(info->input_dev,
++				ABS_MT_POSITION_Y, y);
++#else
++			input_report_key(info->input_dev, BTN_TOUCH, 1);
++			input_report_abs(info->input_dev,
++				ABS_MT_POSITION_X, x);
++			input_report_abs(info->input_dev,
++				ABS_MT_POSITION_Y, y);
++			input_mt_sync(info->input_dev);
++#endif
++
++#if DEBUG
++			dev_dbg(&client->dev,
++				"%s - Touch: ID[%d] X[%d] Y[%d] P[%d] M[%d]\n",
++				__func__, id, x, y, pressure, touch_major);
++#endif
++		}
++	}
++
++	input_sync(info->input_dev);
++#if DEBUG
++	dev_dbg(&client->dev, "%s [DONE]\n", __func__);
++#endif
++}
++
++/**
++* Wake-up event handler
++*/
++int mms_wakeup_event_handler(struct mms_ts_info *info, u8 *rbuf)
++{
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [START]\n", __func__);
++	/* Report wake-up event */
++	dev_dbg(&info->client->dev, "%s [DONE]\n", __func__);
++#endif
++	return 0;
++}
++
++#if MMS_USE_DEVICETREE
++/**
++* Parse device tree
++*/
++int mms_parse_devicetree(struct device *dev, struct mms_ts_info *info)
++{
++	struct device_node *np = dev->of_node;
++	u32 val;
++	int ret;
++
++#if DEBUG
++	dev_dbg(dev, "%s [START]\n", __func__);
++#endif
++	/* Read property */
++	ret = of_property_read_u32(np, MMS_DEVICE_NAME",max_x", &val);
++	if (ret) {
++		dev_err(dev, "%s [ERROR] max_x\n", __func__);
++		info->pdata->max_x = 720;
++	} else
++		info->pdata->max_x = val;
++
++	ret = of_property_read_u32(np, MMS_DEVICE_NAME",max_y", &val);
++	if (ret) {
++		dev_err(dev, "%s [ERROR] max_y\n", __func__);
++		info->pdata->max_y = 1280;
++	} else
++		info->pdata->max_y = val;
++
++	dev_info(dev, "max_x %d\tmax_y %d\n", info->pdata->max_x,
++		info->pdata->max_y);
++
++	ret = of_property_read_string(np, "mms_ts,name", &info->name);
++	if (ret && (ret != -EINVAL)) {
++		pr_err("Failed to parse  name.\n");
++		return -EINVAL;
++	}
++
++	info->fw_vkey_support = of_property_read_bool(np,
++		"mms_ts,fw-vkey-support");
++	ret = of_property_read_string(np, "mms_ts,product-id",
++		&info->product_id);
++	if (ret && (ret != -EINVAL)) {
++		pr_err("Failed to parse product_id.");
++		return -EINVAL;
++	}
++
++	/* Get GPIO */
++	ret = of_get_named_gpio(np, MMS_DEVICE_NAME",irq-gpio", 0);
++	if (!gpio_is_valid(ret)) {
++		dev_err(dev, "%s [ERROR] of_get_named_gpio : irq-gpio\n",
++			__func__);
++		goto ERROR;
++	} else
++		info->pdata->gpio_intr = ret;
++
++	ret = of_get_named_gpio(np, MMS_DEVICE_NAME",reset-gpio", 0);
++	if (!gpio_is_valid(ret)) {
++		dev_err(dev, "%s [ERROR] of_get_named_gpio : reset-gpio\n",
++			__func__);
++		goto ERROR;
++	} else
++		info->pdata->gpio_reset = ret;
++
++	/* Config GPIO */
++	ret = gpio_request(info->pdata->gpio_intr, "irq-gpio");
++	if (ret < 0) {
++		dev_err(dev, "%s [ERROR] gpio_request : irq-gpio\n", __func__);
++		goto ERROR;
++	}
++	gpio_direction_input(info->pdata->gpio_intr);
++
++	ret = gpio_request(info->pdata->gpio_reset, "reset-gpio");
++	if (ret < 0) {
++		dev_err(dev, "%s [ERROR] gpio_request : reset-gpio\n",
++			__func__);
++		goto ERROR;
++	}
++	gpio_direction_output(info->pdata->gpio_reset, 1);
++
++	/* Set IRQ */
++	info->client->irq = gpio_to_irq(info->pdata->gpio_intr);
++
++#if DEBUG
++	dev_dbg(dev, "%s [DONE]\n", __func__);
++#endif
++	return 0;
++
++ERROR:
++	if (gpio_is_valid(info->pdata->gpio_reset))
++		gpio_free(info->pdata->gpio_reset);
++	if (gpio_is_valid(info->pdata->gpio_intr))
++		gpio_free(info->pdata->gpio_intr);
++
++	dev_err(dev, "%s [ERROR]\n", __func__);
++	return 1;
++}
++#endif
++
++/**
++* Config input interface
++*/
++void mms_config_input(struct mms_ts_info *info)
++{
++	struct input_dev *input_dev = info->input_dev;
++
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [START]\n", __func__);
++#endif
++	/* Screen */
++	__set_bit(EV_SYN, input_dev->evbit);
++	__set_bit(EV_ABS, input_dev->evbit);
++	__set_bit(EV_KEY, input_dev->evbit);
++
++	input_mt_init_slots(input_dev, MAX_FINGER_NUM, 0);
++	__set_bit(BTN_TOUCH, input_dev->keybit);
++
++	__set_bit(INPUT_PROP_DIRECT, input_dev->propbit);
++
++	input_set_capability(input_dev, EV_KEY, KEY_MENU);
++	input_set_capability(input_dev, EV_KEY, KEY_HOME);
++	input_set_capability(input_dev, EV_KEY, KEY_BACK);
++
++	input_set_abs_params(input_dev, ABS_MT_POSITION_X, 0,
++		(info->max_x * 720 / 1080), 0, 0);
++	input_set_abs_params(input_dev, ABS_MT_POSITION_Y, 0,
++		(info->max_y * 1280 / 1920), 0, 0);
++
++	/* Key */
++	set_bit(KEY_BACK, input_dev->keybit);
++	set_bit(KEY_MENU, input_dev->keybit);
++	set_bit(172, input_dev->keybit);
++
++#if MMS_USE_NAP_MODE
++	set_bit(EV_KEY, input_dev->evbit);
++	set_bit(KEY_POWER, input_dev->keybit);
++#endif
++
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [DONE]\n", __func__);
++#endif
++}
++
++#if MMS_USE_CALLBACK
++/**
++* Callback - get charger status
++*/
++void mms_callback_charger(struct mms_callbacks *cb, int charger_status)
++{
++	struct mms_ts_info *info =
++		container_of(cb, struct mms_ts_info, callbacks);
++
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [START]\n", __func__);
++	dev_info(&info->client->dev, "%s - charger_status[%d]\n",
++		__func__, charger_status);
++
++	dev_dbg(&info->client->dev, "%s [DONE]\n", __func__);
++#endif
++}
++
++/**
++* Callback - add callback functions here
++*/
++
++/**
++* Config callback functions
++*/
++void mms_config_callback(struct mms_ts_info *info)
++{
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [START]\n", __func__);
++#endif
++	info->register_callback = info->pdata->register_callback;
++
++	/* callback functions */
++	info->callbacks.inform_charger = mms_callback_charger;
++
++	if (info->register_callback)
++		info->register_callback(&info->callbacks);
++
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [DONE]\n", __func__);
++#endif
++}
++#endif
++
+diff --git a/drivers/input/touchscreen/melfas_mip4/melfas_mms400_reg.h b/drivers/input/touchscreen/melfas_mip4/melfas_mms400_reg.h
+new file mode 100644
+index 0000000..798c579
+--- /dev/null
++++ b/drivers/input/touchscreen/melfas_mip4/melfas_mms400_reg.h
+@@ -0,0 +1,132 @@
++/*
++ * MELFAS MMS400 Touchscreen
++ *
++ * Copyright (C) 2014-2016 MELFAS Inc.
++ *
++ *
++ * Protocol information
++ *
++ * Protocol Version : MIP 4.0
++ */
++
++/* Address */
++#define MIP_R0_INFO					0x01
++#define MIP_R1_INFO_PRODUCT_NAME			0x00
++#define MIP_R1_INFO_RESOLUTION_X			0x10
++#define MIP_R1_INFO_RESOLUTION_Y			0x12
++#define MIP_R1_INFO_NODE_NUM_X				0x14
++#define MIP_R1_INFO_NODE_NUM_Y				0x15
++#define MIP_R1_INFO_KEY_NUM				0x16
++#define MIP_R1_INFO_VERSION_BOOT			0x20
++#define MIP_R1_INFO_VERSION_CORE			0x22
++#define MIP_R1_INFO_VERSION_CUSTOM			0x24
++#define MIP_R1_INFO_VERSION_PARAM			0x26
++#define MIP_R1_INFO_SECT_BOOT_START			0x30
++#define MIP_R1_INFO_SECT_BOOT_END			0x31
++#define MIP_R1_INFO_SECT_CORE_START			0x32
++#define MIP_R1_INFO_SECT_CORE_END			0x33
++#define MIP_R1_INFO_SECT_CUSTOM_START			0x34
++#define MIP_R1_INFO_SECT_CUSTOM_END			0x35
++#define MIP_R1_INFO_SECT_PARAM_START			0x36
++#define MIP_R1_INFO_SECT_PARAM_END			0x37
++#define MIP_R1_INFO_BUILD_DATE				0x40
++#define MIP_R1_INFO_BUILD_TIME				0x44
++#define MIP_R1_INFO_CHECKSUM_PRECALC			0x48
++#define MIP_R1_INFO_CHECKSUM_REALTIME			0x4A
++#define MIP_R1_INFO_CHECKSUM_CALC			0x4C
++#define MIP_R1_INFO_PROTOCOL_NAME			0x50
++#define MIP_R1_INFO_PROTOCOL_VERSION			0x58
++#define MIP_R1_INFO_IC_ID				0x70
++
++#define MIP_R0_EVENT					0x02
++#define MIP_R1_EVENT_SUPPORTED_FUNC			0x00
++#define MIP_R1_EVENT_FORMAT				0x04
++#define MIP_R1_EVENT_SIZE				0x06
++#define MIP_R1_EVENT_PACKET_INFO			0x10
++#define MIP_R1_EVENT_PACKET_DATA			0x11
++
++#define MIP_R0_CTRL					0x06
++#define MIP_R1_CTRL_READY_STATUS			0x00
++#define MIP_R1_CTRL_EVENT_READY				0x01
++#define MIP_R1_CTRL_MODE				0x10
++#define MIP_R1_CTRL_EVENT_TRIGGER_TYPE			0x11
++#define MIP_R1_CTRL_RECALIBRATE				0x12
++#define MIP_R1_CTRL_POWER_STATE				0x13
++#define MIP_R1_CTRL_GESTURE_TYPE			0x14
++#define MIP_R1_CTRL_DISABLE_ESD_ALERT			0x18
++#define MIP_R1_CTRL_CHARGER_MODE			0x19
++#define MIP_R1_CTRL_GLOVE_MODE				0x1A
++#define MIP_R1_CTRL_WINDOW_MODE				0x1B
++#define MIP_R1_CTRL_PALM_REJECTION			0x1C
++#define MIP_R1_CTRL_DISABLE_EDGE_EXPAND			0x1D
++
++#define MIP_R0_PARAM					0x08
++#define MIP_R1_PARAM_BUFFER_ADDR			0x00
++#define MIP_R1_PARAM_PROTOCOL				0x04
++#define MIP_R1_PARAM_MODE				0x10
++
++#define MIP_R0_TEST					0x0A
++#define MIP_R1_TEST_BUF_ADDR				0x00
++#define MIP_R1_TEST_PROTOCOL				0x02
++#define MIP_R1_TEST_TYPE				0x10
++#define MIP_R1_TEST_DATA_FORMAT				0x20
++#define MIP_R1_TEST_ROW_NUM				0x20
++#define MIP_R1_TEST_COL_NUM				0x21
++#define MIP_R1_TEST_BUFFER_COL_NUM			0x22
++#define MIP_R1_TEST_COL_AXIS				0x23
++#define MIP_R1_TEST_KEY_NUM				0x24
++#define MIP_R1_TEST_DATA_TYPE				0x25
++
++#define MIP_R0_IMAGE					0x0C
++#define MIP_R1_IMAGE_BUF_ADDR				0x00
++#define MIP_R1_IMAGE_PROTOCOL_ID			0x04
++#define MIP_R1_IMAGE_TYPE				0x10
++#define MIP_R1_IMAGE_DATA_FORMAT			0x20
++#define MIP_R1_IMAGE_ROW_NUM				0x20
++#define MIP_R1_IMAGE_COL_NUM				0x21
++#define MIP_R1_IMAGE_BUFFER_COL_NUM			0x22
++#define MIP_R1_IMAGE_COL_AXIS				0x23
++#define MIP_R1_IMAGE_KEY_NUM				0x24
++#define MIP_R1_IMAGE_DATA_TYPE				0x25
++#define MIP_R1_IMAGE_FINGER_NUM				0x30
++#define MIP_R1_IMAGE_FINGER_AREA			0x31
++
++#define MIP_R0_LOG					0x10
++#define MIP_R1_LOG_TRIGGER				0x14
++
++/* Value */
++#define MIP_EVENT_INPUT_PRESS				0x80
++#define MIP_EVENT_INPUT_SCREEN				0x40
++#define MIP_EVENT_INPUT_HOVER				0x20
++#define MIP_EVENT_INPUT_PALM				0x10
++#define MIP_EVENT_INPUT_ID				0x0F
++
++#define MIP_ALERT_ESD					1
++#define MIP_ALERT_WAKEUP				2
++
++#define MIP_CTRL_STATUS_NONE				0x05
++#define MIP_CTRL_STATUS_READY				0xA0
++#define MIP_CTRL_STATUS_LOG				0x77
++
++#define MIP_CTRL_MODE_NORMAL				0
++#define MIP_CTRL_MODE_PARAM				1
++#define MIP_CTRL_MODE_TEST_CM				2
++
++#define MIP_TEST_TYPE_NONE				0
++#define MIP_TEST_TYPE_CM_DELTA				1
++#define MIP_TEST_TYPE_CM_ABS				2
++#define MIP_TEST_TYPE_CM_JITTER				3
++#define MIP_TEST_TYPE_SHORT				4
++
++#define MIP_IMG_TYPE_NONE				0
++#define MIP_IMG_TYPE_INTENSITY				1
++#define MIP_IMG_TYPE_RAWDATA				2
++#define MIP_IMG_TYPE_WAIT				255
++
++#define MIP_TRIGGER_TYPE_NONE				0
++#define MIP_TRIGGER_TYPE_INTR				1
++#define MIP_TRIGGER_TYPE_REG				2
++
++#define MIP_LOG_MODE_NONE				0
++#define MIP_LOG_MODE_TRIG				1
++
+diff --git a/drivers/input/touchscreen/melfas_mip4/melfas_mms400_test.c b/drivers/input/touchscreen/melfas_mip4/melfas_mms400_test.c
+new file mode 100644
+index 0000000..c50c35e
+--- /dev/null
++++ b/drivers/input/touchscreen/melfas_mip4/melfas_mms400_test.c
+@@ -0,0 +1,1677 @@
++/*
++ * MELFAS MMS400 Touchscreen
++ *
++ * Copyright (C) 2014-2016 MELFAS Inc.
++ *
++ *
++ * Test Functions (Optional)
++ *
++ */
++
++#include "melfas_mms400.h"
++#if MMS_USE_DEV_MODE
++
++/**
++* Dev node output to user
++*/
++static ssize_t mms_dev_fs_read(struct file *fp, char *rbuf,
++	size_t cnt, loff_t *fpos)
++{
++	struct mms_ts_info *info = fp->private_data;
++	int ret = 0;
++
++	ret = copy_to_user(rbuf, info->dev_fs_buf, cnt);
++
++	return ret;
++}
++
++/**
++* Dev node input from user
++*/
++static ssize_t mms_dev_fs_write(struct file *fp, const char *wbuf,
++	size_t cnt, loff_t *fpos)
++{
++	struct mms_ts_info *info = fp->private_data;
++	u8 *buf;
++	int ret = 0;
++	int cmd = 0;
++
++	buf = kzalloc(cnt + 1, GFP_KERNEL);
++
++	if ((buf == NULL) || copy_from_user(buf, wbuf, cnt)) {
++		dev_err(&info->client->dev, "%s [ERROR] copy_from_user\n",
++			__func__);
++		ret = -EIO;
++		goto EXIT;
++	}
++
++	cmd = buf[cnt - 1];
++
++	if (cmd == 1) {
++		if (mms_i2c_read(info, buf, (cnt - 2),
++			info->dev_fs_buf, buf[cnt - 2]))
++			dev_err(&info->client->dev, "%s [ERROR]mms_i2c_read\n",
++				__func__);
++	} else if (cmd == 2) {
++		if (mms_i2c_write(info, buf, (cnt - 1)))
++			dev_err(&info->client->dev, "%s[ERROR]mms_i2c_write\n",
++				__func__);
++	} else
++		goto EXIT;
++
++EXIT:
++	kfree(buf);
++
++	return ret;
++}
++
++/**
++* Open dev node
++*/
++static int mms_dev_fs_open(struct inode *node, struct file *fp)
++{
++	struct mms_ts_info *info = container_of(node->i_cdev,
++		struct mms_ts_info, cdev);
++
++	fp->private_data = info;
++
++	info->dev_fs_buf = kzalloc(1024 * 4, GFP_KERNEL);
++
++	return 0;
++}
++
++/**
++* Close dev node
++*/
++static int mms_dev_fs_release(struct inode *node, struct file *fp)
++{
++	struct mms_ts_info *info = fp->private_data;
++
++	kfree(info->dev_fs_buf);
++
++	return 0;
++}
++
++/**
++* Dev node info
++*/
++static const struct file_operations mms_dev_fops = {
++	.owner	= THIS_MODULE,
++	.open	= mms_dev_fs_open,
++	.release	= mms_dev_fs_release,
++	.read	= mms_dev_fs_read,
++	.write	= mms_dev_fs_write,
++};
++
++/**
++* Create dev node
++*/
++int mms_dev_create(struct mms_ts_info *info)
++{
++	struct i2c_client *client = info->client;
++	int ret = 0;
++
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [START]\n", __func__);
++#endif
++	if (alloc_chrdev_region(&info->mms_dev, 0, 1, MMS_DEVICE_NAME)) {
++		dev_err(&client->dev, "%s [ERROR] alloc_chrdev_region\n",
++			__func__);
++		ret = -ENOMEM;
++		goto ERROR;
++	}
++
++	cdev_init(&info->cdev, &mms_dev_fops);
++	info->cdev.owner = THIS_MODULE;
++
++	if (cdev_add(&info->cdev, info->mms_dev, 1)) {
++		dev_err(&client->dev, "%s [ERROR] cdev_add\n", __func__);
++		ret = -EIO;
++		goto ERROR;
++	}
++
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [DONE]\n", __func__);
++#endif
++	return 0;
++
++ERROR:
++	dev_err(&info->client->dev, "%s [ERROR]\n", __func__);
++	return 0;
++}
++
++#endif
++
++/**
++* Process table data
++*/
++static int mms_proc_table_data(struct mms_ts_info *info, u8 size,
++	u8 data_type_size, u8 data_type_sign, u8 buf_addr_h, u8 buf_addr_l,
++	u8 row_num, u8 col_num, u8 buf_col_num, u8 rotate, u8 key_num)
++{
++	char data[10];
++	int i_col, i_row;
++	int i_x, i_y;
++	int lim_x, lim_y;
++	int lim_col, lim_row;
++	int max_x = 0;
++	int max_y = 0;
++	bool flip_x = false;
++	int sValue = 0;
++	unsigned int uValue = 0;
++	int value = 0;
++	u8 wbuf[8];
++	u8 rbuf[512];
++	unsigned int buf_addr;
++	int offset;
++	int data_size = data_type_size;
++	int data_sign = data_type_sign;
++	int has_key = 0;
++	int size_screen = col_num * row_num;
++
++	memset(data, 0, 10);
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [START]\n", __func__);
++#endif
++	/* set axis */
++	if (rotate == 0) {
++		max_x = col_num;
++		max_y = row_num;
++		if (key_num > 0) {
++			max_y += 1;
++			has_key = 1;
++		}
++		flip_x = false;
++	} else if (rotate == 1) {
++		max_x = row_num;
++		max_y = col_num;
++		if (key_num > 0) {
++			max_y += 1;
++			has_key = 1;
++		}
++		flip_x = true;
++	} else {
++		dev_err(&info->client->dev, "%s [ERROR] rotate [%d]\n",
++			__func__, rotate);
++		goto ERROR;
++	}
++
++	/* get table data */
++	lim_row = row_num + has_key;
++	for (i_row = 0; i_row < lim_row; i_row++) {
++		/* get line data */
++		offset = buf_col_num * data_type_size;
++		size = col_num * data_type_size;
++
++		buf_addr = (buf_addr_h << 8) | buf_addr_l | (offset * i_row);
++		wbuf[0] = (buf_addr >> 8) & 0xFF;
++		wbuf[1] = buf_addr & 0xFF;
++		if (mms_i2c_read(info, wbuf, 2, rbuf, size)) {
++			dev_err(&info->client->dev,
++				"%s [ERROR] Read data buffer\n", __func__);
++			goto ERROR;
++		}
++
++		/* save data */
++		if ((key_num > 0) && (i_row == (lim_row - 1)))
++			lim_col = key_num;
++		else
++			lim_col = col_num;
++
++		for (i_col = 0; i_col < lim_col; i_col++) {
++			if (data_sign == 0) {
++				/* unsigned */
++				if (data_size == 1)
++					uValue = (u8)rbuf[i_col];
++				else if (data_size == 2)
++					uValue = (u16)(rbuf[data_size * i_col]
++					| (rbuf[data_size * i_col + 1] << 8));
++				else if (data_size == 4)
++					uValue = (u32)(rbuf[data_size * i_col]
++					| (rbuf[data_size * i_col + 1] << 8) |
++					(rbuf[data_size * i_col + 2] << 16) |
++					(rbuf[data_size * i_col + 3] << 24));
++				else {
++					dev_err(&info->client->dev,
++						"%s [ERROR] data_size [%d]\n",
++						__func__, data_size);
++					goto ERROR;
++				}
++				value = (int)uValue;
++			} else {
++				/* signed */
++				if (data_size == 1)
++					sValue = (s8)rbuf[i_col];
++				else if (data_size == 2)
++					sValue = (s16)(rbuf[data_size * i_col]
++					| (rbuf[data_size * i_col + 1] << 8));
++				else if (data_size == 4)
++					sValue = (s32)(rbuf[data_size * i_col]
++					| (rbuf[data_size * i_col + 1] << 8) |
++					(rbuf[data_size * i_col + 2] << 16) |
++					(rbuf[data_size * i_col + 3] << 24));
++				else {
++					dev_err(&info->client->dev,
++						"%s [ERROR] data_size [%d]\n",
++						__func__, data_size);
++					goto ERROR;
++				}
++				value = (int)sValue;
++			}
++
++			switch (rotate) {
++			case 0:
++				info->image_buf[i_row * col_num + i_col]
++					= value;
++				break;
++			case 1:
++				if ((key_num > 0) && (i_row == (lim_row - 1)))
++					info->image_buf[size_screen + i_col]
++						= value;
++				else
++					info->image_buf[i_col * row_num +
++						(row_num - 1 - i_row)] = value;
++
++				break;
++			default:
++				dev_err(&info->client->dev,
++					"%s [ERROR] rotate [%d]\n",
++					__func__, rotate);
++				goto ERROR;
++			}
++		}
++	}
++
++	/* print table header */
++	pr_err("    ");
++	snprintf(data, 10, "    ");
++/*	sprintf(data, "    ");
++	strcat(info->print_buf, data);
++*/
++	strlcat(info->print_buf, data, PAGE_SIZE);
++	memset(data, 0, 10);
++
++	switch (data_size) {
++	case 1:
++		for (i_x = 0; i_x < max_x; i_x++) {
++			pr_err("[%2d]", i_x);
++			snprintf(data, 10, "[%2d]", i_x);
++/*			sprintf(data, "[%2d]", i_x);
++			strcat(info->print_buf, data);
++*/
++			strlcat(info->print_buf, data, PAGE_SIZE);
++			memset(data, 0, 10);
++		}
++		break;
++	case 2:
++		for (i_x = 0; i_x < max_x; i_x++) {
++			pr_err("[%4d]", i_x);
++			snprintf(data, 10, "[%4d]", i_x);
++/*			sprintf(data, "[%4d]", i_x);
++			strcat(info->print_buf, data);
++*/
++			strlcat(info->print_buf, data, PAGE_SIZE);
++			memset(data, 0, 10);
++		}
++		break;
++	case 4:
++		for (i_x = 0; i_x < max_x; i_x++) {
++			pr_err("[%5d]", i_x);
++			snprintf(data, 10, "[%5d]", i_x);
++/*			sprintf(data, "[%5d]", i_x);
++			strcat(info->print_buf, data);
++*/
++			strlcat(info->print_buf, data, PAGE_SIZE);
++			memset(data, 0, 10);
++		}
++		break;
++	default:
++		dev_err(&info->client->dev, "%s [ERROR] data_size [%d]\n",
++			__func__, data_size);
++		goto ERROR;
++	}
++
++	pr_err("\n");
++	snprintf(data, 10, "\n");
++/*	sprintf(data, "\n");
++	strcat(info->print_buf, data);
++*/
++	strlcat(info->print_buf, data, PAGE_SIZE);
++	memset(data, 0, 10);
++
++	/* print table */
++	lim_y = max_y;
++	for (i_y = 0; i_y < lim_y; i_y++) {
++		/* print line header */
++		if ((key_num > 0) && (i_y == (lim_y - 1))) {
++			pr_err("[TK]");
++/*			sprintf(data, "[TK]");
++*/
++			snprintf(data, 10, "[TK]");
++		} else {
++			pr_err("[%2d]", i_y);
++/*			sprintf(data, "[%2d]", i_y);
++*/
++			snprintf(data, 10, "[%2d]", i_y);
++		}
++/*		strcat(info->print_buf, data);
++*/
++		strlcat(info->print_buf, data, PAGE_SIZE);
++		memset(data, 0, 10);
++
++		/* print line */
++		if ((key_num > 0) && (i_y == (lim_y - 1)))
++			lim_x = key_num;
++		else
++			lim_x = max_x;
++
++		for (i_x = 0; i_x < lim_x; i_x++) {
++			switch (data_size) {
++			case 1:
++				pr_err(" %3d",
++					info->image_buf[i_y * max_x + i_x]);
++				snprintf(data, 10, " %3d",
++/*				sprintf(data, " %3d",
++*/					info->image_buf[i_y * max_x + i_x]);
++				break;
++			case 2:
++				pr_err(" %5d",
++					info->image_buf[i_y * max_x + i_x]);
++				snprintf(data, 10, " %5d",
++/*				sprintf(data, " %5d",
++*/					info->image_buf[i_y * max_x + i_x]);
++				break;
++			case 4:
++				pr_err(" %6d",
++					info->image_buf[i_y * max_x + i_x]);
++				snprintf(data, 10, " %6u",
++/*					sprintf(data, " %6u",
++*/					info->image_buf[i_y * max_x + i_x]);
++				break;
++			default:
++				dev_err(&info->client->dev,
++					"%s [ERROR] data_size [%d]\n",
++					__func__, data_size);
++				goto ERROR;
++			}
++
++/*			strcat(info->print_buf, data);
++*/
++			strlcat(info->print_buf, data, PAGE_SIZE);
++			memset(data, 0, 10);
++		}
++
++		pr_err("\n");
++		snprintf(data, 10, "\n");
++/*		sprintf(data, "\n");
++		strcat(info->print_buf, data);
++*/
++		strlcat(info->print_buf, data, PAGE_SIZE);
++		memset(data, 0, 10);
++	}
++
++	pr_err("\n");
++	snprintf(data, 10, "\n");
++/*	sprintf(data, "\n");
++	strcat(info->print_buf, data);
++*/
++	strlcat(info->print_buf, data, PAGE_SIZE);
++
++	memset(data, 0, 10);
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [DONE]\n", __func__);
++#endif
++	return 0;
++
++ERROR:
++	dev_err(&info->client->dev, "%s [ERROR]\n", __func__);
++	return 1;
++}
++
++/**
++* Run test
++*/
++int mms_run_test(struct mms_ts_info *info, u8 test_type)
++{
++	int busy_cnt = 50;
++	int wait_cnt = 50;
++	u8 wbuf[8];
++	u8 rbuf[512];
++	u8 size = 0;
++	u8 row_num;
++	u8 col_num;
++	u8 buffer_col_num;
++	u8 rotate;
++	u8 key_num;
++	u8 data_type;
++	u8 data_type_size;
++	u8 data_type_sign;
++	u8 buf_addr_h;
++	u8 buf_addr_l;
++
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [START]\n", __func__);
++	dev_dbg(&info->client->dev, "%s - test_type[%d]\n",
++		__func__, test_type);
++#endif
++	while (busy_cnt--) {
++		if (info->test_busy == false)
++			break;
++
++		msleep(20);
++	}
++	mutex_lock(&info->lock);
++	info->test_busy = true;
++	mutex_unlock(&info->lock);
++
++	memset(info->print_buf, 0, PAGE_SIZE);
++
++	/* check test type */
++	switch (test_type) {
++	case MIP_TEST_TYPE_CM_DELTA:
++		snprintf(info->print_buf, PAGE_SIZE,
++			"\n=== Cm Delta Test ===\n\n");
++/*		sprintf(info->print_buf, "\n=== Cm Delta Test ===\n\n");
++*/		break;
++	case MIP_TEST_TYPE_CM_ABS:
++		snprintf(info->print_buf, PAGE_SIZE,
++			"\n=== Cm Abs Test ===\n\n");
++/*		sprintf(info->print_buf, "\n=== Cm Abs Test ===\n\n");
++*/		break;
++	case MIP_TEST_TYPE_CM_JITTER:
++		snprintf(info->print_buf, PAGE_SIZE,
++			"\n=== Cm Jitter Test ===\n\n");
++/*		sprintf(info->print_buf, "\n=== Cm Jitter Test ===\n\n");
++*/		break;
++	case MIP_TEST_TYPE_SHORT:
++		snprintf(info->print_buf, PAGE_SIZE,
++			"\n=== Short Test ===\n\n");
++/*		sprintf(info->print_buf, "\n=== Short Test ===\n\n");
++*/		break;
++	default:
++		dev_err(&info->client->dev, "%s [ERROR] Unknown test type\n",
++			__func__);
++		snprintf(info->print_buf, PAGE_SIZE,
++			"\nERROR : Unknown test type\n\n");
++/*		sprintf(info->print_buf, "\nERROR : Unknown test type\n\n");
++*/		goto ERROR;
++		break;
++	}
++
++	/* set test mode */
++	wbuf[0] = MIP_R0_CTRL;
++	wbuf[1] = MIP_R1_CTRL_MODE;
++	wbuf[2] = MIP_CTRL_MODE_TEST_CM;
++	if (mms_i2c_write(info, wbuf, 3)) {
++		dev_err(&info->client->dev, "%s [ERROR] Write test mode\n",
++			__func__);
++		goto ERROR;
++	}
++
++	/* wait ready status */
++	wait_cnt = 50;
++	while (wait_cnt--) {
++		if (mms_get_ready_status(info) == MIP_CTRL_STATUS_READY)
++			break;
++
++		msleep(50);
++#if DEBUG
++		dev_dbg(&info->client->dev, "%s - wait [%d]\n",
++			__func__, wait_cnt);
++#endif
++	}
++
++	if (wait_cnt <= 0) {
++		dev_err(&info->client->dev, "%s [ERROR] Wait timeout\n",
++			__func__);
++		goto ERROR;
++	}
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s - set control mode\n", __func__);
++#endif
++	/* set test type */
++	wbuf[0] = MIP_R0_TEST;
++	wbuf[1] = MIP_R1_TEST_TYPE;
++	wbuf[2] = test_type;
++	if (mms_i2c_write(info, wbuf, 3)) {
++		dev_err(&info->client->dev, "%s [ERROR] Write test type\n",
++			__func__);
++		goto ERROR;
++	}
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s - set test type\n", __func__);
++#endif
++	/* wait ready status */
++	wait_cnt = 50;
++	while (wait_cnt--) {
++		if (mms_get_ready_status(info) == MIP_CTRL_STATUS_READY)
++			break;
++
++		msleep(20);
++#if DEBUG
++		dev_dbg(&info->client->dev, "%s - wait [%d]\n",
++			__func__, wait_cnt);
++#endif
++	}
++
++	if (wait_cnt <= 0) {
++		dev_err(&info->client->dev, "%s [ERROR] Wait timeout\n",
++			__func__);
++		goto ERROR;
++	}
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s - ready\n", __func__);
++#endif
++	/* data format */
++	wbuf[0] = MIP_R0_TEST;
++	wbuf[1] = MIP_R1_TEST_DATA_FORMAT;
++	if (mms_i2c_read(info, wbuf, 2, rbuf, 6)) {
++		dev_err(&info->client->dev, "%s [ERROR] Read data format\n",
++			__func__);
++		goto ERROR;
++	}
++	row_num = rbuf[0];
++	col_num = rbuf[1];
++	buffer_col_num = rbuf[2];
++	rotate = rbuf[3];
++	key_num = rbuf[4];
++	data_type = rbuf[5];
++
++	data_type_sign = (data_type & 0x80) >> 7;
++	data_type_size = data_type & 0x7F;
++
++#if DEBUG
++	dev_dbg(&info->client->dev,
++		"%s - row_num[%d] col_num[%d] buffer_col_num[%d] rotate[%d]",
++		__func__, row_num, col_num, buffer_col_num, rotate);
++	dev_dbg(&info->client->dev, " key_num[%d]\n", key_num);
++	dev_dbg(&info->client->dev,
++		"%s - data_type[0x%02X] data_sign[%d] data_size[%d]\n",
++		__func__, data_type, data_type_sign, data_type_size);
++#endif
++	/* get buf addr */
++	wbuf[0] = MIP_R0_TEST;
++	wbuf[1] = MIP_R1_TEST_BUF_ADDR;
++	if (mms_i2c_read(info, wbuf, 2, rbuf, 2)) {
++		dev_err(&info->client->dev, "%s [ERROR] Read buf addr\n",
++			__func__);
++		goto ERROR;
++	}
++
++	buf_addr_l = rbuf[0];
++	buf_addr_h = rbuf[1];
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s - buf_addr[0x%02X 0x%02X]\n", __func__,
++		buf_addr_h, buf_addr_l);
++#endif
++	/* print data */
++	if (mms_proc_table_data(info, size, data_type_size, data_type_sign,
++		buf_addr_h, buf_addr_l, row_num, col_num, buffer_col_num,
++		rotate, key_num)) {
++		dev_err(&info->client->dev, "%s [ERROR] mms_proc_table_data\n",
++			__func__);
++		goto ERROR;
++	}
++
++	/* set normal mode */
++	wbuf[0] = MIP_R0_CTRL;
++	wbuf[1] = MIP_R1_CTRL_MODE;
++	wbuf[2] = MIP_CTRL_MODE_NORMAL;
++	if (mms_i2c_write(info, wbuf, 3)) {
++		dev_err(&info->client->dev, "%s [ERROR] mms_i2c_write\n",
++			__func__);
++		goto ERROR;
++	}
++
++	/* wait ready status */
++	wait_cnt = 50;
++	while (wait_cnt--) {
++		if (mms_get_ready_status(info) == MIP_CTRL_STATUS_READY)
++			break;
++
++		msleep(20);
++#if DEBUG
++		dev_dbg(&info->client->dev, "%s - wait [%d]\n",
++			__func__, wait_cnt);
++#endif
++	}
++
++	if (wait_cnt <= 0) {
++		dev_err(&info->client->dev, "%s [ERROR] Wait timeout\n",
++			__func__);
++		goto ERROR;
++	}
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s - set normal mode\n", __func__);
++#endif
++	/* exit */
++	mutex_lock(&info->lock);
++	info->test_busy = false;
++	mutex_unlock(&info->lock);
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [DONE]\n", __func__);
++#endif
++	return 0;
++
++ERROR:
++	mutex_lock(&info->lock);
++	info->test_busy = false;
++	mutex_unlock(&info->lock);
++
++	dev_err(&info->client->dev, "%s [ERROR]\n", __func__);
++	return 1;
++}
++
++/**
++* Read image data
++*/
++int mms_get_image(struct mms_ts_info *info, u8 image_type)
++{
++	int busy_cnt = 50;
++	int wait_cnt = 50;
++	u8 wbuf[8];
++	u8 rbuf[512];
++	u8 size = 0;
++	u8 row_num;
++	u8 col_num;
++	u8 buffer_col_num;
++	u8 rotate;
++	u8 key_num;
++	u8 data_type;
++	u8 data_type_size;
++	u8 data_type_sign;
++	u8 buf_addr_h;
++	u8 buf_addr_l;
++
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [START]\n", __func__);
++	dev_dbg(&info->client->dev, "%s - image_type[%d]\n",
++		__func__, image_type);
++#endif
++	while (busy_cnt--) {
++		if (info->test_busy == false)
++			break;
++
++		msleep(20);
++	}
++	mutex_lock(&info->lock);
++	info->test_busy = true;
++	mutex_unlock(&info->lock);
++
++	memset(info->print_buf, 0, PAGE_SIZE);
++
++	/* check image type */
++	switch (image_type) {
++	case MIP_IMG_TYPE_INTENSITY:
++		dev_dbg(&info->client->dev, "=== Intensity Image ===\n");
++		snprintf(info->print_buf, PAGE_SIZE,
++			"\n=== Intensity Image ===\n\n");
++/*		sprintf(info->print_buf, "\n=== Intensity Image ===\n\n");
++*/		break;
++	case MIP_IMG_TYPE_RAWDATA:
++		dev_dbg(&info->client->dev, "=== Rawdata Image ===\n");
++		snprintf(info->print_buf, PAGE_SIZE,
++			"\n=== Rawdata Image ===\n\n");
++/*		sprintf(info->print_buf, "\n=== Rawdata Image ===\n\n");
++*/		break;
++	default:
++		dev_err(&info->client->dev, "%s [ERROR] Unknown image type\n",
++			__func__);
++		snprintf(info->print_buf, PAGE_SIZE,
++			"\nERROR : Unknown image type\n\n");
++/*		sprintf(info->print_buf, "\nERROR : Unknown image type\n\n");
++*/		goto ERROR;
++		break;
++	}
++
++	/* set image type */
++	wbuf[0] = MIP_R0_IMAGE;
++	wbuf[1] = MIP_R1_IMAGE_TYPE;
++	wbuf[2] = image_type;
++	if (mms_i2c_write(info, wbuf, 3)) {
++		dev_err(&info->client->dev, "%s [ERROR] Write image type\n",
++			__func__);
++		goto ERROR;
++	}
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s - set image type\n", __func__);
++#endif
++	/* wait ready status */
++	wait_cnt = 50;
++	while (wait_cnt--) {
++		if (mms_get_ready_status(info) == MIP_CTRL_STATUS_READY)
++			break;
++
++		msleep(20);
++#if DEBUG
++		dev_dbg(&info->client->dev, "%s - wait [%d]\n",
++			__func__, wait_cnt);
++#endif
++	}
++
++	if (wait_cnt <= 0) {
++		dev_err(&info->client->dev, "%s [ERROR] Wait timeout\n",
++			__func__);
++		goto ERROR;
++	}
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s - ready\n", __func__);
++#endif
++	/* data format */
++	wbuf[0] = MIP_R0_IMAGE;
++	wbuf[1] = MIP_R1_IMAGE_DATA_FORMAT;
++	if (mms_i2c_read(info, wbuf, 2, rbuf, 6)) {
++		dev_err(&info->client->dev, "%s [ERROR] Read data format\n",
++			__func__);
++		goto ERROR;
++	}
++	row_num = rbuf[0];
++	col_num = rbuf[1];
++	buffer_col_num = rbuf[2];
++	rotate = rbuf[3];
++	key_num = rbuf[4];
++	data_type = rbuf[5];
++
++	data_type_sign = (data_type & 0x80) >> 7;
++	data_type_size = data_type & 0x7F;
++
++#if DEBUG
++	dev_dbg(&info->client->dev,
++		"%s - row_num[%d] col_num[%d] buffer_col_num[%d] rotate[%d]",
++		__func__, row_num, col_num, buffer_col_num, rotate);
++	dev_dbg(&info->client->dev, " key_num[%d]\n", key_num);
++	dev_dbg(&info->client->dev,
++		"%s - data_type[0x%02X] data_sign[%d] data_size[%d]\n",
++		__func__, data_type, data_type_sign, data_type_size);
++#endif
++	/* get buf addr */
++	wbuf[0] = MIP_R0_IMAGE;
++	wbuf[1] = MIP_R1_IMAGE_BUF_ADDR;
++	if (mms_i2c_read(info, wbuf, 2, rbuf, 2)) {
++		dev_err(&info->client->dev, "%s [ERROR] Read buf addr\n",
++			__func__);
++		goto ERROR;
++	}
++
++	buf_addr_l = rbuf[0];
++	buf_addr_h = rbuf[1];
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s - buf_addr[0x%02X 0x%02X]\n",
++		__func__, buf_addr_h, buf_addr_l);
++#endif
++	/* print data */
++	if (mms_proc_table_data(info, size, data_type_size, data_type_sign,
++		buf_addr_h, buf_addr_l, row_num, col_num, buffer_col_num,
++		rotate, key_num)) {
++		dev_err(&info->client->dev, "%s [ERROR] mms_proc_table_data\n",
++			__func__);
++		goto ERROR;
++	}
++
++	/* clear image type */
++	wbuf[0] = MIP_R0_IMAGE;
++	wbuf[1] = MIP_R1_IMAGE_TYPE;
++	wbuf[2] = MIP_IMG_TYPE_NONE;
++	if (mms_i2c_write(info, wbuf, 3)) {
++		dev_err(&info->client->dev, "%s [ERROR] Clear image type\n",
++			__func__);
++		goto ERROR;
++	}
++
++	/* exit */
++	mutex_lock(&info->lock);
++	info->test_busy = false;
++	mutex_unlock(&info->lock);
++
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [DONE]\n", __func__);
++#endif
++	return 0;
++
++ERROR:
++	mutex_lock(&info->lock);
++	info->test_busy = false;
++	mutex_unlock(&info->lock);
++
++	dev_err(&info->client->dev, "%s [ERROR]\n", __func__);
++	return 1;
++}
++
++#if MMS_USE_TEST_MODE
++
++/**
++* Print chip firmware version
++*/
++static ssize_t mms_sys_fw_version(struct device *dev,
++	struct device_attribute *attr, char *buf)
++{
++	struct mms_ts_info *info = dev_get_drvdata(dev);
++	u8 data[255];
++	int ret;
++	u8 rbuf[16];
++
++	memset(info->print_buf, 0, PAGE_SIZE);
++
++	if (mms_get_fw_version(info, rbuf)) {
++		dev_err(&info->client->dev, "%s [ERROR] mms_get_fw_version\n",
++			__func__);
++
++		snprintf(data, 255, "F/W Version : ERROR\n");
++/*		sprintf(data, "F/W Version : ERROR\n");
++*/		goto ERROR;
++	}
++
++	dev_info(&info->client->dev,
++		"%s - F/W Version : %02X.%02X %02X.%02X %02X.%02X %02X.%02X\n",
++		__func__, rbuf[0], rbuf[1], rbuf[2], rbuf[3], rbuf[4], rbuf[5],
++		rbuf[6], rbuf[7]);
++	snprintf(data, 255,
++/*	sprintf(data,
++*/		"F/W Version : %02X.%02X %02X.%02X %02X.%02X %02X.%02X\n",
++		rbuf[0], rbuf[1], rbuf[2], rbuf[3], rbuf[4], rbuf[5],
++		rbuf[6], rbuf[7]);
++
++ERROR:
++/*	strcat(info->print_buf, data);
++*/
++	strlcat(info->print_buf, data, PAGE_SIZE);
++
++	ret = snprintf(buf, PAGE_SIZE, "%s\n", info->print_buf);
++	return ret;
++}
++
++/**
++* Print channel info
++*/
++static ssize_t mms_sys_info(struct device *dev,
++	struct device_attribute *attr, char *buf)
++{
++	struct mms_ts_info *info = dev_get_drvdata(dev);
++	u8 data[255];
++	int ret;
++	u8 rbuf[32];
++	u8 wbuf[8];
++	int res_x, res_y;
++
++	memset(info->print_buf, 0, PAGE_SIZE);
++	snprintf(data, 10, "\n");
++/*	sprintf(data, "\n");
++	strcat(info->print_buf, data);
++*/
++	strlcat(info->print_buf, data, PAGE_SIZE);
++
++	mms_get_fw_version(info, rbuf);
++	snprintf(data, 255,
++		"F/W Version : %02X.%02X %02X.%02X %02X.%02X %02X.%#X\n",
++/*	sprintf(data, "F/W Version : %02X.%02X %02X.%02X %02X.%02X %02X.%#X\n",
++*/		rbuf[0], rbuf[1], rbuf[2], rbuf[3], rbuf[4], rbuf[5],
++		rbuf[6], rbuf[7]);
++/*	strcat(info->print_buf, data);
++*/
++	strlcat(info->print_buf, data, PAGE_SIZE);
++
++	wbuf[0] = MIP_R0_INFO;
++	wbuf[1] = MIP_R1_INFO_PRODUCT_NAME;
++	mms_i2c_read(info, wbuf, 2, rbuf, 16);
++	snprintf(data, 255, "Product Name : %s\n", rbuf);
++/*	sprintf(data, "Product Name : %s\n", rbuf);
++	strcat(info->print_buf, data);
++*/
++	strlcat(info->print_buf, data, PAGE_SIZE);
++
++	wbuf[0] = MIP_R0_INFO;
++	wbuf[1] = MIP_R1_INFO_RESOLUTION_X;
++	mms_i2c_read(info, wbuf, 2, rbuf, 7);
++	res_x = (rbuf[0]) | (rbuf[1] << 8);
++	res_y = (rbuf[2]) | (rbuf[3] << 8);
++	snprintf(data, 255, "Resolution : X[%d] Y[%d]\n", res_x, res_y);
++/*	sprintf(data, "Resolution : X[%d] Y[%d]\n", res_x, res_y);
++	strcat(info->print_buf, data);
++*/
++	strlcat(info->print_buf, data, PAGE_SIZE);
++	snprintf(data, 255, "Node Num : X[%d] Y[%d] Key[%d]\n",
++/*	sprintf(data, "Node Num : X[%d] Y[%d] Key[%d]\n",
++*/		rbuf[4], rbuf[5], rbuf[6]);
++/*	strcat(info->print_buf, data);
++*/
++	strlcat(info->print_buf, data, PAGE_SIZE);
++
++	ret = snprintf(buf, PAGE_SIZE, "%s\n", info->print_buf);
++	return ret;
++}
++
++/**
++* Device enable
++*/
++static ssize_t mms_sys_device_enable(struct device *dev,
++	struct device_attribute *attr, char *buf)
++{
++	struct mms_ts_info *info = dev_get_drvdata(dev);
++	struct i2c_client *client = info->client;
++	u8 data[255];
++	int ret;
++
++	memset(info->print_buf, 0, PAGE_SIZE);
++
++	mms_enable(info);
++
++	dev_info(&client->dev, "%s", __func__);
++
++	snprintf(data, 255, "Device : Enabled\n");
++/*	sprintf(data, "Device : Enabled\n");
++	strcat(info->print_buf,data);
++*/
++	strlcat(info->print_buf, data, PAGE_SIZE);
++
++	ret = snprintf(buf, PAGE_SIZE, "%s\n", info->print_buf);
++	return ret;
++}
++
++/**
++* Device disable
++*/
++static ssize_t mms_sys_device_disable(struct device *dev,
++	struct device_attribute *attr, char *buf)
++{
++	struct mms_ts_info *info = dev_get_drvdata(dev);
++	struct i2c_client *client = info->client;
++	u8 data[255];
++	int ret;
++
++	memset(info->print_buf, 0, PAGE_SIZE);
++
++	mms_disable(info);
++
++	dev_info(&client->dev, "%s", __func__);
++
++	snprintf(data, 255, "Device : Disabled\n");
++/*	sprintf(data, "Device : Disabled\n");
++	strcat(info->print_buf,data);
++*/
++	strlcat(info->print_buf, data, PAGE_SIZE);
++
++	ret = snprintf(buf, PAGE_SIZE, "%s\n", info->print_buf);
++	return ret;
++}
++
++/**
++* Enable IRQ
++*/
++static ssize_t mms_sys_irq_enable(struct device *dev,
++	struct device_attribute *attr, char *buf)
++{
++	struct mms_ts_info *info = dev_get_drvdata(dev);
++	struct i2c_client *client = info->client;
++	u8 data[255];
++	int ret;
++
++	memset(info->print_buf, 0, PAGE_SIZE);
++
++	enable_irq(info->irq);
++
++	dev_info(&client->dev, "%s\n", __func__);
++
++	snprintf(data, 255, "IRQ : Enabled\n");
++/*	sprintf(data, "IRQ : Enabled\n");
++	strcat(info->print_buf,data);
++*/
++	strlcat(info->print_buf, data, PAGE_SIZE);
++
++	ret = snprintf(buf, PAGE_SIZE, "%s\n", info->print_buf);
++	return ret;
++}
++
++/**
++* Disable IRQ
++*/
++static ssize_t mms_sys_irq_disable(struct device *dev,
++	struct device_attribute *attr, char *buf)
++{
++	struct mms_ts_info *info = dev_get_drvdata(dev);
++	struct i2c_client *client = info->client;
++	u8 data[255];
++	int ret;
++
++	memset(info->print_buf, 0, PAGE_SIZE);
++
++	disable_irq(info->irq);
++	mms_clear_input(info);
++
++	dev_info(&client->dev, "%s\n", __func__);
++
++	snprintf(data, 255, "IRQ : Disabled\n");
++/*	sprintf(data, "IRQ : Disabled\n");
++	strcat(info->print_buf,data);
++*/
++	strlcat(info->print_buf, data, PAGE_SIZE);
++
++	ret = snprintf(buf, PAGE_SIZE, "%s\n", info->print_buf);
++	return ret;
++}
++
++/**
++* Power on
++*/
++static ssize_t mms_sys_power_on(struct device *dev,
++	struct device_attribute *attr, char *buf)
++{
++	struct mms_ts_info *info = dev_get_drvdata(dev);
++	struct i2c_client *client = info->client;
++	u8 data[255];
++	int ret;
++
++	memset(info->print_buf, 0, PAGE_SIZE);
++
++	mms_power_on(info);
++
++	dev_info(&client->dev, "%s", __func__);
++
++	snprintf(data, 255, "Power : On\n");
++/*	sprintf(data, "Power : On\n");
++	strcat(info->print_buf,data);
++*/
++	strlcat(info->print_buf, data, PAGE_SIZE);
++
++	ret = snprintf(buf, PAGE_SIZE, "%s\n", info->print_buf);
++	return ret;
++}
++
++/**
++* Power off
++*/
++static ssize_t mms_sys_power_off(struct device *dev,
++	struct device_attribute *attr, char *buf)
++{
++	struct mms_ts_info *info = dev_get_drvdata(dev);
++	struct i2c_client *client = info->client;
++	u8 data[255];
++	int ret;
++
++	memset(info->print_buf, 0, PAGE_SIZE);
++
++	mms_power_off(info);
++
++	dev_info(&client->dev, "%s", __func__);
++
++	snprintf(data, 255, "Power : Off\n");
++/*	sprintf(data, "Power : Off\n");
++	strcat(info->print_buf,data);
++*/
++	strlcat(info->print_buf, data, PAGE_SIZE);
++
++	ret = snprintf(buf, PAGE_SIZE, "%s\n", info->print_buf);
++	return ret;
++}
++
++/**
++* Reboot chip
++*/
++static ssize_t mms_sys_reboot(struct device *dev,
++	struct device_attribute *attr, char *buf)
++{
++	struct mms_ts_info *info = dev_get_drvdata(dev);
++	struct i2c_client *client = info->client;
++	u8 data[255];
++	int ret;
++
++	memset(info->print_buf, 0, PAGE_SIZE);
++
++	dev_info(&client->dev, "%s", __func__);
++
++	disable_irq(info->irq);
++	mms_clear_input(info);
++	mms_reboot(info);
++	enable_irq(info->irq);
++
++	snprintf(data, 255, "Reboot\n");
++/*	sprintf(data, "Reboot\n");
++	strcat(info->print_buf,data);
++*/
++	strlcat(info->print_buf, data, PAGE_SIZE);
++
++	ret = snprintf(buf, PAGE_SIZE, "%s\n", info->print_buf);
++	return ret;
++}
++
++/**
++* Set glove mode
++*/
++static ssize_t mms_sys_glove_mode_store(struct device *dev,
++	struct device_attribute *attr, const char *buf, size_t count)
++{
++	struct mms_ts_info *info = dev_get_drvdata(dev);
++	u8 wbuf[8];
++
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [START]\n", __func__);
++#endif
++	wbuf[0] = MIP_R0_CTRL;
++	wbuf[1] = MIP_R1_CTRL_GLOVE_MODE;
++	wbuf[2] = buf[0];
++
++	if ((buf[0] == 0) || (buf[0] == 1)) {
++		if (mms_i2c_write(info, wbuf, 3))
++			dev_err(&info->client->dev,
++				"%s [ERROR] mms_i2c_write\n", __func__);
++		else
++			dev_info(&info->client->dev, "%s - value[%d]\n",
++				__func__, buf[0]);
++
++	} else
++		dev_err(&info->client->dev, "%s [ERROR] Unknown value\n",
++			__func__);
++
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [DONE]\n", __func__);
++#endif
++	return count;
++}
++
++/**
++* Get glove mode
++*/
++static ssize_t mms_sys_glove_mode_show(struct device *dev,
++	struct device_attribute *attr, char *buf)
++{
++	struct mms_ts_info *info = dev_get_drvdata(dev);
++	u8 data[255];
++	int ret;
++	u8 wbuf[8];
++	u8 rbuf[4];
++
++	memset(info->print_buf, 0, PAGE_SIZE);
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [START]\n", __func__);
++#endif
++	wbuf[0] = MIP_R0_CTRL;
++	wbuf[1] = MIP_R1_CTRL_GLOVE_MODE;
++
++	if (mms_i2c_read(info, wbuf, 2, rbuf, 1)) {
++		dev_err(&info->client->dev, "%s [ERROR] mms_i2c_read\n",
++			__func__);
++		snprintf(data, 255, "\nGlove Mode : ERROR\n");
++/*		sprintf(data, "\nGlove Mode : ERROR\n");
++*/	} else {
++		dev_info(&info->client->dev, "%s - value[%d]\n",
++			__func__, rbuf[0]);
++		snprintf(data, 255, "\nGlove Mode : %d\n", rbuf[0]);
++/*		sprintf(data, "\nGlove Mode : %d\n", rbuf[0]);
++*/	}
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [DONE]\n", __func__);
++#endif
++/*	strcat(info->print_buf, data);
++*/
++	strlcat(info->print_buf, data, PAGE_SIZE);
++	ret = snprintf(buf, PAGE_SIZE, "%s\n", info->print_buf);
++	return ret;
++}
++
++/**
++* Set charger mode
++*/
++static ssize_t mms_sys_charger_mode_store(struct device *dev,
++	struct device_attribute *attr, const char *buf, size_t count)
++{
++	struct mms_ts_info *info = dev_get_drvdata(dev);
++	u8 wbuf[8];
++
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [START]\n", __func__);
++#endif
++	wbuf[0] = MIP_R0_CTRL;
++	wbuf[1] = MIP_R1_CTRL_CHARGER_MODE;
++	wbuf[2] = buf[0];
++
++	if ((buf[0] == 0) || (buf[0] == 1)) {
++		if (mms_i2c_write(info, wbuf, 3))
++			dev_err(&info->client->dev,
++				"%s [ERROR] mms_i2c_write\n", __func__);
++		else
++			dev_info(&info->client->dev, "%s - value[%d]\n",
++				__func__, buf[0]);
++	} else
++		dev_err(&info->client->dev, "%s [ERROR] Unknown value\n",
++			__func__);
++
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [DONE]\n", __func__);
++#endif
++	return count;
++}
++
++/**
++* Get charger mode
++*/
++static ssize_t mms_sys_charger_mode_show(struct device *dev,
++	struct device_attribute *attr, char *buf)
++{
++	struct mms_ts_info *info = dev_get_drvdata(dev);
++	u8 data[255];
++	int ret;
++	u8 wbuf[8];
++	u8 rbuf[4];
++
++	memset(info->print_buf, 0, PAGE_SIZE);
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [START]\n", __func__);
++#endif
++	wbuf[0] = MIP_R0_CTRL;
++	wbuf[1] = MIP_R1_CTRL_CHARGER_MODE;
++
++	if (mms_i2c_read(info, wbuf, 2, rbuf, 1)) {
++		dev_err(&info->client->dev, "%s [ERROR] mms_i2c_read\n",
++			__func__);
++		snprintf(data, 255, "\nCharger Mode : ERROR\n");
++/*		sprintf(data, "\nCharger Mode : ERROR\n");
++*/	} else {
++		dev_info(&info->client->dev, "%s - value[%d]\n",
++			__func__, rbuf[0]);
++		snprintf(data, 255, "\nCharger Mode : %d\n", rbuf[0]);
++/*		sprintf(data, "\nCharger Mode : %d\n", rbuf[0]);
++*/	}
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [DONE]\n", __func__);
++#endif
++/*	strcat(info->print_buf, data);
++*/
++	strlcat(info->print_buf, data, PAGE_SIZE);
++	ret = snprintf(buf, PAGE_SIZE, "%s\n", info->print_buf);
++	return ret;
++}
++
++/**
++* Set cover window mode
++*/
++static ssize_t mms_sys_window_mode_store(struct device *dev,
++	struct device_attribute *attr, const char *buf, size_t count)
++{
++	struct mms_ts_info *info = dev_get_drvdata(dev);
++	u8 wbuf[8];
++
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [START]\n", __func__);
++#endif
++	wbuf[0] = MIP_R0_CTRL;
++	wbuf[1] = MIP_R1_CTRL_WINDOW_MODE;
++	wbuf[2] = buf[0];
++
++	if ((buf[0] == 0) || (buf[0] == 1)) {
++		if (mms_i2c_write(info, wbuf, 3))
++			dev_err(&info->client->dev,
++				"%s [ERROR] mms_i2c_write\n", __func__);
++		else
++			dev_info(&info->client->dev, "%s - value[%d]\n",
++				__func__, buf[0]);
++
++	} else
++		dev_err(&info->client->dev, "%s [ERROR] Unknown value\n",
++			__func__);
++
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [DONE]\n", __func__);
++#endif
++	return count;
++}
++
++/**
++* Get cover window mode
++*/
++static ssize_t mms_sys_window_mode_show(struct device *dev,
++	struct device_attribute *attr, char *buf)
++{
++	struct mms_ts_info *info = dev_get_drvdata(dev);
++	u8 data[255];
++	int ret;
++	u8 wbuf[8];
++	u8 rbuf[4];
++
++	memset(info->print_buf, 0, PAGE_SIZE);
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [START]\n", __func__);
++#endif
++	wbuf[0] = MIP_R0_CTRL;
++	wbuf[1] = MIP_R1_CTRL_WINDOW_MODE;
++
++	if (mms_i2c_read(info, wbuf, 2, rbuf, 1)) {
++		dev_err(&info->client->dev, "%s [ERROR] mms_i2c_read\n",
++			__func__);
++		snprintf(data, 255, "\nWindow Mode : ERROR\n");
++/*		sprintf(data, "\nWindow Mode : ERROR\n");
++*/	} else {
++		dev_info(&info->client->dev, "%s - value[%d]\n", __func__,
++			rbuf[0]);
++		snprintf(data, 255, "\nWindow Mode : %d\n", rbuf[0]);
++/*		sprintf(data, "\nWindow Mode : %d\n", rbuf[0]);
++*/	}
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [DONE]\n", __func__);
++#endif
++/*	strcat(info->print_buf, data);
++*/
++	strlcat(info->print_buf, data, PAGE_SIZE);
++
++	ret = snprintf(buf, PAGE_SIZE, "%s\n", info->print_buf);
++	return ret;
++}
++
++/**
++* Set palm rejection mode
++*/
++static ssize_t mms_sys_palm_rejection_mode_store(struct device *dev,
++	struct device_attribute *attr, const char *buf, size_t count)
++{
++	struct mms_ts_info *info = dev_get_drvdata(dev);
++	u8 wbuf[8];
++
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [START]\n", __func__);
++#endif
++	wbuf[0] = MIP_R0_CTRL;
++	wbuf[1] = MIP_R1_CTRL_PALM_REJECTION;
++	wbuf[2] = buf[0];
++
++	if ((buf[0] == 0) || (buf[0] == 1)) {
++		if (mms_i2c_write(info, wbuf, 3))
++			dev_err(&info->client->dev,
++				"%s [ERROR] mms_i2c_write\n", __func__);
++		else
++			dev_info(&info->client->dev, "%s - value[%d]\n",
++				__func__, buf[0]);
++
++	} else
++		dev_err(&info->client->dev, "%s [ERROR] Unknown value\n",
++			__func__);
++
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [DONE]\n", __func__);
++#endif
++	return count;
++}
++
++/**
++* Get palm rejection mode
++*/
++static ssize_t mms_sys_palm_rejection_mode_show(struct device *dev,
++	struct device_attribute *attr, char *buf)
++{
++	struct mms_ts_info *info = dev_get_drvdata(dev);
++	u8 data[255];
++	int ret;
++	u8 wbuf[8];
++	u8 rbuf[4];
++
++	memset(info->print_buf, 0, PAGE_SIZE);
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [START]\n", __func__);
++#endif
++	wbuf[0] = MIP_R0_CTRL;
++	wbuf[1] = MIP_R1_CTRL_PALM_REJECTION;
++
++	if (mms_i2c_read(info, wbuf, 2, rbuf, 1)) {
++		dev_err(&info->client->dev, "%s [ERROR] mms_i2c_read\n",
++			__func__);
++		snprintf(data, 255, "\nPalm Rejection Mode : ERROR\n");
++/*		sprintf(data, "\nPalm Rejection Mode : ERROR\n");
++*/	} else {
++		dev_info(&info->client->dev, "%s - value[%d]\n",
++			__func__, rbuf[0]);
++		snprintf(data, 255, "\nPalm Rejection Mode : %d\n", rbuf[0]);
++/*		sprintf(data, "\nPalm Rejection Mode : %d\n", rbuf[0]);
++*/	}
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [DONE]\n", __func__);
++#endif
++/*	strcat(info->print_buf, data);
++*/
++	strlcat(info->print_buf, data, PAGE_SIZE);
++	ret = snprintf(buf, PAGE_SIZE, "%s\n", info->print_buf);
++	return ret;
++}
++
++/**
++* Sysfs print intensity image
++*/
++static ssize_t mms_sys_intensity(struct device *dev,
++	struct device_attribute *attr, char *buf)
++{
++	struct mms_ts_info *info = dev_get_drvdata(dev);
++	int ret, err = -1;
++
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [START]\n", __func__);
++#endif
++	if (mms_get_image(info, MIP_IMG_TYPE_INTENSITY)) {
++		dev_err(&info->client->dev, "%s [ERROR] mms_get_image\n",
++			__func__);
++		return err;
++	}
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [DONE]\n", __func__);
++#endif
++	ret = snprintf(buf, PAGE_SIZE, "%s\n", info->print_buf);
++	return ret;
++}
++
++/**
++* Sysfs print rawdata image
++*/
++static ssize_t mms_sys_rawdata(struct device *dev,
++	struct device_attribute *attr, char *buf)
++{
++	struct mms_ts_info *info = dev_get_drvdata(dev);
++	int ret, err = -1;
++
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [START]\n", __func__);
++#endif
++	if (mms_get_image(info, MIP_IMG_TYPE_RAWDATA)) {
++		dev_err(&info->client->dev, "%s [ERROR] mms_get_image\n",
++			__func__);
++		return err;
++	}
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [DONE]\n", __func__);
++#endif
++	ret = snprintf(buf, PAGE_SIZE, "%s\n", info->print_buf);
++	return ret;
++}
++
++/**
++* Sysfs run cm delta test
++*/
++static ssize_t mms_sys_test_cm_delta(struct device *dev,
++	struct device_attribute *attr, char *buf)
++{
++	struct mms_ts_info *info = dev_get_drvdata(dev);
++	int ret, err = -1;
++
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [START]\n", __func__);
++#endif
++	if (mms_run_test(info, MIP_TEST_TYPE_CM_DELTA)) {
++		dev_err(&info->client->dev, "%s [ERROR] mms_run_test\n",
++			__func__);
++		return err;
++	}
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [DONE]\n", __func__);
++#endif
++	ret = snprintf(buf, PAGE_SIZE, "%s\n", info->print_buf);
++	return ret;
++}
++
++/**
++* Sysfs run cm abs test
++*/
++static ssize_t mms_sys_test_cm_abs(struct device *dev,
++	struct device_attribute *attr, char *buf)
++{
++	struct mms_ts_info *info = dev_get_drvdata(dev);
++	int ret, err = -1;
++
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [START]\n", __func__);
++#endif
++	if (mms_run_test(info, MIP_TEST_TYPE_CM_ABS)) {
++		dev_err(&info->client->dev, "%s [ERROR] mms_run_test\n",
++			__func__);
++		return err;
++	}
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [DONE]\n", __func__);
++#endif
++	ret = snprintf(buf, PAGE_SIZE, "%s\n", info->print_buf);
++	return ret;
++}
++
++/**
++* Sysfs run cm jitter test
++*/
++static ssize_t mms_sys_test_cm_jitter(struct device *dev,
++	struct device_attribute *attr, char *buf)
++{
++	struct mms_ts_info *info = dev_get_drvdata(dev);
++	int ret, err = -1;
++
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [START]\n", __func__);
++#endif
++	if (mms_run_test(info, MIP_TEST_TYPE_CM_JITTER)) {
++		dev_err(&info->client->dev, "%s [ERROR] mms_run_test\n",
++			__func__);
++		return err;
++	}
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [DONE]\n", __func__);
++#endif
++	ret = snprintf(buf, PAGE_SIZE, "%s\n", info->print_buf);
++	return ret;
++}
++
++/**
++* Sysfs run short test
++*/
++static ssize_t mms_sys_test_short(struct device *dev,
++	struct device_attribute *attr, char *buf)
++{
++	struct mms_ts_info *info = dev_get_drvdata(dev);
++	int ret, err = -1;
++
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [START]\n", __func__);
++#endif
++	if (mms_run_test(info, MIP_TEST_TYPE_SHORT)) {
++		dev_err(&info->client->dev, "%s [ERROR] mms_run_test\n",
++			__func__);
++		return err;
++	}
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [DONE]\n", __func__);
++#endif
++	ret = snprintf(buf, PAGE_SIZE, "%s\n", info->print_buf);
++	return ret;
++}
++/**
++* Sysfs functions
++*/
++static DEVICE_ATTR(fw_version, 0666, mms_sys_fw_version, NULL);
++static DEVICE_ATTR(info, 0666, mms_sys_info, NULL);
++static DEVICE_ATTR(device_enable, 0666, mms_sys_device_enable, NULL);
++static DEVICE_ATTR(device_disable, 0666, mms_sys_device_disable, NULL);
++static DEVICE_ATTR(irq_enable, 0666, mms_sys_irq_enable, NULL);
++static DEVICE_ATTR(irq_disable, 0666, mms_sys_irq_disable, NULL);
++static DEVICE_ATTR(power_on, 0666, mms_sys_power_on, NULL);
++static DEVICE_ATTR(power_off, 0666, mms_sys_power_off, NULL);
++static DEVICE_ATTR(reboot, 0666, mms_sys_reboot, NULL);
++static DEVICE_ATTR(mode_glove, 0666, mms_sys_glove_mode_show,
++	mms_sys_glove_mode_store);
++static DEVICE_ATTR(mode_charger, 0666, mms_sys_charger_mode_show,
++	mms_sys_charger_mode_store);
++static DEVICE_ATTR(mode_cover_window, 0666, mms_sys_window_mode_show,
++	mms_sys_window_mode_store);
++static DEVICE_ATTR(mode_palm_rejection, 0666, mms_sys_palm_rejection_mode_show,
++	mms_sys_palm_rejection_mode_store);
++static DEVICE_ATTR(image_intensity, 0666, mms_sys_intensity, NULL);
++static DEVICE_ATTR(image_rawdata, 0666, mms_sys_rawdata, NULL);
++static DEVICE_ATTR(test_cm_delta, 0666, mms_sys_test_cm_delta, NULL);
++static DEVICE_ATTR(test_cm_abs, 0666, mms_sys_test_cm_abs, NULL);
++static DEVICE_ATTR(test_cm_jitter, 0666, mms_sys_test_cm_jitter, NULL);
++static DEVICE_ATTR(test_short, 0666, mms_sys_test_short, NULL);
++/**
++* Sysfs attr list info
++*/
++static struct attribute *mms_test_attr[] = {
++	&dev_attr_fw_version.attr,
++	&dev_attr_info.attr,
++	&dev_attr_device_enable.attr,
++	&dev_attr_device_disable.attr,
++	&dev_attr_irq_enable.attr,
++	&dev_attr_irq_disable.attr,
++	&dev_attr_power_on.attr,
++	&dev_attr_power_off.attr,
++	&dev_attr_reboot.attr,
++	&dev_attr_mode_glove.attr,
++	&dev_attr_mode_charger.attr,
++	&dev_attr_mode_cover_window.attr,
++	&dev_attr_mode_palm_rejection.attr,
++	&dev_attr_image_intensity.attr,
++	&dev_attr_image_rawdata.attr,
++	&dev_attr_test_cm_delta.attr,
++	&dev_attr_test_cm_abs.attr,
++	&dev_attr_test_cm_jitter.attr,
++	&dev_attr_test_short.attr,
++	NULL,
++};
++
++/**
++* Sysfs attr group info
++*/
++static const struct attribute_group mms_test_attr_group = {
++	.attrs = mms_test_attr,
++};
++
++/**
++* Create sysfs test functions
++*/
++int mms_sysfs_create(struct mms_ts_info *info)
++{
++	struct i2c_client *client = info->client;
++
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [START]\n", __func__);
++#endif
++	if (sysfs_create_group(&client->dev.kobj, &mms_test_attr_group)) {
++		dev_err(&client->dev, "%s [ERROR] sysfs_create_group\n",
++			__func__);
++		return -EAGAIN;
++	}
++
++	info->print_buf = kzalloc(sizeof(u8) * 4096, GFP_KERNEL);
++	info->image_buf = kzalloc(sizeof(int) * ((info->node_x * info->node_y)
++		+ info->node_key), GFP_KERNEL);
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [DONE]\n", __func__);
++#endif
++	return 0;
++}
++
++/**
++* Remove sysfs test functions
++*/
++void mms_sysfs_remove(struct mms_ts_info *info)
++{
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [START]\n", __func__);
++#endif
++	sysfs_remove_group(&info->client->dev.kobj, &mms_test_attr_group);
++
++	kfree(info->print_buf);
++	kfree(info->image_buf);
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [DONE]\n", __func__);
++#endif
++}
++
++#endif
++
+diff --git a/drivers/input/touchscreen/melfas_mip4/melfas_mms438_fw_update.c b/drivers/input/touchscreen/melfas_mip4/melfas_mms438_fw_update.c
+new file mode 100644
+index 0000000..bb0e3b6
+--- /dev/null
++++ b/drivers/input/touchscreen/melfas_mip4/melfas_mms438_fw_update.c
+@@ -0,0 +1,519 @@
++/*
++ * MELFAS MMS438/449/458 Touchscreen
++ *
++ * Copyright (C) 2014-2016 MELFAS Inc.
++ *
++ *
++ * Firmware update functions
++ *
++ */
++
++#include "melfas_mms400.h"
++
++/* ISC Info */
++#define ISC_PAGE_SIZE				128
++
++/* ISC Command */
++#define ISC_CMD_ERASE_ALL		{0xFB, 0x4A, 0x00, 0x15, 0x00, 0x00}
++#define ISC_CMD_ERASE_PAGE		{0xFB, 0x4A, 0x00, 0x8F, 0x00, 0x00}
++#define ISC_CMD_READ_PAGE		{0xFB, 0x4A, 0x00, 0xC2, 0x00, 0x00}
++#define ISC_CMD_WRITE_PAGE		{0xFB, 0x4A, 0x00, 0xA5, 0x00, 0x00}
++#define ISC_CMD_PROGRAM_PAGE		{0xFB, 0x4A, 0x00, 0x54, 0x00, 0x00}
++#define ISC_CMD_READ_STATUS		{0xFB, 0x4A, 0x36, 0xC2, 0x00, 0x00}
++#define ISC_CMD_EXIT			{0xFB, 0x4A, 0x00, 0x66, 0x00, 0x00}
++
++/* ISC Status */
++#define ISC_STATUS_BUSY				0x96
++#define ISC_STATUS_DONE				0xAD
++
++/**
++* Read ISC status
++*/
++static int mms_isc_read_status(struct mms_ts_info *info)
++{
++	struct i2c_client *client = info->client;
++	u8 cmd[6] =  ISC_CMD_READ_STATUS;
++	u8 result = 0;
++	int cnt = 100;
++	int ret = 0;
++	int err = -1;
++
++	struct i2c_msg msg[2] = {
++		{
++			.addr = client->addr,
++			.flags = 0,
++			.buf = cmd,
++			.len = 6,
++		}, {
++			.addr = client->addr,
++			.flags = I2C_M_RD,
++			.buf = &result,
++			.len = 1,
++		},
++	};
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [START]\n", __func__);
++#endif
++	do {
++		if (i2c_transfer(client->adapter, msg, ARRAY_SIZE(msg)) !=
++			ARRAY_SIZE(msg)) {
++			dev_err(&info->client->dev,
++				"%s [ERROR] i2c_transfer\n", __func__);
++			return err;
++		}
++
++		if (result == ISC_STATUS_DONE) {
++			ret = 0;
++			break;
++		} else if (result == ISC_STATUS_BUSY) {
++			ret = -1;
++			msleep(20);
++		} else {
++			dev_err(&info->client->dev,
++				"%s [ERROR] wrong value [0x%02X]\n",
++				__func__, result);
++			ret = -1;
++			msleep(20);
++		}
++	} while (--cnt);
++
++	if (!cnt) {
++		dev_err(&info->client->dev,
++			"%s [ERROR] count overflow - cnt %d, status 0x%02X\n",
++			__func__, cnt, result);
++		goto ERROR;
++	}
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [DONE]\n", __func__);
++#endif
++	return ret;
++
++ERROR:
++	return ret;
++}
++
++/**
++* Command : Erase Page
++*/
++static int mms_isc_erase_page(struct mms_ts_info *info, int offset)
++{
++	int err = -1;
++	u8 write_buf[6] = ISC_CMD_ERASE_PAGE;
++
++	struct i2c_msg msg[1] = {
++		{
++			.addr = info->client->addr,
++			.flags = 0,
++			.buf = write_buf,
++			.len = 6,
++		},
++	};
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [START]\n", __func__);
++#endif
++	write_buf[4] = (u8)(((offset) >> 8) & 0xFF);
++	write_buf[5] = (u8)(((offset) >> 0) & 0xFF);
++	if (i2c_transfer(info->client->adapter, msg, ARRAY_SIZE(msg)) !=
++		ARRAY_SIZE(msg)) {
++		dev_err(&info->client->dev, "%s [ERROR] i2c_transfer\n",
++			__func__);
++		goto ERROR;
++	}
++
++	if (mms_isc_read_status(info) != 0)
++		goto ERROR;
++
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [DONE] - Offset [0x%04X]\n",
++		__func__, offset);
++#endif
++	return 0;
++
++ERROR:
++	return err;
++}
++
++/**
++* Command : Read Page
++*/
++static int mms_isc_read_page(struct mms_ts_info *info, int offset, u8 *data)
++{
++	int err = -1;
++	u8 write_buf[6] = ISC_CMD_READ_PAGE;
++
++	struct i2c_msg msg[2] = {
++		{
++			.addr = info->client->addr,
++			.flags = 0,
++			.buf = write_buf,
++			.len = 6,
++		}, {
++			.addr = info->client->addr,
++			.flags = I2C_M_RD,
++			.buf = data,
++			.len = ISC_PAGE_SIZE,
++		},
++	};
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [START]\n", __func__);
++#endif
++	write_buf[4] = (u8)(((offset) >> 8) & 0xFF);
++	write_buf[5] = (u8)(((offset) >> 0) & 0xFF);
++	if (i2c_transfer(info->client->adapter, msg, ARRAY_SIZE(msg)) !=
++		ARRAY_SIZE(msg)) {
++		dev_err(&info->client->dev, "%s [ERROR] i2c_transfer\n",
++			__func__);
++		goto ERROR;
++	}
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [DONE] - Offset [0x%04X]\n",
++		__func__, offset);
++#endif
++	return 0;
++
++ERROR:
++	return err;
++}
++
++/**
++* Command : Program Page
++*/
++static int mms_isc_program_page(struct mms_ts_info *info, int offset,
++	const u8 *data, int length)
++{
++	int err = -1;
++	u8 write_buf[134] = ISC_CMD_PROGRAM_PAGE;
++
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [START]\n", __func__);
++#endif
++	if (length > 128) {
++		dev_err(&info->client->dev,
++			"%s [ERROR] page length overflow\n", __func__);
++		goto ERROR;
++	}
++
++	write_buf[4] = (u8)(((offset) >> 8) & 0xFF);
++	write_buf[5] = (u8)(((offset) >> 0) & 0xFF);
++
++	memcpy(&write_buf[6], data, length);
++
++	if (i2c_master_send(info->client, write_buf, length+6) !=
++		length + 6) {
++		dev_err(&info->client->dev, "%s [ERROR] i2c_master_send\n",
++			__func__);
++		goto ERROR;
++	}
++
++	if (mms_isc_read_status(info) != 0)
++		goto ERROR;
++
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [DONE] - Offset[0x%04X] Length[%d]\n",
++		__func__, offset, length);
++#endif
++	return 0;
++
++ERROR:
++	return err;
++}
++
++/**
++* Command : Exit ISC
++*/
++static int mms_isc_exit(struct mms_ts_info *info)
++{
++	int err = -1;
++	u8 write_buf[6] = ISC_CMD_EXIT;
++
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [START]\n", __func__);
++#endif
++	if (i2c_master_send(info->client, write_buf, 6) != 6) {
++		dev_err(&info->client->dev, "%s [ERROR] i2c_master_send\n",
++			__func__);
++		goto ERROR;
++	}
++#if DEBUG
++	dev_dbg(&info->client->dev, "%s [DONE]\n", __func__);
++#endif
++	return 0;
++
++ERROR:
++	return err;
++}
++
++/**
++* Flash chip firmware (main function)
++*/
++int mms_flash_fw(struct mms_ts_info *info, const u8 *fw_data, size_t fw_size,
++	bool force, bool section)
++{
++	struct mms_bin_hdr *fw_hdr;
++	struct mms_fw_img **img;
++	struct i2c_client *client = info->client;
++	int i;
++	int retires = 3;
++	int ret;
++	int nRet;
++	int nStartAddr;
++	int nWriteLength;
++	int nLast;
++	int nOffset;
++	int nTransferLength;
++	int size;
++	u8 *data;
++	u8 *cpydata;
++
++	int offset = sizeof(struct mms_bin_hdr);
++
++	bool update_flag = false;
++	bool update_flags[MMS_FW_MAX_SECT_NUM] = {false, };
++
++	u16 ver_chip[MMS_FW_MAX_SECT_NUM];
++	u16 ver_file[MMS_FW_MAX_SECT_NUM];
++
++	int offsetStart = 0;
++	u8 initData[ISC_PAGE_SIZE];
++
++	memset(initData, 0xFF, sizeof(initData));
++#if DEBUG
++	dev_dbg(&client->dev, "%s [START]\n", __func__);
++#endif
++	/* Read firmware file */
++	fw_hdr = (struct mms_bin_hdr *)fw_data;
++	img = kcalloc(6, sizeof(*img) * fw_hdr->section_num, GFP_KERNEL);
++
++	/* Check firmware file */
++	if (memcmp(CHIP_FW_CODE, &fw_hdr->tag[4], 4)) {
++		dev_err(&client->dev, "%s [ERROR] F/W file is not for %s\n",
++			__func__, CHIP_NAME);
++		nRet = fw_err_file_type;
++		goto ERROR;
++	}
++
++	/* Reboot chip */
++	mms_reboot(info);
++
++	/* Check chip firmware version */
++	while (retires--) {
++		if (mms_get_fw_version_u16(info, ver_chip))
++			mms_reboot(info);
++		else
++			break;
++
++	}
++	if (retires < 0) {
++		dev_err(&client->dev,
++			"%s [ERROR] cannot read chip firmware version\n",
++			__func__);
++
++		memset(ver_chip, 0xFFFF, sizeof(ver_chip));
++		dev_info(&client->dev,
++			"%s - Chip firmware version is set to [0xFFFF]\n",
++			__func__);
++	} else
++		dev_info(&client->dev,
++			" Chip firmware version [%#X %#X %#X %#X]\n",
++			ver_chip[0], ver_chip[1], ver_chip[2], ver_chip[3]);
++
++	/* Set update flag */
++	dev_info(&client->dev,
++		"Firmware file info : Sections[%d] Offset[%#X] Length[%#X]\n",
++		fw_hdr->section_num, fw_hdr->binary_offset,
++		fw_hdr->binary_length);
++
++	for (i = 0; i < fw_hdr->section_num; i++, offset +=
++		sizeof(struct mms_fw_img)) {
++		img[i] = (struct mms_fw_img *)(fw_data + offset);
++		ver_file[i] = img[i]->version;
++
++		dev_info(&client->dev,
++			"Section info: Section[%d] Version[%#X] StartPage[%d]",
++			i, img[i]->version, img[i]->start_page);
++		dev_info(&client->dev,
++			" EndPage[%d] Offset[0x%08X] Length[0x%08X]\n",
++			img[i]->end_page, img[i]->offset, img[i]->length);
++
++		/* Compare section version */
++		if (ver_chip[i] != ver_file[i]) {
++			/* Set update flag */
++			update_flag = true;
++			update_flags[i] = true;
++
++			dev_info(&client->dev,
++				"%s - Section [%d] is need to be updated.",
++				__func__, i);
++			dev_info(&client->dev,
++				" Version : Chip[0x%04X] File[0x%04X]\n",
++				ver_chip[i], ver_file[i]);
++		}
++	}
++
++	/* Set force update flag */
++	if (force == true) {
++		update_flag = true;
++		update_flags[0] = true;
++		update_flags[1] = true;
++		update_flags[2] = true;
++		update_flags[3] = true;
++
++		dev_info(&client->dev, "%s - Force update\n", __func__);
++	}
++
++	/* Exit when up-to-date */
++	if (update_flag == false) {
++		nRet = fw_err_uptodate;
++		dev_dbg(&client->dev,
++			"%s [DONE] Chip firmware is already up-to-date\n",
++			__func__);
++		goto EXIT;
++	}
++
++	/* Set start addr offset */
++	if (section == true) {
++		if (update_flags[0] == true)
++			/* boot */
++			offsetStart = img[0]->start_page;
++		else if (update_flags[1] == true)
++			/* core */
++			offsetStart = img[1]->start_page;
++		else if (update_flags[2] == true)
++			/* custom */
++			offsetStart = img[2]->start_page;
++		else if (update_flags[3] == true)
++			/* param */
++			offsetStart = img[3]->start_page;
++	} else
++		offsetStart = 0;
++
++	offsetStart = offsetStart * 1024;
++
++	/* Load firmware data */
++	data = kcalloc(1, sizeof(u8) * fw_hdr->binary_length, GFP_KERNEL);
++	size = fw_hdr->binary_length;
++	cpydata = kzalloc(ISC_PAGE_SIZE, GFP_KERNEL);
++
++	/* Check firmware size */
++	if (size % ISC_PAGE_SIZE != 0)
++		size += (ISC_PAGE_SIZE - (size % ISC_PAGE_SIZE));
++
++	nStartAddr = 0;
++	nWriteLength = size;
++	nLast = nStartAddr + nWriteLength;
++
++	if ((nLast) % 8 != 0) {
++		nRet = fw_err_file_type;
++		dev_err(&client->dev, "%s [ERROR] Firmware size mismatch\n",
++			__func__);
++		goto ERROR;
++	} else
++		memcpy(data, fw_data + fw_hdr->binary_offset,
++			fw_hdr->binary_length);
++
++	/* Set address */
++	nOffset = nStartAddr + nWriteLength - ISC_PAGE_SIZE;
++	nTransferLength = ISC_PAGE_SIZE;
++
++	/* Erase first page */
++	dev_info(&client->dev, "%s - Erase first page : Offset[0x%04X]\n",
++		__func__, offsetStart);
++	nRet = mms_isc_erase_page(info, offsetStart);
++	if (nRet != 0) {
++		dev_err(&client->dev, "%s [ERROR] clear first page failed\n",
++			__func__);
++		goto ERROR;
++	}
++
++	/* Flash firmware */
++	dev_info(&client->dev, "Start Download : Offset Start[%#X] End[%#X]\n",
++		nOffset, offsetStart);
++	while (nOffset >= offsetStart) {
++		dev_info(&client->dev, "%s - Downloading : Offset[0x%04X]\n",
++			__func__, nOffset);
++
++		/* Program (erase and write) a page */
++		nRet = mms_isc_program_page(info, nOffset, &data[nOffset],
++			nTransferLength);
++		if (nRet != 0) {
++			dev_err(&client->dev, "%s [ERROR] isc_program_page\n",
++				__func__);
++			goto ERROR;
++		}
++
++		/* Verify (read and compare) */
++		if (mms_isc_read_page(info, nOffset, cpydata)) {
++			dev_err(&client->dev, "%s [ERROR] mms_isc_read_page\n",
++				__func__);
++			goto ERROR;
++		}
++
++		if (memcmp(&data[nOffset], cpydata, ISC_PAGE_SIZE)) {
++#if MMS_FW_UPDATE_DEBUG
++			print_hex_dump(KERN_ERR, "Firmware Page Write : ",
++				DUMP_PREFIX_OFFSET, 16, 1, data,
++				ISC_PAGE_SIZE, false);
++			print_hex_dump(KERN_ERR, "Firmware Page Read : ",
++				DUMP_PREFIX_OFFSET, 16, 1, cpydata,
++				ISC_PAGE_SIZE, false);
++#endif
++			dev_err(&client->dev, "%s [ERROR]verify page failed\n",
++				__func__);
++
++			ret = -1;
++			goto ERROR;
++		}
++
++		nOffset -= nTransferLength;
++	}
++
++	/* Exit ISC */
++	nRet = mms_isc_exit(info);
++	if (nRet != 0) {
++		dev_err(&client->dev, "%s [ERROR] mms_isc_exit\n", __func__);
++		goto ERROR;
++	}
++
++	/* Reboot chip */
++	mms_reboot(info);
++
++	/* Check chip firmware version */
++	if (mms_get_fw_version_u16(info, ver_chip)) {
++		dev_err(&client->dev,
++			"[ERROR]can't read chip firmware version after flash");
++
++		nRet = -1;
++		goto ERROR;
++	} else {
++		for (i = 0; i < fw_hdr->section_num; i++) {
++			if (ver_chip[i] != ver_file[i]) {
++				dev_err(&client->dev,
++		"%s [ERROR] version mismatch after flash.", __func__);
++				dev_err(&client->dev,
++		" Section[%d]: Chip[0x%04X] != File[0x%04X]\n",
++					i, ver_chip[i], ver_file[i]);
++
++				nRet = -1;
++				goto ERROR;
++			}
++		}
++	}
++
++	nRet = 0;
++#if DEBUG
++	dev_dbg(&client->dev, "%s [DONE]\n", __func__);
++#endif
++	dev_info(&client->dev, "Firmware update completed\n");
++	goto EXIT;
++
++ERROR:
++	dev_err(&client->dev, "%s [ERROR]\n", __func__);
++	dev_err(&client->dev, "Firmware update failed\n");
++	goto EXIT;
++
++EXIT:
++	kfree(img);
++
++	return nRet;
++}
++
+-- 
+1.9.1
+

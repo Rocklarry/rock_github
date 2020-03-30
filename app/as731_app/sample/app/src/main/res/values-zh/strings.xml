@@ -1,0 +1,31 @@
+<resources>
+    <string name="app_name">AVS</string>
+    <string name="connectDeviceButton">1. 连接设备</string>
+    <string name="getDeviceIPButton">3. 获取设备IP</string>
+    <string name="setupWifiTitle">2. 设置Wifi</string>
+    <string name="ssidLabel">SSID</string>
+    <string name="reloadLink">[ 加载 ]</string>
+    <string name="passwordLabel">密码</string>
+    <string name="hide">[ 隐藏 ] </string>
+    <string name="show">[ 显示 ] </string>
+    <string name="connectToAP">连接</string>
+    <string name="reconnectInternetAP">重新连接WIFI</string>
+    <string name="authAVSTitle">4. AVS 认证</string>
+    <string name="connectingDevice">连接设备... </string>
+    <string name="gettingDevice">获取设备IP.. .</string>
+    <string name="authrizingDevice">Autorizing device with amazon</string>
+    <string name="getDeviceIPMessage">设备IP </string>
+    <string name="connectDeviceFailed">连接设备失败</string>
+    <string name="getAPIPfailed">连接失败或者获取ip失败\n在尝试\"3. 获取设备IP\"</string>
+    <string name="getDeviceFailed">获取IP失败\n 请确保您的手机和设备连接到相同的wififi现在，回到主页 \n 在尝试 \"3. 获取设备IP\" 再试一次</string>
+    <string name="avsAuthFailed">AVS 认证失败</string>
+    <string name="avsAuthCancelled">AVS Authorization cancelled</string>
+    <string name="inSameWifiNote">请确保您的手机连接到您将发送到设备的相同的SSID</string>
+    <string name="getAPListFailed">SSID seems incorrect, please click \"[ reload ]\"</string>
+    <string name="sendingwifiInfo">发送wifi信息:ssid密码…</string>
+    <string name="success">连接成功</string>
+    <string name="sentWifiInfo">发射wifi信息成功 点击 \"重新连接WIFI按钮\"</string>
+    <string name="deviceConnectedWifi">设备正在连接一些wifi</string>
+    <string name="deviceInSameWifi">设备在相同的wifi现在，回到主页</string>
+    <string name="getIPWarning">设备不能使用\n 如果没有为设备设置wifi \n 点击 \"1. 连接设备\"\n 如果您已经为设备设置了wifi \n 点击 \"3.获取设备IP\"</string>
+</resources>

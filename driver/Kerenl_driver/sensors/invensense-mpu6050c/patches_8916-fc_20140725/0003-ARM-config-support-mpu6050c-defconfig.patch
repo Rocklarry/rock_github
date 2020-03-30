@@ -1,0 +1,29 @@
+From 12588a43dbe95e8b089a933bbc28473a7e76082c Mon Sep 17 00:00:00 2001
+From: Yukun Wan <wanyk0402@thundersoft.com>
+Date: Fri, 25 Jul 2014 14:40:13 +0800
+Subject: [PATCH 3/3] ARM:config: support mpu6050c defconfig
+
+Defconfig support mpu6050c
+
+Change-Id: I210ded45d6db213d049d601b39865f64fe16dd24
+Signed-off-by: Yukun Wan <wanyk0402@thundersoft.com>
+---
+ arch/arm/configs/msm8916_defconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/configs/msm8916_defconfig b/arch/arm/configs/msm8916_defconfig
+index 3fc5fa2..fe67e8c 100644
+--- a/arch/arm/configs/msm8916_defconfig
++++ b/arch/arm/configs/msm8916_defconfig
+@@ -259,7 +259,7 @@ CONFIG_INPUT_GPIO=m
+ CONFIG_SENSORS_LIS3DH=y
+ CONFIG_SENSORS_MPU6050=y
+ CONFIG_SENSORS_AKM09911=y
+-CONFIG_SENSORS_BMA2X2=y
++#ONFIG_SENSORS_BMA2X2 is not set
+ CONFIG_SENSORS_MMC3416X=y
+ CONFIG_SENSORS_AKM8963=y
+ CONFIG_SERIAL_MSM_HSL=y
+-- 
+1.7.9.5
+

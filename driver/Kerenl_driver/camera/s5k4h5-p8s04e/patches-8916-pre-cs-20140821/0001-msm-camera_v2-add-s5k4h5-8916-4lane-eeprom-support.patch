@@ -1,0 +1,88 @@
+From 93e3aff53e3149421df8ea0307a4d3f4afe628b4 Mon Sep 17 00:00:00 2001
+From: Lin Zhang <zhanglin0425@thundersoft.com>
+Date: Wed, 23 Jul 2014 16:03:24 +0800
+Subject: [PATCH] msm: camera_v2: add s5k4h5 8916 4lane eeprom support
+
+Add s5k4h5 4lane eeprom support for 8916-pre-cs
+
+Change-Id: If0ce7c5dd1945e2858be11ffd11855a983595144
+Signed-off-by: Lin Zhang <zhanglin0425@thundersoft.com>
+---
+ .../dts/qcom/msm8916-camera-sensor-qrd-skui.dtsi   |   56 +++++++++++++++++++-
+ 1 file changed, 54 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8916-camera-sensor-qrd-skui.dtsi b/arch/arm/boot/dts/qcom/msm8916-camera-sensor-qrd-skui.dtsi
+index 1071cc5..bac07b1 100644
+--- a/arch/arm/boot/dts/qcom/msm8916-camera-sensor-qrd-skui.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8916-camera-sensor-qrd-skui.dtsi
+@@ -111,7 +111,7 @@
+ 		qcom,csid-sd-index = <0>;
+ 		qcom,mount-angle = <90>;
+ 		qcom,actuator-src = <&actuator0>;
+-		qcom,eeprom-src = <&eeprom0>;
++		qcom,eeprom-src = <&eeprom1>;
+ 		qcom,led-flash-src = <&led_flash0>;
+ 		cam_vdig-supply = <&pm8916_l2>;
+ 		cam_vana-supply = <&pm8916_l17>;
+@@ -187,4 +187,56 @@
+ 		clock-names = "cam_src_clk", "cam_clk";
+ 	};
+ 
+-};
+\ No newline at end of file
++	eeprom1: qcom,eeprom@6d{
++		cell-index = <1>;
++		reg = <0x6d>;
++		qcom,eeprom-name = "sunny_p8s04e";
++		compatible = "qcom,eeprom";
++		qcom,slave-addr = <0x20>;
++		qcom,cci-master = <0>;
++		qcom,num-blocks = <1>;
++
++		qcom,page0 = <1 0x3A02 2 0x00 1 1>;
++		qcom,pageen0 = <1 0x3A00 2 0x01 1 1>;
++		qcom,poll0 = <0 0x0 2 0 1 1>;
++		qcom,mem0 = <43 0x3A04 2 0 1 0>;
++
++		cam_vdig-supply = <&pm8916_l2>;
++		cam_vana-supply = <&pm8916_l17>;
++		cam_vio-supply = <&pm8916_l6>;
++		cam_vaf-supply = <&pm8916_l10>;
++		qcom,cam-vreg-name = "cam_vdig", "cam_vio", "cam_vana",
++							"cam_vaf";
++		qcom,cam-vreg-type = <0 1 0 0>;
++		qcom,cam-vreg-min-voltage = <1200000 0 2850000 2800000>;
++		qcom,cam-vreg-max-voltage = <1200000 0 2850000 2800000>;
++		qcom,cam-vreg-op-mode = <200000 0 80000 100000>;
++		pinctrl-names = "cam_default", "cam_suspend";
++		pinctrl-0 = <&cam_sensor_mclk0_default &cam_sensor_rear_default>;
++		pinctrl-1 = <&cam_sensor_mclk0_sleep &cam_sensor_rear_sleep>;
++		gpios = <&msm_gpio 26 0>,
++			<&msm_gpio 35 0>,
++			<&msm_gpio 34 0>;
++		qcom,gpio-reset = <1>;
++		qcom,gpio-standby = <2>;
++		qcom,gpio-req-tbl-num = <0 1 2 >;
++		qcom,gpio-req-tbl-flags = <1 0 0>;
++		qcom,gpio-req-tbl-label = "CAMIF_MCLK",
++			"CAM_RESET1",
++			"CAM_STANDBY";
++
++		qcom,cam-power-seq-type = "sensor_vreg",
++			"sensor_gpio", "sensor_gpio",
++			"sensor_clk";
++		qcom,cam-power-seq-val = "cam_vaf",
++			"sensor_gpio_reset",
++			"sensor_gpio_standby",
++			"sensor_cam_mclk" ;
++		qcom,cam-power-seq-cfg-val = <1 1 1 23880000>;
++		qcom,cam-power-seq-delay = <1 10 10 5>;
++
++		clocks = <&clock_gcc clk_mclk0_clk_src>,
++			<&clock_gcc clk_gcc_camss_mclk0_clk>;
++		clock-names = "cam_src_clk", "cam_clk";
++	};
++};
+-- 
+1.7.9.5
+

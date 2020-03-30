@@ -1,0 +1,40 @@
+From 6707391809fb09be7ca239d9fedc9a80f3ab4feb Mon Sep 17 00:00:00 2001
+From: longxw <longxw0410@thundersoft.com>
+Date: Wed, 10 Dec 2014 17:28:56 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support mpu6500 devicetree
+
+Devicetree support mpu6500
+
+Change-Id: Ie8e3e340f5294daf9df42b3471f8afea426fba02
+Signed-off-by: Xiaowu Long <longxw0410@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi |   13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+index 8691993..0efa4f24 100755
+--- a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+@@ -82,6 +82,19 @@
+ 		avago,ga-value = <560>;
+ 	};
+ 
++	 mpu6500@68{
++		compatible = "invn,mpu6500";
++		reg = <0x68>;
++		interrupt-parent = <&msm_gpio>;
++		interrupts = <113 0x2>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++		invn,gpio-int = <&msm_gpio 113 0x2>;
++		invn,gyro_poll_ms = <200>;
++		invn,accel_poll_ms = <200>;
++		invn,place = "Portrait Up Back Side";
++	};
++
+ 	bosch@18 { /* Accelerometer sensor */
+ 		compatible = "bosch,bma2x2";
+ 		reg = <0x18>;
+-- 
+1.7.9.5
+

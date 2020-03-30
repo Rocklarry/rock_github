@@ -1,0 +1,58 @@
+From 2d0e51126e7fc8085f73305881e1d2347b6fd50b Mon Sep 17 00:00:00 2001
+From: lizc1023 <lizc1023@thundersoft.com>
+Date: Tue, 4 Nov 2014 17:10:27 +0800
+Subject: [PATCH 1/2] ARM:dts:msm: support ctp truly s3508
+
+Add CTP IHV-TRULY@CD4F1387@S3508 device tree
+
+Change-Id: I879a9219dcfbf7f529971d23440792bf39e36d5d
+Signed-off-by: Li Zhanchao <lizc1023@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi |   23 +++++++++++++++++++++--
+ 1 files changed, 21 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+index 8691993..3f67eb8 100755
+--- a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+@@ -190,16 +190,35 @@
+ 			focaltech,fw-auto-cal;
+ 			focaltech,ignore-id-check;
+ 		};
++		synaptics@20 {
++			compatible = "synaptics,rmi4";
++			reg = <0x20>;
++			interrupt-parent = <&msm_gpio>;
++			interrupts = <13 0x2008>;
++			vdd-supply = <&pm8916_l17>;
++			vcc_i2c-supply = <&pm8916_l6>;
++			pinctrl-names = "pmx_ts_active","pmx_ts_suspend","pmx_ts_release";
++			pinctrl-0 = <&ts_int_active &ts_reset_active>;
++			pinctrl-1 = <&ts_int_suspend &ts_reset_suspend>;
++			synaptics,display-coords = <0 0 1440 2560>;
++			synaptics,panel-coords = <0 0 1440 2650>;
++			synaptics,irq-gpio = <&msm_gpio 13 0x2008>;
++			synaptics,reset-gpio = <&msm_gpio 12 0x0>;
++			synaptics,fw-image-name = "PR1468813.img";
++			synaptics,i2c-pull-up;
++			synaptics,power-down;
++			synaptics,disable-gpios;
++		};
+ 	};
+ 
+ 	gen-vkeys {
+ 		compatible = "qcom,gen-vkeys";
+-		label = "ft5x06_ts";
++		label = "synaptics_rmi4_i2c";
+ 		qcom,disp-maxx = <1080>;
+ 		qcom,disp-maxy = <1920>;
+ 		qcom,panel-maxx = <1080>;
+ 		qcom,panel-maxy = <2098>;
+-		qcom,key-codes = <139 172 158>;
++		/*qcom,key-codes = <139 172 158>;*/
+ 		qcom,y-offset = <0>;
+ 	};
+ 
+-- 
+1.7.4.1
+

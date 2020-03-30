@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    >
+    <RelativeLayout
+        android:id="@+id/backguand"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        >
+        <LinearLayout
+            android:id="@+id/button"
+            android:layout_centerInParent="true"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+            <Button
+                android:layout_weight="1"
+                android:id="@+id/volum_add"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="volume +"/>
+            <Button
+                android:layout_weight="1"
+                android:id="@+id/volum_down"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="volume -"/>
+        </LinearLayout>
+        <LinearLayout
+           android:layout_below="@id/button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+        <Button
+            android:layout_weight="1"
+            android:id="@+id/camera_mute"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="CAMERA MUTE"/>
+        <Button
+            android:layout_weight="1"
+            android:id="@+id/mic_mute"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="MIC MUTE"/>
+        </LinearLayout>
+
+    </RelativeLayout>
+    <include layout="@layout/layout_result"/>
+</LinearLayout>

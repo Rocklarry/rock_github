@@ -1,0 +1,29 @@
+From 1e3cc4e4ff85a05f63ba1e14c4b48f8d3751f714 Mon Sep 17 00:00:00 2001
+From: zhangss1028 <zhangss1028@zhangss1028-OptiPlex-3020.(none)>
+Date: Fri, 23 Oct 2015 15:56:48 +0800
+Subject: [PATCH] ARM: dts: msm: Add ov8856 camera dtsi
+
+Add ov8856 devicetree description for msm8952
+
+Change-Id: Ie45d27d7b9d17dd25818543cf593ebb485bf291c
+Signed-off-by: Shaosong Zhang <zhangss1028@thundersoft.com>
+---
+ .../boot/dts/qcom/msm8952-camera-sensor-qrd.dtsi   |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8952-camera-sensor-qrd.dtsi b/arch/arm/boot/dts/qcom/msm8952-camera-sensor-qrd.dtsi
+index f155ef5..7178c50 100644
+--- a/arch/arm/boot/dts/qcom/msm8952-camera-sensor-qrd.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8952-camera-sensor-qrd.dtsi
+@@ -190,7 +190,7 @@
+ 		cell-index = <0>;
+ 		compatible = "qcom,camera";
+ 		reg = <0x0>;
+-		qcom,special-support-sensors = "ov13850_q13v06k";
++		qcom,special-support-sensors = "ov13850_q13v06k","ov8856";
+ 		qcom,csiphy-sd-index = <0>;
+ 		qcom,csid-sd-index = <0>;
+ 		qcom,mount-angle = <90>;
+-- 
+1.7.9.5
+

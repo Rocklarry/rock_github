@@ -1,0 +1,1102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AndroidLayouts">
+    <shared>
+      <config />
+    </shared>
+  </component>
+  <component name="AndroidLogFilters">
+    <option name="TOOL_WINDOW_CONFIGURED_FILTER" value="Show only selected application" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="f6f577f9-1fb1-4351-b768-7a6405f7580d" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/app/src/main/assets/fonts/DroidSansFallback.ttf" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/app/build.gradle" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/proguard-rules.pro" beforeDir="false" afterPath="$PROJECT_DIR$/app/proguard-rules.pro" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/androidTest/java/com/a3nod/lenovo/sparrowfactory/ExampleInstrumentedTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/androidTest/java/com/a3nod/lenovo/sparrowfactory/ExampleInstrumentedTest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/AndroidManifest.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/AndroidManifest.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/assets/aaa.mp4" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/assets/aaa.mp4" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/BackLightTestActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/BackLightTestActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/Constant.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/Constant.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/CrashHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/CrashHandler.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/GetPhotoActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/GetPhotoActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/MoreActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/MoreActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/NavigationActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/NavigationActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/PCMessageReceiver.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/PCMessageReceiver.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/RebootActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/RebootActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/ShowRGBActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/ShowRGBActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/ShowSNActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/ShowSNActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/SparrowApplication.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/SparrowApplication.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/SystemScreenManager.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/SystemScreenManager.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/TemperatureActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/TemperatureActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/TremoloActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/TremoloActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/driver/AccelerometerService.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/driver/AccelerometerService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/driver/AmpSetupValues.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/driver/AmpSetupValues.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/driver/Bh1745.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/driver/Bh1745.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/driver/Bh1745SensorDriver.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/driver/Bh1745SensorDriver.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/driver/Bma253.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/driver/Bma253.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/driver/Bma253AccelerometerDriver.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/driver/Bma253AccelerometerDriver.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/driver/CalibrateCallback.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/driver/CalibrateCallback.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/driver/ProximityService.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/driver/ProximityService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/driver/Tas5782m.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/driver/Tas5782m.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/driver/Vcnl4200.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/driver/Vcnl4200.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/driver/Vcnl4200SensorDriver.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/driver/Vcnl4200SensorDriver.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/facecamera/CameraActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/facecamera/CameraActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/facecamera/FaceView.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/facecamera/FaceView.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/interact/ConnectManager.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/interact/ConnectManager.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/interact/ConnectManagerService.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/interact/ConnectManagerService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/interact/Protocol.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/interact/Protocol.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/GetWifiMacUtils.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/GetWifiMacUtils.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/MMITestProcessManager.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/MMITestProcessManager.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/MainActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/MainActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/MainGridAdapter.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/MainGridAdapter.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/PaletteView.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/PaletteView.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/backlight/BackLightActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/backlight/BackLightActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/bluetooth/BTDevice.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/bluetooth/BTDevice.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/bluetooth/BltoothAdapter.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/bluetooth/BltoothAdapter.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/bluetooth/BluetoothActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/bluetooth/BluetoothActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/button/ButtonActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/button/ButtonActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/camera/AutoFitTextureView.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/camera/AutoFitTextureView.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/camera/TestActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/camera/TestActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/datacheck/DataCheckTestActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/datacheck/DataCheckTestActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/datacheck/DataEntity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/datacheck/DataEntity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/lcd/LcdActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/lcd/LcdActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/multipoint/MulipointView.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/multipoint/MulipointView.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/multipoint/MultPointActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/multipoint/MultPointActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/result/ASSYEntity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/result/ASSYEntity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/result/ResultActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/result/ResultActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/result/TableTextView.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/result/TableTextView.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/result/UntilTool.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/result/UntilTool.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/sensor/LightSensor.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/sensor/LightSensor.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/sensor/LightSensorActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/sensor/LightSensorActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/sensor/MyGVSensor.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/sensor/MyGVSensor.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/sensor/MyGVSensorActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/sensor/MyGVSensorActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/sensor/PSensor.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/sensor/PSensor.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/sensor/PSensorActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/sensor/PSensorActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/speaker/SpeakerActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/speaker/SpeakerActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/speaker/SpeakerSwitch.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/speaker/SpeakerSwitch.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/tp/MyPools.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/tp/MyPools.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/tp/TPTestActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/tp/TPTestActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/tp/TPTestView.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/tp/TPTestView.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/wifi/HttpUtil.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/wifi/HttpUtil.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/wifi/WifiActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/wifi/WifiActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/wifi/WifiAdapter.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/wifi/WifiAdapter.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/wifi/WifiManageUtils.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/wifi/WifiManageUtils.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/pcba/PCBABaseActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/pcba/PCBABaseActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/pcba/PCBACameraTestActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/pcba/PCBACameraTestActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/pcba/PCBADataCheckTestActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/pcba/PCBADataCheckTestActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/pcba/PCBAGSensorActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/pcba/PCBAGSensorActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/pcba/PCBAHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/pcba/PCBAHandler.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/pcba/PCBALSensorActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/pcba/PCBALSensorActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/pcba/PCBAMicTestActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/pcba/PCBAMicTestActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/pcba/PCBAPSensorActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/pcba/PCBAPSensorActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/pcba/PCBARGBActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/pcba/PCBARGBActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/pcba/PCBASpeakerTestActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/pcba/PCBASpeakerTestActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/pcba/PcbaButtonActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/pcba/PcbaButtonActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/pcba/PcbaLcdActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/pcba/PcbaLcdActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/pcba/PcbaTestActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/pcba/PcbaTestActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/pcba/PcbaTpActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/pcba/PcbaTpActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/BootupReceiver.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/BootupReceiver.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/EngineeringModeActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/EngineeringModeActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/FailActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/FailActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/RuninActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/RuninActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/RuninBaseActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/RuninBaseActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/RuninConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/RuninConfig.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/RuninItem.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/RuninItem.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/RuninItemAdapter.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/RuninItemAdapter.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/RuninMainActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/RuninMainActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/RuninService.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/RuninService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/TestItem.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/TestItem.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/audio/AudioTestActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/audio/AudioTestActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/camera/CameraTestActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/camera/CameraTestActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/cpu/AlgorithmTask.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/cpu/AlgorithmTask.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/cpu/CPUAlgorithm.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/cpu/CPUAlgorithm.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/cpu/CPUHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/cpu/CPUHandler.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/cpu/CPUTestActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/cpu/CPUTestActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/emmc/EMMCTestActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/emmc/EMMCTestActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/emmc/EMMCTestRunnable.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/emmc/EMMCTestRunnable.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/lcd/LCDTestActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/lcd/LCDTestActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/memory/MemoryHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/memory/MemoryHandler.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/memory/MemoryTestActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/memory/MemoryTestActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/memory/RandomReaderRunnable.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/memory/RandomReaderRunnable.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/mic/MicActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/mic/MicActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/reboot/RebootTestActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/reboot/RebootTestActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/report/ReportActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/report/ReportActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/report/ReportAdapter.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/report/ReportAdapter.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/threedimensional/CubeAnimator.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/threedimensional/CubeAnimator.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/threedimensional/GLCubeBase.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/threedimensional/GLCubeBase.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/threedimensional/GLTutorialCube.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/threedimensional/GLTutorialCube.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/threedimensional/ThreeDimensionalActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/threedimensional/ThreeDimensionalActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/twodimensional/ShaderUtil.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/twodimensional/ShaderUtil.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/twodimensional/Triangle.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/twodimensional/Triangle.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/twodimensional/TwoDimensionalActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/twodimensional/TwoDimensionalActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/twodimensional/TwoDimensionalView.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/twodimensional/TwoDimensionalView.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/video/VideoTestActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/video/VideoTestActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/tool/BMPUtil.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/tool/BMPUtil.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/tool/BasePreference.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/tool/BasePreference.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/tool/BrightnessTools.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/tool/BrightnessTools.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/tool/CameraMuteControl.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/tool/CameraMuteControl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/tool/CommonUtil.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/tool/CommonUtil.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/tool/FileUtils.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/tool/FileUtils.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/tool/LogUtil.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/tool/LogUtil.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/tool/MacAddressTool.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/tool/MacAddressTool.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/tool/MicControl.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/tool/MicControl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/tool/PcbaEntity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/tool/PcbaEntity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/tool/SPUtils.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/tool/SPUtils.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/tool/SystemInfoTools.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/tool/SystemInfoTools.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/tool/ThreadPoolUtils.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/tool/ThreadPoolUtils.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/drawable-xhdpi/back.png" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/drawable-xhdpi/back.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/drawable-xhdpi/bg.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/drawable-xhdpi/black_large.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/drawable-xhdpi/blue_large.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/drawable-xhdpi/circle_blue.png" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/drawable-xhdpi/circle_blue.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/drawable-xhdpi/circle_button_press.png" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/drawable-xhdpi/circle_button_press.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/drawable-xhdpi/close_normal.png" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/drawable-xhdpi/close_normal.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/drawable-xhdpi/close_press.png" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/drawable-xhdpi/close_press.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/drawable-xhdpi/deep_blue_small.png" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/drawable-xhdpi/deep_blue_small.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/drawable-xhdpi/down.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/drawable-xhdpi/green_large.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/drawable-xhdpi/green_small.png" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/drawable-xhdpi/green_small.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/drawable-xhdpi/light_yellow_small.png" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/drawable-xhdpi/light_yellow_small.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/drawable-xhdpi/red_large.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/drawable-xhdpi/red_small.png" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/drawable-xhdpi/red_small.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/drawable-xhdpi/setting_normal.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/drawable-xhdpi/setting_press.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/drawable-xhdpi/white_large.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/drawable-xhdpi/white_small.png" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/drawable-xhdpi/white_small.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/drawable-xhdpi/yellow_large.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/drawable-xhdpi/yellow_small.png" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/drawable-xhdpi/yellow_small.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/drawable/lcd_color_frame_animation.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/drawable/record_animate_01.png" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/drawable/record_animate_01.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/drawable/record_animate_02.png" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/drawable/record_animate_02.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/drawable/record_animate_03.png" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/drawable/record_animate_03.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/drawable/record_animate_04.png" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/drawable/record_animate_04.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/drawable/record_animate_05.png" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/drawable/record_animate_05.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/drawable/record_animate_06.png" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/drawable/record_animate_06.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/drawable/record_animate_07.png" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/drawable/record_animate_07.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/drawable/record_animate_08.png" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/drawable/record_animate_08.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/drawable/record_animate_09.png" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/drawable/record_animate_09.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/drawable/record_animate_10.png" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/drawable/record_animate_10.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/drawable/record_animate_11.png" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/drawable/record_animate_11.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/drawable/record_animate_12.png" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/drawable/record_animate_12.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/drawable/record_animate_13.png" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/drawable/record_animate_13.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/drawable/record_animate_14.png" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/drawable/record_animate_14.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/drawable/record_bg.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/drawable/select_circle_button.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/drawable/select_circle_button.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/drawable/select_exit.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/drawable/select_exit.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/drawable/selector_setting.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/drawable/time.png" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/drawable/time.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/activity_back_light_test.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/activity_back_light_test.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/activity_camera.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/activity_camera.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/activity_engineering_mode.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/activity_engineering_mode.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/activity_facecamera.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/activity_facecamera.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/activity_fail.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/activity_fail.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/activity_get_photo.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/activity_get_photo.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/activity_logcat.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/activity_logcat.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/activity_main.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/activity_main.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/activity_mmi_multipoint.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/activity_mmi_multipoint.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/activity_more.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/activity_more.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/activity_navi.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/activity_navi.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/activity_pcba_camera.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/activity_pcba_camera.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/activity_pcba_data_check_test.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/activity_pcba_data_check_test.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/activity_pcba_main.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/activity_pcba_main.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/activity_pcba_sensor.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/activity_pcba_sensor.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/activity_pcbabase.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/activity_pcbamic_test.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/activity_pcbamic_test.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/activity_pcbaspeaker_test.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/activity_pcbaspeaker_test.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/activity_reboot.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/activity_reboot.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/activity_runin.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/activity_runin.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/activity_runin_audio.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/activity_runin_audio.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/activity_runin_camera.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/activity_runin_camera.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/activity_runin_cpu.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/activity_runin_cpu.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/activity_runin_emmc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/activity_runin_emmc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/activity_runin_lcd.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/activity_runin_lcd.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/activity_runin_main.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/activity_runin_main.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/activity_runin_memory.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/activity_runin_memory.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/activity_runin_mic.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/activity_runin_mic.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/activity_runin_reboot.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/activity_runin_reboot.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/activity_runin_report.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/activity_runin_report.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/activity_runin_sleep.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/activity_runin_video.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/activity_runin_video.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/activity_show_mmi_sn.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/activity_show_mmi_sn.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/activity_show_rgb.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/activity_show_rgb.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/activity_speaker.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/activity_speaker.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/activity_speaker_test.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/activity_speaker_test.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/activity_temperature.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/activity_temperature.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/activity_tp.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/activity_tp.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/activity_tremolo.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/activity_tremolo.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/backlight_activity.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/backlight_activity.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/bt_activity.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/bt_activity.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/btlist_item.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/btlist_item.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/button_activity.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/button_activity.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/gi_runin_test_item.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/gi_runin_test_item.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/grid_item_mmi.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/grid_item_mmi.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/gv_sensor_activity.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/gv_sensor_activity.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/gv_sensorcalibration_activity.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/layout_image_preview.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/layout_image_preview.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/layout_result.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/layout_result.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/layout_spinner.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/layout_spinner.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/layout_spinner_dropdown.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/layout_spinner_dropdown.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/layout_title.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/layout_title.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/lcd_activity.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/lcd_activity.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/li_runin.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/li_runin.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/light_sensor_activity.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/light_sensor_activity.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/list_item_pcba_system_property.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/list_item_pcba_system_property.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/list_item_report.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/list_item_report.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/p_sensor_activity.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/p_sensor_activity.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/pcba_button_activity.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/pcba_button_activity.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/pcba_lcd_activity.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/pcba_lcd_activity.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/pcba_tp_activity.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/pcba_tp_activity.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/table.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/table.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/video_camera.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/video_camera.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/wifi_activity.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/wifi_activity.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/wifi_item.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/wifi_item.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/raw/applause.mp3" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/raw/audio_abc.mp3" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/raw/audio_efg.mp3" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/raw/audio_hij.mp3" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/raw/audio_hij.mp3" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/raw/audio_left_test.mp3" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/raw/audio_left_test.mp3" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/raw/audio_right_test.mp3" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/raw/audio_right_test.mp3" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/raw/k100s.wav" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/raw/mixmusic.mp3" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/raw/mixmusic.mp3" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/raw/musictest.mp3" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/raw/musictest.mp3" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/raw/piano.mp3" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/raw/shot.mp3" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/raw/silence.mp3" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/raw/silence.mp3" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/raw/sweeptest.mp3" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/raw/sweeptest.mp3" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/raw/test1.mp3" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/raw/test123.mp3" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/raw/test456.mp3" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/raw/test789.mp3" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/values/arrays.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/values/arrays.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/values/colors.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/values/colors.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/values/dimens.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/values/dimens.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/values/strings.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/values/strings.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/values/styles.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/values/styles.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/test/java/com/a3nod/lenovo/sparrowfactory/ExampleUnitTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/test/java/com/a3nod/lenovo/sparrowfactory/ExampleUnitTest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/build.gradle" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gradle.properties" beforeDir="false" afterPath="$PROJECT_DIR$/gradle.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gradle/wrapper/gradle-wrapper.jar" beforeDir="false" afterPath="$PROJECT_DIR$/gradle/wrapper/gradle-wrapper.jar" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gradle/wrapper/gradle-wrapper.properties" beforeDir="false" afterPath="$PROJECT_DIR$/gradle/wrapper/gradle-wrapper.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gradlew" beforeDir="false" afterPath="$PROJECT_DIR$/gradlew" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gradlew.bat" beforeDir="false" afterPath="$PROJECT_DIR$/gradlew.bat" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hs_err_pid18180.log" beforeDir="false" afterPath="$PROJECT_DIR$/hs_err_pid18180.log" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hs_err_pid18516.log" beforeDir="false" afterPath="$PROJECT_DIR$/hs_err_pid18516.log" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hs_err_pid18632.log" beforeDir="false" afterPath="$PROJECT_DIR$/hs_err_pid18632.log" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hs_err_pid21036.log" beforeDir="false" afterPath="$PROJECT_DIR$/hs_err_pid21036.log" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hs_err_pid22180.log" beforeDir="false" afterPath="$PROJECT_DIR$/hs_err_pid22180.log" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hs_err_pid3392.log" beforeDir="false" afterPath="$PROJECT_DIR$/hs_err_pid3392.log" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/replay_pid18180.log" beforeDir="false" afterPath="$PROJECT_DIR$/replay_pid18180.log" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/replay_pid18516.log" beforeDir="false" afterPath="$PROJECT_DIR$/replay_pid18516.log" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/replay_pid18632.log" beforeDir="false" afterPath="$PROJECT_DIR$/replay_pid18632.log" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/replay_pid21036.log" beforeDir="false" afterPath="$PROJECT_DIR$/replay_pid21036.log" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/replay_pid22180.log" beforeDir="false" afterPath="$PROJECT_DIR$/replay_pid22180.log" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/replay_pid3392.log" beforeDir="false" afterPath="$PROJECT_DIR$/replay_pid3392.log" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/settings.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/settings.gradle" afterDir="false" />
+    </list>
+    <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="DefaultGradleProjectSettings">
+    <option name="isMigrated" value="true" />
+  </component>
+  <component name="ExternalProjectsData">
+    <projectState path="$PROJECT_DIR$">
+      <ProjectState />
+    </projectState>
+  </component>
+  <component name="ExternalProjectsManager">
+    <system id="GRADLE">
+      <state>
+        <projects_view />
+      </state>
+    </system>
+  </component>
+  <component name="FileEditorManager">
+    <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/app/src/main/res/values/styles.xml">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="300">
+              <caret line="12" selection-start-line="12" selection-end-line="12" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/SparrowApplication.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="617">
+              <caret line="39" column="32" selection-start-line="39" selection-start-column="32" selection-end-line="39" selection-end-column="32" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/app/build.gradle">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="238">
+              <caret line="10" column="23" selection-start-line="10" selection-start-column="23" selection-end-line="10" selection-end-column="23" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/app/src/main/AndroidManifest.xml">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="-2000">
+              <caret line="14" column="80" selection-start-line="14" selection-start-column="80" selection-end-line="14" selection-end-column="80" />
+              <folding>
+                <element signature="e#16635#16668#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+          <provider editor-type-id="android-manifest" />
+        </entry>
+      </file>
+    </leaf>
+  </component>
+  <component name="FindInProjectRecents">
+    <findStrings>
+      <find>WifiActivity</find>
+      <find>wifi</find>
+      <find>pass</find>
+      <find>l_sensor.action</find>
+      <find>isPass</find>
+      <find>EventListener</find>
+      <find>camera_mute</find>
+      <find>tv_pass</find>
+      <find>MSG_TEST_SUCCESS</find>
+      <find>checkPass</find>
+      <find>TEST_FAIL</find>
+      <find>btn_pass</find>
+      <find>ConnectRunnable</find>
+      <find>ll_result</find>
+      <find>relativeLayout</find>
+      <find>resetTest</find>
+      <find>iv_time</find>
+      <find>reset</find>
+      <find>tv_reset</find>
+      <find>btn_result_reset</find>
+      <find>isTesting</find>
+      <find>btn_startTest</find>
+      <find>dormancy</find>
+      <find>getLocalMacAddressFromBusybox</find>
+      <find>context</find>
+      <find>cb_start_network_test</find>
+      <find>cbx_wifi_test</find>
+      <find>WIFI</find>
+      <find>wifi.action</find>
+      <find>android:screenOrientation=&quot;landscape&quot;</find>
+    </findStrings>
+    <replaceStrings>
+      <replace />
+    </replaceStrings>
+    <dirStrings>
+      <dir>E:\Workspace\FactoryTest\app\build\generated\res\resValues\debug</dir>
+    </dirStrings>
+  </component>
+  <component name="GenerateSignedApkSettings">
+    <option name="KEY_STORE_PATH" value="D:\Users\admin\Documents\lwp.jks" />
+    <option name="KEY_ALIAS" value="key1" />
+    <option name="REMEMBER_PASSWORDS" value="true" />
+    <option name="BUILD_TARGET_KEY" value="apk" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="IdeDocumentHistory">
+    <option name="CHANGED_PATHS">
+      <list>
+        <option value="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/RuninItemAdapter.java" />
+        <option value="$PROJECT_DIR$/app/build/generated/source/buildConfig/debug/com/a3nod/lenovo/sparrowfactory/BuildConfig.java" />
+        <option value="$PROJECT_DIR$/app/src/main/res/layout/activity_main.xml" />
+        <option value="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/MainActivity.java" />
+        <option value="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/RuninService.java" />
+        <option value="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/RuninActivity.java" />
+        <option value="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/MMITestProcessManager.java" />
+        <option value="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/TemperatureActivity.java" />
+        <option value="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/tool/SystemInfoTools.java" />
+        <option value="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/report/ReportAdapter.java" />
+        <option value="$PROJECT_DIR$/app/src/main/res/layout/list_item_report.xml" />
+        <option value="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/RuninConfig.java" />
+        <option value="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/datacheck/DataCheckTestActivity.java" />
+        <option value="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/pcba/PCBADataCheckTestActivity.java" />
+        <option value="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/bluetooth/BluetoothActivity.java" />
+        <option value="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/EngineeringModeActivity.java" />
+        <option value="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/pcba/PcbaButtonActivity.java" />
+        <option value="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/tp/TPTestActivity.java" />
+        <option value="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/tp/TPTestView.java" />
+        <option value="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/interact/ConnectManager.java" />
+        <option value="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/wifi/WifiActivity.java" />
+        <option value="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/wifi/WifiManageUtils.java" />
+        <option value="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/tool/LogUtil.java" />
+        <option value="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/button/ButtonActivity.java" />
+        <option value="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/pcba/PcbaLcdActivity.java" />
+        <option value="$PROJECT_DIR$/app/src/main/res/layout/p_sensor_activity.xml" />
+        <option value="$PROJECT_DIR$/app/src/main/res/layout/activity_runin_sleep.xml" />
+        <option value="$PROJECT_DIR$/app/src/main/res/layout/activity_pcbabase.xml" />
+        <option value="$PROJECT_DIR$/app/src/main/res/layout/activity_speaker_test.xml" />
+        <option value="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/sensor/LightSensorActivity.java" />
+        <option value="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/tool/MacAddressTool.java" />
+        <option value="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/NavigationActivity.java" />
+        <option value="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/pcba/PCBASpeakerTestActivity.java" />
+        <option value="$PROJECT_DIR$/app/src/main/res/values-zh-rCN/strings.xml" />
+        <option value="$PROJECT_DIR$/app/src/main/res/values/strings.xml" />
+        <option value="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/sensor/PSensorActivity.java" />
+        <option value="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/speaker/SpeakerActivity.java" />
+        <option value="$PROJECT_DIR$/app/src/main/res/layout/wifi_activity.xml" />
+        <option value="$PROJECT_DIR$/app/src/main/res/layout/activity_navi.xml" />
+        <option value="$PROJECT_DIR$/app/src/main/res/values/styles.xml" />
+        <option value="$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/SparrowApplication.java" />
+        <option value="$PROJECT_DIR$/app/build.gradle" />
+        <option value="$PROJECT_DIR$/app/src/main/AndroidManifest.xml" />
+      </list>
+    </option>
+  </component>
+  <component name="ProjectFrameBounds" extendedState="6">
+    <option name="x" value="291" />
+    <option name="width" value="1638" />
+    <option name="height" value="1000" />
+  </component>
+  <component name="ProjectView">
+    <navigator proportions="" version="1">
+      <flattenPackages AndroidView="false" />
+      <foldersAlwaysOnTop value="true" />
+    </navigator>
+    <panes>
+      <pane id="ProjectPane">
+        <subPane>
+          <expand>
+            <path>
+              <item name="FactoryTest" type="b2602c69:ProjectViewProjectNode" />
+              <item name="FactoryTest" type="8a07ba80:GradleTreeStructureProvider$GradleModuleDirectoryNode" />
+            </path>
+          </expand>
+          <select />
+        </subPane>
+      </pane>
+      <pane id="PackagesPane" />
+      <pane id="AndroidView">
+        <subPane>
+          <expand>
+            <path>
+              <item name="FactoryTest" type="1abcf292:AndroidViewProjectNode" />
+              <item name="app" type="feadf853:AndroidModuleNode" />
+            </path>
+            <path>
+              <item name="FactoryTest" type="1abcf292:AndroidViewProjectNode" />
+              <item name="Gradle Scripts" type="ae0cef3a:AndroidBuildScriptsGroupNode" />
+            </path>
+          </expand>
+          <select />
+        </subPane>
+      </pane>
+      <pane id="Scope" />
+    </panes>
+  </component>
+  <component name="PropertiesComponent">
+    <property name="ExportApk.ApkPath" value="E:\Workspace\FactoryTest\app" />
+    <property name="ExportApk.BuildVariants" value="release" />
+    <property name="ExportApk.SignV2" value="true" />
+    <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
+    <property name="android.sdk.path" value="E:/android-Sdk" />
+    <property name="device.picker.selection" value="123456789123" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/app/src/main/assets/fonts" />
+    <property name="project.structure.last.edited" value="Variables" />
+    <property name="project.structure.proportion" value="0.17" />
+    <property name="project.structure.side.proportion" value="0.204329" />
+    <property name="settings.editor.selected.configurable" value="File.Encoding" />
+  </component>
+  <component name="PsdUISettings">
+    <option name="LAST_EDITED_BUILD_TYPE" value="release" />
+  </component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="E:\Workspace\FactoryTest\app\src\main\assets\fonts" />
+    </key>
+  </component>
+  <component name="RunDashboard">
+    <option name="ruleStates">
+      <list>
+        <RuleState>
+          <option name="name" value="ConfigurationTypeDashboardGroupingRule" />
+        </RuleState>
+        <RuleState>
+          <option name="name" value="StatusDashboardGroupingRule" />
+        </RuleState>
+      </list>
+    </option>
+  </component>
+  <component name="RunManager" selected="Android App.app">
+    <configuration default="true" type="AndroidJUnit" factoryName="Android JUnit">
+      <option name="TEST_OBJECT" value="class" />
+      <option name="WORKING_DIRECTORY" value="$MODULE_DIR$" />
+      <method v="2">
+        <option name="Android.Gradle.BeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="WifiActivity" type="AndroidRunConfigurationType" factoryName="Android App" activateToolWindowBeforeRun="false" temporary="true">
+      <module name="app" />
+      <option name="DEPLOY" value="true" />
+      <option name="DEPLOY_APK_FROM_BUNDLE" value="false" />
+      <option name="DEPLOY_AS_INSTANT" value="false" />
+      <option name="ARTIFACT_NAME" value="" />
+      <option name="PM_INSTALL_OPTIONS" value="" />
+      <option name="DYNAMIC_FEATURES_DISABLED_LIST" value="" />
+      <option name="ACTIVITY_EXTRA_FLAGS" value="" />
+      <option name="MODE" value="specific_activity" />
+      <option name="CLEAR_LOGCAT" value="false" />
+      <option name="SHOW_LOGCAT_AUTOMATICALLY" value="false" />
+      <option name="SKIP_NOOP_APK_INSTALLATIONS" value="true" />
+      <option name="FORCE_STOP_RUNNING_APP" value="true" />
+      <option name="TARGET_SELECTION_MODE" value="DEVICE_AND_SNAPSHOT_COMBO_BOX" />
+      <option name="USE_LAST_SELECTED_DEVICE" value="false" />
+      <option name="PREFERRED_AVD" value="" />
+      <option name="SELECTED_CLOUD_MATRIX_CONFIGURATION_ID" value="-1" />
+      <option name="SELECTED_CLOUD_MATRIX_PROJECT_ID" value="" />
+      <option name="DEBUGGER_TYPE" value="Auto" />
+      <Auto>
+        <option name="USE_JAVA_AWARE_DEBUGGER" value="false" />
+        <option name="SHOW_STATIC_VARS" value="true" />
+        <option name="WORKING_DIR" value="" />
+        <option name="TARGET_LOGGING_CHANNELS" value="lldb process:gdb-remote packets" />
+        <option name="SHOW_OPTIMIZED_WARNING" value="true" />
+      </Auto>
+      <Hybrid>
+        <option name="USE_JAVA_AWARE_DEBUGGER" value="false" />
+        <option name="SHOW_STATIC_VARS" value="true" />
+        <option name="WORKING_DIR" value="" />
+        <option name="TARGET_LOGGING_CHANNELS" value="lldb process:gdb-remote packets" />
+        <option name="SHOW_OPTIMIZED_WARNING" value="true" />
+      </Hybrid>
+      <Java />
+      <Native>
+        <option name="USE_JAVA_AWARE_DEBUGGER" value="false" />
+        <option name="SHOW_STATIC_VARS" value="true" />
+        <option name="WORKING_DIR" value="" />
+        <option name="TARGET_LOGGING_CHANNELS" value="lldb process:gdb-remote packets" />
+        <option name="SHOW_OPTIMIZED_WARNING" value="true" />
+      </Native>
+      <Profilers>
+        <option name="ADVANCED_PROFILING_ENABLED" value="false" />
+        <option name="STARTUP_CPU_PROFILING_ENABLED" value="false" />
+        <option name="STARTUP_CPU_PROFILING_CONFIGURATION_NAME" value="Sample Java Methods" />
+      </Profilers>
+      <option name="DEEP_LINK" value="" />
+      <option name="ACTIVITY_CLASS" value="com.a3nod.lenovo.sparrowfactory.mmi.wifi.WifiActivity" />
+      <method v="2">
+        <option name="Android.Gradle.BeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="app" type="AndroidRunConfigurationType" factoryName="Android App" activateToolWindowBeforeRun="false">
+      <module name="app" />
+      <option name="DEPLOY" value="true" />
+      <option name="DEPLOY_APK_FROM_BUNDLE" value="false" />
+      <option name="DEPLOY_AS_INSTANT" value="false" />
+      <option name="ARTIFACT_NAME" value="" />
+      <option name="PM_INSTALL_OPTIONS" value="" />
+      <option name="DYNAMIC_FEATURES_DISABLED_LIST" value="" />
+      <option name="ACTIVITY_EXTRA_FLAGS" value="" />
+      <option name="MODE" value="default_activity" />
+      <option name="CLEAR_LOGCAT" value="false" />
+      <option name="SHOW_LOGCAT_AUTOMATICALLY" value="false" />
+      <option name="SKIP_NOOP_APK_INSTALLATIONS" value="true" />
+      <option name="FORCE_STOP_RUNNING_APP" value="true" />
+      <option name="TARGET_SELECTION_MODE" value="DEVICE_AND_SNAPSHOT_COMBO_BOX" />
+      <option name="USE_LAST_SELECTED_DEVICE" value="false" />
+      <option name="PREFERRED_AVD" value="" />
+      <option name="SELECTED_CLOUD_MATRIX_CONFIGURATION_ID" value="-1" />
+      <option name="SELECTED_CLOUD_MATRIX_PROJECT_ID" value="" />
+      <option name="DEBUGGER_TYPE" value="Auto" />
+      <Auto>
+        <option name="USE_JAVA_AWARE_DEBUGGER" value="false" />
+        <option name="SHOW_STATIC_VARS" value="true" />
+        <option name="WORKING_DIR" value="" />
+        <option name="TARGET_LOGGING_CHANNELS" value="lldb process:gdb-remote packets" />
+        <option name="SHOW_OPTIMIZED_WARNING" value="true" />
+      </Auto>
+      <Hybrid>
+        <option name="USE_JAVA_AWARE_DEBUGGER" value="false" />
+        <option name="SHOW_STATIC_VARS" value="true" />
+        <option name="WORKING_DIR" value="" />
+        <option name="TARGET_LOGGING_CHANNELS" value="lldb process:gdb-remote packets" />
+        <option name="SHOW_OPTIMIZED_WARNING" value="true" />
+      </Hybrid>
+      <Java />
+      <Native>
+        <option name="USE_JAVA_AWARE_DEBUGGER" value="false" />
+        <option name="SHOW_STATIC_VARS" value="true" />
+        <option name="WORKING_DIR" value="" />
+        <option name="TARGET_LOGGING_CHANNELS" value="lldb process:gdb-remote packets" />
+        <option name="SHOW_OPTIMIZED_WARNING" value="true" />
+      </Native>
+      <Profilers>
+        <option name="ADVANCED_PROFILING_ENABLED" value="false" />
+        <option name="STARTUP_CPU_PROFILING_ENABLED" value="false" />
+        <option name="STARTUP_CPU_PROFILING_CONFIGURATION_NAME" value="Sample Java Methods" />
+      </Profilers>
+      <option name="DEEP_LINK" value="" />
+      <option name="ACTIVITY_CLASS" value="" />
+      <method v="2">
+        <option name="Android.Gradle.BeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Android App.WifiActivity" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SvnConfiguration">
+    <configuration />
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="f6f577f9-1fb1-4351-b768-7a6405f7580d" name="Default Changelist" comment="" />
+      <created>1562144341085</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1562144341085</updated>
+    </task>
+    <servers />
+  </component>
+  <component name="ToolWindowManager">
+    <frame x="-8" y="-8" width="1936" height="1056" extended-state="6" />
+    <editor active="true" />
+    <layout>
+      <window_info id="Structure" order="0" side_tool="true" />
+      <window_info id="Image Layers" order="1" />
+      <window_info id="Favorites" order="2" side_tool="true" />
+      <window_info id="Designer" order="3" />
+      <window_info id="Build Variants" order="4" side_tool="true" />
+      <window_info id="Capture Tool" order="5" />
+      <window_info id="Resources Explorer" order="6" weight="0.32977587" />
+      <window_info content_ui="combo" id="Project" order="7" visible="true" weight="0.08795309" />
+      <window_info id="Captures" order="8" side_tool="true" weight="0.25" />
+      <window_info anchor="bottom" id="Logcat" order="0" sideWeight="0.4994664" weight="0.32897604" />
+      <window_info anchor="bottom" id="TODO" order="1" />
+      <window_info anchor="bottom" id="Debug" order="2" weight="0.32897604" />
+      <window_info anchor="bottom" id="Terminal" order="3" />
+      <window_info anchor="bottom" id="Version Control" order="4" />
+      <window_info anchor="bottom" id="Event Log" order="5" sideWeight="0.50213444" side_tool="true" weight="0.32897604" />
+      <window_info active="true" anchor="bottom" id="Build" order="6" sideWeight="0.49252936" visible="true" weight="0.22234273" />
+      <window_info anchor="bottom" id="Android Profiler" order="7" />
+      <window_info anchor="bottom" id="Run" order="8" sideWeight="0.49786553" weight="0.32897604" />
+      <window_info anchor="bottom" id="Find" order="9" sideWeight="0.4994664" visible="true" weight="0.32897604" />
+      <window_info anchor="right" id="Hierarchy" order="0" weight="0.32977587" />
+      <window_info anchor="right" id="Capture Analysis" order="1" />
+      <window_info anchor="right" id="Gradle" order="2" />
+      <window_info anchor="right" id="Theme Preview" order="3" />
+      <window_info anchor="right" id="Palette&#9;" order="4" />
+      <window_info anchor="right" id="Preview" order="5" />
+      <window_info anchor="right" id="Device File Explorer" order="6" weight="0.32977587" />
+      <window_info anchor="right" id="Assistant" order="7" weight="0.32977587" />
+    </layout>
+    <layout-to-restore>
+      <window_info id="Structure" order="0" side_tool="true" />
+      <window_info id="Image Layers" order="1" />
+      <window_info id="Favorites" order="2" side_tool="true" />
+      <window_info id="Designer" order="3" />
+      <window_info id="Build Variants" order="4" side_tool="true" />
+      <window_info id="Capture Tool" order="5" />
+      <window_info id="Resources Explorer" order="6" weight="0.32977587" />
+      <window_info active="true" content_ui="combo" id="Project" order="7" visible="true" weight="0.10512273" />
+      <window_info id="Captures" order="8" side_tool="true" weight="0.25" />
+      <window_info anchor="bottom" id="Logcat" order="0" sideWeight="0.4994664" weight="0.32897604" />
+      <window_info anchor="bottom" id="TODO" order="1" />
+      <window_info anchor="bottom" id="Debug" order="2" weight="0.32897604" />
+      <window_info anchor="bottom" id="Terminal" order="3" />
+      <window_info anchor="bottom" id="Version Control" order="4" />
+      <window_info anchor="bottom" id="Event Log" order="5" sideWeight="0.50213444" side_tool="true" visible="true" weight="0.32897604" />
+      <window_info anchor="bottom" id="Build" order="6" sideWeight="0.49252936" weight="0.2228261" />
+      <window_info anchor="bottom" id="Android Profiler" order="7" />
+      <window_info anchor="bottom" id="Run" order="8" sideWeight="0.49786553" visible="true" weight="0.32897604" />
+      <window_info anchor="bottom" id="Find" order="9" sideWeight="0.4994664" visible="true" weight="0.32897604" />
+      <window_info anchor="right" id="Hierarchy" order="0" weight="0.32977587" />
+      <window_info anchor="right" id="Capture Analysis" order="1" />
+      <window_info anchor="right" id="Gradle" order="2" />
+      <window_info anchor="right" id="Theme Preview" order="3" />
+      <window_info anchor="right" id="Palette&#9;" order="4" />
+      <window_info anchor="right" id="Preview" order="5" />
+      <window_info anchor="right" id="Device File Explorer" order="6" weight="0.32977587" />
+      <window_info anchor="right" id="Assistant" order="7" weight="0.32977587" />
+    </layout-to-restore>
+  </component>
+  <component name="editorHistoryManager">
+    <entry file="file://$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/pcba/PcbaButtonActivity.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="301">
+          <caret line="377" column="9" lean-forward="true" selection-start-line="377" selection-start-column="9" selection-end-line="377" selection-end-column="9" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/bluetooth/BluetoothActivity.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="9240">
+          <caret line="471" column="49" selection-start-line="471" selection-start-column="49" selection-end-line="471" selection-end-column="49" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/sensor/PSensor.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="308">
+          <caret line="19" selection-start-line="19" selection-end-line="19" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/res/layout/layout_result.xml">
+      <provider editor-type-id="android-designer2" />
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="374">
+          <caret line="17" column="47" selection-start-line="17" selection-start-column="47" selection-end-line="17" selection-end-column="47" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/res/layout/lcd_activity.xml">
+      <provider editor-type-id="android-designer2" />
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="338">
+          <caret line="28" column="33" selection-start-line="28" selection-start-column="33" selection-end-line="28" selection-end-column="33" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/res/drawable/time.png">
+      <provider selected="true" editor-type-id="images" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/res/layout/pcba_lcd_activity.xml">
+      <provider editor-type-id="android-designer2" />
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="176">
+          <caret line="8" column="43" lean-forward="true" selection-start-line="8" selection-start-column="43" selection-end-line="8" selection-end-column="43" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/lcd/LcdActivity.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="106">
+          <caret line="129" column="21" lean-forward="true" selection-start-line="129" selection-start-column="21" selection-end-line="129" selection-end-column="21" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/pcba/PcbaLcdActivity.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="253">
+          <caret line="138" column="62" lean-forward="true" selection-start-line="138" selection-start-column="62" selection-end-line="138" selection-end-column="62" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/res/layout/p_sensor_activity.xml">
+      <provider editor-type-id="android-designer2" />
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="660">
+          <caret line="30" column="43" selection-start-line="30" selection-start-column="43" selection-end-line="30" selection-end-column="43" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/build/generated/source/buildConfig/debug/com/a3nod/lenovo/sparrowfactory/BuildConfig.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="198">
+          <caret line="11" column="52" lean-forward="true" selection-start-line="11" selection-start-column="52" selection-end-line="11" selection-end-column="52" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/androidTest/java/com/a3nod/lenovo/sparrowfactory/ExampleInstrumentedTest.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="220">
+          <caret line="17" column="13" selection-start-line="17" selection-start-column="13" selection-end-line="17" selection-end-column="13" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/local.properties">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/settings.gradle">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/gradle.properties">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/gradle/wrapper/gradle-wrapper.properties">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/res/values-zh-rCN/arrays.xml" />
+    <entry file="file://$PROJECT_DIR$/app/src/main/res/layout/activity_runin.xml">
+      <provider editor-type-id="android-designer2" />
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/res/layout/activity_runin_video.xml">
+      <provider editor-type-id="android-designer2" />
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="242">
+          <caret line="11" column="15" lean-forward="true" selection-start-line="11" selection-start-column="15" selection-end-line="11" selection-end-column="15" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/res/layout/activity_back_light_test.xml">
+      <provider editor-type-id="android-designer2" />
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/res/values/arrays.xml">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/res/layout/activity_pcbabase.xml">
+      <provider editor-type-id="android-designer2" />
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="66">
+          <caret line="3" column="55" selection-start-line="3" selection-start-column="55" selection-end-line="3" selection-end-column="55" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/res/layout/activity_runin_sleep.xml">
+      <provider editor-type-id="android-designer2" />
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="418">
+          <caret line="19" column="13" selection-start-line="19" selection-start-column="13" selection-end-line="19" selection-end-column="13" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/res/layout/activity_speaker_test.xml">
+      <provider editor-type-id="android-designer2" />
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="418">
+          <caret line="25" column="40" selection-start-line="25" selection-start-column="40" selection-end-line="25" selection-end-column="40" />
+          <folding>
+            <element signature="e#599#619#0" expanded="true" />
+            <element signature="e#902#923#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/sensor/LightSensorActivity.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="265">
+          <caret line="148" column="45" selection-start-line="148" selection-start-column="45" selection-end-line="148" selection-end-column="45" />
+          <folding>
+            <element signature="e#4378#4379#0" expanded="true" />
+            <element signature="e#4418#4419#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/tool/MacAddressTool.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="352">
+          <caret line="98" column="38" selection-start-line="98" selection-start-column="38" selection-end-line="98" selection-end-column="38" />
+          <folding>
+            <element signature="e#2846#2902#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/pcba/PCBAPSensorActivity.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="354">
+          <caret line="34" column="37" lean-forward="true" selection-start-line="34" selection-start-column="37" selection-end-line="34" selection-end-column="37" />
+          <folding>
+            <element signature="e#1670#1671#0" expanded="true" />
+            <element signature="e#1719#1720#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/sensor/PSensorActivity.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="352">
+          <caret line="103" column="5" lean-forward="true" selection-start-line="103" selection-start-column="5" selection-end-line="103" selection-end-column="5" />
+          <folding>
+            <element signature="e#4234#4277#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/pcba/PCBASpeakerTestActivity.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="440">
+          <caret line="111" column="74" selection-start-line="111" selection-start-column="74" selection-end-line="111" selection-end-column="74" />
+          <folding>
+            <element signature="e#3169#3209#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/speaker/SpeakerActivity.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="353">
+          <caret line="149" column="13" lean-forward="true" selection-start-line="149" selection-start-column="13" selection-end-line="149" selection-end-column="13" />
+          <folding>
+            <element signature="e#4657#4697#0" expanded="true" />
+            <element signature="e#5499#5539#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/res/values/strings.xml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="461">
+          <caret line="60" column="41" selection-start-line="60" selection-start-column="18" selection-end-line="60" selection-end-column="41" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/mmi/wifi/WifiActivity.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="3982">
+          <caret line="181" column="30" selection-start-line="181" selection-start-column="30" selection-end-line="181" selection-end-column="30" />
+          <folding>
+            <element signature="imports" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/pcba/PcbaTestActivity.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="2024">
+          <caret line="111" column="65" selection-start-line="111" selection-start-column="54" selection-end-line="111" selection-end-column="65" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/res/layout/wifi_activity.xml">
+      <provider editor-type-id="android-designer2" />
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1210">
+          <caret line="55" column="46" selection-start-line="55" selection-start-column="25" selection-end-line="55" selection-end-column="46" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/NavigationActivity.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="638">
+          <caret line="76" column="40" selection-start-line="76" selection-start-column="40" selection-end-line="76" selection-end-column="40" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/res/layout/activity_navi.xml">
+      <provider editor-type-id="android-designer2" />
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="592">
+          <caret line="40" column="30" selection-start-line="40" selection-start-column="30" selection-end-line="40" selection-end-column="30" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/runin/RuninConfig.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="74">
+          <caret line="55" column="31" selection-start-line="55" selection-start-column="31" selection-end-line="55" selection-end-column="31" />
+          <folding>
+            <element signature="e#2004#2005#0" expanded="true" />
+            <element signature="e#2057#2058#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://E:/android-Sdk/sources/android-26/android/content/Context.java" />
+    <entry file="file://$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/CrashHandler.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="228">
+          <caret line="91" column="23" selection-start-line="91" selection-start-column="23" selection-end-line="91" selection-end-column="23" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.squareup.leakcanary/leakcanary-watcher/1.3.1/86138133c37e1b9af9d9975f09583bd911e331e7/leakcanary-watcher-1.3.1-sources.jar!/com/squareup/leakcanary/RefWatcher.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-1686">
+          <caret line="33" column="19" selection-start-line="33" selection-start-column="19" selection-end-line="33" selection-end-column="19" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/build.gradle">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="66">
+          <caret line="3" column="4" selection-start-line="3" selection-start-column="4" selection-end-line="3" selection-end-column="4" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/res/values-zh-rCN/strings.xml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="320">
+          <caret line="55" column="52" lean-forward="true" selection-start-line="55" selection-start-column="52" selection-end-line="55" selection-end-column="52" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/tool/SPUtils.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="44">
+          <caret line="13" column="13" selection-start-line="13" selection-start-column="13" selection-end-line="13" selection-end-column="13" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/tool/ThreadPoolUtils.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="198">
+          <caret line="12" column="13" selection-start-line="12" selection-start-column="13" selection-end-line="12" selection-end-column="13" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/tool/SystemInfoTools.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-1320">
+          <caret line="256" column="26" selection-start-line="256" selection-start-column="26" selection-end-line="256" selection-end-column="26" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/tool/FileUtils.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-1122">
+          <caret line="32" column="13" selection-start-line="32" selection-start-column="13" selection-end-line="32" selection-end-column="13" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://E:/android-Sdk/platforms/android-26/data/res/values/themes.xml" />
+    <entry file="file://$PROJECT_DIR$/app/src/main/res/values/styles.xml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="300">
+          <caret line="12" selection-start-line="12" selection-end-line="12" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/AndroidManifest.xml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-2000">
+          <caret line="14" column="80" selection-start-line="14" selection-start-column="80" selection-end-line="14" selection-end-column="80" />
+          <folding>
+            <element signature="e#16635#16668#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+      <provider editor-type-id="android-manifest" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/java/com/a3nod/lenovo/sparrowfactory/SparrowApplication.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="617">
+          <caret line="39" column="32" selection-start-line="39" selection-start-column="32" selection-end-line="39" selection-end-column="32" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/build.gradle">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="238">
+          <caret line="10" column="23" selection-start-line="10" selection-start-column="23" selection-end-line="10" selection-end-column="23" />
+        </state>
+      </provider>
+    </entry>
+  </component>
+  <component name="masterDetails">
+    <states>
+      <state key="ScopeChooserConfigurable.UI">
+        <settings>
+          <splitter-proportions>
+            <option name="proportions">
+              <list>
+                <option value="0.2" />
+              </list>
+            </option>
+          </splitter-proportions>
+        </settings>
+      </state>
+    </states>
+  </component>
+</project>

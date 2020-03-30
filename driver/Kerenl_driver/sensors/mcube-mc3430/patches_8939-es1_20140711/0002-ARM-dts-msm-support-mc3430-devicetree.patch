@@ -1,0 +1,89 @@
+From ea980c0b16b65232453e377869b943341c35764e Mon Sep 17 00:00:00 2001
+From: chenqingfeng <chenqf0228@thundersoft.com>
+Date: Thu, 11 Sep 2014 15:20:45 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support mc3430 devicetree
+
+Devicetree support mc3430
+
+Change-Id: I9dd08cb1ef999999be253fce090c0678e2f3d10f
+Signed-off-by: Qingfeng Chen <chenqf0228@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi |   33 ++++++++++++++++++++++----
+ 1 file changed, 28 insertions(+), 5 deletions(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+index e9902b8..6fbdcf9 100755
+--- a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+@@ -19,7 +19,7 @@
+ };
+ 
+ &tlmm_pinmux {
+-	bma2x2_int1_pin {
++/*	bma2x2_int1_pin {
+ 		qcom,pins = <&gp 112>;
+ 		qcom,num-grp-pins = <1>;
+ 		label = "bma2x2_int1_pin";
+@@ -31,9 +31,9 @@
+ 			  drive-strength = <2>;
+ 			  bias-pull-down;
+ 		};
+-	};
++	};*/
+ 
+-	bma2x2_int2_pin {
++/*	bma2x2_int2_pin {
+ 		qcom,pins = <&gp 114>;
+ 		qcom,num-grp-pins = <1>;
+ 		label = "bma2x2_int2_pin";
+@@ -45,6 +45,17 @@
+ 			  drive-strength = <2>;
+ 			  bias-pull-down;
+ 		};
++	};*/
++
++	mc3xxx_int_pin {
++		qcom,pins = <&gp 112>;
++		qcom,pin-func = <0>;
++		qcom,num-grp-pins = <1>;
++		label = "mc3xxx_irq";
++		mc3xxx_default: mc3xxx_default {
++			  drive-strength = <6>;
++			  bias-pull-up;
++		};
+ 	};
+ 
+ 	tps65132-en-pin {
+@@ -82,8 +93,8 @@
+ 		avago,ga-value = <48>;
+ 	};
+ 
+-	bosch@18 { /* Accelerometer sensor */
+-		compatible = "bosch,bma2x2";
++/*	bosch@18 { /* Accelerometer sensor */
++/*		compatible = "bosch,bma2x2";
+ 		reg = <0x18>;
+ 		pinctrl-names = "bma_default","bma_sleep";
+ 		pinctrl-0 = <&bma2x2_int1_default &bma2x2_int2_default>;
+@@ -96,6 +107,18 @@
+ 		bosch,place = <2>;
+ 		bosch,gpio-int1 = <&msm_gpio 112 0x2002>;
+ 		bosch,gpio-int2 = <&msm_gpio 114 0x2002>;
++	};*/
++
++	mcube@4c { /* Accelerometer sensor */
++		compatible = "mcube,mc3xxx";
++		reg = <0x4c>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&mc3xxx_default>;
++		interrupt-parent = <&msm_gpio>;
++		interrupts = <112 0x2002>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++		mcube,position = <1>;
+ 	};
+ 
+ 	memsic@30 { /* Magnetic field sensor */
+-- 
+1.7.9.5
+

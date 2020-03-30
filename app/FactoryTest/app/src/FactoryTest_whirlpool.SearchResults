@@ -1,0 +1,3 @@
+---- cb_start_network_test Matches (2 in 2 files) ----
+WifiActivity.java (main\java\com\a3nod\lenovo\sparrowfactory\mmi\wifi):        cbx_wifi_test = findViewById(R.id.cb_start_network_test);
+Wifi_activity.xml (main\res\layout):        android:id="@+id/cb_start_network_test"

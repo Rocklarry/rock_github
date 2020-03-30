@@ -1,0 +1,52 @@
+From 08eca361cc3456a5d3af533346470414a10b1d75 Mon Sep 17 00:00:00 2001
+From: chenx <chenxiang0527@thundersoft.com>
+Date: Thu, 23 Oct 2014 15:47:40 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support yas533 devicetree
+
+Devicetree support yas533
+
+Change-Id: Ifec40ec737c3bf732598c0f7b5fbb27a006909df
+Signed-off-by: Xiang Chen <chenxiang0527@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8916-qrd-skui.dtsi |   11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8916-qrd-skui.dtsi b/arch/arm/boot/dts/qcom/msm8916-qrd-skui.dtsi
+index 859680e..dd95ac6 100644
+--- a/arch/arm/boot/dts/qcom/msm8916-qrd-skui.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8916-qrd-skui.dtsi
+@@ -214,7 +214,7 @@
+ 		bosch,gpio-int1 = <&msm_gpio 112 0x2002>;
+ 		bosch,gpio-int2 = <&msm_gpio 114 0x2002>;
+ 	};
+-
++/*
+ 	mpu6050@68 {
+ 		compatible = "invn,mpu6050";
+ 		reg = <0x68>;
+@@ -230,7 +230,7 @@
+ 		invn,place = "Portrait Up Back Side";
+ 	};
+ 
+-	memsic@30 { /* Magnetic field sensor */
++	memsic@30 { // Magnetic field sensor
+ 		compatible = "memsic,mmc3416x";
+ 		reg = <0x30>;
+ 		vdd-supply = <&pm8916_l17>;
+@@ -238,6 +238,13 @@
+ 		memsic,dir = "obverse-x-axis-forward";
+ 		memsic,auto-report;
+ 	};
++*/
++	yamaha@2e { /* Magnetic field sensor */
++		compatible = "yamaha,yas533";
++		reg = <0x2e>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++	};
+ };
+ 
+ &usb_otg {
+-- 
+1.7.9.5
+

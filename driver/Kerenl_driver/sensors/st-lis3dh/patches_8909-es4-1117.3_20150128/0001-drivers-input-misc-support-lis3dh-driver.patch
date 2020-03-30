@@ -1,0 +1,94 @@
+From 772d5c5308c26631cdfef33153c3c32149bd2eb1 Mon Sep 17 00:00:00 2001
+From: Yukun Wan <wanyk0402@thundersoft.com>
+Date: Wed, 28 Jan 2015 13:54:07 +0800
+Subject: [PATCH 1/3] drivers:input:misc: support lis3dh driver
+
+Driver support lis3dh
+
+Change-Id: I6d10215d192c1e4820978526b78412fcc0e9f14c
+Signed-off-by: Yukun Wan <wanyk0402@thundersoft.com>
+---
+ Documentation/devicetree/bindings/input/misc/lis3dh_acc.txt | 12 ++++++------
+ drivers/input/misc/lis3dh_acc.c                             |  8 ++++++--
+ include/linux/input/lis3dh.h                                |  2 +-
+ 3 files changed, 13 insertions(+), 9 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/input/misc/lis3dh_acc.txt b/Documentation/devicetree/bindings/input/misc/lis3dh_acc.txt
+index 087b335..e80041a 100644
+--- a/Documentation/devicetree/bindings/input/misc/lis3dh_acc.txt
++++ b/Documentation/devicetree/bindings/input/misc/lis3dh_acc.txt
+@@ -58,23 +58,23 @@ Optional properties:
+ 
+ Example:
+ 	i2c@f9925000 { /* BLSP-1 QUP-3 */
+-		st@18 {
++		st@19 {
+ 			compatible = "st,lis3dh";
+-			reg = <0x18>;
++			reg = <0x19>;
+ 			pinctrl-names = "lis3dh_default","lis3dh_sleep";
+ 			pinctrl-0 = <&lis3dh_int1_default>;
+ 			pinctrl-1 = <&lis3dh_int1_sleep>;
+ 			interrupt-parent = <&msm_gpio>;
+-			interrupts = <115 0x2002>;
+-			vdd-supply = <&pm8916_l17>;
+-			vddio-supply = <&pm8916_l6>;
++			interrupts = <94 0x2002>;
++			vdd-supply = <&pm8909_l17>;
++			vddio-supply = <&pm8909_l6>;
+ 			st,min-interval = <5>;
+ 			st,init-interval = <200>;
+ 			st,axis-map-x = <1>;
+ 			st,axis-map-y = <0>;
+ 			st,axis-map-z = <2>;
+ 			st,g-range = <2>;
+-			st,gpio-int1 = <&msm_gpio 115 0x2002>;
++			st,gpio-int1 = <&msm_gpio 94 0x2002>;
+ 			st,negate-x;
+ 			st,negate-y;
+ 			st,negate-z;
+diff --git a/drivers/input/misc/lis3dh_acc.c b/drivers/input/misc/lis3dh_acc.c
+index 972e02d..1287bb1 100644
+--- a/drivers/input/misc/lis3dh_acc.c
++++ b/drivers/input/misc/lis3dh_acc.c
+@@ -1,6 +1,6 @@
+-/******************** (C) COPYRIGHT 2010 STMicroelectronics ********************
++/***************(C) COPYRIGHT 2010-2015 STMicroelectronics **************
+  *
+- * Copyright (c) 2014, The Linux Foundation. All rights reserved.
++ * Copyright (c) 2014-2105, The Linux Foundation. All rights reserved.
+  *
+  * File Name          : lis3dh_acc.c
+  * Authors            : MSH - Motion Mems BU - Application Team
+@@ -2275,6 +2275,8 @@ static int lis3dh_acc_resume(struct i2c_client *client)
+ 	if (!acc->on_before_suspend)
+ 		return 0;
+ 
++	pr_info("%s:lis3dh resuming.\n", __func__);
++
+ 	if (!acc->use_batch) {
+ 		err = lis3dh_acc_enable(acc);
+ 		if (err < 0)
+@@ -2305,6 +2307,8 @@ static int lis3dh_acc_suspend(struct i2c_client *client, pm_message_t mesg)
+ 	if (!acc->on_before_suspend)
+ 		return 0;
+ 
++	pr_info("%s:lis3dh suspending.\n", __func__);
++
+ 	/* Power off the sensor if not in batch */
+ 	if (!acc->use_batch) {
+ 		err = lis3dh_acc_disable(acc);
+diff --git a/include/linux/input/lis3dh.h b/include/linux/input/lis3dh.h
+index 3da0f96..21095ae 100644
+--- a/include/linux/input/lis3dh.h
++++ b/include/linux/input/lis3dh.h
+@@ -1,5 +1,5 @@
+ 
+-/******************** (C) COPYRIGHT 2010 STMicroelectronics ********************
++/************** (C) COPYRIGHT 2010-2015 STMicroelectronics **************
+ *
+ * File Name          : lis3dh_misc.h
+ * Authors            : MH - C&I BU - Application Team
+-- 
+2.2.2
+

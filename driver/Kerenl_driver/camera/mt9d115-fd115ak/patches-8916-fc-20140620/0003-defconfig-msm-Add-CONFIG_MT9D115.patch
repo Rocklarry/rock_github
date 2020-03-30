@@ -1,0 +1,28 @@
+From a43687785c14ff82ef9df7375b86919284cae49f Mon Sep 17 00:00:00 2001
+From: Shaosong Zhang <zhangss1028@thundersoft.com>
+Date: Thu, 19 Jun 2014 18:04:59 +0800
+Subject: [PATCH 3/3] defconfig: msm: Add CONFIG_MT9D115
+
+Add CONFIG_MT9D115=y to the defconfig file of msm8916
+
+Change-Id: Iace728214be81b8f3067a9ebda55e6493d1db070
+Signed-off-by: Shaosong Zhang <zhangss1028@thundersoft.com>
+---
+ arch/arm/configs/msm8916_defconfig |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/configs/msm8916_defconfig b/arch/arm/configs/msm8916_defconfig
+index 3fc5fa2..ccc3e9f 100644
+--- a/arch/arm/configs/msm8916_defconfig
++++ b/arch/arm/configs/msm8916_defconfig
+@@ -328,6 +328,7 @@ CONFIG_MSM_EEPROM=y
+ CONFIG_MSM_ISPIF=y
+ CONFIG_MT9M114=y
+ CONFIG_OV5645=y
++CONFIG_MT9D115=y
+ CONFIG_MSMB_JPEG=y
+ CONFIG_MSM_VIDC_V4L2=y
+ CONFIG_RADIO_IRIS=y
+-- 
+1.7.4.1
+

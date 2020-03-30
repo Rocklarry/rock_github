@@ -1,0 +1,73 @@
+From af144f71f420d7bf2dcb2e458e5407ab9f12c101 Mon Sep 17 00:00:00 2001
+From: Shaosong Zhang <zhangss1028@thundersoft.com>
+Date: Thu, 19 Jun 2014 18:00:24 +0800
+Subject: [PATCH 2/3] ARM: dts: msm: Add mt9d115 fd115ak camera dtsi
+
+Add mt9d115 fd115ak devicetree description for msm8916
+
+Change-Id: Id7eda8a09280f14384bff4f249bb8d69b63f3e85
+Signed-off-by: Shaosong Zhang <zhangss1028@thundersoft.com>
+---
+ .../boot/dts/qcom/msm8916-camera-sensor-qrd.dtsi   |   46 ++++++++++++++++++++
+ 1 files changed, 46 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8916-camera-sensor-qrd.dtsi b/arch/arm/boot/dts/qcom/msm8916-camera-sensor-qrd.dtsi
+index 08d04c5..dbe7978 100644
+--- a/arch/arm/boot/dts/qcom/msm8916-camera-sensor-qrd.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8916-camera-sensor-qrd.dtsi
+@@ -114,6 +114,52 @@
+ 				<&clock_gcc clk_gcc_camss_mclk1_clk>;
+ 		clock-names = "cam_src_clk", "cam_clk";
+ 	};
++	qcom,camera@42 {
++		compatible = "qcom,mt9d115";
++		reg = <0x42 0x0>;
++		qcom,slave-id = <0x78 0x0000 0x2580>;
++		qcom,csiphy-sd-index = <1>;
++		qcom,csid-sd-index = <1>;
++		qcom,mount-angle = <90>;
++		qcom,sensor-name = "mt9d115";
++		cam_vdig-supply = <&pm8916_l2>;
++		qcom,cam-vreg-name = "cam_vdig";
++		qcom,cam-vreg-type = <0>;
++		qcom,cam-vreg-min-voltage = <1200000>;
++		qcom,cam-vreg-max-voltage = <1200000>;
++		qcom,cam-vreg-op-mode = <200000>;
++		pinctrl-names = "cam_default", "cam_suspend";
++		pinctrl-0 = <&cam_sensor_mclk1_default
++				&cam_sensor_front_default>;
++		pinctrl-1 = <&cam_sensor_mclk1_sleep &cam_sensor_front_sleep>;
++		gpios = <&msm_gpio 27 0>,
++				<&msm_gpio 28 0>,
++				<&msm_gpio 33 0>,
++				<&msm_gpio 114 0>,
++				<&msm_gpio 110 0>;
++		qcom,gpio-reset = <1>;
++		qcom,gpio-standby = <2>;
++		qcom,gpio-vdig = <3>;
++		qcom,gpio-vana = <4>;
++		qcom,gpio-req-tbl-num = <0 1 2 3 4>;
++		qcom,gpio-req-tbl-flags = <1 0 0 0 0>;
++		qcom,gpio-req-tbl-label = "CAMIF_MCLK",
++				"CAM_RESET",
++				"CAM_STANDBY",
++				"CAM_VDIG",
++				"CAM_VANA";
++		qcom,gpio-set-tbl-num = <1 1>;
++		qcom,gpio-set-tbl-flags = <0 2>;
++		qcom,gpio-set-tbl-delay = <1000 4000>;
++		qcom,csi-lane-assign = <0x4320>;
++		qcom,csi-lane-mask = <0x3>;
++		qcom,sensor-position = <1>;
++		qcom,sensor-mode = <0>;
++		qcom,cci-master = <0>;
++		clocks = <&clock_gcc clk_mclk1_clk_src>,
++				<&clock_gcc clk_gcc_camss_mclk1_clk>;
++		clock-names = "cam_src_clk", "cam_clk";
++	};
+ };
+ 
+ 
+-- 
+1.7.4.1
+

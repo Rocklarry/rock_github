@@ -1,0 +1,30 @@
+From 6ac71a5b91f959c52ef2f7df3ec1744e4fa18697 Mon Sep 17 00:00:00 2001
+From: lizc1023 <lizc1023@thundersoft.com>
+Date: Mon, 8 Dec 2014 13:34:52 +0800
+Subject: [PATCH 3/3] ARM:config: support ltr558als defconfig
+
+Defconfig support ltr558als
+
+Change-Id: I463cedfc32a65f34a09e3a811d58663168d77614
+Signed-off-by: Li Zhanchao <lizc1023@thundersoft.com>
+---
+ arch/arm/configs/msm8916_defconfig |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/arch/arm/configs/msm8916_defconfig b/arch/arm/configs/msm8916_defconfig
+index c476b05..9ee51a9 100644
+--- a/arch/arm/configs/msm8916_defconfig
++++ b/arch/arm/configs/msm8916_defconfig
+@@ -214,7 +214,8 @@ CONFIG_CMA=y
+ CONFIG_CMA_SIZE_MBYTES=8
+ CONFIG_BLK_DEV_LOOP=y
+ CONFIG_BLK_DEV_RAM=y
+-CONFIG_APDS9930=y
++#CONFIG_APDS9930 is not set
++CONFIG_SENSORS_LTR558=y
+ CONFIG_QSEECOM=y
+ CONFIG_SCSI=y
+ CONFIG_SCSI_TGT=y
+-- 
+1.7.4.1
+

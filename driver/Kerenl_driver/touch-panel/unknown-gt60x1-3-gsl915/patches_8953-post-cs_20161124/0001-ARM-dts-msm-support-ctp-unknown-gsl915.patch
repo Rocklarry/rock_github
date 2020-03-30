@@ -1,0 +1,165 @@
+From 65b5404da16ce77885c91d5323437b4d7a0150f9 Mon Sep 17 00:00:00 2001
+From: Li Zhanchao <lizc1023@thundersoft.com>
+Date: Mon, 12 Dec 2016 16:15:47 +0800
+Subject: [PATCH 1/3] ARM:dts:msm: support ctp unknown gsl915
+
+Add CTP UNKNOWN@GT60X1-3@GSL915 device tree
+
+Change-Id: Ic74aa42ff72b0728eb542b2ddd0f85f811eba763
+Signed-off-by: Li Zhanchao <lizc1023@thundersoft.com>
+---
+ .../bindings/input/touchscreen/gsl915.txt          | 83 ++++++++++++++++++++++
+ .../devicetree/bindings/vendor-prefixes.txt        |  1 +
+ arch/arm/boot/dts/qcom/msm8953-qrd.dtsi            | 23 +++++-
+ 3 files changed, 106 insertions(+), 1 deletion(-)
+ create mode 100644 Documentation/devicetree/bindings/input/touchscreen/gsl915.txt
+
+diff --git a/Documentation/devicetree/bindings/input/touchscreen/gsl915.txt b/Documentation/devicetree/bindings/input/touchscreen/gsl915.txt
+new file mode 100644
+index 0000000..55d3b79
+--- /dev/null
++++ b/Documentation/devicetree/bindings/input/touchscreen/gsl915.txt
+@@ -0,0 +1,83 @@
++Silead touch controller
++
++The silead controller is connected to host processor
++via i2c. The controller generates interrupts when the
++user touches the panel. The host controller is expected
++to read the touch coordinates over i2c and pass the coordinates
++to the rest of the system.
++
++Required properties:
++
++ - compatible		: should be "silead,gsl_ts".
++ - reg			: i2c slave address of the device.
++ - interrupt-parent	: parent of interrupt.
++ - interrupts		: touch sample interrupt to indicate presense or release
++				of fingers on the panel.
++ - vdd-supply		: Power supply needed to power up the device.
++ - vcc_i2c-supply	: Power source required to power up i2c bus.
++ - silead,family-id	: family identification of the controller.
++ - silead,irq-gpio	: irq gpio which is to provide interrupts to host,
++				same as "interrupts" node. It will also
++				contain active low or active high information.
++ - silead,reset-gpio	: reset gpio to control the reset of chip.
++ - silead,display-coords : display coordinates in pixels. It is a four
++				tuple consisting of min x, min y, max x and
++				max y values
++ - silead,name	: name of the controller
++ - silead,group-id	: group id of this device
++ - silead,hard-reset-delay-ms : hard reset delay in ms
++ - silead,soft-reset-delay-ms : soft reset delay in ms
++				register for firmware upgrade
++ - pinctrl-names : This should be defined if a target uses pinctrl framework.
++			See "pinctrl" in Documentation/devicetree/bindings/pinctrl/msm-pinctrl.txt.
++			Specify the names of the configs that pinctrl can install in driver.
++			Following are the pinctrl configs that can be installed:
++			"pmx_ts_active" : Active configuration of pins, this should specify active
++			config defined in pin groups of interrupt and reset gpio.
++			"pmx_ts_suspend" : Disabled configuration of pins, this should specify sleep
++			config defined in pin groups of interrupt and reset gpio.
++			"pmx_ts_release" : Release configuration of pins, this should specify
++			release config defined in pin groups of interrupt and reset gpio.
++
++Optional properties:
++
++ - silead,panel-coords : panel coordinates for the chip in pixels.
++				It is a four tuple consisting of min x,
++				min y, max x and max y values.
++ - silead,i2c-pull-up : to specify pull up is required.
++ - silead,no-force-update : to specify force update is allowed.
++ - silead,button-map : button map of key codes. The number
++				of key codes depend on panel
++ - silead,fw-name	: specify the firmware file name
++ - silead,fw-vkey-support	: specify if virtual keys are supported through firmware
++ - silead,panel-coords : panel coordinates for the chip in pixels.
++				It is a four tuple consisting of min x,
++				min y, max x and max y values
++ - silead,fw-name	: specify the firmware file name
++ - silead,psensor-support	: specify whether support the proximity sensor
++ - silead,gesture-support	: specify whether support gesture feature
++ - silead,resume-in-workqueue : specifiy whether to defer the resume to workqueue
++
++Example:
++	i2c@78b7000 {
++		gsl@40{
++			compatible = "silead,gsl_ts";
++			reg = <0x40>;
++			interrupt-parent = <&tlmm>;
++			interrupts = <65 0x2008>;
++			vdd-supply = <&vdd_vreg>;
++			vcc_i2c-supply = <&pm8953_l6>;
++			gsl,reset-gpio = <&tlmm 64 0x00>;
++			gsl,irq-gpio = <&tlmm 65 0x2008>;
++			pinctrl-names = "pmx_ts_active","pmx_ts_suspend",
++				"pmx_ts_release";
++			pinctrl-0 = <&ts_int_active &ts_reset_active>;
++			pinctrl-1 = <&ts_int_suspend &ts_reset_suspend>;
++			pinctrl-2 = <&ts_release>;
++			gsl,panel-maxx = <1080>;
++			gsl,panel-maxy = <1920>;
++			gsl,IC-name = "gsl915";
++			gsl,fw-name = "gsl915.h";
++			gsl,fw-vkey-support;
++		};
++	};
+diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
+index 820eb34..3630a68 100644
+--- a/Documentation/devicetree/bindings/vendor-prefixes.txt
++++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+@@ -153,6 +153,7 @@ sandisk	Sandisk Corporation
+ sbs	Smart Battery System
+ schindler	Schindler
+ seagate	Seagate Technology PLC
++silead	Silead, Inc
+ smartv	SmartV Ltd
+ stk	Sensortek Technology Corporation.(formerly Sitronix Technology Co., Ltd.)
+ shinetech	Shine Tech Corporation, Ltd.
+diff --git a/arch/arm/boot/dts/qcom/msm8953-qrd.dtsi b/arch/arm/boot/dts/qcom/msm8953-qrd.dtsi
+index c081a1c..7e21632 100644
+--- a/arch/arm/boot/dts/qcom/msm8953-qrd.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8953-qrd.dtsi
+@@ -33,6 +33,27 @@
+ 
+ 	i2c@78b7000 { /* BLSP1 QUP3 */
+ 		status = "okay";
++		gsl@40{
++			compatible = "silead,gsl_ts";
++			reg = <0x40>;
++			interrupt-parent = <&tlmm>;
++			interrupts = <65 0x2008>;
++			vdd-supply = <&vdd_vreg>;
++			vcc_i2c-supply = <&pm8953_l6>;
++			gsl,reset-gpio = <&tlmm 64 0x00>;
++			gsl,irq-gpio = <&tlmm 65 0x2008>;
++			pinctrl-names = "pmx_ts_active","pmx_ts_suspend",
++				"pmx_ts_release";
++			pinctrl-0 = <&ts_int_active &ts_reset_active>;
++			pinctrl-1 = <&ts_int_suspend &ts_reset_suspend>;
++			pinctrl-2 = <&ts_release>;
++			gsl,panel-maxx = <1080>;
++			gsl,panel-maxy = <1920>;
++			gsl,IC-name = "gsl915";
++			gsl,fw-name = "gsl915.h";
++			gsl,fw-vkey-support;
++		};
++/*
+ 		synaptics@4b {
+ 			compatible = "synaptics,dsx-i2c";
+ 			reg = <0x4b>;
+@@ -53,11 +74,11 @@
+ 						      158 540 2000 320 160
+ 						      172 900 2000 320 160>;
+ 			synaptics,resume-in-workqueue;
+-			/* Underlying clocks used by secure touch */
+ 			clock-names = "iface_clk", "core_clk";
+ 			clocks = <&clock_gcc clk_gcc_blsp1_ahb_clk>,
+ 				<&clock_gcc clk_gcc_blsp1_qup3_i2c_apps_clk>;
+ 		};
++*/
+ 	};
+ 
+ 	vdd_vreg: vdd_vreg {
+-- 
+1.9.1
+

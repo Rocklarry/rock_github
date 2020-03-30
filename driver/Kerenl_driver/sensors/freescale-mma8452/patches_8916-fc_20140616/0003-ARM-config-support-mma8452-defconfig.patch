@@ -1,0 +1,33 @@
+From ac30cad3fa1396af12466946446c218674e66c5a Mon Sep 17 00:00:00 2001
+From: chenx <chenxiang0527@thundersoft.com>
+Date: Tue, 9 Sep 2014 09:21:21 +0800
+Subject: [PATCH 3/3] ARM:config: support mma8452 defconfig
+
+Defconfig support mma8452
+
+Change-Id: I5815e61a1e2aed4f8279f2c859b551d93cb56fed
+Signed-off-by: Xiang Chen <chenxiang0527@thundersoft.com>
+---
+ arch/arm/configs/msm8916_defconfig |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/configs/msm8916_defconfig b/arch/arm/configs/msm8916_defconfig
+index 3fc5fa2..308b332 100644
+--- a/arch/arm/configs/msm8916_defconfig
++++ b/arch/arm/configs/msm8916_defconfig
+@@ -256,8 +256,10 @@ CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE=y
+ CONFIG_INPUT_MISC=y
+ CONFIG_INPUT_UINPUT=y
+ CONFIG_INPUT_GPIO=m
+-CONFIG_SENSORS_LIS3DH=y
+-CONFIG_SENSORS_MPU6050=y
++# CONFIG_SENSORS_LIS3DH is not set
++CONFIG_SENSORS_MMA845X=y
++CONFIG_SENSORS_MMA_POSITION=0
++# CONFIG_SENSORS_MPU6050 is not set
+ CONFIG_SENSORS_AKM09911=y
+ CONFIG_SENSORS_BMA2X2=y
+ CONFIG_SENSORS_MMC3416X=y
+-- 
+1.7.9.5
+

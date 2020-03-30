@@ -1,0 +1,37 @@
+From 97f6a44e791fd0802ce0de49fcd13ee6548d373e Mon Sep 17 00:00:00 2001
+From: chenxl0723 <chenxl0723@thundersoft.com>
+Date: Mon, 9 Jun 2014 16:38:41 +0800
+Subject: [PATCH 2/3] ARM:config: support ctp solomon ssd6030qn5
+
+Add CTP IHV-BYD@BYD-TP1089A-V2@SSD6030QN5 config
+
+Change-Id: Ia296364e9f7a4b4dcfd5664dd6741edc014de68c
+Signed-off-by: Xuelong Chen <chenxl0723@thundersoft.com>
+---
+ arch/arm/configs/msm8916_defconfig |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm/configs/msm8916_defconfig b/arch/arm/configs/msm8916_defconfig
+index adf74a4..ab0d8c5 100644
+--- a/arch/arm/configs/msm8916_defconfig
++++ b/arch/arm/configs/msm8916_defconfig
+@@ -244,11 +244,12 @@ CONFIG_INPUT_JOYSTICK=y
+ CONFIG_JOYSTICK_XPAD=y
+ CONFIG_INPUT_TOUCHSCREEN=y
+ CONFIG_TOUCHSCREEN_ATMEL_MXT=y
+-CONFIG_TOUCHSCREEN_FT5X06=y
++#CONFIG_TOUCHSCREEN_FT5X06=y
++CONFIG_TOUCHSCREEN_SSD6030=y
+ CONFIG_TOUCHSCREEN_GEN_VKEYS=y
+-CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI4=y
+-CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_RMI4_DEV=y
+-CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE=y
++#CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI4=y
++#CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_RMI4_DEV=y
++#CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE=y
+ CONFIG_INPUT_MISC=y
+ CONFIG_INPUT_UINPUT=y
+ CONFIG_INPUT_GPIO=m
+-- 
+1.7.9.5
+

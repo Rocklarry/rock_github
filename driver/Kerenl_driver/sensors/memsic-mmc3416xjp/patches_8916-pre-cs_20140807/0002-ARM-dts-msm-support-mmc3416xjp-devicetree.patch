@@ -1,0 +1,28 @@
+From 284ff511285c25a6503b6915070c3c1799f71375 Mon Sep 17 00:00:00 2001
+From: Yukun Wan <wanyk0402@thundersoft.com>
+Date: Thu, 7 Aug 2014 15:18:04 +0800
+Subject: [PATCH 2/2] ARM:dts:msm: support mmc3416xjp devicetree
+
+Devicetree support mmc3416xjp
+
+Change-Id: Ida3c9986cecc6d77622ce91c9672a04530b9f7e6
+Signed-off-by: Yukun Wan <wanyk0402@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8916-qrd-skui.dtsi |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8916-qrd-skui.dtsi b/arch/arm/boot/dts/qcom/msm8916-qrd-skui.dtsi
+index 859680e..7cb6cf6 100644
+--- a/arch/arm/boot/dts/qcom/msm8916-qrd-skui.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8916-qrd-skui.dtsi
+@@ -237,6 +237,7 @@
+ 		vio-supply = <&pm8916_l6>;
+ 		memsic,dir = "obverse-x-axis-forward";
+ 		memsic,auto-report;
++		memsic,poll_interval = <100>;
+ 	};
+ };
+ 
+-- 
+1.7.9.5
+

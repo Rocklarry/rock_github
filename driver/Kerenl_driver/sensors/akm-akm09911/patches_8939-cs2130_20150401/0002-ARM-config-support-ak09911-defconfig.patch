@@ -1,0 +1,29 @@
+From 7c5c3e6258a345024bcf67ba8c851b9cb6a3b3c7 Mon Sep 17 00:00:00 2001
+From: chenqingfeng <chenqf0228@thundersoft.com>
+Date: Wed, 1 Apr 2015 15:47:49 +0800
+Subject: [PATCH 2/2] ARM:config: support ak09911 defconfig
+
+Defconfig support ak09911
+
+Change-Id: Iedd67b087913a7d1a2cbcf66cbbce837029f9db9
+Signed-off-by: Qingfeng Chen <chenqf0228@thundersoft.com>
+---
+ arch/arm64/configs/msm_defconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm64/configs/msm_defconfig b/arch/arm64/configs/msm_defconfig
+index 32c6f91..975bbee 100644
+--- a/arch/arm64/configs/msm_defconfig
++++ b/arch/arm64/configs/msm_defconfig
+@@ -255,7 +255,7 @@ CONFIG_SENSORS_MPU6050=y
+ CONFIG_SENSORS_LIS3DH=y
+ CONFIG_INPUT_UINPUT=y
+ CONFIG_INPUT_GPIO=m
+-CONFIG_SENSORS_MMC3416X=y
++#CONFIG_SENSORS_MMC3416X is not set
+ CONFIG_SENSORS_AKM09911=y
+ CONFIG_SENSORS_AKM8963=y
+ CONFIG_SENSORS_BMA2X2=y
+-- 
+1.7.9.5
+

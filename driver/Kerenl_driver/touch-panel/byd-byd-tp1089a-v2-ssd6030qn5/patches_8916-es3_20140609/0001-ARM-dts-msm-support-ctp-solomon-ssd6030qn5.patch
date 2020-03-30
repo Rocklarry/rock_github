@@ -1,0 +1,40 @@
+From aa991d967dc77a83e3928ddc6f47ce7c3155746f Mon Sep 17 00:00:00 2001
+From: chenxl0723 <chenxl0723@thundersoft.com>
+Date: Mon, 9 Jun 2014 16:37:19 +0800
+Subject: [PATCH 1/3] ARM:dts:msm: support ctp solomon ssd6030qn5
+
+Add CTP IHV-BYD@BYD-TP1089A-V2@SSD6030QN5 device tree
+
+Change-Id: I77f50e901afd43069d42b118ffdebf199d912f9a
+Signed-off-by: Xuelong Chen <chenxl0723@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8916-qrd.dtsi |   13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8916-qrd.dtsi b/arch/arm/boot/dts/qcom/msm8916-qrd.dtsi
+index 936ed4d..e5f3fde 100644
+--- a/arch/arm/boot/dts/qcom/msm8916-qrd.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8916-qrd.dtsi
+@@ -40,6 +40,19 @@
+ 			synaptics,power-down;
+ 			synaptics,disable-gpios;
+ 		};
++
++		      solomon@48 {
++                        compatible = "solomon,SSD60X0";
++                        reg = <0x48>;
++                        interrupt-parent = <&msm_gpio>;
++                        interrupts = <13 0x2>;
++                        vdd-supply = <&pm8916_l17>;
++                        vcc_i2c-supply = <&pm8916_l16>;
++                        solomon,reset-gpio = <&msm_gpio 12 0x00>;
++                        solomon,irq-gpio = <&msm_gpio 13 0x00>;
++                        solomon,fw-vkey-support;
++                };
++
+ 	};
+ 
+ 	gen-vkeys {
+-- 
+1.7.9.5
+

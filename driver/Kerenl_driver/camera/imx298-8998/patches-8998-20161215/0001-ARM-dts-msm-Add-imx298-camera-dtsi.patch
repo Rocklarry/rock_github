@@ -1,0 +1,44 @@
+From 455ab5b32fc6afa1cb20bca7d56b1455978ff288 Mon Sep 17 00:00:00 2001
+From: caihj0701 <caihj0701@thundersoft.com>
+Date: Tue, 13 Dec 2016 19:24:03 +0800
+Subject: [PATCH] ARM: dts: msm: Add imx298 camera dtsi
+
+Add imx298 devicetree description for msm8998
+
+Change-Id: I100934449078bb9ad5c15db138094585714f48ad
+Signed-off-by: caihj0701 <caihj0701@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msmcobalt-camera-sensor-mtp.dtsi | 11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msmcobalt-camera-sensor-mtp.dtsi b/arch/arm/boot/dts/qcom/msmcobalt-camera-sensor-mtp.dtsi
+index 485bc56..1ac51cc 100644
+--- a/arch/arm/boot/dts/qcom/msmcobalt-camera-sensor-mtp.dtsi
++++ b/arch/arm/boot/dts/qcom/msmcobalt-camera-sensor-mtp.dtsi
+@@ -226,16 +226,19 @@
+ 		gpios = <&tlmm 13 0>,
+ 			<&tlmm 30 0>,
+ 			<&pmcobalt_gpios 20 0>,
+-			<&tlmm 29 0>;
++			<&tlmm 29 0>,
++			<&tlmm 27 0>;
+ 		qcom,gpio-reset = <1>;
+ 		qcom,gpio-vdig = <2>;
+ 		qcom,gpio-vana = <3>;
+-		qcom,gpio-req-tbl-num = <0 1 2 3>;
+-		qcom,gpio-req-tbl-flags = <1 0 0 0>;
++		qcom,gpio-vaf = <4>;
++		qcom,gpio-req-tbl-num = <0 1 2 3 4>;
++		qcom,gpio-req-tbl-flags = <1 0 0 0 0>;
+ 		qcom,gpio-req-tbl-label = "CAMIF_MCLK0",
+ 					"CAM_RESET0",
+ 					"CAM_VDIG",
+-					"CAM_VANA";
++					"CAM_VANA",
++					"CAM_VAF";
+ 		qcom,sensor-position = <0>;
+ 		qcom,sensor-mode = <0>;
+ 		qcom,cci-master = <0>;
+-- 
+1.9.1
+

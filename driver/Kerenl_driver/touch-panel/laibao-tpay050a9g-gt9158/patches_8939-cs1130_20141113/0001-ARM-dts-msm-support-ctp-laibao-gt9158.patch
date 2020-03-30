@@ -1,0 +1,54 @@
+From d27565437a7ecdf95d8b6cf10093489f9d163d2b Mon Sep 17 00:00:00 2001
+From: lizc1023 <lizc1023@thundersoft.com>
+Date: Thu, 13 Nov 2014 13:15:07 +0800
+Subject: [PATCH 1/3] ARM:dts:msm: support ctp laibao gt9158
+
+Add CTP IHV-LAIBAO@TPAY050A9G@GT9158 device tree
+
+Change-Id: I681807a8d518ccb531afc8b8329554bbde9a1960
+Signed-off-by: Li Zhanchao <lizc1023@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi |   23 ++++++++++++++++++++++-
+ 1 files changed, 22 insertions(+), 1 deletions(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+index 8691993..f2b25db 100755
+--- a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+@@ -190,11 +190,32 @@
+ 			focaltech,fw-auto-cal;
+ 			focaltech,ignore-id-check;
+ 		};
++
++		goodix@5d {
++			compatible = "goodix,gt9xx";
++			reg = <0x5d>;
++			interrupt-parent = <&msm_gpio>;
++			interrupts = <13 0x2008>;
++			reset-gpios = <&msm_gpio 12 0x00>;
++			interrupt-gpios = <&msm_gpio 13 0x00>;
++			vdd-supply = <&pm8916_l17>;
++			vcc-i2c-supply = <&pm8916_l6>;
++			goodix,button-map = <139 102 158>;
++			goodix,panel-coords = <0 0 720 1400>;
++			goodix,display-coords = <0 0 720 1280>;
++			goodix,product-id = "9158";
++			goodix,num_max_touches = <5>;
++			goodix,soft_rst_dly = <20>;
++			goodix,fw_name = "gtp_fw.bin";
++			goodix,fw-vkey-support;
++			goodix,i2c-pull-up;
++			goodix,no-force-update;
++		};
+ 	};
+ 
+ 	gen-vkeys {
+ 		compatible = "qcom,gen-vkeys";
+-		label = "ft5x06_ts";
++		label = "gt9xx";
+ 		qcom,disp-maxx = <1080>;
+ 		qcom,disp-maxy = <1920>;
+ 		qcom,panel-maxx = <1080>;
+-- 
+1.7.4.1
+

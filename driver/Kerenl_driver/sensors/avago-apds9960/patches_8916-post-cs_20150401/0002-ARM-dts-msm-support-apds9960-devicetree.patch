@@ -1,0 +1,73 @@
+From 5983b0a9a4af2d9895377053aff2b6478ec25905 Mon Sep 17 00:00:00 2001
+From: chenx <chenxiang0527@thundersoft.com>
+Date: Fri, 13 Mar 2015 09:21:48 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support apds9960 devicetree
+
+Devicetree support apds9960
+
+Change-Id: I6d14918b2b32b2d7888d1891fbf22639594fb4bc
+Signed-off-by: Xiang Chen <chenxiang0527@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi |   32 +++++++++++++++++++++++++-
+ 1 file changed, 31 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi b/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
+index 5bb6734..5a546ae 100644
+--- a/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
+@@ -72,6 +72,21 @@
+ 		};
+ 	};
+ 
++	apds9960_int_pin {
++		qcom,pins = <&gp 113>;
++		qcom,pin-func = <0>;
++		qcom,num-grp-pins = <1>;
++		label = "apds9960-irq";
++		apds9960_default: apds9960_default {
++			drive-strength = <6>;
++			bias-pull-up;
++		};
++		apds9960_sleep: apds9960_sleep {
++			drive-strength = <2>;
++			bias-pull-down;
++		};
++	};
++
+ };
+ 
+ &i2c_0 { /* BLSP1 QUP2 */
+@@ -87,7 +102,7 @@
+ 		akm,gpio_rstn = <&msm_gpio 36 0x0>;
+ 		akm,auto-report;
+ 	};
+-
++/*
+ 	avago@39 {
+ 		compatible = "avago,apds9930";
+ 		reg = <0x39>;
+@@ -108,6 +123,21 @@
+ 		avago,als-D = <129>;
+ 		avago,ga-value = <98>;
+ 	};
++*/
++	avago@39 {
++		compatible = "avago,apds9960";
++		reg = <0x39>;
++		pinctrl-names = "default","sleep";
++		pinctrl-0 = <&apds9960_default>;
++		pinctrl-1 = <&apds9960_sleep>;
++		interrupt-parent = <&msm_gpio>;
++		interrupts = <113 0x2002>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++		avago,irq-gpio = <&msm_gpio 113 0x2002>;
++		avago,ps-threshold = <200>;
++		avago,ps-hysteresis-threshold = <150>;
++	};
+ 
+ 	st@18 {
+ 		compatible = "st,lis3dh";
+-- 
+1.7.9.5
+

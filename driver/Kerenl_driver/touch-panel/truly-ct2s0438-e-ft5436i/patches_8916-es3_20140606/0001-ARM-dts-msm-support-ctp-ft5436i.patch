@@ -1,0 +1,100 @@
+From 9f401adf5bc5c1c1551e1d66d810744e78c22d59 Mon Sep 17 00:00:00 2001
+From: liuyan <liuyan0429@thundersoft.com>
+Date: Tue, 3 Jun 2014 15:29:28 +0800
+Subject: [PATCH 1/2] 	ARM:dts:msm: support ctp ft5436i
+
+	Add CTP TRULY@CT2S0438-E@FT5436i driver
+
+Signed-off-by: Yan Liu <liuyan0429@thundersoft.com>
+
+Change-Id: If357a6f1dae8ec803e9ffd75ddfcf8093e658d17
+---
+ arch/arm/boot/dts/qcom/msm8916-qrd.dtsi |   50 +++++++++++++++++++++++++++----
+ 1 file changed, 44 insertions(+), 6 deletions(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8916-qrd.dtsi b/arch/arm/boot/dts/qcom/msm8916-qrd.dtsi
+index 936ed4d..5e6f8df 100644
+--- a/arch/arm/boot/dts/qcom/msm8916-qrd.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8916-qrd.dtsi
+@@ -21,14 +21,14 @@
+ 
+ &soc {
+ 	i2c@78b9000 { /* BLSP1 QUP5 */
+-		synaptics@70 {
++		/*synaptics@70 {
+ 			compatible = "synaptics,rmi4";
+ 			reg = <0x70>;
+ 			interrupt-parent = <&msm_gpio>;
+ 			interrupts = <13 0x2008>;
+ 			vdd-supply = <&pm8916_l17>;
+ 			vcc_i2c-supply = <&pm8916_l16>;
+-			/* pins used by touchscreen */
++
+ 			pinctrl-names = "pmx_ts_active","pmx_ts_suspend";
+ 			pinctrl-0 = <&ts_int_active &ts_reset_active>;
+ 			pinctrl-1 = <&ts_int_suspend &ts_reset_suspend>;
+@@ -39,10 +39,39 @@
+ 			synaptics,i2c-pull-up;
+ 			synaptics,power-down;
+ 			synaptics,disable-gpios;
+-		};
++		};*/
++	focaltech@38 {
++                        compatible = "focaltech,5x06";
++                         reg = <0x38>;
++                         interrupt-parent = <&msm_gpio>;
++                         interrupts = <13 0x2008>;
++                         vdd-supply = <&pm8916_l17>;
++                         vcc_i2c-supply = <&pm8916_l16>;
++                         focaltech,name = "ft5436i";
++                         focaltech,family-id = <0x12>;
++                         focaltech,reset-gpio = <&msm_gpio 12 0x00>;
++                         focaltech,irq-gpio = <&msm_gpio 13 0x2008>;
++                         focaltech,display-coords = <0 0 720 1280>;
++                         focaltech,panel-coords = <0 0 720 1380>;
++                         focaltech,button-map= <139 172 158>;
++                         focaltech,no-force-update;
++                         focaltech,i2c-pull-up;
++                         focaltech,fw-vkey-support;
++                         focaltech,group-id = <1>;
++                         focaltech,hard-reset-delay-ms = <20>;
++                         focaltech,soft-reset-delay-ms = <150>;
++                         focaltech,num-max-touches = <5>;
++                         focaltech,fw-name = "ft_8226_qrd_fw.bin";
++                         focaltech,fw-delay-aa-ms = <50>;
++                         focaltech,fw-delay-55-ms = <30>;
++                         focaltech,fw-upgrade-id1 = <0x79>;
++                         focaltech,fw-upgrade-id2 = <0x03>;
++                         focaltech,fw-delay-readid-ms = <10>;
++                         focaltech,fw-delay-era-flsh-ms = <2000>;
++                };
+ 	};
+ 
+-	gen-vkeys {
++	/*gen-vkeys {
+ 		compatible = "qcom,gen-vkeys";
+ 		label = "synaptics_rmi4_i2c";
+ 		qcom,disp-maxx = <720>;
+@@ -50,8 +79,17 @@
+ 		qcom,panel-maxx = <720>;
+ 		qcom,panel-maxy = <1369>;
+ 		qcom,key-codes = <158 172 139>;
+-	};
+-
++	};*/
++         gen-vkeys {
++                 compatible = "qcom,gen-vkeys";
++                 label = "ft5x06_ts";
++                 qcom,disp-maxx = <720>;
++                 qcom,disp-maxy = <1280>;
++                 qcom,panel-maxx = <720>;
++                 qcom,panel-maxy = <1380>;
++                 qcom,key-codes = <139 172 158>;
++                 qcom,y-offset = <0>;
++         };
+ 	i2c@78ba000 { /* BLSP1 QUP6 */
+ 		nfc-nci@e {
+ 			compatible = "qcom,nfc-nci";
+-- 
+1.7.9.5
+

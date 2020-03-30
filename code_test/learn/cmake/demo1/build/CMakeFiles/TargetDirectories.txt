@@ -1,0 +1,3 @@
+/home/rock/qccode/workspace/code_test/cmake/demo1/build/CMakeFiles/edit_cache.dir
+/home/rock/qccode/workspace/code_test/cmake/demo1/build/CMakeFiles/rebuild_cache.dir
+/home/rock/qccode/workspace/code_test/cmake/demo1/build/CMakeFiles/Demo.dir

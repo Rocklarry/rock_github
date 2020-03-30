@@ -1,0 +1,43 @@
+From 25fa8920141488140c95e30670d2f79f4fab269e Mon Sep 17 00:00:00 2001
+From: yangzh <yangzh0324@thundersoft.com>
+Date: Thu, 24 Jul 2014 13:47:18 +0800
+Subject: [PATCH 1/3] ARM:dts:msm: support ctp mms134s
+
+Add CTP ILJIN-DISPLAY@BH1333@MMS134S device tree
+
+Signed-off-by: yangzh <yagnzh0324@thundersoft.com>
+
+Change-Id: Id4bcf10f1852961e7cbc23594a6a3e5546fa38f9
+---
+ arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+ mode change 100755 => 100644 arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+
+diff --git a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+old mode 100755
+new mode 100644
+index e9902b8..7ce9f8e
+--- a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+@@ -189,6 +189,18 @@
+ 			focaltech,fw-auto-cal;
+ 			focaltech,ignore-id-check;
+ 		};
++		melfas@48 {
++			compatible = "melfas,mms_ts";
++			reg = <0x48>;
++			interrupt-parent = <&msm_gpio>;
++			interrupts = <13 0x2>;
++			vdd-supply = <&pm8916_l17>;
++			vcc_i2c-supply = <&pm8916_l6>;
++			melfas,irq-gpio = <&msm_gpio 13 0x00>;
++			melfas,fw-vkey-support;
++			melfas,max_touches = <5>;
++			melfas,panel-id = <0xde>;
++		};
+ 	};
+ 
+ 	gen-vkeys {
+-- 
+1.7.9.5
+

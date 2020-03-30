@@ -1,0 +1,168 @@
+From 249fb3d52fc7411111e243f63f0845649cf368a2 Mon Sep 17 00:00:00 2001
+From: gaozy1205 <gaozy1205@thundersoft.com>
+Date: Sat, 18 Mar 2017 16:19:48 +0800
+Subject: [PATCH] msm: camera_v2: Add hm8040 camera driver
+
+Add hm8040 camera driver for msm8937
+
+Change-Id: I5bbdb985f59ddbfeb1a7f0d24f78d45db5f32a2b
+Signed-off-by: gaozy1205 <gaozy1205@thundersoft.com>
+---
+ .../msm/camera_v2/sensor/io/msm_camera_dt_util.c   | 11 ++-
+ .../msm/camera_v2/sensor/io/msm_camera_dt_util.h   |  4 +-
+ .../platform/msm/camera_v2/sensor/msm_sensor.c     | 81 +++++++++++++++++++++-
+ 3 files changed, 91 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/media/platform/msm/camera_v2/sensor/io/msm_camera_dt_util.c b/drivers/media/platform/msm/camera_v2/sensor/io/msm_camera_dt_util.c
+index 3424506..27f6e40 100644
+--- a/drivers/media/platform/msm/camera_v2/sensor/io/msm_camera_dt_util.c
++++ b/drivers/media/platform/msm/camera_v2/sensor/io/msm_camera_dt_util.c
+@@ -1,4 +1,4 @@
+-/* Copyright (c) 2013-2016, The Linux Foundation. All rights reserved.
++/* Copyright (c) 2013-2017, The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 and
+@@ -1665,3 +1665,12 @@ int msm_camera_power_down(struct msm_camera_power_ctrl_t *ctrl,
+ 	return 0;
+ }
+ 
++void msm_camera_gpio_reset(struct msm_camera_power_ctrl_t *ctrl)
++{
++	gpio_set_value_cansleep(
++		ctrl->gpio_conf->gpio_num_info->gpio_num
++		[SENSOR_GPIO_RESET], GPIOF_OUT_INIT_LOW);
++	gpio_set_value_cansleep(
++		ctrl->gpio_conf->gpio_num_info->gpio_num
++		[SENSOR_GPIO_RESET], GPIOF_OUT_INIT_HIGH);
++}
+diff --git a/drivers/media/platform/msm/camera_v2/sensor/io/msm_camera_dt_util.h b/drivers/media/platform/msm/camera_v2/sensor/io/msm_camera_dt_util.h
+index 2209155..6e88180 100644
+--- a/drivers/media/platform/msm/camera_v2/sensor/io/msm_camera_dt_util.h
++++ b/drivers/media/platform/msm/camera_v2/sensor/io/msm_camera_dt_util.h
+@@ -1,4 +1,4 @@
+-/* Copyright (c) 2013-2016, The Linux Foundation. All rights reserved.
++/* Copyright (c) 2013-2017, The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 and
+@@ -65,4 +65,6 @@ int msm_camera_pinctrl_init
+ int32_t msm_sensor_driver_get_gpio_data(
+ 	struct msm_camera_gpio_conf **gpio_conf,
+ 	struct device_node *of_node);
++
++void msm_camera_gpio_reset(struct msm_camera_power_ctrl_t *ctrl);
+ #endif
+diff --git a/drivers/media/platform/msm/camera_v2/sensor/msm_sensor.c b/drivers/media/platform/msm/camera_v2/sensor/msm_sensor.c
+index 35963d5..2359781 100644
+--- a/drivers/media/platform/msm/camera_v2/sensor/msm_sensor.c
++++ b/drivers/media/platform/msm/camera_v2/sensor/msm_sensor.c
+@@ -1,4 +1,4 @@
+-/* Copyright (c) 2011-2016, The Linux Foundation. All rights reserved.
++/* Copyright (c) 2011-2017, The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 and
+@@ -415,6 +415,7 @@ static int msm_sensor_config32(struct msm_sensor_ctrl_t *s_ctrl,
+ 		struct msm_camera_i2c_reg_setting32 conf_array32;
+ 		struct msm_camera_i2c_reg_setting conf_array;
+ 		struct msm_camera_i2c_reg_array *reg_setting = NULL;
++		int num = 0;
+ 
+ 		if (s_ctrl->is_csid_tg_mode)
+ 			goto DONE;
+@@ -465,7 +466,81 @@ static int msm_sensor_config32(struct msm_sensor_ctrl_t *s_ctrl,
+ 		}
+ 
+ 		conf_array.reg_setting = reg_setting;
+-
++		/* add i2c_write for hm8040 */
++		if (strcmp(s_ctrl->sensordata->sensor_name,
++			"hm8040") == 0) {
++			if (conf_array.reg_setting[0].reg_addr == 0x3506) {
++				msm_camera_gpio_reset(
++				&s_ctrl->sensordata->power_info);
++				msleep(20);
++			}
++			CDBG("%s:%d	 name = %s\n", __func__, __LINE__,
++				s_ctrl->sensordata->sensor_name);
++			if (conf_array.reg_setting[0].reg_addr == 0x34c) {
++				CDBG("%s:%d skip 0x%x command\n",
++					__func__, __LINE__,
++					conf_array.reg_setting[0].reg_addr);
++				rc = 0;
++				msleep(20);
++			} else {
++				num = conf_array.size;
++				for (i = 0; i < num; ++i) {
++					s_ctrl->sensor_i2c_client->addr_type =
++						conf_array.addr_type;
++					rc = s_ctrl->sensor_i2c_client
++						->i2c_func_tbl->i2c_write(
++						s_ctrl->sensor_i2c_client,
++						conf_array.reg_setting[i].
++						reg_addr,
++						conf_array.reg_setting[i].
++						reg_data,
++						conf_array.data_type);
++					if (rc < 0) {
++						pr_err("%s:%d res rc = %d, 0x%x(%d)\n",
++							__func__, __LINE__, rc,
++							conf_array.
++							reg_setting[i].
++							reg_addr,
++							conf_array.
++							reg_setting[i].
++							reg_data);
++					} else {
++						CDBG("%s:%d 0x%x(%d) success\n",
++							__func__, __LINE__,
++							conf_array.
++							reg_setting[i].
++							reg_addr,
++							conf_array.
++							reg_setting[i].
++							reg_data);
++					    if (conf_array.
++							reg_setting[i].
++							delay > 20)
++							msleep(conf_array.
++							reg_setting[i].
++							delay);
++					    else if (conf_array.
++							reg_setting[i].
++							delay)
++							usleep_range(
++							conf_array.
++							reg_setting[i].
++							delay * 1000,
++							(conf_array.
++							reg_setting[i].
++							delay * 1000)
++							+ 1000);
++					}
++				}
++				if (conf_array.delay > 20)
++					msleep(conf_array.delay);
++				else if (conf_array.delay)
++					usleep_range(conf_array.
++					delay * 1000,
++					(conf_array.delay *
++					1000) + 1000);
++			}
++		} else {
+ 		if (CFG_WRITE_I2C_ARRAY == cdata->cfgtype)
+ 			rc = s_ctrl->sensor_i2c_client->i2c_func_tbl->
+ 				i2c_write_table(s_ctrl->sensor_i2c_client,
+@@ -483,7 +558,7 @@ static int msm_sensor_config32(struct msm_sensor_ctrl_t *s_ctrl,
+ 			rc = s_ctrl->sensor_i2c_client->i2c_func_tbl->
+ 				i2c_write_table_sync(s_ctrl->sensor_i2c_client,
+ 				&conf_array);
+-
++		}
+ 		kfree(reg_setting);
+ 		break;
+ 	}
+-- 
+1.9.1
+

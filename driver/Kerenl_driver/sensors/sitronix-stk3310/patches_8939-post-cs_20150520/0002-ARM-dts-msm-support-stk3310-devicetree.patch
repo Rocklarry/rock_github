@@ -1,0 +1,130 @@
+From f17bc6a6bf00f99aed2359a8a0724eb4856ae4c6 Mon Sep 17 00:00:00 2001
+From: Li Zhanchao <lizc1023@thundersoft.com>
+Date: Wed, 20 May 2015 17:28:54 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support stk3310 devicetree
+
+Devicetree support stk3310
+
+Change-Id: Iafd392d82bee59e20aec9c738c0b00f50b5668bc
+Signed-off-by: Li Zhanchao <lizc1023@thundersoft.com>
+---
+ .../devicetree/bindings/input/misc/stk-stk3x1x.txt | 39 +++++++++++-----------
+ arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi       | 21 +++++++++++-
+ 2 files changed, 40 insertions(+), 20 deletions(-)
+ mode change 100755 => 100644 arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+
+diff --git a/Documentation/devicetree/bindings/input/misc/stk-stk3x1x.txt b/Documentation/devicetree/bindings/input/misc/stk-stk3x1x.txt
+index 59136ee..240e5bb 100644
+--- a/Documentation/devicetree/bindings/input/misc/stk-stk3x1x.txt
++++ b/Documentation/devicetree/bindings/input/misc/stk-stk3x1x.txt
+@@ -3,49 +3,50 @@ Sensortek stk301x, stk321x and stk331x ambient light/proximity 3-in-1 sensor
+ Required properties:
+ 
+  - compatible		: Should be "stk,stk3x1x".
+- - reg					: i2c slave address of the device.
++ - reg			: i2c slave address of the device.
+  - interrupt-parent	: Parent of interrupt.
+  - interrupts		: Sensor will issue interrupt when preset condition is met,
+ 				typically when proximity sensor detect a change on near/far state.
+  - vdd-supply		: Main power supply to power sensor.
+  - vio-supply		: Power supply required to pullup I2C bus.
+- - stk,irq-gpio	: irq gpio which is to provide interrupts to host, same as
++ - stk,irq-gpio		: irq gpio which is to provide interrupts to host, same as
+ 				"interrupts" node.
+- - stk,transmittance : Transmittance rate of glass above the ambient light
++ - stk,transmittance	 : Transmittance rate of glass above the ambient light
+ 				detection window. The value may not be equal to real transmittance
+ 				but just a relative value.
+  - stk,state-reg	: The default setting of state register.
+  - stk,psctrl-reg	: The default setting for proximity sensor.
+  - stk,alsctrl-reg	: The default setting for ambient light sensor.
+  - stk,ledctrl-reg	: The default setting for IR LED.
+- - stk,wait-reg	: The default setting for wait time.
+- - stk,ps-thdh	: High threshold for proximity sensor, sensor will report
++ - stk,wait-reg		: The default setting for wait time.
++ - stk,ps-thdh		: High threshold for proximity sensor, sensor will report
+ 				"near" if the proximity sensor reading is larger or equal to this
+ 				value.
+- - stk,ps-thdl	: Low threshold for proximity sensor, sensor will report
++ - stk,ps-thdl		: Low threshold for proximity sensor, sensor will report
+ 				"far" if the proximity sensor reading is larger than this value.
+ 
+ Optional properties:
+ 
+- - stk,use-fir	: Boolean to enable light data jitter suppressing FIR filter.
++ - stk,use-fir		: Boolean to enable light data jitter suppressing FIR filter.
+ 
+ Example:
+-	i2c@f9925000 {
++	&i2c_0 { /* BLSP1 QUP2 */
+ 		stk@48 {
+ 			compatible = "stk,stk3x1x";
+ 			reg = <0x48>;
+-			interrupt-parent = <&msmgpio>;
+-			interrupts = <80 0x2>;
+-			vdd-supply = <&pm8110_l19>;
+-			vio-supply = <&pm8110_l14>;
+-			stk,irq-gpio = <&msmgpio 80 0x02>;
+-			stk,transmittance = <500>;
++			interrupt-parent = <&msm_gpio>;
++			interrupts = <113 0x2002>;
++			vdd-supply = <&pm8916_l17>;
++			vio-supply = <&pm8916_l6>;
++			stk,irq-gpio = <&msm_gpio 113 0x2002>;
++			stk,transmittance = <2600>;
+ 			stk,state-reg = <0x00>;
+-			stk,psctrl-reg = <0x71>;
+-			stk,alsctrl-reg = <0x38>;
++			stk,psctrl-reg = <0x31>;
++			stk,alsctrl-reg = <0x29>;
+ 			stk,ledctrl-reg = <0xFF>;
+-			stk,wait-reg = <0x07>;
+-			stk,ps-thdh = <1700>;
+-			stk,ps-thdl = <1500>;
++			stk,wait-reg = <0x09>;
++			stk,ps-thdh = <100>;
++			stk,ps-thdl = <50>;
+ 			stk,use-fir;
+ 		};
++	};
+diff --git a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+old mode 100755
+new mode 100644
+index 1039722..1ab8c2a
+--- a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+@@ -1,4 +1,4 @@
+-/* Copyright (c) 2014, The Linux Foundation. All rights reserved.
++/* Copyright (c) 2014-2015, The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 and
+@@ -82,6 +82,25 @@
+ 		avago,ga-value = <560>;
+ 	};
+ 
++	stk@48 {
++		compatible = "stk,stk3x1x";
++		reg = <0x48>;
++		interrupt-parent = <&msm_gpio>;
++		interrupts = <113 0x2002>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++		stk,irq-gpio = <&msm_gpio 113 0x2002>;
++		stk,transmittance = <2600>;
++		stk,state-reg = <0x00>;
++		stk,psctrl-reg = <0x31>;
++		stk,alsctrl-reg = <0x29>;
++		stk,ledctrl-reg = <0xFF>;
++		stk,wait-reg = <0x09>;
++		stk,ps-thdh = <100>;
++		stk,ps-thdl = <50>;
++		stk,use-fir;
++	};
++
+ 	bosch@18 { /* Accelerometer sensor */
+ 		compatible = "bosch,bma2x2";
+ 		reg = <0x18>;
+-- 
+1.9.1
+

@@ -1,0 +1,118 @@
+From 146f9447e27f0c2301e6b61c5d5c138d4358f533 Mon Sep 17 00:00:00 2001
+From: Li Zhanchao <lizc1023@thundersoft.com>
+Date: Fri, 22 May 2015 09:47:27 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support tmg3993 devicetree
+
+Devicetree support tmg3993
+
+Change-Id: I5671a385715f81f15db1e1398d67a3ef4ce29f42
+Signed-off-by: Li Zhanchao <lizc1023@thundersoft.com>
+---
+ .../devicetree/bindings/input/misc/tmg3993.txt     | 30 +++++++++++++++++++
+ arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi       | 35 ++++++++++++++++++++--
+ 2 files changed, 63 insertions(+), 2 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/input/misc/tmg3993.txt
+ mode change 100755 => 100644 arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+
+diff --git a/Documentation/devicetree/bindings/input/misc/tmg3993.txt b/Documentation/devicetree/bindings/input/misc/tmg3993.txt
+new file mode 100644
+index 0000000..6f710c0
+--- /dev/null
++++ b/Documentation/devicetree/bindings/input/misc/tmg3993.txt
+@@ -0,0 +1,30 @@
++TAOS tmg3993 L/P sensor
++
++Required properties:
++
++ - compatible		: Should be "taos,tmg3993".
++ - reg			: i2c slave address of the device.
++ - interrupt-parent	: Parent of interrupt.
++ - interrupts		: L/P sample interrupt to indicate new data ready.
++ - vdd-supply		: Power supply needed to power up the device.
++ - vio-supply		: IO power supply needed for IO and I2C.
++ - taos,irq-gpio	: The gpio pin for the interrupt.
++ - taos,prox_high_threshold	: The threshold adc value for proximity sensor to
++trigger close  interrupt.
++ - taos,prox_low_threshold: The threshold adc value for proximity sensor to
++trigger away interrupt.
++ - taos,als_delay	: The polling interval time of light sensor.
++
++Example:
++	taos@39 { /* Ambient light and proximity sensor */
++		compatible = "taos,tmg3993";
++		reg = <0x39>;
++		interrupt-parent = <&msm_gpio>;
++		interrupts = <113 0x2002>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++		taos,irq-gpio = <&msm_gpio 113 0x2002>;
++		taos,prox_high_threshold = <160>;
++		taos,prox_low_threshold = <40>;
++		taos,als_delay = <200>;
++	}
+\ No newline at end of file
+diff --git a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+old mode 100755
+new mode 100644
+index 1039722..4f4983e
+--- a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+@@ -47,6 +47,21 @@
+ 		};
+ 	};
+ 
++	tmg3993_int_pin {
++		qcom,pins = <&gp 113>;
++		qcom,pin-func = <0>;
++		qcom,num-grp-pins = <1>;
++		label = "tmg3993-irq";
++		tmg3993_default: tmg3993_default {
++			drive-strength = <6>;
++			bias-pull-up;
++		};
++		tmg3993_sleep: tmg3993_sleep {
++			drive-strength = <2>;
++			bias-pull-down;
++		};
++	};
++
+ 	tps65132-en-pin {
+ 		qcom,pins = <&gp 97>, <&gp 98>;
+ 		qcom,num-grp-pins = <2>;
+@@ -61,8 +76,8 @@
+ };
+ 
+ &i2c_0 { /* BLSP1 QUP2 */
+-	avago@39 { /* Ambient light and proximity sensor */
+-		compatible = "avago,apds9930";
++/*	avago@39 { /* Ambient light and proximity sensor */
++/*		compatible = "avago,apds9930";
+ 		reg = <0x39>;
+ 		pinctrl-names = "default","sleep";
+ 		pinctrl-0 = <&apds99xx_default>;
+@@ -81,6 +96,22 @@
+ 		avago,als-D = <129>;
+ 		avago,ga-value = <560>;
+ 	};
++*/
++	taos@39 { /* Ambient light and proximity sensor */
++		compatible = "taos,tmg3993";
++		reg = <0x39>;
++		pinctrl-names = "default","sleep";
++		pinctrl-0 = <&tmg3993_default>;
++		pinctrl-1 = <&tmg3993_sleep>;
++		interrupt-parent = <&msm_gpio>;
++		interrupts = <113 0x2>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++		taos,irq-gpio = <&msm_gpio 113 0x2>;
++		taos,prox_high_threshold = <160>;
++		taos,prox_low_threshold = <40>;
++		taos,als_delay = <10>;
++	};
+ 
+ 	bosch@18 { /* Accelerometer sensor */
+ 		compatible = "bosch,bma2x2";
+-- 
+1.9.1
+

@@ -1,0 +1,35 @@
+From 0ed3f0c66a6c1a846c41184e5cc12145259b47f1 Mon Sep 17 00:00:00 2001
+From: chenx <chenxiang0527@thundersoft.com>
+Date: Thu, 23 Apr 2015 11:05:18 +0800
+Subject: [PATCH 3/3] ARM:config: support kx023-1025 defconfig
+
+Defconfig support kx023-1025
+
+Change-Id: I3d4cf7bd5a6c7401d24f96e009086685d6924fb4
+Signed-off-by: Xiang Chen <chenxiang0527@thundersoft.com>
+---
+ arch/arm/configs/msm8916-perf_defconfig |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm/configs/msm8916-perf_defconfig b/arch/arm/configs/msm8916-perf_defconfig
+index 7dd8192..6b4466b5 100644
+--- a/arch/arm/configs/msm8916-perf_defconfig
++++ b/arch/arm/configs/msm8916-perf_defconfig
+@@ -264,10 +264,11 @@ CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE_v21=y
+ CONFIG_INPUT_MISC=y
+ CONFIG_INPUT_UINPUT=y
+ CONFIG_INPUT_GPIO=m
+-CONFIG_SENSORS_LIS3DH=y
+-CONFIG_SENSORS_MPU6050=y
++#CONFIG_SENSORS_LIS3DH=y
++#CONFIG_SENSORS_MPU6050=y
+ CONFIG_SENSORS_AKM09911=y
+-CONFIG_SENSORS_BMA2X2=y
++#CONFIG_SENSORS_BMA2X2=y
++CONFIG_INPUT_KIONIX_ACCEL=y
+ CONFIG_SENSORS_MMC3416X=y
+ CONFIG_SENSORS_AKM8963=y
+ # CONFIG_SERIAL_MSM_HSL is not set
+-- 
+1.7.9.5
+

@@ -1,0 +1,179 @@
+From d3358199cf92d4db112281c57db607055ebc4d3d Mon Sep 17 00:00:00 2001
+From: wangwf <wangwf0922@thundersoft.com>
+Date: Mon, 30 Mar 2015 13:16:24 +0800
+Subject: [PATCH] msm: camera_v2: Add s5k3m2 camera driver
+
+Add s5k3m2 camera driver for msm8929.
+
+Change-Id: Ia4daa998188ebb22cc5297a2f2c86ce9ae2fb89a
+Signed-off-by: wangwf <wangwf0922@thundersoft.com>
+---
+ .../boot/dts/qcom/msm8929-camera-sensor-qrd.dtsi   | 88 +++++++++++++++++++++-
+ .../msm/camera_v2/sensor/actuator/msm_actuator.c   | 27 ++++++-
+ include/media/msm_camsensor_sdk.h                  |  1 +
+ 3 files changed, 112 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8929-camera-sensor-qrd.dtsi b/arch/arm/boot/dts/qcom/msm8929-camera-sensor-qrd.dtsi
+index d5ae42a..71caf1a 100644
+--- a/arch/arm/boot/dts/qcom/msm8929-camera-sensor-qrd.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8929-camera-sensor-qrd.dtsi
+@@ -204,16 +204,100 @@
+ 		clock-names = "cam_src_clk", "cam_clk";
+ 	};
+ 
++	eeprom2: qcom,eeprom@2{
++		cell-index = <0>;
++		reg = <0x5a>;
++		qcom,eeprom-name = "sunny_f13s01k";
++		compatible = "qcom,eeprom";
++		qcom,slave-addr = <0x5a>;
++		qcom,cci-master = <0>;
++		qcom,num-blocks = <12>;
++
++		qcom,page0 = <1 0x0136 2 0x1800 2 1>;
++		qcom,poll0 = <0 0x0 2 0 1 1>;
++		qcom,mem0 = <0 0x0 2 0 1 0>;
++		qcom,page1 = <1 0x0304 2 0x0006 2 1>;
++		qcom,poll1 = <0 0x0 2 0 1 1>;
++		qcom,mem1 = <0 0x0 2 0 1 0>;
++		qcom,page2 = <1 0x0306 2 0x0073 2 1>;
++		qcom,poll2 = <0 0x0 2 0 1 1>;
++		qcom,mem2 = <0 0x0 2 0 1 0>;
++		qcom,page3 = <1 0x030c 2 0x0004 2 1>;
++		qcom,poll3 = <0 0x0 2 0 1 1>;
++		qcom,mem3 = <0 0x0 2 0 2 0>;
++		qcom,page4 = <1 0x030e 2 0x0064 2 1>;
++		qcom,poll4 = <0 0x0 2 0 1 1>;
++		qcom,mem4 = <0 0x0 2 0 1 0>;
++		qcom,page5 = <1 0x0302 2 0x0001 2 1>;
++		qcom,poll5 = <0 0x0 2 0 1 1>;
++		qcom,mem5 = <0 0x0 2 0 1 0>;
++		qcom,page6 = <1 0x0300 2 0x0004 2 1>;
++		qcom,poll6 = <0 0x0 2 0 1 1>;
++		qcom,mem6 = <0 0x0 2 0 1 0>;
++		qcom,page7 = <1 0x030a 2 0x0001 2 1>;
++		qcom,poll7 = <0 0x0 2 0 1 1>;
++		qcom,mem7 = <0 0 2 0 1 0>;
++		qcom,page8 = <1 0x0308 2 0x0008 2 1>;
++		qcom,poll8 = <0 0x0 2 0 1 1>;
++		qcom,mem8 = <0 0 2 0 1 0>;
++		qcom,page9 = <1 0x0100 2 0x0100 2 20>;
++		qcom,poll9 = <0 0x0 2 0 1 1>;
++		qcom,mem9 = <0 0 2 0 1 0>;
++		qcom,page10 = <1 0x0a02 2 0x1f00 2 10>;
++		qcom,poll10 = <0 0x0 2 0 1 1>;
++		qcom,mem10 = <0 0 2 0 1 0>;
++		qcom,page11 = <1 0x0a00 2 0x0100 2 1>;
++		qcom,poll11 = <0 0x0 2 0 1 1>;
++		qcom,mem11 = <64 0x0a04 2 0 1 0>;
++
++		cam_vdig-supply = <&pm8916_l2>;
++		cam_vana-supply = <&pm8916_l17>;
++		cam_vio-supply = <&pm8916_l6>;
++		cam_vaf-supply = <&pm8916_l10>;
++		qcom,cam-vreg-name = "cam_vdig", "cam_vio", "cam_vana",
++							"cam_vaf";
++		qcom,cam-vreg-type = <0 1 0 0>;
++		qcom,cam-vreg-min-voltage = <1200000 0 2850000 2800000>;
++		qcom,cam-vreg-max-voltage = <1200000 0 2850000 2800000>;
++		qcom,cam-vreg-op-mode = <200000 0 80000 100000>;
++		pinctrl-names = "cam_default", "cam_suspend";
++		pinctrl-0 = <&cam_sensor_mclk0_default &cam_sensor_rear_default>;
++		pinctrl-1 = <&cam_sensor_mclk0_sleep &cam_sensor_rear_sleep>;
++		gpios = <&msm_gpio 26 0>,
++			<&msm_gpio 35 0>,
++			<&msm_gpio 34 0>;
++		qcom,gpio-reset = <1>;
++		qcom,gpio-standby = <2>;
++		qcom,gpio-req-tbl-num = <0 1 2>;
++		qcom,gpio-req-tbl-flags = <1 0 0>;
++		qcom,gpio-req-tbl-label = "CAMIF_MCLK0",
++			"MCAM_RESET",
++			"MCAM_STANDBY";
++
++		qcom,cam-power-seq-type = "sensor_vreg",
++			"sensor_gpio", "sensor_gpio",
++			"sensor_clk";
++
++		qcom,cam-power-seq-val = "cam_vaf",
++			"sensor_gpio_reset",
++			"sensor_gpio_standby",
++			"sensor_cam_mclk";
++		qcom,cam-power-seq-cfg-val = <1 1 1 24000000>;
++		qcom,cam-power-seq-delay = <1 10 10 5>;
++		clocks = <&clock_gcc clk_mclk0_clk_src>,
++				<&clock_gcc clk_gcc_camss_mclk0_clk>;
++		clock-names = "cam_src_clk", "cam_clk";
++	};
+ 
+ 	qcom,camera@0 {
+ 		cell-index = <0>;
+ 		compatible = "qcom,camera";
+ 		reg = <0x0>;
+-		qcom,special-support-sensors="ov13850_q13v06k";
++		qcom,special-support-sensors="s5k3m2_f13s01k";
+ 		qcom,csiphy-sd-index = <0>;
+ 		qcom,csid-sd-index = <0>;
+ 		qcom,mount-angle = <90>;
+-		qcom,eeprom-src = <&eeprom0>;
++		qcom,eeprom-src = <&eeprom2>;
+ 		qcom,actuator-src = <&actuator0>;
+ 		qcom,led-flash-src = <&led_flash0>;
+ 		cam_vdig-supply = <&pm8916_l2>;
+diff --git a/drivers/media/platform/msm/camera_v2/sensor/actuator/msm_actuator.c b/drivers/media/platform/msm/camera_v2/sensor/actuator/msm_actuator.c
+index e5180c5..aa4915e 100644
+--- a/drivers/media/platform/msm/camera_v2/sensor/actuator/msm_actuator.c
++++ b/drivers/media/platform/msm/camera_v2/sensor/actuator/msm_actuator.c
+@@ -1,4 +1,4 @@
+-/* Copyright (c) 2011-2014, The Linux Foundation. All rights reserved.
++/* Copyright (c) 2011-2015, The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 and
+@@ -113,7 +113,30 @@ static void msm_actuator_parse_i2c_params(struct msm_actuator_ctrl_t *a_ctrl,
+ 				i2c_byte1 = (value & 0xFF00) >> 8;
+ 				i2c_byte2 = value & 0xFF;
+ 			}
+-		} else {
++		} else if (write_arr[i].reg_write_type ==
++			MSM_ACTUATOR_WRITE_AK7348) {
++			value = (next_lens_position <<
++				write_arr[i].data_shift) |
++				((hw_dword & write_arr[i].hw_mask) >>
++				write_arr[i].hw_shift);
++				i2c_byte1 = write_arr[i].reg_addr;
++				i2c_byte2 = value;
++			if (size != (i+1)) {
++				i2c_byte2 = (value & 0x1FF) >> 1;
++				CDBG("byte1:0x%x, byte2:0x%x\n",
++					i2c_byte1, i2c_byte2);
++				i2c_tbl[a_ctrl->i2c_tbl_index].
++					reg_addr = i2c_byte1;
++				i2c_tbl[a_ctrl->i2c_tbl_index].
++					reg_data = i2c_byte2;
++				i2c_tbl[a_ctrl->i2c_tbl_index].
++					delay = 0;
++				a_ctrl->i2c_tbl_index++;
++				i++;
++				i2c_byte1 = write_arr[i].reg_addr;
++				i2c_byte2 = (value & 0x1) << 7;
++			}
++		}else {
+ 			i2c_byte1 = write_arr[i].reg_addr;
+ 			i2c_byte2 = (hw_dword & write_arr[i].hw_mask) >>
+ 				write_arr[i].hw_shift;
+diff --git a/include/media/msm_camsensor_sdk.h b/include/media/msm_camsensor_sdk.h
+index 95b07e8..a8fc2b6 100644
+--- a/include/media/msm_camsensor_sdk.h
++++ b/include/media/msm_camsensor_sdk.h
+@@ -138,6 +138,7 @@ enum msm_actuator_addr_type {
+ enum msm_actuator_write_type {
+ 	MSM_ACTUATOR_WRITE_HW_DAMP,
+ 	MSM_ACTUATOR_WRITE_DAC,
++	MSM_ACTUATOR_WRITE_AK7348,
+ };
+ 
+ enum msm_actuator_i2c_operation {
+-- 
+1.9.1
+

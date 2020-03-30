@@ -1,0 +1,76 @@
+From 55a225ba37c869139647d3e529549d08195634d3 Mon Sep 17 00:00:00 2001
+From: chenx <chenxiang0527@thundersoft.com>
+Date: Mon, 13 Oct 2014 11:17:27 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support mpu3050 devicetree
+
+Devicetree support mpu3050
+
+Change-Id: I2041233155f56d5810e070661313ef9f739f1404
+Signed-off-by: Xiang Chen <chenxiang0527@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi |   35 +++++++++++++++++++++++++-
+ 1 file changed, 34 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi b/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
+index 9981e42..2c2a0c5 100644
+--- a/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
+@@ -72,6 +72,21 @@
+ 		};
+ 	};
+ 
++	mpu3050_int_pin {
++		qcom,pins = <&gp 113>;
++		qcom,pin-func = <0>;
++		qcom,num-grp-pins = <1>;
++		label = "mpu3050-irq";
++		mpu3050_default: mpu3050_default {
++			drive-strength = <6>;
++			bias-pull-up;
++		};
++		mpu3050_sleep: mpu3050_sleep {
++			drive-strength = <2>;
++			bias-pull-down;
++		};
++	};
++
+ };
+ 
+ &i2c_0 { /* BLSP1 QUP2 */
+@@ -87,7 +102,7 @@
+ 		akm,gpio_rstn = <&msm_gpio 36 0x0>;
+ 		akm,auto-report;
+ 	};
+-
++/*
+ 	avago@39 {
+ 		compatible = "avago,apds9930";
+ 		reg = <0x39>;
+@@ -108,6 +123,24 @@
+ 		avago,als-D = <129>;
+ 		avago,ga-value = <98>;
+ 	};
++*/
++	mpu3050@68 {
++		#address-cells = <1>;
++		#size-cells = <0>;
++		status = "okay";
++		reg = <0x68>;
++		pinctrl-names = "default","sleep";
++		pinctrl-0 = <&mpu3050_default>;
++		pinctrl-1 = <&mpu3050_sleep>;
++		compatible = "invn,mpu3050";
++		interrupt-parent = <&msm_gpio>;
++		interrupts = <113 0x2002>;
++		vdd-supply = <&pm8916_l17>;
++		vlogic-supply = <&pm8916_l6>;
++		invn,gpio-int = <&msm_gpio 113 0x2002>;
++		invn,gpio-en = <&pm8916_gpios 2 0x2>;
++		invn,poll-interval = <200>;
++	};
+ 
+ 	st@18 {
+ 		compatible = "st,lis3dh";
+-- 
+1.7.9.5
+

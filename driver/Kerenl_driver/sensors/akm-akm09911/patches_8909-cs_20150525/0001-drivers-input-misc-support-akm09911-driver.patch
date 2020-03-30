@@ -1,0 +1,46 @@
+From 22c17c0c4d4238bf75af89c1c560d353aba307e3 Mon Sep 17 00:00:00 2001
+From: yanqy <yanqy0911@thundersoft.com>
+Date: Tue, 19 May 2015 11:13:19 +0800
+Subject: [PATCH 1/3] drivers:input:misc: support akm09911 driver
+
+Driver support akm09911
+
+Change-Id: I1093901d00401100ee3a1a67dec4024afe195e63
+Signed-off-by: Qiyang Yan <yanqy0911@thundersoft.com>
+---
+ drivers/input/misc/akm09911.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/input/misc/akm09911.c b/drivers/input/misc/akm09911.c
+index 0735d25..4862975 100644
+--- a/drivers/input/misc/akm09911.c
++++ b/drivers/input/misc/akm09911.c
+@@ -1,7 +1,6 @@
+ /* drivers/misc/akm09911.c - akm09911 compass driver
+  *
+- * Copyright (c) 2014-2015, Linux Foundation. All rights reserved.
+- * Copyright (C) 2007-2008 HTC Corporation.
++ * Copyright (C) 2007-2015 HTC Corporation.
+  * Author: Hou-Kun Chen <houkun.chen@gmail.com>
+  *
+  * This software is licensed under the terms of the GNU General Public
+@@ -1823,7 +1822,6 @@ static int akm_report_data(struct akm_compass_data *akm)
+ 			dat_buf[4], dat_buf[5], dat_buf[6], dat_buf[7]);
+ 	dev_dbg(&akm->i2c->dev, "asa: %d %d %d\n", akm->sense_conf[0],
+ 			akm->sense_conf[1], akm->sense_conf[2]);
+-
+ 	switch (akm->layout) {
+ 	case 0:
+ 	case 1:
+@@ -2273,7 +2271,7 @@ int akm_compass_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ 
+ 	s_akm->delay[MAG_DATA_FLAG] = sensors_cdev.delay_msec * 1000000;
+ 
+-	err = sensors_classdev_register(&s_akm->input->dev, &s_akm->cdev);
++	err = sensors_classdev_register(&client->dev, &s_akm->cdev);
+ 
+ 	if (err) {
+ 		dev_err(&client->dev, "class device create failed: %d\n", err);
+-- 
+1.7.9.5
+

@@ -1,0 +1,3 @@
+测试dome编译：
+push到无人机 
+gcc test_usb_send.c -O  test_usb_send -lpthread

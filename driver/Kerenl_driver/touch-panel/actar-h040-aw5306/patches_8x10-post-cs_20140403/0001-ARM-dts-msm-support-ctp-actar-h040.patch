@@ -1,0 +1,70 @@
+From 029d850c4cdaf0786d5e8d39b85be5d33995202c Mon Sep 17 00:00:00 2001
+From: chenxl0723 <chenxl0723@thundersoft.com>
+Date: Thu, 17 Apr 2014 11:39:59 +0800
+Subject: [PATCH 1/3] ARM:dts:msm: support ctp actar h040
+
+Add CTP IHV-ACTAR@H040@AW5306 device tree
+
+Change-Id: I2c181a503df3625b58628c63cd9f15456b7c9206
+Signed-off-by: Xuelong Chen <chenxl0723@thundersoft.com>
+---
+ arch/arm/boot/dts/msm8610-qrd.dtsi |   29 ++++++++++++++++++++++-------
+ 1 file changed, 22 insertions(+), 7 deletions(-)
+
+diff --git a/arch/arm/boot/dts/msm8610-qrd.dtsi b/arch/arm/boot/dts/msm8610-qrd.dtsi
+index 92d1a77..6d0badd 100644
+--- a/arch/arm/boot/dts/msm8610-qrd.dtsi
++++ b/arch/arm/boot/dts/msm8610-qrd.dtsi
+@@ -28,7 +28,7 @@
+ 
+ &soc {
+ 	i2c@f9923000{
+-		focaltech@38{
++		/*focaltech@38{
+ 			compatible = "focaltech,5x06";
+ 			reg = <0x38>;
+ 			interrupt-parent = <&msmgpio>;
+@@ -55,19 +55,34 @@
+ 			focaltech,fw-upgrade-id2 = <0x08>;
+ 			focaltech,fw-delay-readid-ms = <10>;
+ 			focaltech,fw-delay-era-flsh-ms = <2000>;
++		};*/
++		awin@38 {
++			compatible = "awin,aw5206";
++			reg = <0x38>;
++			interrupt-parent = <&msmgpio>;
++			interrupts = <1 0x2>;
++			vdd-supply = <&pm8110_l19>;
++			vcc_i2c-supply = <&pm8110_l14>;
++			awin,name = "aw5306";
++			awin,reset-gpio = <&msmgpio 0 0x00>;
++			awin,irq-gpio = <&msmgpio 1 0x00>;
++			awin,soft-reset-delay-ms = <150>;
++			awin,num-max-touches = <5>;
++			awin,fw-vkey-support;
+ 		};
+ 	};
+ 
+ 	gen-vkeys {
+ 		compatible = "qcom,gen-vkeys";
+-		label = "ft5x06_ts";
+-		qcom,disp-maxx = <480>;
+-		qcom,disp-maxy = <800>;
+-		qcom,panel-maxx = <481>;
+-		qcom,panel-maxy = <940>;
+-		qcom,key-codes = <139 0 102 158 0 0 0>;
++		label = "AW5306_ts";
++		qcom,disp-maxx = <720>;
++		qcom,disp-maxy = <1280>;
++		qcom,panel-maxx = <720>;
++		qcom,panel-maxy = <1380>;
++		qcom,key-codes = <139 102 158>;
+ 		qcom,y-offset = <0>;
+ 	};
++
+ 	serial@f991e000 {
+ 		status = "ok";
+ 	};
+-- 
+1.7.9.5
+

@@ -1,0 +1,28 @@
+From 3dfd697dc07c9cb442e3ee6fec5da06b42370f2e Mon Sep 17 00:00:00 2001
+From: Li Zhanchao <lizc1023@thundersoft.com>
+Date: Thu, 27 Oct 2016 13:47:09 +0800
+Subject: [PATCH 2/3] ARM:config: support ctp truly hx8527-e44
+
+Add CTP TRULY@CT4F2287@HX8527-E44 config
+
+Change-Id: I0784a7d7360762779182544dcefc60bdb4d4f883
+Signed-off-by: Li Zhanchao <lizc1023@thundersoft.com>
+---
+ arch/arm64/configs/msm_defconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm64/configs/msm_defconfig b/arch/arm64/configs/msm_defconfig
+index 1f80df6..1dce4dd 100644
+--- a/arch/arm64/configs/msm_defconfig
++++ b/arch/arm64/configs/msm_defconfig
+@@ -283,6 +283,7 @@ CONFIG_INPUT_JOYSTICK=y
+ CONFIG_JOYSTICK_XPAD=y
+ CONFIG_INPUT_TABLET=y
+ CONFIG_INPUT_TOUCHSCREEN=y
++CONFIG_TOUCHSCREEN_HIMAX=y
+ CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_CORE_v21=y
+ CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_RMI_DEV_v21=y
+ CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE_v21=y
+-- 
+1.9.1
+

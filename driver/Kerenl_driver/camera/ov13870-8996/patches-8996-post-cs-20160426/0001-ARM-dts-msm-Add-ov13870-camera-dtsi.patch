@@ -1,0 +1,59 @@
+From e50606013fb4c694d79f457ea476520c342d050f Mon Sep 17 00:00:00 2001
+From: Wei Ding <weiding@qti.qualcomm.com>
+Date: Tue, 26 Apr 2016 14:24:29 +0800
+Subject: [PATCH] ARM: dts: msm: Add ov13870 camera dtsi.
+
+Change-Id: I16f20b1a7440d50647273becf26e205c47217ee0
+---
+ .../boot/dts/qcom/msm8996-camera-sensor-dtp.dtsi   |    6 +++---
+ arch/arm/boot/dts/qcom/msm8996-regulator.dtsi      |    8 ++++----
+ 2 files changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8996-camera-sensor-dtp.dtsi b/arch/arm/boot/dts/qcom/msm8996-camera-sensor-dtp.dtsi
+index fa20531..2efeca9 100644
+--- a/arch/arm/boot/dts/qcom/msm8996-camera-sensor-dtp.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8996-camera-sensor-dtp.dtsi
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (c) 2015 The Linux Foundation. All rights reserved.
++ * Copyright (c) 2015-2016 The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 and
+@@ -126,8 +126,8 @@
+ 		cam_vio-supply = <&pm8994_lvs1>;
+ 		cam_vana-supply = <&pm8994_l17>;
+ 		qcom,cam-vreg-name = "cam_vdig", "cam_vio", "cam_vana";
+-		qcom,cam-vreg-min-voltage = <1300000 0 2500000>;
+-		qcom,cam-vreg-max-voltage = <1300000 0 2500000>;
++		qcom,cam-vreg-min-voltage = <1300000 0 2800000>;
++		qcom,cam-vreg-max-voltage = <1300000 0 2800000>;
+ 		qcom,cam-vreg-op-mode = <105000 0 80000>;
+ 		qcom,gpio-no-mux = <0>;
+ 		pinctrl-names = "cam_default", "cam_suspend";
+diff --git a/arch/arm/boot/dts/qcom/msm8996-regulator.dtsi b/arch/arm/boot/dts/qcom/msm8996-regulator.dtsi
+index 305fe12..3196409 100644
+--- a/arch/arm/boot/dts/qcom/msm8996-regulator.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8996-regulator.dtsi
+@@ -1,4 +1,4 @@
+-/* Copyright (c) 2014-2015, The Linux Foundation. All rights reserved.
++/* Copyright (c) 2014-2016, The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 and
+@@ -259,9 +259,9 @@
+ 	rpm-regulator-ldoa17 {
+ 		status = "okay";
+ 		pm8994_l17: regulator-l17 {
+-			regulator-min-microvolt = <2500000>;
+-			regulator-max-microvolt = <2500000>;
+-			qcom,init-voltage = <2500000>;
++			regulator-min-microvolt = <2800000>;
++			regulator-max-microvolt = <2800000>;
++			qcom,init-voltage = <2800000>;
+ 			status = "okay";
+ 		};
+ 	};
+-- 
+1.7.9.5
+

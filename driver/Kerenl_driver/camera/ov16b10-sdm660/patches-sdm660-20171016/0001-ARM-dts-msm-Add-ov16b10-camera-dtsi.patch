@@ -1,0 +1,31 @@
+From 80014444a76a0848987fcc56dac161cff0fedd03 Mon Sep 17 00:00:00 2001
+From: yanhd0619 <yanhd0619@thundersoft.com>
+Date: Mon, 25 Sep 2017 11:38:07 +0800
+Subject: [PATCH] ARM: dts: msm: Add ov16b10 camera dtsi
+
+Add ov16b10 devicetree description for sdm660
+
+Change-Id: I6b6ab15478b8cfc43bdde2510337e79a39f2dc31
+Signed-off-by: yanhd0619 <yanhd0619@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/sdm660-camera.dtsi | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/boot/dts/qcom/sdm660-camera.dtsi b/arch/arm/boot/dts/qcom/sdm660-camera.dtsi
+index 8ad33a5..fe0acf2 100644
+--- a/arch/arm/boot/dts/qcom/sdm660-camera.dtsi
++++ b/arch/arm/boot/dts/qcom/sdm660-camera.dtsi
+@@ -55,8 +55,8 @@
+ 			"csiphy_timer_src_clk", "csiphy_timer_clk",
+ 			"camss_ispif_ahb_clk", "csiphy_clk_src", "csiphy_clk",
+ 			"csiphy_ahb2crif";
+-		qcom,clock-rates = <0 0 0 0 0 0 310000000 0 0 269333333 0
+-			0 200000000 0 0>;
++		qcom,clock-rates = <0 0 0 0 0 0 310000000 0 0 310000000 0
++			0 310000000 0 0>;
+ 		status = "ok";
+ 	};
+ 
+-- 
+1.9.1
+

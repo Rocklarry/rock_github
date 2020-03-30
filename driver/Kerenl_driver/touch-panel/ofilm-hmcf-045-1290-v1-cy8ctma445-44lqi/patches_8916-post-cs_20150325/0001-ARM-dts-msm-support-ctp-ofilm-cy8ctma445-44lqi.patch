@@ -1,0 +1,243 @@
+From b2d8c9b5c26b4498ab1018c90f78589cab93d4e5 Mon Sep 17 00:00:00 2001
+From: yanqy <yanqy0911@thundersoft.com>
+Date: Mon, 23 Mar 2015 14:12:44 +0800
+Subject: [PATCH 1/3] ARM:dts:msm: support ctp ofilm cy8ctma445-44lqi
+
+Add CTP ofilm cy8ctma445-44lqi device tree
+
+Change-Id: I9b189bb7d5ec25309091fba78eb647b0a009839f
+Signed-off-by: Qiyang Yan <yanqy0911@thundersoft.com>
+---
+ .../input/touchscreen/cypress/cypress-ts.txt       |  101 ++++++++++++++++++++
+ arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi       |   79 ++++++++++++++-
+ 2 files changed, 178 insertions(+), 2 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/input/touchscreen/cypress/cypress-ts.txt
+
+diff --git a/Documentation/devicetree/bindings/input/touchscreen/cypress/cypress-ts.txt b/Documentation/devicetree/bindings/input/touchscreen/cypress/cypress-ts.txt
+new file mode 100644
+index 0000000..72c6dfc
+--- /dev/null
++++ b/Documentation/devicetree/bindings/input/touchscreen/cypress/cypress-ts.txt
+@@ -0,0 +1,101 @@
++cypress touch controller
++
++The cypress controller is connected to host processor
++via i2c. The controller generates interrupts when the
++user touches the panel. The host controller is expected
++to read the touch coordinates over i2c and pass the coordinates
++to the rest of the system.
++
++Required properties:
++
++ - compatible		: should be "cy,cyttsp4_i2c_adapter"
++ - reg			: i2c slave address of the device
++ - interrupt-parent	: parent of interrupt
++ - interrupts		: touch sample interrupt to indicate presense or release
++				of fingers on the panel.
++ - vdd-supply		: Power supply needed to power up the device
++ - vcc_i2c-supply	: Power source required to power up i2c bus
++ - cy,adapter_id	: id of the adapter controller
++ - cy,core			: the firmware and basic information of touch panel
++ - cy,irq_gpio		: irq gpio which is to provide interrupts to host,
++				same as "interrupts" node. It will also
++				contain active low or active high information.
++ - cy,rst_gpio		: reset gpio to control the reset of chip
++ - cy,mt			: the information of mt
++ - cy,btn			: the information of btn
++Example:
++i2c@78b9000 { /* BLSP1 QUP5 */
++		tsc@1a {
++			compatible = "cy,cyttsp4_i2c_adapter";
++			reg = <0x1a>;
++			interrupts = <13 0x2008>;
++			interrupt-parent = <&msm_gpio>;
++			vdd-supply = <&pm8916_l17>;
++			vcc_i2c-supply = <&pm8916_l16>;
++			cy,adapter_id = "cyttsp4_i2c_adapter";
++			cy,core {
++				cy,name = "cyttsp4_core";
++				cy,id = "main_ttsp_core";
++				cy,num-max-touches = <5>;
++
++				cy,irq_gpio = <&msm_gpio 13 0x00>;
++				cy,rst_gpio = <&msm_gpio 12 0x00>;
++
++				/* Enable cy,max_xfer_len to limit max I2C/SPI transfer length */
++				/* cy,max_xfer_len = <0x100>; */
++
++				/* CY_CORE_FLAG_WAKE_ON_GESTURE */
++				cy,flags = <1>;
++				/* CY_CORE_EWG_TAP_TAP | CY_CORE_EWG_TWO_FINGER_SLIDE */
++				cy,easy_wakeup_gesture = <3>;
++				cy,btn_keys = <158 /* KEY_BACK */
++					172 /* KEY_HOME */
++					139 /* KEY_MENU */
++					217 /* KEY_SEARCH */
++					114 /* KEY_VOLUMEDOWN */
++					115 /* KEY_VOLUMEUP */
++					212 /* KEY_CAMERA */
++					116>; /* KEY_POWER */
++				cy,btn_keys-tag = <0>;
++
++				cy,mt {
++					cy,name = "cyttsp4_mt";
++					cy,inp_dev_name = "cyttsp4_mt";
++					/* CY_MT_FLAG_FLIP | CY_MT_FLAG_INV_X | CY_MT_FLAG_INV_Y */
++					cy,flags = <0x40>;
++					cy,abs =
++					/* ABS_MT_POSITION_X, CY_ABS_MIN_X, CY_ABS_MAX_X, 0, 0 */
++					<0x35 0 720 0 0
++					/* ABS_MT_POSITION_Y, CY_ABS_MIN_Y, CY_ABS_MAX_Y, 0, 0 */
++					0x36 0 1280 0 0
++					/* ABS_MT_PRESSURE, CY_ABS_MIN_P, CY_ABS_MAX_P, 0, 0 */
++					0x3a 0 255 0 0
++					/* CY_IGNORE_VALUE, CY_ABS_MIN_W, CY_ABS_MAX_W, 0, 0 */
++					0xffff 0 255 0 0
++					/* ABS_MT_TRACKING_ID, CY_ABS_MIN_T, CY_ABS_MAX_T, 0, 0 */
++					0x39 0 15 0 0
++					/* ABS_MT_TOUCH_MAJOR, 0, 255, 0, 0 */
++					0x30 0 255 0 0
++					/* ABS_MT_TOUCH_MINOR, 0, 255, 0, 0 */
++					0x31 0 255 0 0
++					/* ABS_MT_ORIENTATION, -128, 127, 0, 0 */
++					0x34 0xfffffed7 127 0 0>;
++
++					cy,vkeys_x = <720>;
++					cy,vkeys_y = <1280>;
++					cy,virtual_keys = /* KeyCode CenterX CenterY Width Height */
++					/* KEY_BACK */
++					<158 150 1350 120 100
++					/* KEY_HOME */
++					/*modify the key value of KEY_HOME*/
++					172 360 1350 120 100
++					/* KEY_MENU */
++					139 570 1350 120 100>;
++				};
++				cy,btn {
++					cy,name = "cyttsp4_btn";
++					cy,inp_dev_name = "cyttsp4_btn";
++				};
++			};
++		};
++	};
+diff --git a/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi b/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
+index 5bb6734..75e7ff5 100644
+--- a/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
+@@ -279,6 +279,7 @@
+ 	};
+ 
+ 	i2c@78b9000 { /* BLSP1 QUP5 */
++/*
+ 		synaptics@70 {
+ 			compatible = "synaptics,rmi4";
+ 			reg = <0x70>;
+@@ -286,7 +287,6 @@
+ 			interrupts = <13 0x2008>;
+ 			vdd-supply = <&vdd_vreg>;
+ 			vcc_i2c-supply = <&pm8916_l16>;
+-			/* pins used by touchscreen */
+ 			pinctrl-names = "pmx_ts_active","pmx_ts_suspend";
+ 			pinctrl-0 = <&ts_int_active &ts_reset_active>;
+ 			pinctrl-1 = <&ts_int_suspend &ts_reset_suspend>;
+@@ -299,6 +299,80 @@
+ 			synaptics,disable-gpios;
+ 			synaptics,fw-image-name = "PR1601177-s3207_8916_qrd_00430000.img";
+ 		};
++*/
++		tsc@1a {
++			compatible = "cy,cyttsp4_i2c_adapter";
++			reg = <0x1a>;
++			interrupts = <13 0x2008>;
++			interrupt-parent = <&msm_gpio>;
++			vdd-supply = <&pm8916_l17>;
++			vcc_i2c-supply = <&pm8916_l16>;
++			cy,adapter_id = "cyttsp4_i2c_adapter";
++			cy,core {
++				cy,name = "cyttsp4_core";
++				cy,id = "main_ttsp_core";
++				cy,num-max-touches = <5>;
++
++				cy,irq_gpio = <&msm_gpio 13 0x00>;
++				cy,rst_gpio = <&msm_gpio 12 0x00>;
++
++				/* Enable cy,max_xfer_len to limit max I2C/SPI transfer length */
++				/* cy,max_xfer_len = <0x100>; */
++
++				/* CY_CORE_FLAG_WAKE_ON_GESTURE */
++				cy,flags = <1>;
++				/* CY_CORE_EWG_TAP_TAP | CY_CORE_EWG_TWO_FINGER_SLIDE */
++				cy,easy_wakeup_gesture = <3>;
++				cy,btn_keys = <158 /* KEY_BACK */
++					172 /* KEY_HOME */
++					139 /* KEY_MENU */
++					217 /* KEY_SEARCH */
++					114 /* KEY_VOLUMEDOWN */
++					115 /* KEY_VOLUMEUP */
++					212 /* KEY_CAMERA */
++					116>; /* KEY_POWER */
++				cy,btn_keys-tag = <0>;
++
++				cy,mt {
++					cy,name = "cyttsp4_mt";
++					cy,inp_dev_name = "cyttsp4_mt";
++					/* CY_MT_FLAG_FLIP | CY_MT_FLAG_INV_X | CY_MT_FLAG_INV_Y */
++					cy,flags = <0x40>;
++					cy,abs =
++					/* ABS_MT_POSITION_X, CY_ABS_MIN_X, CY_ABS_MAX_X, 0, 0 */
++					<0x35 0 720 0 0
++					/* ABS_MT_POSITION_Y, CY_ABS_MIN_Y, CY_ABS_MAX_Y, 0, 0 */
++					0x36 0 1280 0 0
++					/* ABS_MT_PRESSURE, CY_ABS_MIN_P, CY_ABS_MAX_P, 0, 0 */
++					0x3a 0 255 0 0
++					/* CY_IGNORE_VALUE, CY_ABS_MIN_W, CY_ABS_MAX_W, 0, 0 */
++					0xffff 0 255 0 0
++					/* ABS_MT_TRACKING_ID, CY_ABS_MIN_T, CY_ABS_MAX_T, 0, 0 */
++					0x39 0 15 0 0
++					/* ABS_MT_TOUCH_MAJOR, 0, 255, 0, 0 */
++					0x30 0 255 0 0
++					/* ABS_MT_TOUCH_MINOR, 0, 255, 0, 0 */
++					0x31 0 255 0 0
++					/* ABS_MT_ORIENTATION, -128, 127, 0, 0 */
++					0x34 0xfffffed7 127 0 0>;
++
++					cy,vkeys_x = <720>;
++					cy,vkeys_y = <1280>;
++					cy,virtual_keys = /* KeyCode CenterX CenterY Width Height */
++					/* KEY_BACK */
++					<158 150 1350 120 100
++					/* KEY_HOME */
++					/*modify the key value of KEY_HOME*/
++					172 360 1350 120 100
++					/* KEY_MENU */
++					139 570 1350 120 100>;
++				};
++				cy,btn {
++					cy,name = "cyttsp4_btn";
++					cy,inp_dev_name = "cyttsp4_btn";
++				};
++			};
++		};
+ 	};
+ 
+ 	vdd_vreg: vdd_vreg {
+@@ -306,7 +380,7 @@
+ 		status = "ok";
+ 		regulator-name = "vdd_vreg";
+ 	};
+-
++/*
+ 	gen-vkeys {
+ 		compatible = "qcom,gen-vkeys";
+ 		label = "synaptics_rmi4_i2c";
+@@ -316,6 +390,7 @@
+ 		qcom,panel-maxy = <1369>;
+ 		qcom,key-codes = <158 172 139>;
+ 	};
++*/
+ };
+ 
+ &pm8916_vadc {
+-- 
+1.7.9.5
+

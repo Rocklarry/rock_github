@@ -1,0 +1,29 @@
+From 6a4e41cce750a53015f847ac4a14bd3ef400ae64 Mon Sep 17 00:00:00 2001
+From: Yukun Wan <wanyk0402@thundersoft.com>
+Date: Fri, 25 Jul 2014 14:24:03 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support mpu6050c devicetree
+
+Devicetree support mpu6050c
+
+Change-Id: If3338e4fa19634ab184c6b64798f0a0188c7b9dd
+Signed-off-by: Yukun Wan <wanyk0402@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8916-qrd-skui.dtsi |    2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8916-qrd-skui.dtsi b/arch/arm/boot/dts/qcom/msm8916-qrd-skui.dtsi
+index 81e799b..ef94290 100644
+--- a/arch/arm/boot/dts/qcom/msm8916-qrd-skui.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8916-qrd-skui.dtsi
+@@ -228,6 +228,8 @@
+ 		vi2c-supply = <&pm8916_l6>;
+ 		invn,gpio-int = <&msm_gpio 115 0x2>;
+ 		invn,place = "Portrait Up Back Side";
++		invn,accel_poll_ms = <200>;
++		invn,gyro_poll_ms = <200>;
+ 	};
+ 
+ 	memsic@30 { /* Magnetic field sensor */
+-- 
+1.7.9.5
+

@@ -1,0 +1,182 @@
+--- orig/core.h	2016-08-02 15:21:36.247054300 +0800
++++ new/core.h	2016-11-01 18:38:57.981450000 +0800
+@@ -1647,6 +1647,20 @@
+ 
+ #endif
+ 
++/* mayuan begin */
++struct fw_keepalive_info {
++    struct timer_list fw_ka_timer;
++    
++    /* In ms */
++    u32 fw_ka_interval;
++    
++    u32 cookie;
++    bool outstanding;
++    u8 miss_cnt;
++    u8 miss_thres;
++};
++/* mayuan end */
++
+ struct ath6kl {
+ 	struct device *dev;
+ 	struct wiphy *wiphy;
+@@ -1963,6 +1977,9 @@
+ 	u32 mcc_p2p_dwell[10];
+ 	u32 btc_status;
+ 
++    /* mayuan begin */
++    struct fw_keepalive_info fw_keepalive;
++    /* mayuan end */
+ #ifdef CONFIG_LINUX_QCMBR
+    struct list_head qcmbr_queue_head;
+    spinlock_t qcmbr_queue_lock;
+@@ -2262,4 +2279,8 @@
+ extern struct timer_list fw_ping_timer;
+ extern int fw_ping_count;
+ 
++/* mayuan */
++void ath6kl_hb_challenge_resp_event(struct wmi *wmip, u8 *datap, int len);
++
++
+ #endif /* CORE_H */
+
+--- orig/init.c	2016-08-02 15:21:37.040172000 +0800
++++ new/init.c	2016-11-01 19:04:35.681486100 +0800
+@@ -33,8 +33,10 @@
+ #include "diagnose.h"
+ #endif
+ #include "pm.h"
++/* mayuan */
++#include "ath_netlink.h"
+ 
+-unsigned int debug_mask;
++unsigned int debug_mask = 0;
+ unsigned int debug_mask_ext = ATH6KL_MODULE_DEF_DEBUG_MASK_EXT;
+ unsigned int htc_bundle_recv;
+ unsigned int htc_bundle_send;
+@@ -1147,6 +1149,81 @@
+ 	wiphy_free(ar->wiphy);
+ }
+ 
++/* mayuan begin */
++void ath6kl_hb_challenge_resp_event(struct wmi *wmip, u8 *datap, int len)
++{
++    struct ath6kl *ar = wmip->parent_dev;
++    struct wmix_hb_challenge_resp_cmd *reply;
++
++    reply = (struct wmix_hb_challenge_resp_cmd *)datap;
++
++    // ath6kl_info("receive challenge_resp %d %d\n", ar->fw_keepalive.cookie, reply->cookie);
++    
++    if (ar->fw_keepalive.cookie == reply->cookie) {
++        ar->fw_keepalive.outstanding = false;
++    }
++}
++
++void fw_keepalive_timeout(unsigned long arg)
++{
++    struct ath6kl *ar = (struct ath6kl *)arg;
++    struct fw_keepalive_info *fw_keepalive = &(ar->fw_keepalive);
++
++	// ath6kl_info("fw_keep alive timeout\n");
++
++    if (fw_keepalive->outstanding) {
++        fw_keepalive->miss_cnt++;
++    } else {
++        fw_keepalive->miss_cnt = 0;
++    }
++
++    if (fw_keepalive->miss_cnt > fw_keepalive->miss_thres) {
++        fw_keepalive->miss_cnt = 0;
++        fw_keepalive->cookie = 0;
++
++        ath6kl_info("send netlink message FW_CRASH\n");
++        ath_netlink_send("FW_CRASH=1", strlen("FW_CRASH=1"));
++
++        return;
++    }
++
++    fw_keepalive->cookie++;
++    fw_keepalive->outstanding = true;
++    ath6kl_wmi_get_challenge_resp_cmd(ar->wmi, fw_keepalive->cookie, 0);
++  
++	mod_timer(&fw_keepalive->fw_ka_timer, jiffies + msecs_to_jiffies(fw_keepalive->fw_ka_interval));
++}
++
++void ath6kl_fw_keepalive_init(struct ath6kl *ar)
++{
++    struct fw_keepalive_info *fw_keepalive = &(ar->fw_keepalive);
++
++    fw_keepalive->fw_ka_interval = 2000;
++    fw_keepalive->cookie = 0;
++    fw_keepalive->outstanding = false;
++    fw_keepalive->miss_cnt = 0;
++    fw_keepalive->miss_thres = 1;
++    
++    init_timer(&fw_keepalive->fw_ka_timer);
++    fw_keepalive->fw_ka_timer.function = fw_keepalive_timeout;
++	fw_keepalive->fw_ka_timer.data = (unsigned long)ar;
++
++    mod_timer(&fw_keepalive->fw_ka_timer, jiffies + msecs_to_jiffies(fw_keepalive->fw_ka_interval));
++    
++    ath6kl_info("fw_keepalive init interval %d, threshold %d\n",
++        fw_keepalive->fw_ka_interval, fw_keepalive->miss_thres);
++}
++
++void ath6kl_fw_keepalive_deinit(struct ath6kl *ar)
++{
++    if (timer_pending(&ar->fw_keepalive.fw_ka_timer)) {
++        del_timer_sync(&ar->fw_keepalive.fw_ka_timer);
++    }
++
++    ath6kl_info("fw_keepalive deinit\n");
++}
++/* mayuan end */
++
+ void ath6kl_core_cleanup(struct ath6kl *ar)
+ {
+ 	ath6kl_hif_power_off(ar);
+@@ -1155,6 +1232,8 @@
+ 
+ 	del_timer(&fw_ping_timer);
+ 
++    ath6kl_fw_keepalive_deinit(ar);
++    
+ 	destroy_workqueue(ar->ath6kl_wq);
+ 
+ 	if (ar->p2p_flowctrl_ctx)
+@@ -3365,6 +3444,9 @@
+ 		ath6kl_sdio_drive_strength(ar);
+ 	}
+ 
++    /* mayuan */
++    ath6kl_fw_keepalive_init(ar);
++    
+ 	ath6kl_printk_fwd_reset(ar);
+ 
+ 	return ret;
+
+--- orig/ath_netlink.c	2016-08-02 15:21:35.817043800 +0800
++++ new/ath_netlink.c	2016-10-27 14:18:00.083680000 +0800
+@@ -145,7 +145,7 @@
+ 					THIS_MODULE);
+ #else
+ 		ath_nl_sock = (struct sock *)netlink_kernel_create(
+-					&init_net, NETLINK_ATH_EVENT,
++					&init_net, 25,  /* mayuan */
+ 					1, &ath_netlink_receive, NULL,
+ 					THIS_MODULE);
+ #endif
+
+--- orig/wmi.c	2016-08-02 15:21:38.070022800 +0800
++++ new/wmi.c	2016-11-01 19:15:38.690526676 +0800
+@@ -4284,6 +4284,8 @@
+ 	switch (id) {
+ 	case WMIX_HB_CHALLENGE_RESP_EVENTID:
+ 		ath6kl_dbg(ATH6KL_DBG_WMI, "wmi event hb challenge resp\n");
++		/* mayuan */
++		ath6kl_hb_challenge_resp_event(wmi, datap, len);
+ 		break;
+ 	case WMIX_DBGLOG_EVENTID:
+ 		ath6kl_dbg(ATH6KL_DBG_WMI, "wmi event dbglog len %d\n", len);

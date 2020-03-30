@@ -1,0 +1,179 @@
+execve("./cdz", ["./cdz"], [/* 24 vars */]) = 0
+brk(0)                                  = 0x2a000
+uname({sys="Linux", node="Mini6045", ...}) = 0
+mmap2(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x4001c000
+access("/etc/ld.so.preload", R_OK)      = -1 ENOENT (No such file or directory)
+open("/lib/tls/v5l/fast-mult/half/libsqlite3.so.0", O_RDONLY) = -1 ENOENT (No such file or directory)
+stat64("/lib/tls/v5l/fast-mult/half", 0xbeb0e0c8) = -1 ENOENT (No such file or directory)
+open("/lib/tls/v5l/fast-mult/libsqlite3.so.0", O_RDONLY) = -1 ENOENT (No such file or directory)
+stat64("/lib/tls/v5l/fast-mult", 0xbeb0e0c8) = -1 ENOENT (No such file or directory)
+open("/lib/tls/v5l/half/libsqlite3.so.0", O_RDONLY) = -1 ENOENT (No such file or directory)
+stat64("/lib/tls/v5l/half", 0xbeb0e0c8) = -1 ENOENT (No such file or directory)
+open("/lib/tls/v5l/libsqlite3.so.0", O_RDONLY) = -1 ENOENT (No such file or directory)
+stat64("/lib/tls/v5l", 0xbeb0e0c8)      = -1 ENOENT (No such file or directory)
+open("/lib/tls/fast-mult/half/libsqlite3.so.0", O_RDONLY) = -1 ENOENT (No such file or directory)
+stat64("/lib/tls/fast-mult/half", 0xbeb0e0c8) = -1 ENOENT (No such file or directory)
+open("/lib/tls/fast-mult/libsqlite3.so.0", O_RDONLY) = -1 ENOENT (No such file or directory)
+stat64("/lib/tls/fast-mult", 0xbeb0e0c8) = -1 ENOENT (No such file or directory)
+open("/lib/tls/half/libsqlite3.so.0", O_RDONLY) = -1 ENOENT (No such file or directory)
+stat64("/lib/tls/half", 0xbeb0e0c8)     = -1 ENOENT (No such file or directory)
+open("/lib/tls/libsqlite3.so.0", O_RDONLY) = -1 ENOENT (No such file or directory)
+stat64("/lib/tls", 0xbeb0e0c8)          = -1 ENOENT (No such file or directory)
+open("/lib/v5l/fast-mult/half/libsqlite3.so.0", O_RDONLY) = -1 ENOENT (No such file or directory)
+stat64("/lib/v5l/fast-mult/half", 0xbeb0e0c8) = -1 ENOENT (No such file or directory)
+open("/lib/v5l/fast-mult/libsqlite3.so.0", O_RDONLY) = -1 ENOENT (No such file or directory)
+stat64("/lib/v5l/fast-mult", 0xbeb0e0c8) = -1 ENOENT (No such file or directory)
+open("/lib/v5l/half/libsqlite3.so.0", O_RDONLY) = -1 ENOENT (No such file or directory)
+stat64("/lib/v5l/half", 0xbeb0e0c8)     = -1 ENOENT (No such file or directory)
+open("/lib/v5l/libsqlite3.so.0", O_RDONLY) = -1 ENOENT (No such file or directory)
+stat64("/lib/v5l", 0xbeb0e0c8)          = -1 ENOENT (No such file or directory)
+open("/lib/fast-mult/half/libsqlite3.so.0", O_RDONLY) = -1 ENOENT (No such file or directory)
+stat64("/lib/fast-mult/half", 0xbeb0e0c8) = -1 ENOENT (No such file or directory)
+open("/lib/fast-mult/libsqlite3.so.0", O_RDONLY) = -1 ENOENT (No such file or directory)
+stat64("/lib/fast-mult", 0xbeb0e0c8)    = -1 ENOENT (No such file or directory)
+open("/lib/half/libsqlite3.so.0", O_RDONLY) = -1 ENOENT (No such file or directory)
+stat64("/lib/half", 0xbeb0e0c8)         = -1 ENOENT (No such file or directory)
+open("/lib/libsqlite3.so.0", O_RDONLY)  = 3
+read(3, "\177ELF\1\1\1\0\0\0\0\0\0\0\0\0\3\0(\0\1\0\0\0\304P\0\0004\0\0\0"..., 512) = 512
+fstat64(3, {st_mode=S_IFREG|0755, st_size=1545946, ...}) = 0
+mmap2(NULL, 548560, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x40025000
+mprotect(0x400a2000, 28672, PROT_NONE)  = 0
+mmap2(0x400a9000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x7c) = 0x400a9000
+close(3)                                = 0
+open("/lib/libpthread.so.0", O_RDONLY)  = 3
+read(3, "\177ELF\1\1\1\0\0\0\0\0\0\0\0\0\3\0(\0\1\0\0\0\230B\0\0004\0\0\0"..., 512) = 512
+fstat64(3, {st_mode=S_IFREG|0755, st_size=131788, ...}) = 0
+mmap2(NULL, 123384, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x400ab000
+mprotect(0x400bf000, 28672, PROT_NONE)  = 0
+mmap2(0x400c6000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x13) = 0x400c6000
+mmap2(0x400c8000, 4600, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x400c8000
+close(3)                                = 0
+open("/lib/libc.so.6", O_RDONLY)        = 3
+read(3, "\177ELF\1\1\1\0\0\0\0\0\0\0\0\0\3\0(\0\1\0\0\0\260J\1\0004\0\0\0"..., 512) = 512
+fstat64(3, {st_mode=S_IFREG|0755, st_size=1517740, ...}) = 0
+mmap2(NULL, 1184156, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x400ca000
+mprotect(0x401de000, 32768, PROT_NONE)  = 0
+mmap2(0x401e6000, 12288, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x114) = 0x401e6000
+mmap2(0x401e9000, 8604, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x401e9000
+close(3)                                = 0
+open("/lib/libdl.so.2", O_RDONLY)       = 3
+read(3, "\177ELF\1\1\1\0\0\0\0\0\0\0\0\0\3\0(\0\1\0\0\0p\t\0\0004\0\0\0"..., 512) = 512
+fstat64(3, {st_mode=S_IFREG|0755, st_size=15399, ...}) = 0
+mmap2(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x4001d000
+mmap2(NULL, 41124, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x401ec000
+mprotect(0x401ee000, 28672, PROT_NONE)  = 0
+mmap2(0x401f5000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x1) = 0x401f5000
+close(3)                                = 0
+open("/lib/libgcc_s.so.1", O_RDONLY)    = 3
+read(3, "\177ELF\1\1\1\0\0\0\0\0\0\0\0\0\3\0(\0\1\0\0\0\330\"\0\0004\0\0\0"..., 512) = 512
+fstat64(3, {st_mode=S_IFREG|0644, st_size=65550, ...}) = 0
+mmap2(NULL, 75916, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x401f7000
+mprotect(0x40202000, 28672, PROT_NONE)  = 0
+mmap2(0x40209000, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0xa) = 0x40209000
+close(3)                                = 0
+mmap2(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x4001e000
+set_tls(0x4001de90, 0x4001f000, 0x4001e5e8, 0x4001e568, 0x40024050) = 0
+mprotect(0x401f5000, 4096, PROT_READ)   = 0
+mprotect(0x401e6000, 8192, PROT_READ)   = 0
+mprotect(0x400c6000, 4096, PROT_READ)   = 0
+set_tid_address(0x4001da38)             = 1041
+set_robust_list(0x4001da40, 0xc)        = 0
+rt_sigaction(SIGRTMIN, {0x400aeea4, [], SA_SIGINFO|0x4000000}, NULL, 8) = 0
+rt_sigaction(SIGRT_1, {0x400aed78, [], SA_RESTART|SA_SIGINFO|0x4000000}, NULL, 8) = 0
+rt_sigprocmask(SIG_UNBLOCK, [RTMIN RT_1], NULL, 8) = 0
+getrlimit(RLIMIT_STACK, {rlim_cur=8192*1024, rlim_max=RLIM_INFINITY}) = 0
+brk(0)                                  = 0x2a000
+brk(0x4b000)                            = 0x4b000
+getcwd("/mnt/usr", 512)                 = 9
+stat64("/mnt/usr/mydata.db", {st_mode=S_IFREG|0775, st_size=4096, ...}) = 0
+open("/mnt/usr/mydata.db", O_RDWR|O_CREAT|O_LARGEFILE, 0644) = 3
+fcntl64(3, F_GETFD)                     = 0
+fcntl64(3, F_SETFD, FD_CLOEXEC)         = 0
+fstat64(3, {st_mode=S_IFREG|0775, st_size=4096, ...}) = 0
+_llseek(3, 0, [0], SEEK_SET)            = 0
+read(3, "SQLite format 3\0\4\0\1\1\0@  \0\0\0`\0\0\0\4"..., 100) = 100
+fstat64(1, {st_mode=S_IFCHR|0644, st_rdev=makedev(5, 1), ...}) = 0
+ioctl(1, SNDCTL_TMR_TIMEBASE or TCGETS, {B115200 opost isig icanon echo ...}) = 0
+mmap2(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x4001f000
+write(1, "Database initiation success\n", 28) = 28
+write(1, "SQL='SELECT [\347\264\242\345\274\225\345\217\267] FROM mes"..., 63) = 63
+fcntl64(3, F_SETLK64, {type=F_RDLCK, whence=SEEK_SET, start=1073741824, len=1}, 0xbeb0e2a0) = 0
+fcntl64(3, F_SETLK64, {type=F_RDLCK, whence=SEEK_SET, start=1073741826, len=510}, 0xbeb0e2a0) = 0
+fcntl64(3, F_SETLK64, {type=F_UNLCK, whence=SEEK_SET, start=1073741824, len=1}, 0xbeb0e2a0) = 0
+access("/mnt/usr/mydata.db-journal", F_OK) = -1 ENOENT (No such file or directory)
+fstat64(3, {st_mode=S_IFREG|0775, st_size=4096, ...}) = 0
+access("/mnt/usr/mydata.db-wal", F_OK)  = -1 ENOENT (No such file or directory)
+fstat64(3, {st_mode=S_IFREG|0775, st_size=4096, ...}) = 0
+_llseek(3, 0, [0], SEEK_SET)            = 0
+read(3, "SQLite format 3\0\4\0\1\1\0@  \0\0\0`\0\0\0\4"..., 1024) = 1024
+_llseek(3, 2048, [2048], SEEK_SET)      = 0
+read(3, "\0\0\0\0\217\267 VARCHAR(16),\345\274\200\345\247\213\345\215\241\345\236\213 "..., 1024) = 1024
+fcntl64(3, F_SETLK64, {type=F_UNLCK, whence=SEEK_SET, start=0, len=0}, 0xbeb0e300) = 0
+fcntl64(3, F_SETLK64, {type=F_RDLCK, whence=SEEK_SET, start=1073741824, len=1}, 0xbeb0e3c8) = 0
+fcntl64(3, F_SETLK64, {type=F_RDLCK, whence=SEEK_SET, start=1073741826, len=510}, 0xbeb0e3c8) = 0
+fcntl64(3, F_SETLK64, {type=F_UNLCK, whence=SEEK_SET, start=1073741824, len=1}, 0xbeb0e3c8) = 0
+access("/mnt/usr/mydata.db-journal", F_OK) = -1 ENOENT (No such file or directory)
+fstat64(3, {st_mode=S_IFREG|0775, st_size=4096, ...}) = 0
+_llseek(3, 24, [24], SEEK_SET)          = 0
+read(3, "\0\0\0`\0\0\0\4\0\0\0\0\0\0\0\0", 16) = 16
+fstat64(3, {st_mode=S_IFREG|0775, st_size=4096, ...}) = 0
+access("/mnt/usr/mydata.db-wal", F_OK)  = -1 ENOENT (No such file or directory)
+fstat64(3, {st_mode=S_IFREG|0775, st_size=4096, ...}) = 0
+_llseek(3, 1024, [1024], SEEK_SET)      = 0
+read(3, "\r\0\0\0\2\1T\0\2\252\1T\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"..., 1024) = 1024
+write(1, "db: integrality check OK\n", 25) = 25
+write(1, "SQL='SELECT name FROM SQLITE_MAS"..., 37) = 37
+write(1, "SQL='SELECT count(*) FROM messag"..., 35) = 35
+_llseek(3, 3072, [3072], SEEK_SET)      = 0
+read(3, "\n\0\0\0\2\3\320\0\3\350\3\320\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"..., 1024) = 1024
+write(1, "listCnt=2\n", 10)             = 10
+open("/dev/ttySAC1", O_RDWR)            = 4
+ioctl(4, SNDCTL_TMR_TIMEBASE or TCGETS, {B2400 opost -isig -icanon -echo ...}) = 0
+ioctl(4, TCFLSH, 0x2)                   = 0
+ioctl(4, TCFLSH, 0x2)                   = 0
+ioctl(4, TCFLSH, 0x2)                   = 0
+ioctl(4, TCFLSH, 0x2)                   = 0
+ioctl(4, TCFLSH, 0x2)                   = 0
+ioctl(4, TCFLSH, 0x2)                   = 0
+ioctl(4, TCFLSH, 0x2)                   = 0
+ioctl(4, TCFLSH, 0x2)                   = 0
+ioctl(4, TCFLSH, 0x2)                   = 0
+ioctl(4, TCFLSH, 0x2)                   = 0
+ioctl(4, SNDCTL_TMR_START or TCSETS, {B2400 opost -isig -icanon -echo ...}) = 0
+ioctl(4, SNDCTL_TMR_TIMEBASE or TCGETS, {B2400 opost -isig -icanon -echo ...}) = 0
+ioctl(4, TCFLSH, 0)                     = 0
+ioctl(4, SNDCTL_TMR_START or TCSETS, {B2400 opost -isig -icanon -echo ...}) = 0
+open("/dev/ttySAC2", O_RDWR)            = 5
+ioctl(5, SNDCTL_TMR_TIMEBASE or TCGETS, {B9600 opost -isig -icanon -echo ...}) = 0
+ioctl(5, TCFLSH, 0x2)                   = 0
+ioctl(5, TCFLSH, 0x2)                   = 0
+ioctl(5, TCFLSH, 0x2)                   = 0
+ioctl(5, TCFLSH, 0x2)                   = 0
+ioctl(5, TCFLSH, 0x2)                   = 0
+ioctl(5, TCFLSH, 0x2)                   = 0
+ioctl(5, TCFLSH, 0x2)                   = 0
+ioctl(5, TCFLSH, 0x2)                   = 0
+ioctl(5, SNDCTL_TMR_START or TCSETS, {B9600 opost -isig -icanon -echo ...}) = 0
+ioctl(5, SNDCTL_TMR_TIMEBASE or TCGETS, {B9600 opost -isig -icanon -echo ...}) = 0
+ioctl(5, TCFLSH, 0)                     = 0
+ioctl(5, SNDCTL_TMR_START or TCSETS, {B9600 opost -isig -icanon -echo ...}) = 0
+mmap2(NULL, 8388608, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x4020a000
+mprotect(0x4020a000, 4096, PROT_NONE)   = 0
+clone(child_stack=0x40a08fe8, flags=CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID, parent_tidptr=0x40a094d8, tls=0x40a09930, child_tidptr=0x40a094d8) = 1042
+mmap2(NULL, 8388608, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x40a0a000
+mprotect(0x40a0a000, 4096, PROT_NONE)   = 0
+clone(child_stack=0x41208fe8, flags=CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID, parent_tidptr=0x412094d8, tls=0x41209930, child_tidptr=0x412094d8) = 1043
+mmap2(NULL, 8388608, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x4120a000
+mprotect(0x4120a000, 4096, PROT_NONE)   = 0
+clone(child_stack=0x41a08fe8, flags=CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID, parent_tidptr=0x41a094d8, tls=0x41a09930, child_tidptr=0x41a094d8) = 1044
+mmap2(NULL, 8388608, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x41a0a000
+mprotect(0x41a0a000, 4096, PROT_NONE)   = 0
+clone(child_stack=0x42208fe8, flags=CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID, parent_tidptr=0x422094d8, tls=0x42209930, child_tidptr=0x422094d8) = 1045
+open("/dev/open_1", O_RDWR)             = 6
+mmap2(NULL, 8388608, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x4220a000
+mprotect(0x4220a000, 4096, PROT_NONE)   = 0
+clone(child_stack=0x42a08fe8, flags=CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID, parent_tidptr=0x42a094d8, tls=0x42a09930, child_tidptr=0x42a094d8) = 1046
+mmap2(NULL, 8388608, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x42a0a000
+mprotect(0x42a0a000, 4096, PROT_NONE)   = 0
+clone(child_stack=0x43208fe8, flags=CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID, parent_tidptr=0x432094d8, tls=0x43209930, child_tidptr=0x432094d8) = 1047
++++ killed by SIGSEGV +++

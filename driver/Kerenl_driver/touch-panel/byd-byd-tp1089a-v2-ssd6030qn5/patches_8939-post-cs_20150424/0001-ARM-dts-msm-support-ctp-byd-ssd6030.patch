@@ -1,0 +1,98 @@
+From c4f76d98910b530cdddb0110a47565cd99640c48 Mon Sep 17 00:00:00 2001
+From: yanqy <yanqy0911@thundersoft.com>
+Date: Thu, 23 Apr 2015 16:23:47 +0800
+Subject: [PATCH 1/3] ARM:dts:msm: support ctp byd ssd6030
+
+Add CTP IHV-BYD@BYD-TP1089A-V2@SSD6030QN5 device tree
+
+Change-Id: I772ca2079eb0baecf1d967f224e987119c05dc46
+Signed-off-by: Qiyang Yan <yanqy0911@thundersoft.com>
+---
+ .../bindings/input/touchscreen/ssd6030.txt         |   37 ++++++++++++++++++++
+ arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi       |   15 ++++++--
+ 2 files changed, 50 insertions(+), 2 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/input/touchscreen/ssd6030.txt
+ mode change 100755 => 100644 arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+
+diff --git a/Documentation/devicetree/bindings/input/touchscreen/ssd6030.txt b/Documentation/devicetree/bindings/input/touchscreen/ssd6030.txt
+new file mode 100644
+index 0000000..6318685
+--- /dev/null
++++ b/Documentation/devicetree/bindings/input/touchscreen/ssd6030.txt
+@@ -0,0 +1,37 @@
++Solomon touch controller
++
++The solomon controller is connected to host processor
++via i2c. The controller generates interrupts when the
++user touches the panel. The host controller is expected
++to read the touch coordinates over i2c and pass the coordinates
++to the rest of the system.
++
++Required properties:
++
++ - compatible		: should be "solomon,SSD60X0"
++ - reg			: i2c slave address of the device
++ - interrupt-parent	: parent of interrupt
++ - interrupts		: touch sample interrupt to indicate presense or release
++				of fingers on the panel.
++ - vdd-supply		: Power supply needed to power up the device
++ - vcc_i2c-supply	: Power source required to power up i2c bus
++ - solomon,irq-gpio	: irq gpio which is to provide interrupts to host,
++				same as "interrupts" node. It will also
++				contain active low or active high information.
++ - solomon,reset-gpio	: reset gpio to control the reset of chip
++ - solomon,fw-vkey-support	: should be default
++
++Example:
++	i2c@78b9000 { /* BLSP1 QUP5 */
++		solomon@48 {
++			compatible = "solomon,SSD60X0";
++			reg = <0x48>;
++			interrupt-parent = <&msm_gpio>;
++			interrupts = <13 0x2>;
++			solomon,irq-gpio = <&msm_gpio 13 0x00>;
++			solomon,reset-gpio = <&msm_gpio 12 0x00>;
++			vdd-supply = <&pm8916_l17>;
++			vcc_i2c-supply = <&pm8916_l6>;
++			solomon,fw-vkey-support;
++		};
++	};
+diff --git a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+old mode 100755
+new mode 100644
+index 1039722..26bbd36
+--- a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+@@ -190,16 +190,27 @@
+ 			focaltech,fw-auto-cal;
+ 			focaltech,ignore-id-check;
+ 		};
++		solomon@48 {
++			compatible = "solomon,SSD60X0";
++			reg = <0x48>;
++			interrupt-parent = <&msm_gpio>;
++			interrupts = <13 0x2>;
++			vdd-supply = <&pm8916_l17>;
++			vcc_i2c-supply = <&pm8916_l6>;
++			solomon,reset-gpio = <&msm_gpio 12 0x00>;
++			solomon,irq-gpio = <&msm_gpio 13 0x00>;
++			solomon,fw-vkey-support;
++		};
+ 	};
+ 
+ 	gen-vkeys {
+ 		compatible = "qcom,gen-vkeys";
+-		label = "ft5x06_ts";
++		label = "SSD60X0";
+ 		qcom,disp-maxx = <1080>;
+ 		qcom,disp-maxy = <1920>;
+ 		qcom,panel-maxx = <1080>;
+ 		qcom,panel-maxy = <2098>;
+-		qcom,key-codes = <139 172 158>;
++		qcom,key-codes = <158 172 139>;
+ 		qcom,y-offset = <0>;
+ 	};
+ 
+-- 
+1.7.9.5
+

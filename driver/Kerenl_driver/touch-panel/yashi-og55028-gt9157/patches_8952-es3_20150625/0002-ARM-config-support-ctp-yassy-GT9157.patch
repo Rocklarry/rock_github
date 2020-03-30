@@ -1,0 +1,29 @@
+From 9aa6f315b6613cf88b40976df76a37639f55944b Mon Sep 17 00:00:00 2001
+From: maoyq0504 <maoyq0504@thundersoft.com>
+Date: Wed, 24 Jun 2015 14:33:51 +0800
+Subject: [PATCH 2/3] ARM:config: support ctp yassy GT9157
+
+Add CTP YASSY@OG55028@GT9157 config
+
+Change-Id: I7354a3fb2eafe90880e89db716d267b131037e0d
+Signed-off-by: Yuanqiu Mao <maoyq0504@thundersoft.com>
+---
+ arch/arm64/configs/msm_defconfig | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/arch/arm64/configs/msm_defconfig b/arch/arm64/configs/msm_defconfig
+index eed0724..8dc92f4 100644
+--- a/arch/arm64/configs/msm_defconfig
++++ b/arch/arm64/configs/msm_defconfig
+@@ -259,6 +259,8 @@ CONFIG_WCNSS_REGISTER_DUMP_ON_BITE=y
+ CONFIG_INPUT_EVDEV=y
+ CONFIG_INPUT_EVBUG=m
+ CONFIG_KEYBOARD_GPIO=y
++CONFIG_TOUCHSCREEN_GT9XX=y
++CONFIG_GT9XX_TOUCHPANEL_DRIVER=y
+ CONFIG_INPUT_TOUCHSCREEN=y
+ CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_CORE_v21=y
+ CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_RMI_DEV_v21=y
+-- 
+1.9.1
+

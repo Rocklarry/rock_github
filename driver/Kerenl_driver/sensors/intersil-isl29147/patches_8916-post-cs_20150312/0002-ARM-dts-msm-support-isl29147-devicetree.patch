@@ -1,0 +1,51 @@
+From fa7c69149297fc541917a39aa33805545cd7be88 Mon Sep 17 00:00:00 2001
+From: Yukun Wan <wanyk0402@thundersoft.com>
+Date: Wed, 11 Mar 2015 15:33:36 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support isl29147 devicetree
+
+Devicetree support isl29147
+
+Change-Id: Icd3192026f3f9a98680838705baae1b19c028a69
+Signed-off-by: Yukun Wan <wanyk0402@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi | 17 +++++++++++++++--
+ 1 file changed, 15 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi b/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
+index 5bb6734..72c24be 100644
+--- a/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
+@@ -87,7 +87,7 @@
+ 		akm,gpio_rstn = <&msm_gpio 36 0x0>;
+ 		akm,auto-report;
+ 	};
+-
++/*
+ 	avago@39 {
+ 		compatible = "avago,apds9930";
+ 		reg = <0x39>;
+@@ -108,7 +108,20 @@
+ 		avago,als-D = <129>;
+ 		avago,ga-value = <98>;
+ 	};
+-
++*/
++	intersil@44 { /* Ambient light and proximity sensor */
++		compatible = "intersil,isl29147";
++		reg = <0x44>;
++		interrupt-parent = <&msm_gpio>;
++		interrupts = <113 0x2>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++		intersil,als_range = <3>;
++		intersil,ps_lt = <9>;
++		intersil,ps_ht = <35>;
++		intersil,als_delay = <200>;
++		intersil,ps_delay = <200>;
++	};
+ 	st@18 {
+ 		compatible = "st,lis3dh";
+ 		reg = <0x18>;
+-- 
+2.2.2
+

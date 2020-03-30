@@ -1,0 +1,80 @@
+From 3787c96ea2b730d92d9b968c144b228dd371b369 Mon Sep 17 00:00:00 2001
+From: chenx <chenxiang0527@thundersoft.com>
+Date: Wed, 22 Oct 2014 19:36:50 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support tmd27713 devicetree
+
+Devicetree support tmd27713
+
+Change-Id: I2fa18fceceef912f9e195da3464882519d82bcb6
+Signed-off-by: Xiang Chen <chenxiang0527@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi |   40 +++++++++++++++++---------
+ 1 file changed, 27 insertions(+), 13 deletions(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi b/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
+index 9981e42..c3532f6 100644
+--- a/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
+@@ -72,6 +72,20 @@
+ 		};
+ 	};
+ 
++	tmd27713_int_pin {
++		qcom,pins = <&gp 113>;
++		qcom,pin-func = <0>;
++		qcom,num-grp-pins = <1>;
++		label = "tmd27713-irq";
++		tmd27713_default: tmd27713_default {
++			drive-strength = <6>;
++			bias-pull-up;
++		};
++		tmd27713_sleep: tmd27713_sleep {
++			drive-strength = <2>;
++			bias-pull-down;
++		};
++	};
+ };
+ 
+ &i2c_0 { /* BLSP1 QUP2 */
+@@ -88,25 +102,25 @@
+ 		akm,auto-report;
+ 	};
+ 
+-	avago@39 {
+-		compatible = "avago,apds9930";
++	taos@39 {
++		compatible = "taos,tmd27713";
+ 		reg = <0x39>;
+ 		pinctrl-names = "default","sleep";
+-		pinctrl-0 = <&apds99xx_default>;
+-		pinctrl-1 = <&apds99xx_sleep>;
++		pinctrl-0 = <&tmd27713_default>;
++		pinctrl-1 = <&tmd27713_sleep>;
+ 		interrupt-parent = <&msm_gpio>;
+ 		interrupts = <113 0x2002>;
+ 		vdd-supply = <&pm8916_l17>;
+ 		vio-supply = <&pm8916_l6>;
+-		avago,irq-gpio = <&msm_gpio 113 0x2002>;
+-		avago,ps-threshold = <600>;
+-		avago,ps-hysteresis-threshold = <500>;
+-		avago,ps-pulse = <8>;
+-		avago,ps-pgain = <0>;
+-		avago,als-B = <186>;
+-		avago,als-C = <75>;
+-		avago,als-D = <129>;
+-		avago,ga-value = <98>;
++		taos,irq-gpio = <&msm_gpio 113 0x2002>;
++		taos,ps-threshold = <600>;
++		taos,ps-hysteresis-threshold = <500>;
++		taos,ps-pulse = <8>;
++		taos,ps-pgain = <0>;
++		taos,als-B = <186>;
++		taos,als-C = <75>;
++		taos,als-D = <129>;
++		taos,ga-value = <98>;
+ 	};
+ 
+ 	st@18 {
+-- 
+1.7.9.5
+

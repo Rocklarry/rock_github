@@ -1,0 +1,80 @@
+From 6a23be978a77b33c611d4af0960a893cc99189a0 Mon Sep 17 00:00:00 2001
+From: chenx <chenxiang0527@thundersoft.com>
+Date: Tue, 10 Mar 2015 14:02:38 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support tmd27713 devicetree
+
+Devicetree support tmd27713
+
+Change-Id: If4eacaa482da0bd5f2b16d0158c624f1fd738d21
+Signed-off-by: Xiang Chen <chenxiang0527@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi |   40 +++++++++++++++++---------
+ 1 file changed, 27 insertions(+), 13 deletions(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi b/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
+index 5bb6734..5527b7a 100644
+--- a/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
+@@ -72,6 +72,20 @@
+ 		};
+ 	};
+ 
++	tmd27713_int_pin {
++		qcom,pins = <&gp 113>;
++		qcom,pin-func = <0>;
++		qcom,num-grp-pins = <1>;
++		label = "tmd27713-irq";
++		tmd27713_default: tmd27713_default {
++			drive-strength = <6>;
++			bias-pull-up;
++		};
++		tmd27713_sleep: tmd27713_sleep {
++			drive-strength = <2>;
++			bias-pull-down;
++		};
++	};
+ };
+ 
+ &i2c_0 { /* BLSP1 QUP2 */
+@@ -88,25 +102,25 @@
+ 		akm,auto-report;
+ 	};
+ 
+-	avago@39 {
+-		compatible = "avago,apds9930";
++	ams@39 {
++		compatible = "ams,tmd27713";
+ 		reg = <0x39>;
+ 		pinctrl-names = "default","sleep";
+-		pinctrl-0 = <&apds99xx_default>;
+-		pinctrl-1 = <&apds99xx_sleep>;
++		pinctrl-0 = <&tmd27713_default>;
++		pinctrl-1 = <&tmd27713_sleep>;
+ 		interrupt-parent = <&msm_gpio>;
+ 		interrupts = <113 0x2002>;
+ 		vdd-supply = <&pm8916_l17>;
+ 		vio-supply = <&pm8916_l6>;
+-		avago,irq-gpio = <&msm_gpio 113 0x2002>;
+-		avago,ps-threshold = <600>;
+-		avago,ps-hysteresis-threshold = <500>;
+-		avago,ps-pulse = <8>;
+-		avago,ps-pgain = <0>;
+-		avago,als-B = <186>;
+-		avago,als-C = <75>;
+-		avago,als-D = <129>;
+-		avago,ga-value = <98>;
++		ams,irq-gpio = <&msm_gpio 113 0x2002>;
++		ams,ps-threshold = <600>;
++		ams,ps-hysteresis-threshold = <500>;
++		ams,ps-pulse = <8>;
++		ams,ps-pgain = <0>;
++		ams,als-B = <186>;
++		ams,als-C = <75>;
++		ams,als-D = <129>;
++		ams,ga-value = <98>;
+ 	};
+ 
+ 	st@18 {
+-- 
+1.7.9.5
+

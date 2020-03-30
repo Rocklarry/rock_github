@@ -1,0 +1,37 @@
+From bfe17f1d34eca2e79a1bf935a3e46cd183ff6336 Mon Sep 17 00:00:00 2001
+From: Xiaowu Long <longxw0410@thundersoft.com>
+Date: Fri, 30 Jan 2015 09:35:59 +0800
+Subject: [PATCH] drivers:input:misc: support bma222e driver
+
+Driver support bma222e
+
+Change-Id: Ifd577a9019a6553566ad49d2d0065a77fafe3b3d
+Signed-off-by: Xiaowu Long <longxw0410@thundersoft.com>
+---
+ drivers/input/misc/bma2x2.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/input/misc/bma2x2.c b/drivers/input/misc/bma2x2.c
+index 776c951..036aca3 100644
+--- a/drivers/input/misc/bma2x2.c
++++ b/drivers/input/misc/bma2x2.c
+@@ -1,6 +1,6 @@
+ /*!
+  * @section LICENSE
+- * (C) Copyright 2013 Bosch Sensortec GmbH All Rights Reserved
++ * (C) Copyright 2013-2015 Bosch Sensortec GmbH All Rights Reserved
+  *
+  * This software program is licensed subject to the GNU General
+  * Public License (GPL).Version 2,June 1991,
+@@ -1372,7 +1372,7 @@ static const struct interrupt_map_t int_map[] = {
+ 
+ /* Polling delay in msecs */
+ #define POLL_INTERVAL_MIN_MS	5
+-#define POLL_INTERVAL_MAX_MS	4000
++#define POLL_INTERVAL_MAX_MS	6000
+ #define POLL_DEFAULT_INTERVAL_MS 200
+ 
+ #define MAX_RANGE_MAP	4
+-- 
+2.2.2
+

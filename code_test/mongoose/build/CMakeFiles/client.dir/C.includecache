@@ -1,0 +1,30 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/rock/workspack/code_test/mongoose/server/client.c
+stdio.h
+-
+stdlib.h
+-
+string.h
+-
+sys/types.h
+-
+sys/ipc.h
+-
+sys/socket.h
+-
+unistd.h
+-
+netinet/in.h
+-
+arpa/inet.h
+-
+unistd.h
+-
+

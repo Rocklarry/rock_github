@@ -1,0 +1,85 @@
+From a888601e9710de006544871184d7e49db8b0824b Mon Sep 17 00:00:00 2001
+From: Deng Yequan <dengyq0603@thundersoft.com>
+Date: Mon, 21 Jul 2014 16:36:32 +0800
+Subject: [PATCH 1/2] ARM:dts:msm: support ctp truly ft5446dqs
+
+Add CTP IHV-TRULY@CT4F0892@FT5446DQS device tree
+
+Change-Id: I47042c1441a37a9c03f73c4b26d671a572c90ccc
+Signed-off-by: Yequan Deng <dengyq0603@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8916-qrd.dtsi | 51 ++++++++++++++++++++++++++++-----
+ 1 file changed, 44 insertions(+), 7 deletions(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8916-qrd.dtsi b/arch/arm/boot/dts/qcom/msm8916-qrd.dtsi
+index acbbc74..cd04cc7 100644
+--- a/arch/arm/boot/dts/qcom/msm8916-qrd.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8916-qrd.dtsi
+@@ -41,6 +41,40 @@
+ 			synaptics,disable-gpios;
+ 			synaptics,fw-image-name = "PR1601177-s3207_8916_qrd_00430000.img";
+ 		};
++		focaltech@38 {
++			compatible = "focaltech,5x06";
++			reg = <0x38>;
++			interrupt-parent = <&msm_gpio>;
++			interrupts = <13 0x2008>;
++			vdd-supply = <&pm8916_l17>;
++			vcc_i2c-supply = <&pm8916_l16>;
++			/* pins used by touchscreen */
++			pinctrl-names = "pmx_ts_active","pmx_ts_suspend";
++			pinctrl-0 = <&ts_int_active &ts_reset_active>;
++			pinctrl-1 = <&ts_int_suspend &ts_reset_suspend>;
++			focaltech,name = "ft5446dqs";
++			focaltech,family-id = <0x55>;
++			focaltech,reset-gpio = <&msm_gpio 12 0x0>;
++			focaltech,irq-gpio = <&msm_gpio 13 0x2008>;
++			focaltech,display-coords = <0 0 720 1280>;
++			focaltech,panel-coords = <0 0 720 1400>;
++			focaltech,button-map= <158 172 139>;
++			focaltech,no-force-update;
++			focaltech,i2c-pull-up;
++			focaltech,group-id = <1>;
++			focaltech,hard-reset-delay-ms = <20>;
++			focaltech,soft-reset-delay-ms = <200>;
++			focaltech,num-max-touches = <5>;
++			focaltech,fw-delay-aa-ms = <30>;
++			focaltech,fw-delay-55-ms = <30>;
++			focaltech,fw-upgrade-id1 = <0x79>;
++			focaltech,fw-upgrade-id2 = <0x08>;
++			focaltech,fw-delay-readid-ms = <10>;
++			focaltech,fw-delay-era-flsh-ms = <2000>;
++			focaltech,fw-auto-cal;
++			focaltech,ignore-id-check;
++			focaltech,fw-vkey-support;
++		};
+ 	};
+ 
+ 	vdd_vreg: vdd_vreg {
+@@ -51,13 +85,16 @@
+ 
+ 	gen-vkeys {
+ 		compatible = "qcom,gen-vkeys";
+-		label = "synaptics_rmi4_i2c";
+-		qcom,disp-maxx = <720>;
+-		qcom,disp-maxy = <1280>;
+-		qcom,panel-maxx = <720>;
+-		qcom,panel-maxy = <1369>;
+-		qcom,key-codes = <158 172 139>;
+-	};
++                label = "ft5x06_ts";
++                qcom,disp-maxx = <720>;
++                qcom,disp-maxy = <1280>;
++                qcom,panel-maxx = <720>;
++                qcom,panel-maxy = <1400>;
++                qcom,key-codes = <139 172 158>;
++                qcom,y-offset = <0>;
++        };
++
++
+ 
+ 	i2c@78ba000 { /* BLSP1 QUP6 */
+ 		nfc-nci@e {
+-- 
+1.9.1
+

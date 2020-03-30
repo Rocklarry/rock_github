@@ -1,0 +1,28 @@
+From 52e9e832a572b6827fb452b3dfbf598ed047b8c2 Mon Sep 17 00:00:00 2001
+From: lizj <lizj0715@thundersoft.com>
+Date: Tue, 25 Nov 2014 19:09:42 +0800
+Subject: [PATCH 3/3] defconfig: msm: Add CONFIG_GC2145_8909
+
+Add gc2145 8909bg45v1 camera driver for msm8909
+
+Change-Id: I0cfed2be336765d9acc85be87401f1e1a3d556fa
+Signed-off-by: Zhenjie Li <lizj0715@thundersoft.com>
+---
+ arch/arm/configs/msm8909_defconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm/configs/msm8909_defconfig b/arch/arm/configs/msm8909_defconfig
+index 010acfd..4dcf5bb 100644
+--- a/arch/arm/configs/msm8909_defconfig
++++ b/arch/arm/configs/msm8909_defconfig
+@@ -354,6 +354,7 @@ CONFIG_MSM_CSIPHY=y
+ CONFIG_MSM_CSID=y
+ CONFIG_MSM_EEPROM=y
+ CONFIG_MSM_ISPIF=y
++CONFIG_GC2145_8909=y
+ CONFIG_MSM_VIDC_V4L2=y
+ CONFIG_MSM_KGSL=y
+ CONFIG_KGSL_PER_PROCESS_PAGE_TABLE=y
+-- 
+1.8.2.1
+

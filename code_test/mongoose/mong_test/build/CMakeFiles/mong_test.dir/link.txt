@@ -1,0 +1,1 @@
+/usr/bin/cc   -rdynamic CMakeFiles/mong_test.dir/mong_test.c.o  -o mong_test libmongoose.a 

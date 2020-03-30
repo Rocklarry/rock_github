@@ -1,0 +1,36 @@
+From f46653ebb5f24ff13c5a9fb4e0649dce1e4fb1de Mon Sep 17 00:00:00 2001
+From: liu ying <liuying0704@thundersoft.com>
+Date: Thu, 9 Feb 2017 16:01:04 +0800
+Subject: [PATCH] ARM: dts: msm: Add gc030a 8909 camera dtsi.
+
+Add gc030a 8909 camera dtsi.
+
+Change-Id: I695422e8bf831a1f886bf031e5bc6aeff152efe0
+Signed-off-by: Liu Ying <liuying0704@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8909-camera-sensor-skue.dtsi | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8909-camera-sensor-skue.dtsi b/arch/arm/boot/dts/qcom/msm8909-camera-sensor-skue.dtsi
+index 7f7882a..932f95f 100644
+--- a/arch/arm/boot/dts/qcom/msm8909-camera-sensor-skue.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8909-camera-sensor-skue.dtsi
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (c) 2014-2015, The Linux Foundation. All rights reserved.
++ * Copyright (c) 2014-2017, The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 and
+@@ -190,7 +190,7 @@
+ 		cell-index = <1>;
+ 		compatible = "qcom,camera";
+ 		reg = <0x1>;
+-		qcom,special-support-sensors="ov2680_cht852b";
++		qcom,special-support-sensors="ov2680_cht852b", "gc030a";
+ 		qcom,csiphy-sd-index = <0>;
+ 		qcom,csid-sd-index = <0>;
+ 		qcom,mount-angle = <90>;
+-- 
+1.9.1
+

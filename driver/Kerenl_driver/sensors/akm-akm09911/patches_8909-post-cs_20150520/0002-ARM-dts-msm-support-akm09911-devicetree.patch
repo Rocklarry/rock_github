@@ -1,0 +1,88 @@
+From c32668913978fe82e19e093ea5fe50e70f1181ab Mon Sep 17 00:00:00 2001
+From: yanqy <yanqy0911@thundersoft.com>
+Date: Tue, 19 May 2015 15:17:43 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support akm09911 devicetree
+
+Driver support akm09911
+
+Change-Id: I0e03c25b655e740f4679ee77215d8f3c2c4d3b17
+Signed-off-by: Qiyang Yan <yanqy0911@thundersoft.com>
+---
+ .../devicetree/bindings/input/misc/akm09911.txt    |   12 ++++-----
+ arch/arm/boot/dts/qcom/msm8909-qrd-skue.dtsi       |   26 ++++++++++++++++++++
+ 2 files changed, 32 insertions(+), 6 deletions(-)
+ mode change 100755 => 100644 arch/arm/boot/dts/qcom/msm8909-qrd-skue.dtsi
+
+diff --git a/Documentation/devicetree/bindings/input/misc/akm09911.txt b/Documentation/devicetree/bindings/input/misc/akm09911.txt
+index ad5de90..b1a1e69 100644
+--- a/Documentation/devicetree/bindings/input/misc/akm09911.txt
++++ b/Documentation/devicetree/bindings/input/misc/akm09911.txt
+@@ -32,13 +32,13 @@ Optional properites:
+ 	akm@c {
+ 			compatible = "ak,ak09911";
+ 			reg = <0x0c>;
+-			pinctrl-names = "default","reset";
++			pinctrl-names = "default","sleep";
+ 			pinctrl-0 = <&akm_default>;
+-			pinctrl-1 = <&akm_reset>;
+-			vdd-supply = <&pm8110_l19>;
+-			vio-supply = <&pm8110_l14>;
+-			akm,layout = <0x0>;
+-			akm,gpio_rstn = <&msmgpio 82 0x0>;
++			pinctrl-1 = <&akm_sleep>;
++			vdd-supply = <&pm8909_l17>;
++			vio-supply = <&pm8909_l6>;
++			akm,layout = <0x3>;
++			akm,gpio_rstn = <&msm_gpio 36 0x0>;
+ 			akm,auto-report;
+ 	};
+ 
+diff --git a/arch/arm/boot/dts/qcom/msm8909-qrd-skue.dtsi b/arch/arm/boot/dts/qcom/msm8909-qrd-skue.dtsi
+old mode 100755
+new mode 100644
+index 0ed7e50..1d0ca43
+--- a/arch/arm/boot/dts/qcom/msm8909-qrd-skue.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8909-qrd-skue.dtsi
+@@ -19,6 +19,20 @@
+ };
+ 
+ &tlmm_pinmux {
++	akm_reset_pin {
++		qcom,pins = <&gp 36>;
++		qcom,pin-func = <0>;
++		qcom,num-grp-pins = <1>;
++		label = "akm_reset_pin";
++		akm_default: akm_default {
++			drive-strength = <6>;
++			bias-pull-up;
++		};
++		akm_sleep: akm_sleep {
++			drive-strength = <2>;
++			bias-pull-down;
++		};
++	};
+ 	ltr553_int_pin {
+ 		qcom,pins = <&gp 94>;
+ 		qcom,pin-func = <0>;
+@@ -192,6 +206,18 @@
+ 			bosch,gpio-int1 = <&msm_gpio 96 0x2002>;
+ 			bosch,gpio-int2 = <&msm_gpio 65 0x2002>;
+ 		};
++		akm@c {
++			compatible = "ak,ak09911";
++			reg = <0xc>;
++			pinctrl-names = "default","sleep";
++			pinctrl-0 = <&akm_default>;
++			pinctrl-1 = <&akm_sleep>;
++			vdd-supply = <&pm8909_l17>;
++			vio-supply = <&pm8909_l6>;
++			akm,layout = <0x3>;
++			akm,gpio_rstn = <&msm_gpio 36 0x0>;
++			akm,auto-report;
++		};
+ 	};
+ 
+ 	hall {
+-- 
+1.7.9.5
+

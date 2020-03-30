@@ -1,0 +1,206 @@
+From c8f122d98f3e2ae96e97a71bffb99888cab2d3d0 Mon Sep 17 00:00:00 2001
+From: Li Zhanchao <lizc1023@thundersoft.com>
+Date: Tue, 19 May 2015 17:38:48 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support lsm330 devicetree
+
+Devicetree support lsm330
+
+Change-Id: I09bb8178c424883cc39bcf834a39c1344b1806bd
+Signed-off-by: Li Zhanchao <lizc1023@thundersoft.com>
+---
+ .../devicetree/bindings/input/misc/lsm330_acc.txt  | 59 ++++++++++++++++++++++
+ .../devicetree/bindings/input/misc/lsm330_gyr.txt  | 35 +++++++++++++
+ arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi       | 59 ++++++++++++++++++++++
+ 3 files changed, 153 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/input/misc/lsm330_acc.txt
+ create mode 100644 Documentation/devicetree/bindings/input/misc/lsm330_gyr.txt
+ mode change 100755 => 100644 arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+
+diff --git a/Documentation/devicetree/bindings/input/misc/lsm330_acc.txt b/Documentation/devicetree/bindings/input/misc/lsm330_acc.txt
+new file mode 100644
+index 0000000..b49bc15
+--- /dev/null
++++ b/Documentation/devicetree/bindings/input/misc/lsm330_acc.txt
+@@ -0,0 +1,59 @@
++ST LSM330 3-axis accelerometer sensor driver
++
++Required properties:
++
++ - compatible		: Should be "st,lsm330_acc".
++ - reg			: i2c slave address of the device.
++ - pinctrl-names	: The pinctrl configration names of this sensor driver. Should be
++				"lis3dh_default" and "lis3dh_sleep".
++ - pinctrl-0		: Should specify pin control groups used for this controller.
++ - pinctrl-1		: Should specify pin control groups used for this controller.
++ - interrupt-parent	: Parent of interrupt.
++ - vdd-supply		: Analog power supply needed to power device.
++ - vddio-supply		: Digital IO power supply needed for IO and I2C.
++ - st,poll_interval	: The polling interval.
++ - st,axis-map-x	: Select which data will be X-axis of reading.
++				The sensor measures and reports three axis of
++				data, this property select which data will be
++				interpretd as X-axis gravity data of phone.
++				e.g. Give "0" to this property means the first
++				measurement data will be used as X-axis data.
++ - st,axis-map-y	: Select which data will be Y-axis of reading.
++				Similar to property above, this property selet
++				Y-axis data.
++ - st,axis-map-z	: Select which data will be Z-axis of reading.
++				Similar to property above, this property selet
++				Z-axis data.
++
++Optional properties:
++ - st,negate-x	: Boolean to select negate of X-axis data is
++				required, if this property is defined, X-axis
++				data will be negated.
++ - st,negate-y	: Boolean to select negate of Y-axis data is
++				required, if this property is defined, Y-axis
++				data will be negated.
++ - st,gpio-int1	: 1st irq gpio which is to provide interrupts
++				to host, interrupt events can be route to any of
++				these two irq pins according device configuration.
++
++
++Example:
++&i2c_0 { /* BLSP1 QUP2 */
++	st@1d {
++		compatible = "st,lsm330_acc";
++		reg = <0x1d>;
++		pinctrl-names = "lsm330_acc_default","lsm330_acc_sleep";
++		pinctrl-0 = <&lsm330_acc_int1_default>;
++		pinctrl-1 = <&lsm330_acc_int1_sleep>;
++		interrupt-parent = <&msm_gpio>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++		st,gpio_int1 = <&msm_gpio 112 0x2002>;
++		st,poll_interval = <200>;
++		st,axis-map-x = <0>;
++		st,axis-map-y = <1>;
++		st,axis-map-z = <2>;
++		st,negate-x;
++		st,negate-y;
++	};
++};
+diff --git a/Documentation/devicetree/bindings/input/misc/lsm330_gyr.txt b/Documentation/devicetree/bindings/input/misc/lsm330_gyr.txt
+new file mode 100644
+index 0000000..3ed81d3
+--- /dev/null
++++ b/Documentation/devicetree/bindings/input/misc/lsm330_gyr.txt
+@@ -0,0 +1,35 @@
++ST LSM330 6-axis accelerometer & gyroscoper sensor driver
++
++Required properties:
++
++ - compatible		: Should be "st,lsm330_acc".
++ - reg			: i2c slave address of the device.
++ - pinctrl-names	: The pinctrl configration names of this sensor driver. Should be
++				"lis3dh_default" and "lis3dh_sleep".
++ - pinctrl-0		: Should specify pin control groups used for this controller.
++ - pinctrl-1		: Should specify pin control groups used for this controller.
++ - interrupt-parent	: Parent of interrupt.
++ - vdd-supply		: Analog power supply needed to power device.
++ - vddio-supply		: Digital IO power supply needed for IO and I2C.
++ - st,gpio-int2	: 1st irq gpio which is to provide interrupts
++				to host, interrupt events can be route to any of
++				these two irq pins according device configuration.
++ - st,poll_interval	: The polling interval.
++
++
++
++Example:
++&i2c_0 { /* BLSP1 QUP2 */
++	st@6b {
++		compatible = "st,lsm330_gyr";
++		reg = <0x6b>;
++		pinctrl-names = "lsm330_gyr_default","lsm330_gyr_sleep";
++		pinctrl-0 = <&lsm330_gyr_int1_default>;
++		pinctrl-1 = <&lsm330_gyr_int1_sleep>;
++		interrupt-parent = <&msm_gpio>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++		st,gpio-int2 = <&msm_gpio 115 0x2002>;
++		st,poll_interval = <200>;
++	};
++};
+diff --git a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+old mode 100755
+new mode 100644
+index 1039722..41e7a51
+--- a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+@@ -19,6 +19,34 @@
+ };
+ 
+ &tlmm_pinmux {
++	lsm330_acc_int1_pin {
++		qcom,pins = <&gp 112>;
++		qcom,num-grp-pins = <1>;
++		label = "lsm330_acc_int_pin";
++		lsm330_acc_int1_default: int1_default {
++			drive-strength = <6>;
++			bias-pull-down;
++		};
++		lsm330_acc_int1_sleep: int1_sleep {
++			drive-strength = <2>;
++			bias-pull-down;
++		};
++	};
++
++	lsm330_gyr_int1_pin {
++		qcom,pins = <&gp 115>;
++		qcom,num-grp-pins = <1>;
++		label = "lsm330_gyr_int_pin";
++		lsm330_gyr_int1_default: int1_default {
++			drive-strength = <6>;
++			bias-pull-down;
++		};
++		lsm330_gyr_int1_sleep: int1_sleep {
++			drive-strength = <2>;
++			bias-pull-down;
++		};
++	};
++
+ 	bma2x2_int1_pin {
+ 		qcom,pins = <&gp 112>;
+ 		qcom,num-grp-pins = <1>;
+@@ -82,6 +110,37 @@
+ 		avago,ga-value = <560>;
+ 	};
+ 
++	st@1d {
++		compatible = "st,lsm330_acc";
++		reg = <0x1d>;
++		pinctrl-names = "lsm330_acc_default","lsm330_acc_sleep";
++		pinctrl-0 = <&lsm330_acc_int1_default>;
++		pinctrl-1 = <&lsm330_acc_int1_sleep>;
++		interrupt-parent = <&msm_gpio>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++		st,gpio_int1 = <&msm_gpio 112 0x2002>;
++		st,poll_interval = <200>;
++		st,axis-map-x = <0>;
++		st,axis-map-y = <1>;
++		st,axis-map-z = <2>;
++		st,negate-x;
++		st,negate-y;
++	};
++
++	st@6b {
++		compatible = "st,lsm330_gyr";
++		reg = <0x6b>;
++		pinctrl-names = "lsm330_gyr_default","lsm330_gyr_sleep";
++		pinctrl-0 = <&lsm330_gyr_int1_default>;
++		pinctrl-1 = <&lsm330_gyr_int1_sleep>;
++		interrupt-parent = <&msm_gpio>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++		st,gpio-int2 = <&msm_gpio 115 0x2002>;
++		st,poll_interval = <200>;
++	};
++
+ 	bosch@18 { /* Accelerometer sensor */
+ 		compatible = "bosch,bma2x2";
+ 		reg = <0x18>;
+-- 
+1.9.1
+

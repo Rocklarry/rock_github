@@ -1,0 +1,197 @@
+From 5a2d2f97ccd343b6d405f6f9da61a7a9666fef44 Mon Sep 17 00:00:00 2001
+From: yangzh <yangzh0324@thundersoft.com>
+Date: Tue, 15 Jul 2014 14:12:55 +0800
+Subject: [PATCH 2/2] input:touchscreen: add truly ct3s0118 ft5316
+
+Add driver file for ft5316
+
+Signed-off-by: yangzh <yagnzh0324@thundersoft.com>
+
+Change-Id: I5d130cf12cf76c5bdf755fb26188c8c565d27dd8
+---
+ drivers/input/touchscreen/ft5x06_ts.c |  108 ++++++++++++++++++++++++++++++++-
+ 1 file changed, 106 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/input/touchscreen/ft5x06_ts.c b/drivers/input/touchscreen/ft5x06_ts.c
+index b188f20..6a0eefd 100644
+--- a/drivers/input/touchscreen/ft5x06_ts.c
++++ b/drivers/input/touchscreen/ft5x06_ts.c
+@@ -70,6 +70,7 @@
+ #define FT_REG_THGROUP		0x80
+ #define FT_REG_ECC		0xCC
+ #define FT_REG_RESET_FW		0x07
++#define FT_REG_FW_MAJ_VER	0xB1
+ #define FT_REG_FW_MIN_VER	0xB2
+ #define FT_REG_FW_SUB_MIN_VER	0xB3
+ 
+@@ -211,6 +212,7 @@ struct ft5x06_ts_data {
+ 	struct dentry *dir;
+ 	u16 addr;
+ 	bool suspended;
++	bool enable;
+ 	char *ts_info;
+ 	u8 *tch_data;
+ 	u32 tch_data_len;
+@@ -319,7 +321,7 @@ static void ft5x06_update_fw_ver(struct ft5x06_ts_data *data)
+ 	u8 reg_addr;
+ 	int err;
+ 
+-	reg_addr = FT_REG_FW_VER;
++	reg_addr = FT_REG_FW_MAJ_VER;
+ 	err = ft5x06_i2c_read(client, &reg_addr, 1, &data->fw_ver[0], 1);
+ 	if (err < 0)
+ 		dev_err(&client->dev, "fw major version read failed");
+@@ -387,6 +389,7 @@ static irqreturn_t ft5x06_ts_interrupt(int irq, void *dev_id)
+ 			input_mt_report_slot_state(ip_dev, MT_TOOL_FINGER, 1);
+ 			input_report_abs(ip_dev, ABS_MT_POSITION_X, x);
+ 			input_report_abs(ip_dev, ABS_MT_POSITION_Y, y);
++			printk("x=%d,y=%d    \n",x,y);
+ 		} else {
+ 			input_mt_report_slot_state(ip_dev, MT_TOOL_FINGER, 0);
+ 		}
+@@ -1058,6 +1061,79 @@ rel_fw:
+ 	return rc;
+ }
+ 
++static ssize_t ft5x06_ts_info_show(struct device *dev,
++			struct device_attribute *attr, char *buf)
++{
++	struct ft5x06_ts_data *data = dev_get_drvdata(dev);
++	return snprintf(buf, FT_INFO_MAX_LEN, "%s\n", data->ts_info);
++}
++
++static DEVICE_ATTR(ts_info, 0444, ft5x06_ts_info_show, NULL);
++
++static ssize_t ft5x06_mt_protocol_type_show(struct device *dev,
++		struct device_attribute *attr, char *buf)
++{
++	return snprintf(buf, 16, "%s\n", "MT Protocal B");
++}
++
++static DEVICE_ATTR(mt_protocol_type, 0444, ft5x06_mt_protocol_type_show, NULL);
++
++static ssize_t ft5x06_enable_store(struct device *dev,
++			struct device_attribute *attr,
++			const char *buf, size_t size)
++{
++	struct ft5x06_ts_data *data = dev_get_drvdata(dev);
++	unsigned long val;
++	int rc;
++
++	if (size > 2)
++		return -EINVAL;
++
++	if (data->suspended) {
++		dev_info(&data->client->dev, "Already in suspend state\n");
++		goto no_operation;
++	}
++
++	rc = kstrtoul(buf, 10, &val);
++	if (rc != 0)
++		return rc;
++
++	if (val) {
++		if (gpio_is_valid(data->pdata->reset_gpio)) {
++			gpio_set_value_cansleep(data->pdata->reset_gpio, 0);
++			msleep(data->pdata->hard_rst_dly);
++			gpio_set_value_cansleep(data->pdata->reset_gpio, 1);
++		}
++		data->enable = true;
++	} else {
++		mutex_lock(&data->input_dev->mutex);
++		rc = ft5x0x_write_reg(data->client, FT_REG_PMODE,
++						FT_PMODE_HIBERNATE);
++		if (rc < 0)
++			dev_err(&data->client->dev, "disable tp ic failed\n");
++		mutex_unlock(&data->input_dev->mutex);
++		data->enable = false;
++	}
++
++no_operation:
++	return size;
++}
++
++static ssize_t ft5x06_enable_show(struct device *dev,
++		struct device_attribute *attr, char *buf)
++{
++	struct ft5x06_ts_data *data = dev_get_drvdata(dev);
++
++	if (data->suspended) {
++		dev_info(&data->client->dev, "Already in suspend state\n");
++		return snprintf(buf, 4, "%s\n", "0");
++	}
++
++	return snprintf(buf, 4, "%s\n", data->enable ? "1" : "0");
++}
++
++static DEVICE_ATTR(enable, 0664, ft5x06_enable_show, ft5x06_enable_store);
++
+ static ssize_t ft5x06_update_fw_show(struct device *dev,
+ 				struct device_attribute *attr, char *buf)
+ {
+@@ -1555,6 +1631,7 @@ static int ft5x06_ts_probe(struct i2c_client *client,
+ 		return -ENOMEM;
+ 	}
+ 
++	data->enable = true;
+ 	data->input_dev = input_dev;
+ 	data->client = client;
+ 	data->pdata = pdata;
+@@ -1678,12 +1755,30 @@ static int ft5x06_ts_probe(struct i2c_client *client,
+ 		goto free_reset_gpio;
+ 	}
+ 
+-	err = device_create_file(&client->dev, &dev_attr_fw_name);
++	err = device_create_file(&client->dev, &dev_attr_ts_info);
+ 	if (err) {
+ 		dev_err(&client->dev, "sys file creation failed\n");
+ 		goto irq_free;
+ 	}
+ 
++	err = device_create_file(&client->dev, &dev_attr_mt_protocol_type);
++	if (err) {
++		dev_err(&client->dev, "sys file creation failed\n");
++		goto free_ts_info;
++	}
++
++	err = device_create_file(&client->dev, &dev_attr_enable);
++	if (err) {
++		dev_err(&client->dev, "sys file creation failed\n");
++		goto free_type;
++	}
++
++	err = device_create_file(&client->dev, &dev_attr_fw_name);
++	if (err) {
++		dev_err(&client->dev, "sys file creation failed\n");
++		goto free_enable;
++	}
++
+ 	err = device_create_file(&client->dev, &dev_attr_update_fw);
+ 	if (err) {
+ 		dev_err(&client->dev, "sys file creation failed\n");
+@@ -1792,6 +1887,12 @@ free_update_fw_sys:
+ 	device_remove_file(&client->dev, &dev_attr_update_fw);
+ free_fw_name_sys:
+ 	device_remove_file(&client->dev, &dev_attr_fw_name);
++free_enable:
++	device_remove_file(&client->dev, &dev_attr_enable);
++free_type:
++	device_remove_file(&client->dev, &dev_attr_mt_protocol_type);
++free_ts_info:
++	device_remove_file(&client->dev, &dev_attr_ts_info);
+ irq_free:
+ 	free_irq(client->irq, data);
+ free_reset_gpio:
+@@ -1837,6 +1938,9 @@ static int ft5x06_ts_remove(struct i2c_client *client)
+ 	device_remove_file(&client->dev, &dev_attr_force_update_fw);
+ 	device_remove_file(&client->dev, &dev_attr_update_fw);
+ 	device_remove_file(&client->dev, &dev_attr_fw_name);
++	device_remove_file(&client->dev, &dev_attr_enable);
++	device_remove_file(&client->dev, &dev_attr_mt_protocol_type);
++	device_remove_file(&client->dev, &dev_attr_ts_info);
+ 
+ #if defined(CONFIG_FB)
+ 	if (fb_unregister_client(&data->fb_notif))
+-- 
+1.7.9.5
+

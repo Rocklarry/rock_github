@@ -1,0 +1,32 @@
+From f50861c27cb592e7d5c5177c79c344670a0c378d Mon Sep 17 00:00:00 2001
+From: chenx <chenxiang0527@thundersoft.com>
+Date: Fri, 22 May 2015 11:14:30 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support mpu6050 devicetree
+
+Devicetree support mpu6050
+
+Change-Id: I41dab3fdeea9ef1691eb6a2605035522f989a6eb
+Signed-off-by: Xiang Chen <chenxiang0527@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+index 1039722..d3e4885 100755
+--- a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+@@ -119,7 +119,10 @@
+ 		vlogic-supply = <&pm8916_l16>;
+ 		vi2c-supply = <&pm8916_l6>;
+ 		invn,gpio-int = <&msm_gpio 115 0x2002>;
+-		invn,place = "Portrait Down Back Side";
++		/* invn,place = "Portrait Down Back Side"; */
++		invn,place = "Landscape Left Back Side";
++		invn,accel_poll_ms = <200>;
++		invn,gyro_poll_ms = <200>;
+ 	};
+ 
+ 	tps65132@3e {
+-- 
+1.7.9.5
+

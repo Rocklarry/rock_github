@@ -1,0 +1,30 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/rock/workspack/code_test/mongoose/network/network.c
+math.h
+-
+stdio.h
+-
+stdlib.h
+-
+netdb.h
+-
+ifaddrs.h
+-
+unistd.h
+-
+nmtool.h
+/home/rock/workspack/code_test/mongoose/network/nmtool.h
+network.h
+/home/rock/workspack/code_test/mongoose/network/network.h
+
+/home/rock/workspack/code_test/mongoose/network/network.h
+
+/home/rock/workspack/code_test/mongoose/network/nmtool.h
+

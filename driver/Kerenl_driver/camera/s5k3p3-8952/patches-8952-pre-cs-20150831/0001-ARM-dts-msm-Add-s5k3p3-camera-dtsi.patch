@@ -1,0 +1,29 @@
+From 87d50cdd07134f5b9f6c6aa2773ec5e3749e0fc6 Mon Sep 17 00:00:00 2001
+From: zhangss1028 <zhangss1028@thundersoft.com>
+Date: Tue, 25 Aug 2015 11:36:13 +0800
+Subject: [PATCH] ARM: dts: msm: Add s5k3p3 camera dtsi
+
+Add s5k3p3 devicetree description for msm8952
+
+Change-Id: I358d1d7cc1ee4455b32c66c245a8c01b0baee60d
+Signed-off-by: Shaosong Zhang <zhangss1028@thundersoft.com>
+---
+ .../boot/dts/qcom/msm8952-camera-sensor-qrd.dtsi   |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8952-camera-sensor-qrd.dtsi b/arch/arm/boot/dts/qcom/msm8952-camera-sensor-qrd.dtsi
+index 4ff5443..55a487b 100644
+--- a/arch/arm/boot/dts/qcom/msm8952-camera-sensor-qrd.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8952-camera-sensor-qrd.dtsi
+@@ -185,7 +185,7 @@
+ 		cell-index = <0>;
+ 		compatible = "qcom,camera";
+ 		reg = <0x0>;
+-		qcom,special-support-sensors = "ov13850_q13v06k";
++		qcom,special-support-sensors = "ov13850_q13v06k","s5k3p3";
+ 		qcom,csiphy-sd-index = <0>;
+ 		qcom,csid-sd-index = <0>;
+ 		qcom,mount-angle = <90>;
+-- 
+1.7.9.5
+

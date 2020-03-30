@@ -1,0 +1,5 @@
+plugin_nfacct.o: plugin_nfacct.c /usr/include/stdc-predef.h ../config.h
+
+/usr/include/stdc-predef.h:
+
+../config.h:

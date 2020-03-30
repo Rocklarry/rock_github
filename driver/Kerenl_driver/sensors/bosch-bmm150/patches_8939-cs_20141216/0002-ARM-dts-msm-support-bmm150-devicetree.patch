@@ -1,0 +1,37 @@
+From bd1458cb17484b4aa23b69e53f7312376bda0a39 Mon Sep 17 00:00:00 2001
+From: chenx <chenxiang0527@thundersoft.com>
+Date: Tue, 16 Dec 2014 09:59:24 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support bmm150 devicetree
+
+Devicetree support bmm150
+
+Change-Id: I406e86ba1c3a18ca2946f47093119b677ea49550
+Signed-off-by: Xiang Chen <chenxiang0527@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi |    7 +++++++
+ 1 file changed, 7 insertions(+)
+ mode change 100755 => 100644 arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+
+diff --git a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+old mode 100755
+new mode 100644
+index 8691993..8b10113
+--- a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+@@ -122,6 +122,13 @@
+ 		invn,place = "Portrait Down Back Side";
+ 	};
+ 
++	bosch@12 { /* Magnetic field sensor */
++		compatible = "bosch,bmm150";
++		reg = <0x12>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++	};
++
+ 	tps65132@3e {
+ 		compatible = "ti,tps65132";
+ 		reg = <0x3e>;
+-- 
+1.7.9.5
+

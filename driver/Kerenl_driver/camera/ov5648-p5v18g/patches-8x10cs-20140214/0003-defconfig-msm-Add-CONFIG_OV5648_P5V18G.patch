@@ -1,0 +1,28 @@
+From 27e2d721aa671e8269609e12744d36a84c819c0a Mon Sep 17 00:00:00 2001
+From: Lin Zhang <zhanglin0425@thundersoft.com>
+Date: Fri, 14 Feb 2014 13:48:45 +0800
+Subject: [PATCH 3/3] defconfig: msm: Add CONFIG_OV5648_P5V18G
+
+Add CONFIG_OV5648_P5V18G=y to the defconfig file of msm8610
+
+Change-Id: I958f753f80fc70d5a94ba92392d7149a60a1e583
+Signed-off-by: Lin Zhang <zhanglin0425@thundersoft.com>
+---
+ arch/arm/configs/msm8610_defconfig |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/configs/msm8610_defconfig b/arch/arm/configs/msm8610_defconfig
+index 1ca7ed6..bbbbae4 100644
+--- a/arch/arm/configs/msm8610_defconfig
++++ b/arch/arm/configs/msm8610_defconfig
+@@ -318,6 +318,7 @@ CONFIG_OV8825=y
+ CONFIG_s5k4e1=y
+ CONFIG_HI256=y
+ CONFIG_OV12830=y
++CONFIG_OV5648_P5V18G=y
+ CONFIG_IMX134=y
+ CONFIG_MSM_CAMERA_SENSOR=y
+ CONFIG_MSM_EEPROM=y
+-- 
+1.7.4.1
+

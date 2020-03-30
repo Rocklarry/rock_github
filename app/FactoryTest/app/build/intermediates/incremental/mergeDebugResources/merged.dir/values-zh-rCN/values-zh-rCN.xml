@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string msgid="4600421777120114993" name="abc_action_bar_home_description">"转到主屏幕"</string>
+    <string msgid="1397052879051804371" name="abc_action_bar_home_description_format">"%1$s：%2$s"</string>
+    <string msgid="6623331958280229229" name="abc_action_bar_home_subtitle_description_format">"%1$s - %2$s：%3$s"</string>
+    <string msgid="1594238315039666878" name="abc_action_bar_up_description">"转到上一层级"</string>
+    <string msgid="3588849162933574182" name="abc_action_menu_overflow_description">"更多选项"</string>
+    <string msgid="4076576682505996667" name="abc_action_mode_done">"完成"</string>
+    <string msgid="7468859129482906941" name="abc_activity_chooser_view_see_all">"查看全部"</string>
+    <string msgid="2031811694353399454" name="abc_activitychooserview_choose_application">"选择应用"</string>
+    <string msgid="121134116657445385" name="abc_capital_off">"关闭"</string>
+    <string msgid="3405795526292276155" name="abc_capital_on">"开启"</string>
+    <string msgid="7723749260725869598" name="abc_search_hint">"搜索…"</string>
+    <string msgid="3691816814315814921" name="abc_searchview_description_clear">"清除查询"</string>
+    <string msgid="2550479030709304392" name="abc_searchview_description_query">"搜索查询"</string>
+    <string msgid="8264924765203268293" name="abc_searchview_description_search">"搜索"</string>
+    <string msgid="8928215447528550784" name="abc_searchview_description_submit">"提交查询"</string>
+    <string msgid="893419373245838918" name="abc_searchview_description_voice">"语音搜索"</string>
+    <string msgid="3421042268587513524" name="abc_shareactionprovider_share_with">"分享方式"</string>
+    <string msgid="7165123711973476752" name="abc_shareactionprovider_share_with_application">"通过%s分享"</string>
+    <string msgid="1603543279005712093" name="abc_toolbar_collapse_description">"收起"</string>
+    <string name="app_name"> Factory Test</string>
+    <string name="assymmi">AssyMMI</string>
+    <string name="audio_test_end">The audio test end</string>
+    <string name="audio_test_start">The audio test began</string>
+    <string name="bluetooth">Bluetooth</string>
+    <string name="click_too_frequently"> 点击太频繁，系统处理不过来，请间隔大于500ms再点击</string>
+    <string name="cpu_arithmetic_test">Performing arithmetic operation…</string>
+    <string name="cpu_float_test">Performing float operation…</string>
+    <string name="cpu_int_test">Performing integer operation…</string>
+    <string name="cpu_pi_test">Performing  taylor series operation…</string>
+    <string name="cpu_six_test">Calculating…</string>
+    <string name="cpu_sort_test">Performing sort operation…</string>
+    <string name="dormant">休眠</string>
+    <string name="double_click_exit">click again to exit</string>
+    <string name="end_speaker_player_mainmic_record">stop record</string>
+    <string name="hint_runin_duration">runin duration</string>
+    <string name="lcd_test_hint">LCD TEST</string>
+    <string name="left_vocal">左声道测试</string>
+    <string name="mainmic_file_play"> Playing  record</string>
+    <string name="mmi_sn">AssyMMI SERIAL NUMBER</string>
+    <string name="network_error">网络出错，请检查网络</string>
+    <string name="not_finish_write">参数未写入完毕，请等待...</string>
+    <string name="pcba">PCBA</string>
+    <string name="playing_music">Playing music</string>
+    <string name="reboot_times">reboot times</string>
+    <string name="report">report</string>
+    <string name="right_vocal">左声道测试</string>
+    <string name="runin_audio">Audio</string>
+    <string name="runin_camera">Camera </string>
+    <string name="runin_cpu">CPU</string>
+    <string name="runin_emmc">EMMC</string>
+    <string name="runin_engineering_mode">Engineering Mode</string>
+    <string name="runin_factory_mode">Factory Mode</string>
+    <string name="runin_lcd">LCD</string>
+    <string name="runin_memory">Memory</string>
+    <string name="runin_reboot">Reboot</string>
+    <string name="runin_three_dimensional">3D</string>
+    <string name="runin_title">RunIn</string>
+    <string name="runin_two_dimensional">2D</string>
+    <string name="runin_video">Video</string>
+    <string name="running_cpu_test">cpu calculating…</string>
+    <string name="running_emmc_test">reading/writing EMMC…</string>
+    <string name="running_memory_test">reading/writing memory…</string>
+    <string msgid="146198913615257606" name="search_menu_title">"搜索"</string>
+    <string name="select_runin_item">Select runin item</string>
+    <string name="service_connect_success">Service连接成功</string>
+    <string name="sn">SERIAL NUMBER</string>
+    <string name="speaker_play_mainmic_record">Main mic recording</string>
+    <string name="start_runin">start runin</string>
+    <string msgid="2869576371154716097" name="status_bar_notification_info_overflow">"999+"</string>
+    <string name="test_result">Runin Result</string>
+    <string name="title_activity_pcbabase">PCBABaseActivity</string>
+    <string name="voice_test">Audio test</string>
+    <string name="wakeup">唤醒</string>
+</resources>

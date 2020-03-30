@@ -1,0 +1,29 @@
+From 301b3e8b138203df374cd776e0c3c7e5ec6d0d1e Mon Sep 17 00:00:00 2001
+From: zhangss <zhangss1028@thundersoft.com>
+Date: Wed, 15 Apr 2015 10:00:42 +0800
+Subject: [PATCH] ARM: dts: msm: Add ov8865 camera dtsi
+
+add ov8865  camera dtsi for msm8929
+
+Change-Id: I67957a3f9d9c632872baf4ba8777089e6f78e97c
+Signed-off-by: Shaosong Zhang <zhangss1028@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8929-camera-sensor-qrd.dtsi | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8929-camera-sensor-qrd.dtsi b/arch/arm/boot/dts/qcom/msm8929-camera-sensor-qrd.dtsi
+index d5ae42a..2386231 100644
+--- a/arch/arm/boot/dts/qcom/msm8929-camera-sensor-qrd.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8929-camera-sensor-qrd.dtsi
+@@ -209,7 +209,7 @@
+ 		cell-index = <0>;
+ 		compatible = "qcom,camera";
+ 		reg = <0x0>;
+-		qcom,special-support-sensors="ov13850_q13v06k";
++		qcom,special-support-sensors="ov8865_q8v18a_8929";
+ 		qcom,csiphy-sd-index = <0>;
+ 		qcom,csid-sd-index = <0>;
+ 		qcom,mount-angle = <90>;
+-- 
+1.9.1
+

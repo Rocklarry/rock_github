@@ -1,0 +1,73 @@
+From fa22652d5f90ba4f4cde1abb3db129c41a6d2fdd Mon Sep 17 00:00:00 2001
+From: Yukun Wan <wanyk0402@thundersoft.com>
+Date: Tue, 10 Mar 2015 18:09:17 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support ltr553 devicetree
+
+Devicetree support ltr553
+
+Change-Id: Ia9bf3b5b7ee2985c12c03105a2f67f739f763b17
+Signed-off-by: Yukun Wan <wanyk0402@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi | 32 +++++++++++++++++++++++++++-
+ 1 file changed, 31 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi b/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
+index 5bb6734..82d14e1 100644
+--- a/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
+@@ -72,6 +72,21 @@
+ 		};
+ 	};
+ 
++	ltr553_int_pin {
++		qcom,pins = <&gp 113>;
++		qcom,pin-func = <0>;
++		qcom,num-grp-pins = <1>;
++		label = "ltr553-irq";
++		ltr553_default: ltr553_default {
++			drive-strength = <6>;
++			bias-pull-up;
++		};
++		ltr553_sleep: ltr553_sleep {
++			drive-strength = <2>;
++			bias-pull-down;
++		};
++	};
++
+ };
+ 
+ &i2c_0 { /* BLSP1 QUP2 */
+@@ -87,7 +102,7 @@
+ 		akm,gpio_rstn = <&msm_gpio 36 0x0>;
+ 		akm,auto-report;
+ 	};
+-
++/*
+ 	avago@39 {
+ 		compatible = "avago,apds9930";
+ 		reg = <0x39>;
+@@ -108,6 +123,21 @@
+ 		avago,als-D = <129>;
+ 		avago,ga-value = <98>;
+ 	};
++*/
++	liteon@23 {
++		compatible = "liteon,ltr553";
++		reg = <0x23>;
++		pinctrl-names = "default","sleep";
++		pinctrl-0 = <&ltr553_default>;
++		pinctrl-1 = <&ltr553_sleep>;
++		interrupt-parent = <&msm_gpio>;
++		interrupts = <113 0x2>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++		liteon,intr = <&msm_gpio 113 0x2>;
++		liteon,highthr = <800>;
++		liteon,lowthr = <300>;
++	};
+ 
+ 	st@18 {
+ 		compatible = "st,lis3dh";
+-- 
+2.2.2
+

@@ -1,0 +1,95 @@
+From c14a6e0671b7feba4b604b4eccacdad1defcd7ee Mon Sep 17 00:00:00 2001
+From: Yukun Wan <wanyk0402@thundersoft.com>
+Date: Sun, 28 Sep 2014 18:03:08 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support lsm330 devicetree
+
+Devicetree support lsm330
+
+Change-Id: I72288d726900ffe5d06c3494723c91c03dd1ff47
+Signed-off-by: Yukun Wan <wanyk0402@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi |   57 ++++++++++++++++++++++++++
+ 1 file changed, 57 insertions(+)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi b/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
+index 9981e42..0d445db 100644
+--- a/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
+@@ -44,6 +44,34 @@
+ 		};
+ 	};
+ 
++	lsm330_acc_int1_pin {
++		qcom,pins = <&gp 115>;
++		qcom,num-grp-pins = <1>;
++		label = "lsm330_acc_int_pin";
++		lsm330_acc_int1_default: int1_default {
++			drive-strength = <6>;
++			bias-pull-down;
++		};
++		lsm330_acc_int1_sleep: int1_sleep {
++			drive-strength = <2>;
++			bias-pull-down;
++		};
++	};
++
++	lsm330_gyr_int1_pin {
++		qcom,pins = <&gp 114>;
++		qcom,num-grp-pins = <1>;
++		label = "lsm330_gyr_int_pin";
++		lsm330_gyr_int1_default: int1_default {
++			drive-strength = <6>;
++			bias-pull-down;
++		};
++		lsm330_gyr_int1_sleep: int1_sleep {
++			drive-strength = <2>;
++			bias-pull-down;
++		};
++	};
++
+ 	tps65132-en-pin {
+ 		qcom,pins = <&gp 32>, <&gp 97>;
+ 		qcom,num-grp-pins = <2>;
+@@ -125,10 +153,39 @@
+ 		st,axis-map-z = <2>;
+ 		st,g-range = <2>;
+ 		st,gpio-int1 = <&msm_gpio 115 0x2002>;
++	};
++
++	st@1d {
++		compatible = "st,lsm330_acc";
++		reg = <0x1d>;
++		pinctrl-names = "lsm330_acc_default","lsm330_acc_sleep";
++		pinctrl-0 = <&lsm330_acc_int1_default>;
++		pinctrl-1 = <&lsm330_acc_int1_sleep>;
++		interrupt-parent = <&msm_gpio>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++		st,gpio_int1 = <&msm_gpio 115 0x2002>;
++		st,poll_interval = <200>;
++		st,axis-map-x = <0>;
++		st,axis-map-y = <1>;
++		st,axis-map-z = <2>;
+ 		st,negate-x;
+ 		st,negate-y;
+ 	};
+ 
++	st@6b {
++		compatible = "st,lsm330_gyr";
++		reg = <0x6b>;
++		pinctrl-names = "lsm330_gyr_default","lsm330_gyr_sleep";
++		pinctrl-0 = <&lsm330_gyr_int1_default>;
++		pinctrl-1 = <&lsm330_gyr_int1_sleep>;
++		interrupt-parent = <&msm_gpio>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++		st,gpio-int2 = <&msm_gpio 114 0x2002>;
++		st,poll_interval = <200>;
++	};
++
+ 	tps65132@3e {
+ 		compatible = "ti,tps65132";
+ 		reg = <0x3e>;
+-- 
+1.7.9.5
+

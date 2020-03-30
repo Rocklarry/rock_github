@@ -1,0 +1,53 @@
+From 4d3098c9e015915da96f41d33b6aeeeee6cd0493 Mon Sep 17 00:00:00 2001
+From: Li Zhanchao <lizc1023@thundersoft.com>
+Date: Wed, 6 Apr 2016 19:57:32 +0800
+Subject: [PATCH 1/2] ARM:dts:msm: support ctp unknown ft5346
+
+Add CTP UNKNOWN@T8511@FT5346 device tree
+
+Change-Id: I2f13817b7d5dda3d73c6790983164d71e5d91948
+Signed-off-by: Li Zhanchao <lizc1023@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msmgold-pmi8937-qrd-sku5.dtsi | 16 +++-------------
+ 1 file changed, 3 insertions(+), 13 deletions(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msmgold-pmi8937-qrd-sku5.dtsi b/arch/arm/boot/dts/qcom/msmgold-pmi8937-qrd-sku5.dtsi
+index 4853ef8..c0249f7 100644
+--- a/arch/arm/boot/dts/qcom/msmgold-pmi8937-qrd-sku5.dtsi
++++ b/arch/arm/boot/dts/qcom/msmgold-pmi8937-qrd-sku5.dtsi
+@@ -53,12 +53,12 @@
+ 			pinctrl-0 = <&ts_int_active &ts_reset_active>;
+ 			pinctrl-1 = <&ts_int_suspend &ts_reset_suspend>;
+ 			pinctrl-2 = <&ts_release>;
+-			focaltech,name = "ft5436";
++			focaltech,name = "ft5346";
+ 			focaltech,family-id = <0x06>;
+ 			focaltech,reset-gpio = <&tlmm 64 0x0>;
+ 			focaltech,irq-gpio = <&tlmm 65 0x2008>;
+-			focaltech,display-coords = <0 0 720 1280>;
+-			focaltech,panel-coords = <0 0 720 1400>;
++			focaltech,display-coords = <0 0 1080 1920>;
++			focaltech,panel-coords = <0 0 1080 2098>;
+ 			focaltech,button-map= <139 102 158>;
+ 			focaltech,no-force-update;
+ 			focaltech,i2c-pull-up;
+@@ -77,16 +77,6 @@
+ 		};
+ 	};
+ 
+-	gen-vkeys {
+-		compatible = "qcom,gen-vkeys";
+-		label = "ft5x06_ts";
+-		qcom,disp-maxx = <720>;
+-		qcom,disp-maxy = <1280>;
+-		qcom,panel-maxx = <720>;
+-		qcom,panel-maxy = <1400>;
+-		qcom,key-codes = <139 172 158>;
+-		qcom,y-offset = <0>;
+-	};
+ };
+ 
+ &spmi_bus {
+-- 
+1.9.1
+

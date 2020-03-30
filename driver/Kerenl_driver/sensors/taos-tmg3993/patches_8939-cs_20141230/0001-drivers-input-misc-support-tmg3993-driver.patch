@@ -1,0 +1,4080 @@
+From 36fe003eff2ca5b03c9993aa767de972831d1a6b Mon Sep 17 00:00:00 2001
+From: Yukun Wan <wanyk0402@thundersoft.com>
+Date: Fri, 26 Dec 2014 15:05:57 +0800
+Subject: [PATCH 1/3] drivers:input:misc: support tmg3993 driver
+
+Driver support tmg3993
+
+Change-Id: I31b9df4eaf05e185aed06369e86e3d6147a1ee32
+Signed-off-by: Yukun Wan <wanyk0402@thundersoft.com>
+---
+ .../devicetree/bindings/input/misc/tmg3993.txt     |   30 +
+ drivers/input/misc/Kconfig                         |   10 +
+ drivers/input/misc/Makefile                        |    1 +
+ drivers/input/misc/tmg3993.c                       | 3472 ++++++++++++++++++++
+ include/linux/input/tmg3993.h                      |  503 +++
+ 5 files changed, 4016 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/input/misc/tmg3993.txt
+ create mode 100644 drivers/input/misc/tmg3993.c
+ create mode 100644 include/linux/input/tmg3993.h
+
+diff --git a/Documentation/devicetree/bindings/input/misc/tmg3993.txt b/Documentation/devicetree/bindings/input/misc/tmg3993.txt
+new file mode 100644
+index 0000000..6f710c0
+--- /dev/null
++++ b/Documentation/devicetree/bindings/input/misc/tmg3993.txt
+@@ -0,0 +1,30 @@
++TAOS tmg3993 L/P sensor
++
++Required properties:
++
++ - compatible		: Should be "taos,tmg3993".
++ - reg			: i2c slave address of the device.
++ - interrupt-parent	: Parent of interrupt.
++ - interrupts		: L/P sample interrupt to indicate new data ready.
++ - vdd-supply		: Power supply needed to power up the device.
++ - vio-supply		: IO power supply needed for IO and I2C.
++ - taos,irq-gpio	: The gpio pin for the interrupt.
++ - taos,prox_high_threshold	: The threshold adc value for proximity sensor to
++trigger close  interrupt.
++ - taos,prox_low_threshold: The threshold adc value for proximity sensor to
++trigger away interrupt.
++ - taos,als_delay	: The polling interval time of light sensor.
++
++Example:
++	taos@39 { /* Ambient light and proximity sensor */
++		compatible = "taos,tmg3993";
++		reg = <0x39>;
++		interrupt-parent = <&msm_gpio>;
++		interrupts = <113 0x2002>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++		taos,irq-gpio = <&msm_gpio 113 0x2002>;
++		taos,prox_high_threshold = <160>;
++		taos,prox_low_threshold = <40>;
++		taos,als_delay = <200>;
++	}
+\ No newline at end of file
+diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
+index b358471..f4327a8 100644
+--- a/drivers/input/misc/Kconfig
++++ b/drivers/input/misc/Kconfig
+@@ -734,6 +734,16 @@ config SENSORS_MMC3416X
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called mmc3416x.
+ 
++config SENSORS_TMG3993
++	tristate "TMG3993 proximity/Gesture/light sensor driver"
++	depends on I2C
++	help
++	  Say Y here if you want to enable the TMG3993 proximity/Gesture/light sensor
++	  driver.
++
++	  To compile this driver as a module, choose M here: the
++	  module will be called tmg3993.
++
+ config SENSORS_AKM09911
+ 	tristate "AKM09911 3-axis electronic compass sensor driver"
+ 	depends on I2C
+diff --git a/drivers/input/misc/Makefile b/drivers/input/misc/Makefile
+index 139a4fb..3c7e902 100644
+--- a/drivers/input/misc/Makefile
++++ b/drivers/input/misc/Makefile
+@@ -64,6 +64,7 @@ obj-$(CONFIG_INPUT_XEN_KBDDEV_FRONTEND)	+= xen-kbdfront.o
+ obj-$(CONFIG_INPUT_YEALINK)		+= yealink.o
+ obj-$(CONFIG_BMP18X)			+= bmp18x-core.o
+ obj-$(CONFIG_BMP18X_I2C)		+= bmp18x-i2c.o
++obj-$(CONFIG_SENSORS_TMG3993)		+= tmg3993.o
+ obj-$(CONFIG_SENSORS_MMC3416X)		+= mmc3416x.o
+ obj-$(CONFIG_SENSORS_MMA8X5X)	  	+= mma8x5x.o
+ obj-$(CONFIG_SENSORS_STK3X1X)		+= stk3x1x.o
+diff --git a/drivers/input/misc/tmg3993.c b/drivers/input/misc/tmg3993.c
+new file mode 100644
+index 0000000..04211f5
+--- /dev/null
++++ b/drivers/input/misc/tmg3993.c
+@@ -0,0 +1,3472 @@
++/*
++ * Device driver for monitoring ambient light intensity in (lux)
++ * proximity detection (prox), and Gesture functionality within the
++ * AMS-TAOS TMG3993.
++ *
++ * Copyright (c) 2014, AMS-TAOS USA, Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along
++ * with this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
++ */
++
++#include <linux/kernel.h>
++#include <linux/i2c.h>
++#include <linux/errno.h>
++#include <linux/delay.h>
++#include <linux/string.h>
++#include <linux/mutex.h>
++#include <linux/unistd.h>
++#include <linux/interrupt.h>
++#include <linux/platform_device.h>
++#include <linux/input.h>
++#include <linux/slab.h>
++#include <linux/pm.h>
++#include <linux/module.h>
++#include <linux/device.h>
++#include <linux/gpio.h>
++#include <linux/input/tmg3993.h>
++#include <linux/sensors.h>
++#include <linux/of_gpio.h>
++#include <linux/regulator/consumer.h>
++#include <linux/pm_runtime.h>
++
++static u8 const tmg399x_ids[] = {
++	0xAA,
++	0x9E,
++};
++
++static char const *tmg399x_names[] = {
++	"tmg399x",
++	"tmg399x",
++};
++
++static u8 const restorable_regs[] = {
++	TMG399X_ALS_TIME,
++	TMG399X_WAIT_TIME,
++	TMG399X_PERSISTENCE,
++	TMG399X_CONFIG_1,
++	TMG399X_PRX_PULSE,
++	TMG399X_GAIN,
++	TMG399X_CONFIG_2,
++	TMG399X_PRX_OFFSET_NE,
++	TMG399X_PRX_OFFSET_SW,
++	TMG399X_CONFIG_3,
++};
++
++static u8 const prox_gains[] = {
++	1,
++	2,
++	4,
++	8
++};
++
++static u8 const als_gains[] = {
++	1,
++	4,
++	16,
++	64
++};
++
++static u8 const prox_pplens[] = {
++	4,
++	8,
++	16,
++	32
++};
++
++static u8 const led_drives[] = {
++	100,
++	50,
++	25,
++	12
++};
++
++static u16 const led_boosts[] = {
++	100,
++	150,
++	200,
++	300
++};
++
++static struct lux_segment segment_default[] = {
++	{
++	 .d_factor = D_Factor,
++	 .r_coef = R_Coef,
++	 .g_coef = G_Coef,
++	 .b_coef = B_Coef,
++	 .ct_coef = CT_Coef,
++	 .ct_offset = CT_Offset,
++	 },
++	{
++	 .d_factor = D_Factor,
++	 .r_coef = R_Coef,
++	 .g_coef = G_Coef,
++	 .b_coef = B_Coef,
++	 .ct_coef = CT_Coef,
++	 .ct_offset = CT_Offset,
++	 },
++};
++
++static struct tmg399x_parameters param_default = {
++	.als_time = 0xFE,	/* 5.6ms */
++	.als_gain = AGAIN_64,
++	.wait_time = 0xFF,	/* 2.78ms */
++	.prox_th_min = 40,
++	.prox_th_max = 160,
++	.persist = PRX_PERSIST(0) | ALS_PERSIST(0),
++	.als_prox_cfg1 = 0x60,
++	/*.prox_pulse = PPLEN_16US | PRX_PULSE_CNT(6), */
++	.prox_pulse = PPLEN_8US | PRX_PULSE_CNT(3),
++	/*.prox_gain = PGAIN_4, */
++	.prox_gain = PGAIN_1,
++	.ldrive = PDRIVE_100MA,
++	.als_prox_cfg2 = LEDBOOST_150 | 0x01,
++	.prox_offset_ne = 0,
++	.prox_offset_sw = 0,
++	.als_prox_cfg3 = 0,
++
++	.ges_entry_th = 0,
++	.ges_exit_th = 255,
++	.ges_cfg1 = FIFOTH_1 | GEXMSK_ALL | GEXPERS_1,
++	.ges_cfg2 = GGAIN_4 | GLDRIVE_100 | GWTIME_3,
++	.ges_offset_n = 0,
++	.ges_offset_s = 0,
++	.ges_pulse = GPLEN_16US | GES_PULSE_CNT(12),
++	.ges_offset_w = 0,
++	.ges_offset_e = 0,
++	.ges_dimension = GBOTH_PAIR,
++};
++
++/* TMG3993 light sensor polling rate in ms */
++#define TMG3993_LS_MIN_POLL_DELAY	1
++#define TMG3993_LS_MAX_POLL_DELAY	1000
++
++/* for gesture and proximity offset calibartion */
++static bool docalibration = true;
++static bool pstatechanged;
++static u8 caloffsetstate = START_CALOFF;
++static u8 caloffsetdir = DIR_NONE;
++static u8 callowtarget = 8;
++static u8 calhightarget = 8;
++static u8 last_mode;
++static u8 hidden_data_mode;
++static u8 totalofdset;
++struct tmg399x_data_buf data_buf[32];
++static struct tmg399x_chip *g_tmg3993_data;
++
++static void tmg399x_set_ges_thresh(struct tmg399x_chip *chip,
++	u8 entry, u8 exit);
++static void tmg399x_start_calibration(struct tmg399x_chip *chip);
++static void tmg399x_report_ges(struct tmg399x_chip *chip, u8 event);
++static void tmg399x_rgbc_poll_handle(unsigned long data);
++/*
++static void int2offset(u8 offset, s8 value)
++{
++	if (value < 0)
++		offset = 128 - value;
++	else
++		offset = value;
++}
++*/
++static int tmg399x_i2c_read_byte(struct tmg399x_chip *chip, u8 reg, u8 *val)
++{
++	int ret;
++
++	s32 read;
++	struct i2c_client *client = chip->client;
++
++	reg += I2C_ADDR_OFFSET;
++	ret = i2c_smbus_write_byte(client, reg);
++	read = i2c_smbus_read_byte(client);
++	if (ret < 0)
++		pr_info("%s: failed read from register %x\n", __func__, reg);
++
++	*val = (u8) read;
++	return ret;
++}
++
++static int tmg399x_i2c_write_byte(struct tmg399x_chip *chip, u8 reg, u8 val)
++{
++	int ret;
++	struct i2c_client *client = chip->client;
++
++	reg += I2C_ADDR_OFFSET;
++	ret = i2c_smbus_write_byte_data(client, reg, val);
++	if (ret < 0)
++		pr_info("%s: failed to write register %x err= %d\n", __func__,
++			reg, ret);
++
++	return ret;
++}
++
++static int tmg399x_i2c_modify(struct tmg399x_chip *chip, u8 reg, u8 mask,
++			      u8 val)
++{
++	int ret;
++	u8 temp;
++
++	ret = tmg399x_i2c_read_byte(chip, reg, &temp);
++	temp &= ~mask;
++	temp |= val;
++	ret |= tmg399x_i2c_write_byte(chip, reg, temp);
++
++	return ret;
++}
++
++static int tmg399x_i2c_read_block(struct tmg399x_chip *chip,
++				  u8 reg, u8 *val, int size)
++{
++	int ret;
++	struct i2c_client *client = chip->client;
++
++	reg += I2C_ADDR_OFFSET;
++	ret = i2c_smbus_read_i2c_block_data(client, reg, size, val);
++	if (ret < 0)
++		pr_info("%s: failed to read block from address %x (%d bytes)\n",
++			__func__, reg, size);
++
++	return ret;
++}
++
++static int tmg399x_flush_regs(struct tmg399x_chip *chip)
++{
++	unsigned i;
++	int ret;
++	u8 reg;
++
++	pr_info("%s\n", __func__);
++
++	for (i = 0; i < ARRAY_SIZE(restorable_regs); i++) {
++		reg = restorable_regs[i];
++		ret = tmg399x_i2c_write_byte(chip, reg, chip->shadow[reg]);
++		if (ret < 0)
++			break;
++	}
++
++	return ret;
++}
++
++static int tmg399x_irq_clr(struct tmg399x_chip *chip, u8 int2clr)
++{
++	int ret;
++
++	ret = i2c_smbus_write_byte(chip->client, int2clr);
++	return ret;
++}
++
++static int tmg399x_update_enable_reg(struct tmg399x_chip *chip)
++{
++	int ret;
++
++	pr_info("%s\n", __func__);
++	ret = tmg399x_i2c_write_byte(chip, TMG399X_CONTROL,
++				     chip->shadow[TMG399X_CONTROL]);
++	ret |= tmg399x_i2c_write_byte(chip, TMG399X_GES_CFG_4,
++				      chip->shadow[TMG399X_GES_CFG_4]);
++
++	return ret;
++}
++
++static int tmg399x_set_als_gain(struct tmg399x_chip *chip, int gain)
++{
++	int ret;
++	u8 ctrl_reg = chip->shadow[TMG399X_GAIN] & ~TMG399X_ALS_GAIN_MASK;
++
++	switch (gain) {
++	case 1:
++		ctrl_reg |= AGAIN_1;
++		break;
++	case 4:
++		ctrl_reg |= AGAIN_4;
++		break;
++	case 16:
++		ctrl_reg |= AGAIN_16;
++		break;
++	case 64:
++		ctrl_reg |= AGAIN_64;
++		break;
++	default:
++		break;
++	}
++
++	ret = tmg399x_i2c_write_byte(chip, TMG399X_GAIN, ctrl_reg);
++	if (!ret) {
++		chip->shadow[TMG399X_GAIN] = ctrl_reg;
++		chip->params.als_gain = ctrl_reg & TMG399X_ALS_GAIN_MASK;
++	}
++	return ret;
++}
++
++static void tmg399x_calc_cpl(struct tmg399x_chip *chip)
++{
++	u32 cpl;
++	u32 sat;
++	u8 atime = chip->shadow[TMG399X_ALS_TIME];
++
++	cpl = 256 - chip->shadow[TMG399X_ALS_TIME];
++	cpl *= TMG399X_ATIME_PER_100;
++	cpl /= 100;
++	cpl *= als_gains[chip->params.als_gain];
++
++	sat = min_t(u32, MAX_ALS_VALUE, (u32) (256 - atime) << 10);
++	sat = sat * 8 / 10;
++	chip->als_inf.cpl = cpl;
++	chip->als_inf.saturation = sat;
++}
++
++static int tmg399x_get_lux(struct tmg399x_chip *chip)
++{
++	int rp1, gp1, bp1, cp1;
++	int lux = 0;
++	int cct;
++	int sat;
++	int sf;
++
++	/* use time in ms get scaling factor */
++	tmg399x_calc_cpl(chip);
++	sat = chip->als_inf.saturation;
++
++	if (!chip->als_gain_auto) {
++		if (chip->als_inf.clear_raw <= MIN_ALS_VALUE) {
++			pr_info("%s: darkness\n", __func__);
++			lux = 0;
++			goto exit;
++		} else if (chip->als_inf.clear_raw >= sat) {
++			pr_info("%s: saturation, keep lux & cct\n", __func__);
++			lux = chip->als_inf.lux;
++			goto exit;
++		}
++	} else {
++		u8 gain = als_gains[chip->params.als_gain];
++		int ret = -EIO;
++
++		if (gain == 16 && chip->als_inf.clear_raw >= sat)
++			ret = tmg399x_set_als_gain(chip, 1);
++		else if (gain == 16
++			 && chip->als_inf.clear_raw < GAIN_SWITCH_LEVEL)
++			ret = tmg399x_set_als_gain(chip, 64);
++		else if ((gain == 64
++			  && chip->als_inf.clear_raw >=
++			  (sat - GAIN_SWITCH_LEVEL)) || (gain == 1
++							 && chip->als_inf.
++							 clear_raw <
++							 GAIN_SWITCH_LEVEL))
++			ret = tmg399x_set_als_gain(chip, 16);
++		if (!ret) {
++			pr_info("%s: gain adjusted, skip\n", __func__);
++			tmg399x_calc_cpl(chip);
++			ret = -EAGAIN;
++			lux = chip->als_inf.lux;
++			goto exit;
++		}
++
++		if (chip->als_inf.clear_raw <= MIN_ALS_VALUE) {
++			pr_info("%s: darkness\n", __func__);
++			lux = 0;
++			goto exit;
++		} else if (chip->als_inf.clear_raw >= sat) {
++			pr_info("%s: saturation, keep lux\n", __func__);
++			lux = chip->als_inf.lux;
++			goto exit;
++		}
++	}
++
++	/* remove ir from counts */
++	rp1 = chip->als_inf.red_raw - chip->als_inf.ir;
++	gp1 = chip->als_inf.green_raw - chip->als_inf.ir;
++	bp1 = chip->als_inf.blue_raw - chip->als_inf.ir;
++	cp1 = chip->als_inf.clear_raw - chip->als_inf.ir;
++
++	if (!chip->als_inf.cpl) {
++		pr_info("%s: zero cpl. Setting to 1\n", __func__);
++		chip->als_inf.cpl = 1;
++	}
++
++	if (chip->als_inf.red_raw > chip->als_inf.ir)
++		lux += chip->segment[chip->device_index].r_coef * rp1;
++	else
++		pr_info("%s: lux rp1 = %d\n", __func__,
++			(chip->segment[chip->device_index].r_coef * rp1));
++
++	if (chip->als_inf.green_raw > chip->als_inf.ir)
++		lux += chip->segment[chip->device_index].g_coef * gp1;
++	else
++		pr_info("%s: lux gp1 = %d\n", __func__,
++			(chip->segment[chip->device_index].g_coef * rp1));
++
++	if (chip->als_inf.blue_raw > chip->als_inf.ir)
++		lux -= chip->segment[chip->device_index].b_coef * bp1;
++	else
++		pr_info("%s: lux bp1 = %d\n", __func__,
++			(chip->segment[chip->device_index].b_coef * rp1));
++
++	sf = chip->als_inf.cpl;
++
++	if (sf > 131072)
++		goto error;
++
++	lux *= chip->segment[chip->device_index].d_factor;
++	lux /= sf;
++	lux += 500;
++	lux /= 1000;
++
++	if (bp1 > 0 && rp1 > 0) {
++		cct =
++		    ((chip->segment[chip->device_index].ct_coef * bp1) / rp1) +
++		    chip->segment[chip->device_index].ct_offset;
++
++		chip->als_inf.cct = (u16) cct;
++	}
++
++exit:
++	chip->als_inf.lux = (u16) lux;
++	return 0;
++
++error:
++	pr_info("%s: ERROR Scale factor = %d", __func__, sf);
++
++	return 1;
++}
++
++static int tmg399x_set_op_mode(struct tmg399x_chip *chip, u8 mode, u8 on)
++{
++	u8 cur_mode;
++	int ret = 0;
++
++	if (on)
++		cur_mode = last_mode | mode;
++	else
++		cur_mode = last_mode & ~mode;
++
++	last_mode = cur_mode;
++	switch (cur_mode) {
++	case ALL_OFF:
++		chip->shadow[TMG399X_CONTROL] = 0;
++		chip->shadow[TMG399X_GES_CFG_4] &= ~TMG399X_GES_EN_IRQ;
++		break;
++	case ALS_ONLY:
++		chip->shadow[TMG399X_ALS_TIME] = 0xEE;	/*50ms */
++		chip->shadow[TMG399X_CONTROL] =
++		    (TMG399X_EN_PWR_ON | TMG399X_EN_ALS);
++		chip->shadow[TMG399X_GES_CFG_4] &= ~TMG399X_GES_EN_IRQ;
++		break;
++	case PROX_ONLY:
++	case ALS_PROX:
++		chip->shadow[TMG399X_ALS_TIME] = 0xF7;	/*25ms */
++		chip->shadow[TMG399X_PRX_PULSE] = PPLEN_8US | PRX_PULSE_CNT(3);
++		chip->prox_th_factor = 1;
++		chip->shadow[TMG399X_CONTROL] =
++		    (TMG399X_EN_PWR_ON | TMG399X_EN_ALS | TMG399X_EN_PRX |
++		     TMG399X_EN_PRX_IRQ);
++		chip->shadow[TMG399X_GES_CFG_4] &= ~TMG399X_GES_EN_IRQ;
++		break;
++	case GES_ONLY:
++	case ALS_GES:
++	case PROX_GES:
++	case ALS_PROX_GES:
++		chip->shadow[TMG399X_ALS_TIME] = 0xFE;	/*5.6ms */
++		chip->shadow[TMG399X_PRX_PULSE] = PPLEN_8US | PRX_PULSE_CNT(6);
++		chip->shadow[TMG399X_GES_PULSE] = GPLEN_8US | GES_PULSE_CNT(12);
++		chip->prox_th_factor = 2;
++		chip->shadow[TMG399X_CONTROL] =
++		    (TMG399X_EN_PWR_ON | TMG399X_EN_ALS | TMG399X_EN_PRX |
++		     TMG399X_EN_PRX_IRQ | TMG399X_EN_GES);
++		chip->shadow[TMG399X_GES_CFG_4] |= TMG399X_GES_EN_IRQ;
++		break;
++	default:
++		break;
++	}
++
++	ret |=
++	    tmg399x_i2c_write_byte(chip, TMG399X_ALS_TIME,
++				   chip->shadow[TMG399X_ALS_TIME]);
++	ret |=
++	    tmg399x_i2c_write_byte(chip, TMG399X_PRX_PULSE,
++				   chip->shadow[TMG399X_PRX_PULSE]);
++	ret |=
++	    tmg399x_i2c_write_byte(chip, TMG399X_GES_PULSE,
++				   chip->shadow[TMG399X_GES_PULSE]);
++	ret |= tmg399x_update_enable_reg(chip);
++	/*mdelay(3); */
++
++	return ret;
++}
++
++static int tmg399x_ges_init(struct tmg399x_chip *chip, int on)
++{
++	int ret;
++
++	if (on) {
++		chip->params.ges_entry_th = param_default.ges_entry_th;
++		chip->params.ges_exit_th = param_default.ges_exit_th;
++		chip->params.ges_cfg1 = param_default.ges_cfg1;
++		chip->params.ges_cfg2 = param_default.ges_cfg2;
++		chip->params.ges_offset_n = param_default.ges_offset_n;
++		chip->params.ges_offset_s = param_default.ges_offset_s;
++		chip->params.ges_pulse = param_default.ges_pulse;
++		chip->params.ges_offset_w = param_default.ges_offset_w;
++		chip->params.ges_offset_e = param_default.ges_offset_e;
++		chip->params.ges_dimension = param_default.ges_dimension;
++	}
++
++	/* Initial gesture registers */
++	chip->shadow[TMG399X_GES_ENTH] = chip->params.ges_entry_th;
++	chip->shadow[TMG399X_GES_EXTH] = chip->params.ges_exit_th;
++	chip->shadow[TMG399X_GES_CFG_1] = chip->params.ges_cfg1;
++	chip->shadow[TMG399X_GES_CFG_2] = chip->params.ges_cfg2;
++	chip->shadow[TMG399X_GES_OFFSET_N] = chip->params.ges_offset_n;
++	chip->shadow[TMG399X_GES_OFFSET_S] = chip->params.ges_offset_s;
++	chip->shadow[TMG399X_GES_PULSE] = chip->params.ges_pulse;
++	chip->shadow[TMG399X_GES_OFFSET_W] = chip->params.ges_offset_w;
++	chip->shadow[TMG399X_GES_OFFSET_E] = chip->params.ges_offset_e;
++	chip->shadow[TMG399X_GES_CFG_3] = chip->params.ges_dimension;
++
++	ret = tmg399x_i2c_write_byte(chip, TMG399X_GES_ENTH,
++				     chip->shadow[TMG399X_GES_ENTH]);
++	ret |= tmg399x_i2c_write_byte(chip, TMG399X_GES_EXTH,
++				      chip->shadow[TMG399X_GES_EXTH]);
++	ret |= tmg399x_i2c_write_byte(chip, TMG399X_GES_CFG_1,
++				      chip->shadow[TMG399X_GES_CFG_1]);
++	ret |= tmg399x_i2c_write_byte(chip, TMG399X_GES_CFG_2,
++				      chip->shadow[TMG399X_GES_CFG_2]);
++	ret |= tmg399x_i2c_write_byte(chip, TMG399X_GES_OFFSET_N,
++				      chip->shadow[TMG399X_GES_OFFSET_N]);
++	ret |= tmg399x_i2c_write_byte(chip, TMG399X_GES_OFFSET_S,
++				      chip->shadow[TMG399X_GES_OFFSET_S]);
++	ret |= tmg399x_i2c_write_byte(chip, TMG399X_GES_PULSE,
++				      chip->shadow[TMG399X_GES_PULSE]);
++	ret |= tmg399x_i2c_write_byte(chip, TMG399X_GES_OFFSET_W,
++				      chip->shadow[TMG399X_GES_OFFSET_W]);
++	ret |= tmg399x_i2c_write_byte(chip, TMG399X_GES_OFFSET_E,
++				      chip->shadow[TMG399X_GES_OFFSET_E]);
++	ret |= tmg399x_i2c_write_byte(chip, TMG399X_GES_CFG_3,
++				      chip->shadow[TMG399X_GES_CFG_3]);
++
++	return ret;
++}
++
++static int tmg399x_als_enable(struct tmg399x_chip *chip, int on)
++{
++	int ret;
++
++	pr_info("%s: on = %d\n", __func__, on);
++	ret = tmg399x_i2c_write_byte(chip, TMG399X_CONTROL, 0);
++	if (ret < 0)
++		return ret;
++
++	if (on) {
++		/* set up timer for RGBC polling */
++		setup_timer(&chip->rgbc_timer, tmg399x_rgbc_poll_handle,
++			    (unsigned long)chip);
++		chip->rgbc_timer.expires =
++		    jiffies + HZ * atomic_read(&chip->als_delay) / 1000;
++		add_timer(&chip->rgbc_timer);
++
++		/* use auto gain setting */
++		chip->als_gain_auto = true;
++	} else {
++		del_timer(&chip->rgbc_timer);
++
++		chip->shadow[TMG399X_GAIN] &= ~TMG399X_ALS_GAIN_MASK;
++		chip->params.als_gain = 0;
++		ret =
++		    tmg399x_i2c_write_byte(chip, TMG399X_GAIN,
++					   chip->shadow[TMG399X_GAIN]);
++		if (ret < 0)
++			return ret;
++		chip->als_inf.lux = 0;
++		chip->als_inf.cct = 0;
++	}
++
++	ret |= tmg399x_set_op_mode(chip, ALS_FUNC, on);
++	if (!ret)
++		chip->als_enabled = on;
++
++	return ret;
++}
++
++static int tmg399x_prox_enable(struct tmg399x_chip *chip, int on)
++{
++	int ret;
++
++	ret = tmg399x_i2c_write_byte(chip, TMG399X_CONTROL, 0);
++	if (ret < 0)
++		return ret;
++
++	if (on) {
++		input_report_abs(chip->p_idev, ABS_DISTANCE, 1);
++		input_sync(chip->p_idev);
++		/*set_visible_data_mode(chip); */
++		tmg399x_start_calibration(chip);
++	} else
++		chip->prx_inf.raw = 0;
++
++	ret |= tmg399x_set_op_mode(chip, PROX_FUNC, on);
++	if (!ret)
++		chip->prx_enabled = on;
++
++	return ret;
++}
++
++static int tmg399x_ges_enable(struct tmg399x_chip *chip, int on)
++{
++	int ret = 0;
++
++	pr_info("%s: on = %d\n", __func__, on);
++	ret = tmg399x_i2c_write_byte(chip, TMG399X_CONTROL, 0);
++	if (ret < 0)
++		return ret;
++
++	if (on) {
++		/* initialize */
++		ret |= tmg399x_ges_init(chip, 1);
++		if (ret < 0)
++			return ret;
++
++		tmg399x_start_calibration(chip);
++	}
++
++	ret |= tmg399x_set_op_mode(chip, GES_FUNC, on);
++	if (!ret)
++		chip->ges_enabled = on;
++
++	return ret;
++}
++
++static int tmg399x_wait_enable(struct tmg399x_chip *chip, int on)
++{
++	int ret;
++
++	pr_info("%s: on = %d\n", __func__, on);
++	if (on) {
++		chip->shadow[TMG399X_CONTROL] |= TMG399X_EN_WAIT;
++
++		ret = tmg399x_update_enable_reg(chip);
++		if (ret < 0)
++			return ret;
++		/*mdelay(3); */
++	} else {
++		chip->shadow[TMG399X_CONTROL] &= ~TMG399X_EN_WAIT;
++
++		ret = tmg399x_update_enable_reg(chip);
++		if (ret < 0)
++			return ret;
++	}
++	if (!ret)
++		chip->wait_enabled = on;
++
++	return ret;
++}
++
++static ssize_t tmg399x_als_enable_show(struct device *dev,
++				       struct device_attribute *attr, char *buf)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(dev);
++	return snprintf(buf, PAGE_SIZE, "%d\n", chip->als_enabled);
++}
++
++static ssize_t tmg399x_als_enable_store(struct device *dev,
++					struct device_attribute *attr,
++					const char *buf, size_t size)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(dev);
++	bool value;
++
++	mutex_lock(&chip->lock);
++
++	if (strtobool(buf, &value)) {
++		mutex_unlock(&chip->lock);
++		return -EINVAL;
++	}
++
++	if (value)
++		tmg399x_als_enable(chip, 1);
++	else
++		tmg399x_als_enable(chip, 0);
++
++	mutex_unlock(&chip->lock);
++	return size;
++}
++
++static ssize_t tmg399x_prox_enable_show(struct device *dev,
++					struct device_attribute *attr,
++					char *buf)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(dev);
++	return snprintf(buf, PAGE_SIZE, "%d\n", chip->prx_enabled);
++}
++
++static ssize_t tmg399x_prox_enable_store(struct device *dev,
++					 struct device_attribute *attr,
++					 const char *buf, size_t size)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(dev);
++	bool value;
++
++	mutex_lock(&chip->lock);
++
++	if (strtobool(buf, &value)) {
++		mutex_unlock(&chip->lock);
++		return -EINVAL;
++	}
++
++	if (value)
++		tmg399x_prox_enable(chip, 1);
++	else
++		tmg399x_prox_enable(chip, 0);
++
++	mutex_unlock(&chip->lock);
++	return size;
++}
++
++static ssize_t tmg399x_hrm_enable_store(struct device *dev,
++					struct device_attribute *attr,
++					const char *buf, size_t size)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(dev);
++	bool value;
++
++	mutex_lock(&chip->lock);
++
++	if (strtobool(buf, &value)) {
++		mutex_unlock(&chip->lock);
++		return -EINVAL;
++	}
++
++	if (value) {
++		/*als time */
++		tmg399x_i2c_write_byte(chip, TMG399X_ALS_TIME, 0xFF);
++		/*trigger very cycle */
++		tmg399x_i2c_write_byte(chip, TMG399X_PERSISTENCE, 0x00);
++		/*us, 1 count*/
++		tmg399x_i2c_write_byte(chip, TMG399X_PRX_PULSE, 0x00);
++		/*100ma, 1x gain */
++		tmg399x_i2c_write_byte(chip, TMG399X_GAIN, 0x00);
++		/*led boost 100% */
++		tmg399x_i2c_write_byte(chip, TMG399X_CONFIG_2, 0x01);
++		/*led boost 100% */
++		tmg399x_i2c_write_byte(chip, TMG399X_WAIT_TIME, 0xFF);
++		/*enable prox and pint */
++		tmg399x_i2c_write_byte(chip, TMG399X_CONTROL, 0x2D);
++
++		/*tmg399x_hrm_init(); */
++	} else {
++		tmg399x_i2c_write_byte(chip, TMG399X_ALS_TIME,
++				       chip->shadow[TMG399X_ALS_TIME]);
++		tmg399x_i2c_write_byte(chip, TMG399X_PERSISTENCE,
++				       chip->shadow[TMG399X_PERSISTENCE]);
++		tmg399x_i2c_write_byte(chip, TMG399X_PRX_PULSE,
++				       chip->shadow[TMG399X_PRX_PULSE]);
++		tmg399x_i2c_write_byte(chip, TMG399X_GAIN,
++				       chip->shadow[TMG399X_GAIN]);
++		tmg399x_i2c_write_byte(chip, TMG399X_CONFIG_2,
++				       chip->shadow[TMG399X_CONFIG_2]);
++		tmg399x_i2c_write_byte(chip, TMG399X_CONTROL,
++				       chip->shadow[TMG399X_CONTROL]);
++	}
++
++	mutex_unlock(&chip->lock);
++	return size;
++}
++
++static ssize_t tmg399x_ges_enable_show(struct device *dev,
++				       struct device_attribute *attr, char *buf)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(dev);
++	return snprintf(buf, PAGE_SIZE, "%d\n", chip->ges_enabled);
++}
++
++static ssize_t tmg399x_ges_enable_store(struct device *dev,
++					struct device_attribute *attr,
++					const char *buf, size_t size)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(dev);
++	bool value;
++
++	mutex_lock(&chip->lock);
++
++	if (strtobool(buf, &value)) {
++		mutex_unlock(&chip->lock);
++		return -EINVAL;
++	}
++
++	if (value)
++		tmg399x_ges_enable(chip, 1);
++	else
++		tmg399x_ges_enable(chip, 0);
++
++	mutex_unlock(&chip->lock);
++	return size;
++}
++
++static ssize_t tmg399x_wait_enable_show(struct device *dev,
++					struct device_attribute *attr,
++					char *buf)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(dev);
++	return snprintf(buf, PAGE_SIZE, "%d\n", chip->wait_enabled);
++}
++
++static ssize_t tmg399x_wait_enable_store(struct device *dev,
++					 struct device_attribute *attr,
++					 const char *buf, size_t size)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(dev);
++	bool value;
++
++	mutex_lock(&chip->lock);
++
++	if (strtobool(buf, &value)) {
++		mutex_unlock(&chip->lock);
++		return -EINVAL;
++	}
++
++	if (value)
++		tmg399x_wait_enable(chip, 1);
++	else
++		tmg399x_wait_enable(chip, 0);
++
++	mutex_unlock(&chip->lock);
++
++	mutex_unlock(&chip->lock);
++	return size;
++}
++
++static ssize_t tmg399x_reg_dump_show(struct device *dev,
++				     struct device_attribute *attr, char *buf)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(dev);
++	buf[0] = chip->shadow[chip->reg];
++
++	return sizeof(unsigned char);
++}
++
++static ssize_t tmg399x_reg_dump_store(struct device *dev,
++				      struct device_attribute *attr,
++				      const char *buf, size_t size)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(dev);
++	unsigned long value;
++
++	mutex_lock(&chip->lock);
++
++	if (kstrtoul(buf, 10, &value))
++		return -EINVAL;
++
++	if (value < 176 && value > 127) {
++		chip->reg = value - I2C_ADDR_OFFSET;
++
++		tmg399x_i2c_read_byte(chip, chip->reg,
++				      &chip->shadow[chip->reg]);
++	}
++
++	mutex_unlock(&chip->lock);
++	return size;
++}
++
++static ssize_t tmg399x_start_calibration_store(struct device *dev,
++					       struct device_attribute *attr,
++					       const char *buf, size_t size)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(dev);
++	bool value;
++
++	mutex_lock(&chip->lock);
++
++	if (strtobool(buf, &value)) {
++		mutex_unlock(&chip->lock);
++		return -EINVAL;
++	}
++
++	if (value)
++		tmg399x_start_calibration(chip);
++
++	mutex_unlock(&chip->lock);
++	return size;
++}
++
++static ssize_t tmg399x_als_itime_show(struct device *dev,
++				      struct device_attribute *attr, char *buf)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(dev);
++	int t;
++	t = 256 - chip->params.als_time;
++	t *= TMG399X_ATIME_PER_100;
++	t /= 100;
++	return snprintf(buf, PAGE_SIZE, "%d (in ms)\n", t);
++}
++
++static ssize_t tmg399x_als_itime_store(struct device *dev,
++				       struct device_attribute *attr,
++				       const char *buf, size_t size)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(dev);
++	unsigned long itime;
++	int ret;
++
++	mutex_lock(&chip->lock);
++
++	ret = kstrtoul(buf, 10, &itime);
++	if (ret) {
++		mutex_unlock(&chip->lock);
++		return -EINVAL;
++	}
++	if (itime > 712 || itime < 3) {
++		pr_info("%s als integration time range [3,712]\n", __func__);
++		mutex_unlock(&chip->lock);
++		return -EINVAL;
++	}
++
++	itime *= 100;
++	itime /= TMG399X_ATIME_PER_100;
++	itime = (256 - itime);
++	chip->shadow[TMG399X_ALS_TIME] = (u8) itime;
++	chip->params.als_time = (u8) itime;
++	ret = tmg399x_i2c_write_byte(chip, TMG399X_ALS_TIME,
++				     chip->shadow[TMG399X_ALS_TIME]);
++
++	mutex_unlock(&chip->lock);
++	return (ret < 0) ? ret : size;
++}
++
++static ssize_t tmg399x_wait_time_show(struct device *dev,
++				      struct device_attribute *attr, char *buf)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(dev);
++	int t;
++	t = 256 - chip->params.wait_time;
++	t *= TMG399X_ATIME_PER_100;
++	t /= 100;
++	if (chip->params.als_prox_cfg1 & WLONG)
++		t *= 12;
++	return snprintf(buf, PAGE_SIZE, "%d (in ms)\n", t);
++}
++
++static ssize_t tmg399x_wait_time_store(struct device *dev,
++				       struct device_attribute *attr,
++				       const char *buf, size_t size)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(dev);
++	unsigned long time;
++	int ret;
++	u8 cfg1;
++
++	mutex_lock(&chip->lock);
++
++	ret = kstrtoul(buf, 10, &time);
++	if (ret) {
++		mutex_unlock(&chip->lock);
++		return -EINVAL;
++	}
++	if (time > 8540 || time < 3) {
++		pr_info("%s wait time range [3,8540]\n", __func__);
++		mutex_unlock(&chip->lock);
++		return -EINVAL;
++	}
++
++	cfg1 = chip->shadow[TMG399X_CONFIG_1] & ~0x02;
++	if (time > 712) {
++		cfg1 |= WLONG;
++		time /= 12;
++	}
++
++	time *= 100;
++	time /= TMG399X_ATIME_PER_100;
++	time = (256 - time);
++	chip->shadow[TMG399X_WAIT_TIME] = (u8) time;
++	chip->params.wait_time = (u8) time;
++	chip->shadow[TMG399X_CONFIG_1] = cfg1;
++	chip->params.als_prox_cfg1 = cfg1;
++	ret = tmg399x_i2c_write_byte(chip, TMG399X_WAIT_TIME,
++				     chip->shadow[TMG399X_WAIT_TIME]);
++	ret |= tmg399x_i2c_write_byte(chip, TMG399X_CONFIG_1,
++				      chip->shadow[TMG399X_CONFIG_1]);
++
++	mutex_unlock(&chip->lock);
++	return (ret < 0) ? ret : size;
++}
++
++static ssize_t tmg399x_prox_persist_show(struct device *dev,
++					 struct device_attribute *attr,
++					 char *buf)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(dev);
++	return snprintf(buf, PAGE_SIZE, "%d\n",
++			(chip->params.persist & 0xF0) >> 4);
++}
++
++static ssize_t tmg399x_prox_persist_store(struct device *dev,
++					  struct device_attribute *attr,
++					  const char *buf, size_t size)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(dev);
++	unsigned long persist;
++	int ret;
++
++	mutex_lock(&chip->lock);
++
++	ret = kstrtoul(buf, 10, &persist);
++	if (ret) {
++		mutex_unlock(&chip->lock);
++		return -EINVAL;
++	}
++	if (persist > 15) {
++		pr_info("%s prox persistence range [0,15]\n", __func__);
++		mutex_unlock(&chip->lock);
++		return -EINVAL;
++	}
++
++	chip->shadow[TMG399X_PERSISTENCE] &= 0x0F;
++	chip->shadow[TMG399X_PERSISTENCE] |= (((u8) persist << 4) & 0xF0);
++	chip->params.persist = chip->shadow[TMG399X_PERSISTENCE];
++	ret = tmg399x_i2c_write_byte(chip, TMG399X_PERSISTENCE,
++				     chip->shadow[TMG399X_PERSISTENCE]);
++
++	mutex_unlock(&chip->lock);
++	return (ret < 0) ? ret : size;
++}
++
++static ssize_t tmg399x_als_persist_show(struct device *dev,
++					struct device_attribute *attr,
++					char *buf)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(dev);
++	return snprintf(buf, PAGE_SIZE, "%d\n", (chip->params.persist & 0x0F));
++}
++
++static ssize_t tmg399x_als_persist_store(struct device *dev,
++					 struct device_attribute *attr,
++					 const char *buf, size_t size)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(dev);
++	unsigned long persist;
++	int ret;
++
++	mutex_lock(&chip->lock);
++
++	ret = kstrtoul(buf, 10, &persist);
++	if (ret) {
++		mutex_unlock(&chip->lock);
++		return -EINVAL;
++	}
++	if (persist > 15) {
++		pr_info("%s als persistence range [0,15]\n", __func__);
++		mutex_unlock(&chip->lock);
++		return -EINVAL;
++	}
++
++	chip->shadow[TMG399X_PERSISTENCE] &= 0xF0;
++	chip->shadow[TMG399X_PERSISTENCE] |= ((u8) persist & 0x0F);
++	chip->params.persist = chip->shadow[TMG399X_PERSISTENCE];
++	ret = tmg399x_i2c_write_byte(chip, TMG399X_PERSISTENCE,
++				     chip->shadow[TMG399X_PERSISTENCE]);
++
++	mutex_unlock(&chip->lock);
++	return (ret < 0) ? ret : size;
++}
++
++static ssize_t tmg399x_prox_pulse_len_show(struct device *dev,
++					   struct device_attribute *attr,
++					   char *buf)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(dev);
++	int i = (chip->params.prox_pulse & 0xC0) >> 6;
++	return snprintf(buf, PAGE_SIZE, "%duS\n", prox_pplens[i]);
++}
++
++static ssize_t tmg399x_prox_pulse_len_store(struct device *dev,
++					    struct device_attribute *attr,
++					    const char *buf, size_t size)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(dev);
++	unsigned long length;
++	int ret;
++	u8 ppulse;
++
++	mutex_lock(&chip->lock);
++
++	ret = kstrtoul(buf, 10, &length);
++	if (ret) {
++		mutex_unlock(&chip->lock);
++		return -EINVAL;
++	}
++	if (length != 4 && length != 8 && length != 16 && length != 32) {
++		pr_info("%s pulse length set: {4, 8, 16, 32}\n", __func__);
++		mutex_unlock(&chip->lock);
++		return -EINVAL;
++	}
++
++	ppulse = chip->shadow[TMG399X_PRX_PULSE] & 0x3F;
++	switch (length) {
++	case 4:
++		ppulse |= PPLEN_4US;
++		break;
++	case 8:
++		ppulse |= PPLEN_8US;
++		break;
++	case 16:
++		ppulse |= PPLEN_16US;
++		break;
++	case 32:
++		ppulse |= PPLEN_32US;
++		break;
++	default:
++		break;
++	}
++	chip->shadow[TMG399X_PRX_PULSE] = ppulse;
++	chip->params.prox_pulse = ppulse;
++	ret = tmg399x_i2c_write_byte(chip, TMG399X_PRX_PULSE,
++				     chip->shadow[TMG399X_PRX_PULSE]);
++
++	mutex_unlock(&chip->lock);
++	return (ret < 0) ? ret : size;
++}
++
++static ssize_t tmg399x_prox_pulse_cnt_show(struct device *dev,
++					   struct device_attribute *attr,
++					   char *buf)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(dev);
++	return snprintf(buf, PAGE_SIZE, "%d\n",
++			(chip->params.prox_pulse & 0x3F) + 1);
++}
++
++static ssize_t tmg399x_prox_pulse_cnt_store(struct device *dev,
++					    struct device_attribute *attr,
++					    const char *buf, size_t size)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(dev);
++	unsigned long count;
++	int ret;
++
++	mutex_lock(&chip->lock);
++
++	ret = kstrtoul(buf, 10, &count);
++	if (ret) {
++		mutex_unlock(&chip->lock);
++		return -EINVAL;
++	}
++	if (count > 64 || count == 0) {
++		pr_info("%s prox pulse count range [1,64]\n", __func__);
++		mutex_unlock(&chip->lock);
++		return -EINVAL;
++	}
++	count -= 1;
++
++	chip->shadow[TMG399X_PRX_PULSE] &= 0xC0;
++	chip->shadow[TMG399X_PRX_PULSE] |= ((u8) count & 0x3F);
++	chip->params.prox_pulse = chip->shadow[TMG399X_PRX_PULSE];
++	ret = tmg399x_i2c_write_byte(chip, TMG399X_PRX_PULSE,
++				     chip->shadow[TMG399X_PRX_PULSE]);
++
++	mutex_unlock(&chip->lock);
++	return (ret < 0) ? ret : size;
++}
++
++static ssize_t tmg399x_prox_gain_show(struct device *dev,
++				      struct device_attribute *attr, char *buf)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(dev);
++	int i = chip->params.prox_gain >> 2;
++	return snprintf(buf, PAGE_SIZE, "%d\n", prox_gains[i]);
++}
++
++static ssize_t tmg399x_prox_gain_store(struct device *dev,
++				       struct device_attribute *attr,
++				       const char *buf, size_t size)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(dev);
++	unsigned long gain;
++	int ret;
++	u8 ctrl_reg;
++
++	mutex_lock(&chip->lock);
++
++	ret = kstrtoul(buf, 10, &gain);
++	if (ret) {
++		mutex_unlock(&chip->lock);
++		return -EINVAL;
++	}
++	if (gain != 1 && gain != 2 && gain != 4 && gain != 8) {
++		pr_info("%s prox gain set: {1, 2, 4, 8}\n", __func__);
++		mutex_unlock(&chip->lock);
++		return -EINVAL;
++	}
++
++	ctrl_reg = chip->shadow[TMG399X_GAIN] & ~TMG399X_PRX_GAIN_MASK;
++	switch (gain) {
++	case 1:
++		ctrl_reg |= PGAIN_1;
++		break;
++	case 2:
++		ctrl_reg |= PGAIN_2;
++		break;
++	case 4:
++		ctrl_reg |= PGAIN_4;
++		break;
++	case 8:
++		ctrl_reg |= PGAIN_8;
++		break;
++	default:
++		break;
++	}
++
++	ret = tmg399x_i2c_write_byte(chip, TMG399X_GAIN, ctrl_reg);
++	if (!ret) {
++		chip->shadow[TMG399X_GAIN] = ctrl_reg;
++		chip->params.prox_gain = ctrl_reg & TMG399X_PRX_GAIN_MASK;
++	}
++
++	mutex_unlock(&chip->lock);
++	return (ret < 0) ? ret : size;
++}
++
++static ssize_t tmg399x_set_ges_thresh_store(struct device *dev,
++					    struct device_attribute *attr,
++					    const char *buf, size_t size)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(dev);
++	u32 entry, exit;
++
++	mutex_lock(&chip->lock);
++
++	if (2 != sscanf(buf, "%10d,%10d", &entry, &exit)) {
++		mutex_unlock(&chip->lock);
++		return -EINVAL;
++	}
++
++	if (entry > 255 || exit > 255) {
++		mutex_unlock(&chip->lock);
++		return -EINVAL;
++	}
++	tmg399x_set_ges_thresh(chip, (u8) entry, (u8) exit);
++
++	mutex_unlock(&chip->lock);
++	return size;
++}
++
++static ssize_t tmg399x_led_drive_show(struct device *dev,
++				      struct device_attribute *attr, char *buf)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(dev);
++	return snprintf(buf, PAGE_SIZE, "%dmA\n",
++			led_drives[chip->params.ldrive]);
++}
++
++static ssize_t tmg399x_led_drive_store(struct device *dev,
++				       struct device_attribute *attr,
++				       const char *buf, size_t size)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(dev);
++	unsigned long ldrive;
++	int ret;
++	u8 ctrl_reg;
++
++	mutex_lock(&chip->lock);
++
++	ret = kstrtoul(buf, 10, &ldrive);
++	if (ret) {
++		mutex_unlock(&chip->lock);
++		return -EINVAL;
++	}
++	if (ldrive != 100 && ldrive != 50 && ldrive != 25 && ldrive != 12) {
++		pr_info("%s led drive set: {100, 50, 25, 12}\n", __func__);
++		mutex_unlock(&chip->lock);
++		return -EINVAL;
++	}
++
++	ctrl_reg = chip->shadow[TMG399X_GAIN] & ~TMG399X_LDRIVE_MASK;
++	switch (ldrive) {
++	case 100:
++		ctrl_reg |= PDRIVE_100MA;
++		chip->params.ldrive = 0;
++		break;
++	case 50:
++		ctrl_reg |= PDRIVE_50MA;
++		chip->params.ldrive = 1;
++		break;
++	case 25:
++		ctrl_reg |= PDRIVE_25MA;
++		chip->params.ldrive = 2;
++		break;
++	case 12:
++		ctrl_reg |= PDRIVE_12MA;
++		chip->params.ldrive = 3;
++		break;
++	default:
++		break;
++	}
++	chip->shadow[TMG399X_GAIN] = ctrl_reg;
++	ret =
++	    tmg399x_i2c_write_byte(chip, TMG399X_GAIN,
++				   chip->shadow[TMG399X_GAIN]);
++
++	mutex_unlock(&chip->lock);
++	return (ret < 0) ? ret : size;
++}
++
++static ssize_t tmg399x_als_gain_show(struct device *dev,
++				     struct device_attribute *attr, char *buf)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(dev);
++	return snprintf(buf, PAGE_SIZE, "%d (%s)\n",
++			als_gains[chip->params.als_gain],
++			chip->als_gain_auto ? "auto" : "manual");
++}
++
++static ssize_t tmg399x_als_gain_store(struct device *dev,
++				      struct device_attribute *attr,
++				      const char *buf, size_t size)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(dev);
++	unsigned long gain;
++	int i = 0;
++	int ret;
++
++	mutex_lock(&chip->lock);
++
++	ret = kstrtoul(buf, 10, &gain);
++	if (ret) {
++		mutex_unlock(&chip->lock);
++		return -EINVAL;
++	}
++
++	if (gain != 0 && gain != 1 && gain != 4 && gain != 16 && gain != 64) {
++		pr_info("%s als gain set: {0(auto), 1, 4, 16, 64}\n", __func__);
++		mutex_unlock(&chip->lock);
++		return -EINVAL;
++	}
++
++	while (i < sizeof(als_gains)) {
++		if (gain == als_gains[i])
++			break;
++		i++;
++	}
++
++	if (gain) {
++		chip->als_gain_auto = false;
++		ret = tmg399x_set_als_gain(chip, als_gains[i]);
++		if (!ret)
++			tmg399x_calc_cpl(chip);
++	} else
++		chip->als_gain_auto = true;
++
++	mutex_unlock(&chip->lock);
++	return (ret < 0) ? ret : size;
++}
++
++static ssize_t tmg399x_led_boost_show(struct device *dev,
++				      struct device_attribute *attr, char *buf)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(dev);
++	int i = (chip->params.als_prox_cfg2 & 0x30) >> 4;
++	return snprintf(buf, PAGE_SIZE, "%d percents\n", led_boosts[i]);
++}
++
++static ssize_t tmg399x_led_boost_store(struct device *dev,
++				       struct device_attribute *attr,
++				       const char *buf, size_t size)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(dev);
++	unsigned long lboost;
++	int ret;
++	u8 cfg2;
++
++	mutex_lock(&chip->lock);
++
++	ret = kstrtoul(buf, 10, &lboost);
++	if (ret) {
++		mutex_unlock(&chip->lock);
++		return -EINVAL;
++	}
++	if (lboost != 100 && lboost != 150 && lboost != 200 && lboost != 300) {
++		pr_info("%s led boost set: {100, 150, 200, 300}\n", __func__);
++		mutex_unlock(&chip->lock);
++		return -EINVAL;
++	}
++
++	cfg2 = chip->shadow[TMG399X_CONFIG_2] & ~0x30;
++	switch (lboost) {
++	case 100:
++		cfg2 |= LEDBOOST_100;
++		break;
++	case 150:
++		cfg2 |= LEDBOOST_150;
++		break;
++	case 200:
++		cfg2 |= LEDBOOST_200;
++		break;
++	case 300:
++		cfg2 |= LEDBOOST_300;
++		break;
++	default:
++		break;
++	}
++	chip->shadow[TMG399X_CONFIG_2] = cfg2;
++	chip->params.als_prox_cfg2 = cfg2;
++	ret = tmg399x_i2c_write_byte(chip, TMG399X_CONFIG_2,
++				     chip->shadow[TMG399X_CONFIG_2]);
++
++	mutex_unlock(&chip->lock);
++	return (ret < 0) ? ret : size;
++}
++
++static ssize_t tmg399x_sat_irq_en_show(struct device *dev,
++				       struct device_attribute *attr, char *buf)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(dev);
++	return snprintf(buf, PAGE_SIZE, "%d\n",
++			(chip->params.als_prox_cfg2 & 0x80) >> 7);
++}
++
++static ssize_t tmg399x_sat_irq_en_store(struct device *dev,
++					struct device_attribute *attr,
++					const char *buf, size_t size)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(dev);
++	bool psien;
++	int ret;
++
++	mutex_lock(&chip->lock);
++
++	if (strtobool(buf, &psien)) {
++		mutex_unlock(&chip->lock);
++		return -EINVAL;
++	}
++
++	chip->shadow[TMG399X_CONFIG_2] &= 0x7F;
++	if (psien)
++		chip->shadow[TMG399X_CONFIG_2] |= PSIEN;
++	chip->params.als_prox_cfg2 = chip->shadow[TMG399X_CONFIG_2];
++	ret = tmg399x_i2c_write_byte(chip, TMG399X_CONFIG_2,
++				     chip->shadow[TMG399X_CONFIG_2]);
++
++	mutex_unlock(&chip->lock);
++	return (ret < 0) ? ret : size;
++}
++
++static ssize_t tmg399x_prox_offset_ne_show(struct device *dev,
++					   struct device_attribute *attr,
++					   char *buf)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(dev);
++	return snprintf(buf, PAGE_SIZE, "%d\n", chip->params.prox_offset_ne);
++}
++
++static ssize_t tmg399x_prox_offset_ne_store(struct device *dev,
++					    struct device_attribute *attr,
++					    const char *buf, size_t size)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(dev);
++	long offset_ne;
++	int ret;
++	u8 offset = 0;
++
++	mutex_lock(&chip->lock);
++
++	ret = kstrtol(buf, 10, &offset_ne);
++	if (ret) {
++		mutex_unlock(&chip->lock);
++		return -EINVAL;
++	}
++	if (offset_ne > 127 || offset_ne < -127) {
++		pr_info("%s prox offset range [-127, 127]\n", __func__);
++		mutex_unlock(&chip->lock);
++		return -EINVAL;
++	}
++	if (offset_ne < 0)
++		offset = 128 - offset_ne;
++	else
++		offset = offset_ne;
++
++	ret = tmg399x_i2c_write_byte(chip, TMG399X_PRX_OFFSET_NE, offset);
++	if (!ret) {
++		chip->params.prox_offset_ne = (s8) offset_ne;
++		chip->shadow[TMG399X_PRX_OFFSET_NE] = offset;
++	}
++	mutex_unlock(&chip->lock);
++
++	return (ret < 0) ? ret : size;
++}
++
++static ssize_t tmg399x_prox_offset_sw_show(struct device *dev,
++					   struct device_attribute *attr,
++					   char *buf)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(dev);
++	return snprintf(buf, PAGE_SIZE, "%d\n", chip->params.prox_offset_sw);
++}
++
++static ssize_t tmg399x_prox_offset_sw_store(struct device *dev,
++					    struct device_attribute *attr,
++					    const char *buf, size_t size)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(dev);
++	long offset_sw;
++	int ret;
++	u8 offset = 0;
++
++	mutex_lock(&chip->lock);
++
++	ret = kstrtol(buf, 10, &offset_sw);
++	if (ret) {
++		mutex_unlock(&chip->lock);
++		return -EINVAL;
++	}
++	if (offset_sw > 127 || offset_sw < -127) {
++		pr_info("%s prox offset range [-127, 127]\n", __func__);
++		mutex_unlock(&chip->lock);
++		return -EINVAL;
++	}
++	if (offset_sw < 0)
++		offset = 128 - offset_sw;
++	else
++		offset = offset_sw;
++
++	ret = tmg399x_i2c_write_byte(chip, TMG399X_PRX_OFFSET_SW, offset);
++	if (!ret) {
++		chip->params.prox_offset_sw = (s8) offset_sw;
++		chip->shadow[TMG399X_PRX_OFFSET_SW] = offset;
++	}
++
++	mutex_unlock(&chip->lock);
++	return (ret < 0) ? ret : size;
++}
++
++static ssize_t tmg399x_prox_mask_show(struct device *dev,
++				      struct device_attribute *attr, char *buf)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(dev);
++	return snprintf(buf, PAGE_SIZE, "%.2x\n",
++			chip->params.als_prox_cfg3 & 0x0F);
++}
++
++static ssize_t tmg399x_prox_mask_store(struct device *dev,
++				       struct device_attribute *attr,
++				       const char *buf, size_t size)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(dev);
++	unsigned long prx_mask;
++	int ret;
++
++	mutex_lock(&chip->lock);
++
++	ret = kstrtol(buf, 10, &prx_mask);
++	if (ret) {
++		mutex_unlock(&chip->lock);
++		return -EINVAL;
++	}
++
++	if (prx_mask > 15) {
++		pr_info("%s prox mask range [0, 15]\n", __func__);
++		mutex_unlock(&chip->lock);
++		return -EINVAL;
++	}
++	if ((prx_mask == 5) || (prx_mask == 7) ||
++	    (prx_mask == 10) || (prx_mask == 11) ||
++	    (prx_mask == 13) || (prx_mask == 14))
++		prx_mask |= PCMP;
++
++	chip->shadow[TMG399X_CONFIG_3] &= 0xD0;
++	chip->shadow[TMG399X_CONFIG_3] |= (u8) prx_mask;
++	chip->params.als_prox_cfg3 = chip->shadow[TMG399X_CONFIG_3];
++	ret = tmg399x_i2c_write_byte(chip, TMG399X_CONFIG_3,
++				     chip->shadow[TMG399X_CONFIG_3]);
++
++	mutex_unlock(&chip->lock);
++	return (ret < 0) ? ret : size;
++}
++
++static ssize_t tmg399x_device_prx_raw(struct device *dev,
++				      struct device_attribute *attr, char *buf)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(dev);
++	return snprintf(buf, PAGE_SIZE, "%d\n", chip->prx_inf.raw);
++}
++
++static ssize_t tmg399x_device_prx_detected(struct device *dev,
++					   struct device_attribute *attr,
++					   char *buf)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(dev);
++	return snprintf(buf, PAGE_SIZE, "%d\n", chip->prx_inf.detected);
++}
++
++static ssize_t tmg399x_ges_offset_show(struct device *dev,
++				       struct device_attribute *attr, char *buf)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(dev);
++	return snprintf(buf, PAGE_SIZE, "n:%d s:%d w:%d e:%d\n",
++			chip->params.ges_offset_n, chip->params.ges_offset_s,
++			chip->params.ges_offset_w, chip->params.ges_offset_e);
++}
++
++static ssize_t tmg399x_get_data_buf(struct device *dev,
++				    struct device_attribute *attr, char *buf)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(dev);
++	ssize_t tmp;
++	mutex_lock(&chip->lock);
++
++	buf[0] = totalofdset;
++	if (totalofdset != 0) {
++		memcpy(&buf[1], data_buf,
++		       (buf[0] * sizeof(struct tmg399x_data_buf)));
++		totalofdset = 0;
++	}
++
++	mutex_unlock(&chip->lock);
++	tmp = 1 + buf[0] * sizeof(struct tmg399x_data_buf);
++	return tmp;
++}
++
++static ssize_t tmg399x_report_ges_store(struct device *dev,
++					struct device_attribute *attr,
++					const char *buf, size_t size)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(dev);
++	unsigned long value;
++
++	mutex_lock(&chip->lock);
++	if (kstrtoul(buf, 10, &value)) {
++		mutex_unlock(&chip->lock);
++		return -EINVAL;
++	}
++	tmg399x_report_ges(chip, (u8) value);
++
++	mutex_unlock(&chip->lock);
++	return size;
++}
++
++static ssize_t tmg399x_lux_table_show(struct device *dev,
++				      struct device_attribute *attr, char *buf)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(dev);
++	struct lux_segment *s = chip->segment;
++	int i, k;
++
++	for (i = k = 0; i < chip->segment_num; i++)
++		k += snprintf(buf + k, PAGE_SIZE - k,
++			      "%d:%d,%d,%d,%d,%d,%d\n", i,
++			      s[i].d_factor,
++			      s[i].r_coef,
++			      s[i].g_coef,
++			      s[i].b_coef, s[i].ct_coef, s[i].ct_offset);
++	return k;
++}
++
++static ssize_t tmg399x_lux_table_store(struct device *dev,
++				       struct device_attribute *attr,
++				       const char *buf, size_t size)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(dev);
++	int i;
++	u32 d_factor, r_coef, g_coef, b_coef, ct_coef, ct_offset;
++
++	mutex_lock(&chip->lock);
++
++	if (7 != sscanf(buf, "%10d:%10d,%10d,%10d,%10d,%10d,%10d",
++			&i, &d_factor, &r_coef, &g_coef, &b_coef, &ct_coef,
++			&ct_offset)) {
++		mutex_unlock(&chip->lock);
++		return -EINVAL;
++	}
++	if (i >= chip->segment_num) {
++		mutex_unlock(&chip->lock);
++		return -EINVAL;
++	}
++	chip->segment[i].d_factor = d_factor;
++	chip->segment[i].r_coef = r_coef;
++	chip->segment[i].g_coef = g_coef;
++	chip->segment[i].b_coef = b_coef;
++	chip->segment[i].ct_coef = ct_coef;
++	chip->segment[i].ct_offset = ct_offset;
++
++	mutex_unlock(&chip->lock);
++	return size;
++}
++
++static ssize_t tmg399x_auto_gain_enable_show(struct device *dev,
++					     struct device_attribute *attr,
++					     char *buf)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(dev);
++	return snprintf(buf, PAGE_SIZE, "%s\n",
++			chip->als_gain_auto ? "auto" : "manual");
++}
++
++static ssize_t tmg399x_auto_gain_enable_store(struct device *dev,
++					      struct device_attribute *attr,
++					      const char *buf, size_t size)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(dev);
++	bool value;
++
++	mutex_lock(&chip->lock);
++
++	if (strtobool(buf, &value)) {
++		mutex_unlock(&chip->lock);
++		return -EINVAL;
++	}
++
++	if (value)
++		chip->als_gain_auto = true;
++	else
++		chip->als_gain_auto = false;
++
++	mutex_unlock(&chip->lock);
++	return size;
++}
++
++static ssize_t tmg399x_device_als_lux(struct device *dev,
++				      struct device_attribute *attr, char *buf)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(dev);
++	return snprintf(buf, PAGE_SIZE, "%d\n", chip->als_inf.lux);
++}
++
++static ssize_t tmg399x_als_red_show(struct device *dev,
++				    struct device_attribute *attr, char *buf)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(dev);
++	return snprintf(buf, PAGE_SIZE, "%d\n", chip->als_inf.red_raw);
++}
++
++static ssize_t tmg399x_als_green_show(struct device *dev,
++				      struct device_attribute *attr, char *buf)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(dev);
++	return snprintf(buf, PAGE_SIZE, "%d\n", chip->als_inf.green_raw);
++}
++
++static ssize_t tmg399x_als_blue_show(struct device *dev,
++				     struct device_attribute *attr, char *buf)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(dev);
++	return snprintf(buf, PAGE_SIZE, "%d\n", chip->als_inf.blue_raw);
++}
++
++static ssize_t tmg399x_als_clear_show(struct device *dev,
++				      struct device_attribute *attr, char *buf)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(dev);
++	return snprintf(buf, PAGE_SIZE, "%d\n", chip->als_inf.clear_raw);
++}
++
++static ssize_t tmg399x_als_cct_show(struct device *dev,
++				    struct device_attribute *attr, char *buf)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(dev);
++	return snprintf(buf, PAGE_SIZE, "%d\n", chip->als_inf.cct);
++}
++
++static struct device_attribute prox_attrs[] = {
++	__ATTR(hrm_power_state, 0666, NULL,
++	       tmg399x_hrm_enable_store),
++	__ATTR(prx_power_state, 0666, tmg399x_prox_enable_show,
++	       tmg399x_prox_enable_store),
++	__ATTR(ges_power_state, 0666, tmg399x_ges_enable_show,
++	       tmg399x_ges_enable_store),
++	__ATTR(start_calibration, 0666, NULL,
++	       tmg399x_start_calibration_store),
++	__ATTR(prx_persist, 0666, tmg399x_prox_persist_show,
++	       tmg399x_prox_persist_store),
++	__ATTR(prx_pulse_length, 0666, tmg399x_prox_pulse_len_show,
++	       tmg399x_prox_pulse_len_store),
++	__ATTR(prx_pulse_count, 0666, tmg399x_prox_pulse_cnt_show,
++	       tmg399x_prox_pulse_cnt_store),
++	__ATTR(prx_gain, 0666, tmg399x_prox_gain_show,
++	       tmg399x_prox_gain_store),
++	__ATTR(set_ges_thresh, 0666, NULL,
++	       tmg399x_set_ges_thresh_store),
++	__ATTR(led_drive, 0666, tmg399x_led_drive_show,
++	       tmg399x_led_drive_store),
++	__ATTR(led_boost, 0666, tmg399x_led_boost_show,
++	       tmg399x_led_boost_store),
++	__ATTR(prx_sat_irq_en, 0666, tmg399x_sat_irq_en_show,
++	       tmg399x_sat_irq_en_store),
++	__ATTR(prx_offset_ne, 0666, tmg399x_prox_offset_ne_show,
++	       tmg399x_prox_offset_ne_store),
++	__ATTR(prx_offset_sw, 0666, tmg399x_prox_offset_sw_show,
++	       tmg399x_prox_offset_sw_store),
++	__ATTR(prx_mask, 0666, tmg399x_prox_mask_show,
++	       tmg399x_prox_mask_store),
++	__ATTR(prx_raw, 0666, tmg399x_device_prx_raw, NULL),
++	__ATTR(prx_detect, 0666, tmg399x_device_prx_detected, NULL),
++	__ATTR(ges_offset, 0666, tmg399x_ges_offset_show, NULL),
++	__ATTR(data_buf, 0666, tmg399x_get_data_buf, NULL),
++	__ATTR(report_ges, 0666, NULL, tmg399x_report_ges_store),
++};
++
++static struct device_attribute als_attrs[] = {
++	__ATTR(als_power_state, 0666, tmg399x_als_enable_show,
++	       tmg399x_als_enable_store),
++	__ATTR(wait_time_en, 0666, tmg399x_wait_enable_show,
++	       tmg399x_wait_enable_store),
++	__ATTR(reg_dump, 0666, tmg399x_reg_dump_show,
++	       tmg399x_reg_dump_store),
++	__ATTR(als_Itime, 0666, tmg399x_als_itime_show,
++	       tmg399x_als_itime_store),
++	__ATTR(wait_time, 0666, tmg399x_wait_time_show,
++	       tmg399x_wait_time_store),
++	__ATTR(als_persist, 0666, tmg399x_als_persist_show,
++	       tmg399x_als_persist_store),
++	__ATTR(als_gain, 0666, tmg399x_als_gain_show,
++	       tmg399x_als_gain_store),
++	__ATTR(lux_table, 0666, tmg399x_lux_table_show,
++	       tmg399x_lux_table_store),
++	__ATTR(als_auto_gain, 0666, tmg399x_auto_gain_enable_show,
++	       tmg399x_auto_gain_enable_store),
++	__ATTR(als_lux, 0666, tmg399x_device_als_lux, NULL),
++	__ATTR(als_red, 0666, tmg399x_als_red_show, NULL),
++	__ATTR(als_green, 0666, tmg399x_als_green_show, NULL),
++	__ATTR(als_blue, 0666, tmg399x_als_blue_show, NULL),
++	__ATTR(als_clear, 0666, tmg399x_als_clear_show, NULL),
++	__ATTR(als_cct, 0666, tmg399x_als_cct_show, NULL),
++};
++
++static int tmg3993_regulator_configure(struct tmg399x_chip *data, bool on)
++{
++	int rc;
++
++	if (!on) {
++		if (regulator_count_voltages(data->vdd) > 0)
++			regulator_set_voltage(data->vdd, 0, TMG3993_VDD_MAX_UV);
++
++		regulator_put(data->vdd);
++
++		if (regulator_count_voltages(data->vio) > 0)
++			regulator_set_voltage(data->vio, 0, TMG3993_VIO_MAX_UV);
++
++		regulator_put(data->vio);
++	} else {
++		data->vdd = regulator_get(&data->client->dev, "vdd");
++		if (IS_ERR(data->vdd)) {
++			rc = PTR_ERR(data->vdd);
++			dev_err(&data->client->dev,
++				"Regulator get failed vdd rc=%d\n", rc);
++			return rc;
++		}
++
++		if (regulator_count_voltages(data->vdd) > 0) {
++			rc = regulator_set_voltage(data->vdd,
++						   TMG3993_VDD_MIN_UV,
++						   TMG3993_VDD_MAX_UV);
++			if (rc) {
++				dev_err(&data->client->dev,
++					"Regulator set failed vdd rc=%d\n", rc);
++				goto reg_vdd_put;
++			}
++		}
++
++		data->vio = regulator_get(&data->client->dev, "vio");
++		if (IS_ERR(data->vio)) {
++			rc = PTR_ERR(data->vio);
++			dev_err(&data->client->dev,
++				"Regulator get failed vio rc=%d\n", rc);
++			goto reg_vdd_set;
++		}
++
++		if (regulator_count_voltages(data->vio) > 0) {
++			rc = regulator_set_voltage(data->vio,
++						   TMG3993_VIO_MIN_UV,
++						   TMG3993_VIO_MAX_UV);
++			if (rc) {
++				dev_err(&data->client->dev,
++					"Regulator set failed vio rc=%d\n", rc);
++				goto reg_vio_put;
++			}
++		}
++	}
++
++	return 0;
++
++reg_vio_put:
++	regulator_put(data->vio);
++
++reg_vdd_set:
++	if (regulator_count_voltages(data->vdd) > 0)
++		regulator_set_voltage(data->vdd, 0, TMG3993_VDD_MAX_UV);
++reg_vdd_put:
++	regulator_put(data->vdd);
++	return rc;
++}
++
++static int tmg3993_regulator_power_on(struct tmg399x_chip *data, bool on)
++{
++	int rc = 0;
++
++	if (!on) {
++		rc = regulator_disable(data->vdd);
++		if (rc) {
++			dev_err(&data->client->dev,
++				"Regulator vdd disable failed rc=%d\n", rc);
++			return rc;
++		}
++
++		rc = regulator_disable(data->vio);
++		if (rc) {
++			dev_err(&data->client->dev,
++				"Regulator vio disable failed rc=%d\n", rc);
++			rc = regulator_enable(data->vdd);
++			dev_err(&data->client->dev,
++				"Regulator vio re-enabled rc=%d\n", rc);
++			/*
++			 * Successfully re-enable regulator.
++			 * Enter poweron delay and returns error.
++			 */
++			if (!rc) {
++				rc = -EBUSY;
++				goto enable_delay;
++			}
++		}
++		return rc;
++	} else {
++
++		rc = regulator_enable(data->vdd);
++		if (rc) {
++			dev_err(&data->client->dev,
++				"Regulator vdd enable failed rc=%d\n", rc);
++			return rc;
++		}
++
++		rc = regulator_enable(data->vio);
++		if (rc) {
++			dev_err(&data->client->dev,
++				"Regulator vio enable failed rc=%d\n", rc);
++			regulator_disable(data->vdd);
++			return rc;
++		}
++	}
++
++enable_delay:
++	msleep(130);
++	dev_dbg(&data->client->dev, "Sensor regulator power on =%d\n", on);
++	return rc;
++}
++
++static int tmg3993_platform_hw_power_on(bool on)
++{
++	struct tmg399x_chip *data;
++	int err = 0;
++
++	if (g_tmg3993_data == NULL)
++		return -ENODEV;
++
++	data = g_tmg3993_data;
++
++	if (data->power_on_state != on) {
++		err = tmg3993_regulator_power_on(data, on);
++		if (err)
++			dev_err(&data->client->dev,
++				"Can't configure regulator!\n");
++		else
++			data->power_on_state = on;
++	}
++
++	return err;
++}
++
++static int tmg3993_platform_hw_init(void)
++{
++	struct i2c_client *client;
++	struct tmg399x_chip *data;
++	int error;
++
++	if (g_tmg3993_data == NULL)
++		return -ENODEV;
++
++	data = g_tmg3993_data;
++	client = data->client;
++
++	error = tmg3993_regulator_configure(data, true);
++	if (error < 0) {
++		dev_err(&client->dev, "unable to configure regulator\n");
++		return error;
++	}
++
++	return 0;
++}
++
++static void tmg3993_platform_hw_exit(void)
++{
++	struct tmg399x_chip *data = g_tmg3993_data;
++
++	if (data == NULL)
++		return;
++
++	tmg3993_regulator_configure(data, false);
++
++}
++
++void tmg399x_set_prox_thresh(struct tmg399x_chip *chip, u8 low_thresh,
++			     u8 high_thresh)
++{
++	/* set high and low threshold for proximity */
++	chip->shadow[TMG399X_PRX_MINTHRESHLO] = low_thresh;
++	chip->shadow[TMG399X_PRX_MAXTHRESHHI] = high_thresh;
++	tmg399x_i2c_write_byte(chip, TMG399X_PRX_MINTHRESHLO,
++			       chip->shadow[TMG399X_PRX_MINTHRESHLO]);
++	tmg399x_i2c_write_byte(chip, TMG399X_PRX_MAXTHRESHHI,
++			       chip->shadow[TMG399X_PRX_MAXTHRESHHI]);
++}
++
++static void tmg399x_set_ges_thresh(struct tmg399x_chip *chip, u8 entry, u8 exit)
++{
++	/* set entry and exit threshold for gesture state enter and exit */
++	chip->params.ges_entry_th = entry;
++	chip->shadow[TMG399X_GES_ENTH] = entry;
++	tmg399x_i2c_write_byte(chip, TMG399X_GES_ENTH, entry);
++	chip->params.ges_exit_th = exit;
++	chip->shadow[TMG399X_GES_EXTH] = exit;
++	tmg399x_i2c_write_byte(chip, TMG399X_GES_EXTH, exit);
++	chip->params.ges_cfg1 &= ~GEXMSK_ALL;
++	chip->shadow[TMG399X_GES_CFG_1] = chip->params.ges_cfg1;
++	tmg399x_i2c_write_byte(chip, TMG399X_GES_CFG_1, chip->params.ges_cfg1);
++	hidden_data_mode = true;
++}
++
++static void tmg399x_start_calibration(struct tmg399x_chip *chip)
++{
++	docalibration = true;
++	caloffsetstate = START_CALOFF;
++	/* entry threshold is set min 0, exit threshold is set max 255,
++	   and NSWE are all masked for exit, gesture state will be force
++	   enter and exit every cycle */
++	chip->params.persist = 0;
++	chip->shadow[TMG399X_PERSISTENCE] = 0;
++	tmg399x_i2c_write_byte(chip, TMG399X_PERSISTENCE, 0);
++	chip->params.ges_entry_th = 0;
++	chip->shadow[TMG399X_GES_ENTH] = 0;
++	tmg399x_i2c_write_byte(chip, TMG399X_GES_ENTH, 0);
++	chip->params.ges_exit_th = 255;
++	chip->shadow[TMG399X_GES_EXTH] = 255;
++	tmg399x_i2c_write_byte(chip, TMG399X_GES_EXTH, 255);
++	chip->params.ges_cfg1 |= GEXMSK_ALL;
++	chip->shadow[TMG399X_GES_CFG_1] = chip->params.ges_cfg1;
++	tmg399x_i2c_write_byte(chip, TMG399X_GES_CFG_1, chip->params.ges_cfg1);
++	tmg399x_i2c_modify(chip, TMG399X_GES_CFG_4, 0x01, 0x01);
++
++	if (totalofdset == 32) {
++		pr_info("%s: tmg399x data buffer overflow!\n", __func__);
++		totalofdset = 0;
++	}
++	data_buf[totalofdset].datasrc = CAL_DATA;
++	totalofdset++;
++
++	hidden_data_mode = false;
++}
++
++void tmg399x_report_prox(struct tmg399x_chip *chip)
++{
++	if (chip->p_idev) {
++		/*pr_info("proximity detected %d\n", chip->prx_inf.detected); */
++		input_report_abs(chip->p_idev, ABS_DISTANCE,
++				 chip->prx_inf.detected ? 0 : 1);
++		input_sync(chip->p_idev);
++	}
++}
++
++static void tmg399x_report_ges(struct tmg399x_chip *chip, u8 event)
++{
++	int x1, y1, x2, y2;
++	int delta_x, delta_y, i;
++
++	x1 = y1 = x2 = y2 = 0;
++
++	switch (event) {
++	case 4:
++		pr_info("%s:East.\n", __func__);
++		x1 = 400;
++		x2 = 200;
++		y1 = y2 = 200;
++		break;
++	case 2:
++		pr_info("%s:South.\n", __func__);
++		x1 = x2 = 400;
++		y1 = 300;
++		y2 = 100;
++		break;
++	case 8:
++		pr_info("%s:West.\n", __func__);
++		x1 = 200;
++		x2 = 400;
++		y1 = y2 = 200;
++		break;
++	case 1:
++		pr_info("%s:North.\n", __func__);
++		x1 = x2 = 400;
++		y1 = 100;
++		y2 = 300;
++		break;
++	default:
++		return;
++	}
++
++	delta_x = (x2 - x1) / 5;
++	delta_y = (y2 - y1) / 5;
++	for (i = 0; i < 5; i++) {
++		input_report_abs(chip->p_idev, ABS_MT_TRACKING_ID, 0);
++		input_report_abs(chip->p_idev, ABS_MT_TOUCH_MAJOR, 200);
++		input_report_abs(chip->p_idev, ABS_MT_POSITION_Y,
++				 (y1 + delta_y * i));
++		input_report_abs(chip->p_idev, ABS_MT_POSITION_X,
++				 (x1 + delta_x * i));
++		input_report_abs(chip->p_idev, ABS_MT_WIDTH_MAJOR, 1);
++		input_mt_sync(chip->p_idev);
++		input_sync(chip->p_idev);
++		/*msleep(1);*/
++	}
++	input_mt_sync(chip->p_idev);
++	input_sync(chip->p_idev);
++}
++
++void tmg399x_report_als(struct tmg399x_chip *chip)
++{
++	int lux;
++
++	tmg399x_i2c_read_block(chip, TMG399X_CLR_CHANLO,
++			       (u8 *)&chip->shadow[TMG399X_CLR_CHANLO], 8);
++
++	chip->als_inf.clear_raw =
++	    le16_to_cpup((const __le16 *)&chip->shadow[TMG399X_CLR_CHANLO]);
++	chip->als_inf.red_raw =
++	    le16_to_cpup((const __le16 *)&chip->shadow[TMG399X_RED_CHANLO]);
++	chip->als_inf.green_raw =
++	    le16_to_cpup((const __le16 *)&chip->shadow[TMG399X_GRN_CHANLO]);
++	chip->als_inf.blue_raw =
++	    le16_to_cpup((const __le16 *)&chip->shadow[TMG399X_BLU_CHANLO]);
++	chip->als_inf.ir =
++	    (chip->als_inf.red_raw + chip->als_inf.green_raw +
++	     chip->als_inf.blue_raw - chip->als_inf.clear_raw + 1) / 2;
++	if (chip->als_inf.ir < 0)
++		chip->als_inf.ir = 0;
++
++	tmg399x_get_lux(chip);
++	mod_timer(&chip->rgbc_timer,
++		  jiffies + HZ * atomic_read(&chip->als_delay) / 1000);
++
++	/*pr_info("lux:%d cct:%d\n", chip->als_inf.lux, chip->als_inf.cct); */
++	lux = chip->als_inf.lux;
++	input_report_abs(chip->a_idev, ABS_MISC, lux + 200);
++	input_sync(chip->a_idev);
++}
++
++static u8 tmg399x_ges_nswe_min(struct tmg399x_ges_nswe nswe)
++{
++	u8 min = nswe.north;
++	if (nswe.south < min)
++		min = nswe.south;
++	if (nswe.west < min)
++		min = nswe.west;
++	if (nswe.east < min)
++		min = nswe.east;
++	return min;
++}
++
++static u8 tmg399x_ges_nswe_max(struct tmg399x_ges_nswe nswe)
++{
++	u8 max = nswe.north;
++	if (nswe.south > max)
++		max = nswe.south;
++	if (nswe.west > max)
++		max = nswe.west;
++	if (nswe.east > max)
++		max = nswe.east;
++	return max;
++}
++
++static int tmg399x_change_ges_offset(struct tmg399x_chip *chip,
++				     struct tmg399x_ges_nswe nswe_data,
++				     u8 direction)
++{
++	u8 offset;
++	int ret = false;
++
++	/* calibrate north diode */
++	if (direction == DIR_UP) {
++		if (nswe_data.north < callowtarget) {
++			/* negtive offset will increase the results */
++			if (chip->params.ges_offset_n == -127)
++				goto cal_ges_offset_south;
++			chip->params.ges_offset_n--;
++		}
++	} else if (direction == DIR_DOWN) {
++		if (nswe_data.north > calhightarget) {
++			/* positive offset will decrease the results */
++			if (chip->params.ges_offset_n == 127)
++				goto cal_ges_offset_south;
++			chip->params.ges_offset_n++;
++		}
++	}
++	/* convert int value to offset */
++	/*int2offset(offset, chip->params.ges_offset_n);*/
++	if (chip->params.ges_offset_n < 0)
++		offset = 128 - chip->params.ges_offset_n;
++	else
++		offset = chip->params.ges_offset_n;
++	/*INT2OFFSET(offset, chip->params.ges_offset_n);*/
++	chip->shadow[TMG399X_GES_OFFSET_N] = offset;
++	tmg399x_i2c_write_byte(chip, TMG399X_GES_OFFSET_N, offset);
++	ret = true;
++
++cal_ges_offset_south:
++	/* calibrate south diode */
++	if (direction == DIR_UP) {
++		if (nswe_data.south < callowtarget) {
++			if (chip->params.ges_offset_s == -127)
++				goto cal_ges_offset_west;
++			chip->params.ges_offset_s--;
++		}
++	} else if (direction == DIR_DOWN) {
++		if (nswe_data.south > calhightarget) {
++			if (chip->params.ges_offset_s == 127)
++				goto cal_ges_offset_west;
++			chip->params.ges_offset_s++;
++		}
++	}
++	/*int2offset(offset, chip->params.ges_offset_s);*/
++	if (chip->params.ges_offset_s < 0)
++		offset = 128 - chip->params.ges_offset_s;
++	else
++		offset = chip->params.ges_offset_s;
++	/*INT2OFFSET(offset, chip->params.ges_offset_s);*/
++	chip->shadow[TMG399X_GES_OFFSET_S] = offset;
++	tmg399x_i2c_write_byte(chip, TMG399X_GES_OFFSET_S, offset);
++	ret = true;
++
++cal_ges_offset_west:
++	/* calibrate west diode */
++	if (direction == DIR_UP) {
++		if (nswe_data.west < callowtarget) {
++			if (chip->params.ges_offset_w == -127)
++				goto cal_ges_offset_east;
++			chip->params.ges_offset_w--;
++		}
++	} else if (direction == DIR_DOWN) {
++		if (nswe_data.west > calhightarget) {
++			if (chip->params.ges_offset_w == 127)
++				goto cal_ges_offset_east;
++			chip->params.ges_offset_w++;
++		}
++	}
++	/*int2offset(offset, chip->params.ges_offset_w);*/
++	if (chip->params.ges_offset_w < 0)
++		offset = 128 - chip->params.ges_offset_w;
++	else
++		offset = chip->params.ges_offset_w;
++
++	/*INT2OFFSET(offset, chip->params.ges_offset_w);*/
++	chip->shadow[TMG399X_GES_OFFSET_W] = offset;
++	tmg399x_i2c_write_byte(chip, TMG399X_GES_OFFSET_W, offset);
++	ret = true;
++
++cal_ges_offset_east:
++	/* calibrate east diode */
++	if (direction == DIR_UP) {
++		if (nswe_data.east < callowtarget) {
++			if (chip->params.ges_offset_e == -127)
++				goto cal_ges_offset_exit;
++			chip->params.ges_offset_e--;
++		}
++	} else if (direction == DIR_DOWN) {
++		if (nswe_data.east > calhightarget) {
++			if (chip->params.ges_offset_e == 127)
++				goto cal_ges_offset_exit;
++			chip->params.ges_offset_e++;
++		}
++	}
++	/*int2offset(offset, chip->params.ges_offset_e);*/
++	if (chip->params.ges_offset_e < 0)
++		offset = 128 - chip->params.ges_offset_e;
++	else
++		offset = chip->params.ges_offset_e;
++	/*INT2OFFSET(offset, chip->params.ges_offset_e);*/
++	chip->shadow[TMG399X_GES_OFFSET_E] = offset;
++	tmg399x_i2c_write_byte(chip, TMG399X_GES_OFFSET_E, offset);
++	ret = true;
++
++cal_ges_offset_exit:
++	return ret;
++}
++
++static void tmg399x_cal_ges_offset(struct tmg399x_chip *chip,
++				   struct tmg399x_ges_nswe *nswe_data, u8 len)
++{
++	u8 i;
++	u8 min;
++	u8 max;
++	for (i = 0; i < len; i++) {
++		if (caloffsetstate == CHECK_NSWE_ZERO) {
++			min = tmg399x_ges_nswe_min(nswe_data[i]);
++			max = tmg399x_ges_nswe_max(nswe_data[i]);
++
++			/* only one direction one time, up or down */
++			if ((caloffsetdir != DIR_DOWN) &&
++				(min <= callowtarget)) {
++				caloffsetdir = DIR_UP;
++				if (tmg399x_change_ges_offset
++				    (chip, nswe_data[i], DIR_UP))
++					return;
++			} else if ((caloffsetdir != DIR_UP)
++				   && (max > calhightarget)) {
++				caloffsetdir = DIR_DOWN;
++				if (tmg399x_change_ges_offset
++				    (chip, nswe_data[i], DIR_DOWN))
++					return;
++			}
++
++			/* calibration is ok */
++			caloffsetstate = CALOFF_OK;
++			caloffsetdir = DIR_NONE;
++			docalibration = false;
++
++			break;
++		}
++	}
++}
++
++static bool tmg399x_change_prox_offset(struct tmg399x_chip *chip, u8 state,
++				       u8 direction)
++{
++	u8 offset;
++
++	switch (state) {
++	case CHECK_PROX_NE:
++		if (direction == DIR_UP) {
++			/* negtive offset will increase the results */
++			if (chip->params.prox_offset_ne == -127)
++				return false;
++			chip->params.prox_offset_ne--;
++		} else if (direction == DIR_DOWN) {
++			/* positive offset will decrease the results */
++			if (chip->params.prox_offset_ne == 127)
++				return false;
++			chip->params.prox_offset_ne++;
++		}
++		/* convert int value to offset */
++		/*int2offset(offset, chip->params.prox_offset_ne);*/
++		if (chip->params.prox_offset_ne < 0)
++			offset = 128 - chip->params.prox_offset_ne;
++		else
++			offset = chip->params.prox_offset_ne;
++		/*INT2OFFSET(offset, chip->params.prox_offset_ne);*/
++		chip->shadow[TMG399X_PRX_OFFSET_NE] = offset;
++		tmg399x_i2c_write_byte(chip, TMG399X_PRX_OFFSET_NE, offset);
++		break;
++	case CHECK_PROX_SW:
++		if (direction == DIR_UP) {
++			if (chip->params.prox_offset_sw == -127)
++				return false;
++			chip->params.prox_offset_sw--;
++		} else if (direction == DIR_DOWN) {
++			if (chip->params.prox_offset_sw == 127)
++				return false;
++			chip->params.prox_offset_sw++;
++		}
++		/*int2offset(offset, chip->params.prox_offset_sw);*/
++		if (chip->params.prox_offset_sw < 0)
++			offset = 128 - chip->params.prox_offset_sw;
++		else
++			offset = chip->params.prox_offset_sw;
++		/*INT2OFFSET(offset, chip->params.prox_offset_sw);*/
++		chip->shadow[TMG399X_PRX_OFFSET_SW] = offset;
++		tmg399x_i2c_write_byte(chip, TMG399X_PRX_OFFSET_SW, offset);
++		break;
++	default:
++		break;
++	}
++
++	return true;
++}
++
++static void tmg399x_cal_prox_offset(struct tmg399x_chip *chip, u8 prox)
++{
++	/* start to calibrate the offset of prox */
++	if (caloffsetstate == START_CALOFF) {
++		/* mask south and west diode */
++		chip->shadow[TMG399X_CONFIG_3] = 0x06;
++		tmg399x_i2c_write_byte(chip, TMG399X_CONFIG_3,
++				       chip->shadow[TMG399X_CONFIG_3]);
++		pstatechanged = true;
++		caloffsetstate = CHECK_PROX_NE;
++		caloffsetdir = DIR_NONE;
++		return;
++	}
++
++	/* calibrate north and east diode of prox */
++	if (caloffsetstate == CHECK_PROX_NE) {
++		/* only one direction one time, up or down */
++		if ((caloffsetdir != DIR_DOWN) && (prox < callowtarget / 2)) {
++			caloffsetdir = DIR_UP;
++			if (tmg399x_change_prox_offset
++			    (chip, CHECK_PROX_NE, DIR_UP))
++				return;
++		} else if ((caloffsetdir != DIR_UP)
++			   && (prox > calhightarget / 2)) {
++			caloffsetdir = DIR_DOWN;
++			if (tmg399x_change_prox_offset
++			    (chip, CHECK_PROX_NE, DIR_DOWN))
++				return;
++		}
++
++		/* north and east diode offset calibration complete, mask
++		   north and east diode and start to calibrate
++		   south and west diode */
++		chip->shadow[TMG399X_CONFIG_3] = 0x09;
++		tmg399x_i2c_write_byte(chip, TMG399X_CONFIG_3,
++				       chip->shadow[TMG399X_CONFIG_3]);
++		pstatechanged = true;
++		caloffsetstate = CHECK_PROX_SW;
++		caloffsetdir = DIR_NONE;
++		return;
++	}
++
++	/* calibrate south and west diode of prox */
++	if (caloffsetstate == CHECK_PROX_SW) {
++		if ((caloffsetdir != DIR_DOWN) && (prox < callowtarget / 2)) {
++			caloffsetdir = DIR_UP;
++			if (tmg399x_change_prox_offset
++			    (chip, CHECK_PROX_SW, DIR_UP))
++				return;
++		} else if ((caloffsetdir != DIR_UP)
++			   && (prox > calhightarget / 2)) {
++			caloffsetdir = DIR_DOWN;
++			if (tmg399x_change_prox_offset
++			    (chip, CHECK_PROX_SW, DIR_DOWN))
++				return;
++		}
++
++		/* prox offset calibration complete, mask none diode,
++		   start to calibrate gesture offset */
++		chip->shadow[TMG399X_CONFIG_3] = 0x00;
++		tmg399x_i2c_write_byte(chip, TMG399X_CONFIG_3,
++				       chip->shadow[TMG399X_CONFIG_3]);
++		pstatechanged = true;
++		tmg399x_i2c_modify(chip, TMG399X_GES_CFG_4, 0x01, 0x01);
++		caloffsetstate = CHECK_NSWE_ZERO;
++		caloffsetdir = DIR_NONE;
++
++		return;
++	}
++}
++
++static void tmg399x_als_work(struct work_struct *work)
++{
++	struct tmg399x_chip *chip =
++	    container_of(work, struct tmg399x_chip, als_work);
++	mutex_lock(&chip->lock);
++	tmg399x_report_als(chip);
++	mutex_unlock(&chip->lock);
++};
++
++static void tmg399x_rgbc_poll_handle(unsigned long data)
++{
++	struct tmg399x_chip *chip = (struct tmg399x_chip *)data;
++	schedule_work(&chip->als_work);
++}
++
++static int tmg399x_check_and_report(struct tmg399x_chip *chip)
++{
++	int ret;
++	u8 status;
++	u8 numofdset;
++	u8 len;
++	u8 i;
++
++	ret = tmg399x_i2c_read_byte(chip, TMG399X_STATUS,
++				    &chip->shadow[TMG399X_STATUS]);
++	if (ret < 0) {
++		pr_info("%s: failed to read tmg399x status\n", __func__);
++		goto exit_clr;
++	}
++
++	status = chip->shadow[TMG399X_STATUS];
++
++	if ((status & TMG399X_ST_PRX_IRQ) == TMG399X_ST_PRX_IRQ) {
++		/* read prox raw data */
++		tmg399x_i2c_read_byte(chip, TMG399X_PRX_CHAN,
++				      &chip->shadow[TMG399X_PRX_CHAN]);
++		if (chip->prx_enabled)
++			chip->prx_inf.raw = chip->shadow[TMG399X_PRX_CHAN];
++		/* ignore the first prox data when proximity state changed */
++		if (pstatechanged)
++			pstatechanged = false;
++		else {
++			if (docalibration && caloffsetstate !=
++				CHECK_NSWE_ZERO) {
++				/* do prox offset calibration */
++				tmg399x_cal_prox_offset(chip,
++							chip->
++							shadow
++							[TMG399X_PRX_CHAN]);
++				if (caloffsetstate == CHECK_NSWE_ZERO
++				    && !chip->ges_enabled) {
++					chip->params.persist = PRX_PERSIST(2);
++					chip->shadow[TMG399X_PERSISTENCE] =
++					    PRX_PERSIST(2);
++					tmg399x_i2c_write_byte(chip,
++						TMG399X_PERSISTENCE,
++						PRX_PERSIST(2));
++				}
++			} else {
++				/* process prox data */
++				if (chip->ges_enabled) {
++					mutex_lock(&chip->lock);
++					if (totalofdset == 32) {
++						pr_info("%s prox data buffer overflow!\n",
++						     __func__);
++						totalofdset = 0;
++						ret = false;
++					}
++					data_buf[totalofdset].datasrc =
++					    PROX_DATA;
++					data_buf[totalofdset].nswe.north =
++					    chip->shadow[TMG399X_PRX_CHAN];
++					totalofdset++;
++					mutex_unlock(&chip->lock);
++				} else {
++					if (chip->shadow[TMG399X_PRX_CHAN] >
++					    chip->params.prox_th_max &&
++					    !chip->prx_inf.detected) {
++						chip->prx_inf.detected = true;
++						tmg399x_report_prox(chip);
++						tmg399x_set_prox_thresh(chip,
++						chip->params.prox_th_min,
++									255);
++/*chip->params.prox_th_min * chip->prox_th_factor, 255); */
++					} else if (chip->
++						   shadow[TMG399X_PRX_CHAN] <
++						   chip->params.prox_th_min
++						   && chip->prx_inf.detected) {
++						chip->prx_inf.detected = false;
++						tmg399x_report_prox(chip);
++						tmg399x_set_prox_thresh(chip, 0,
++						chip->params.prox_th_max);
++/*chip->params.prox_th_max * chip->prox_th_factor); */
++					}
++				}
++			}
++		}
++		/* clear the irq of prox */
++		tmg399x_irq_clr(chip, TMG399X_CMD_PROX_INT_CLR);
++	}
++
++	if ((status & TMG399X_ST_GES_IRQ) == TMG399X_ST_GES_IRQ) {
++		len = 0;
++		while (1) {
++			/* get how many data sets in fifo */
++			tmg399x_i2c_read_byte(chip, TMG399X_GES_FLVL,
++					      &numofdset);
++			if (numofdset == 0)
++				/* fifo empty, skip fifo reading */
++				break;
++			/* read gesture data from fifo to SW buffer */
++			tmg399x_i2c_read_block(chip, TMG399X_GES_NFIFO,
++					       (u8 *)&chip->
++					       ges_raw_data[len++], 4);
++			/* calculate number of gesture data sets */
++			if (len > 32) {
++				pr_info("%s gesture buffer overflow!\n",
++					__func__);
++				len = 0;
++				return false;
++			}
++			if (!docalibration && chip->prx_enabled) {
++				chip->prx_inf.raw =
++				    tmg399x_ges_nswe_max(chip->
++							 ges_raw_data[len - 1]);
++				if (chip->prx_inf.raw >
++				    chip->params.prox_th_max *
++				    chip->prox_th_factor
++				    && !chip->prx_inf.detected)
++					chip->prx_inf.detected = true;
++				else if (chip->prx_inf.raw <
++					 chip->params.prox_th_min
++					 * chip->prox_th_factor &&
++					 chip->prx_inf.detected)
++					chip->prx_inf.detected = false;
++			}
++		}
++
++		if (docalibration && caloffsetstate != CALOFF_OK)
++			/* do gesture offset calibration */
++			tmg399x_cal_ges_offset(chip,
++					       (struct tmg399x_ges_nswe *)chip->
++					       ges_raw_data, len);
++		else {
++			mutex_lock(&chip->lock);
++			for (i = 0; i < len; i++) {
++				if (totalofdset == 32) {
++					pr_info
++					    ("%s ges data buffer overflow!\n",
++					     __func__);
++					totalofdset = 0;
++					ret = false;
++				}
++				data_buf[totalofdset].datasrc = GES_DATA;
++				memcpy(&data_buf[totalofdset].nswe,
++				       &chip->ges_raw_data[i],
++				       sizeof(struct tmg399x_ges_nswe));
++				totalofdset++;
++			}
++			mutex_unlock(&chip->lock);
++		}
++	}
++
++exit_clr:
++	return ret;
++}
++
++static void tmg399x_irq_work(struct work_struct *work)
++{
++	struct tmg399x_chip *chip =
++	    container_of(work, struct tmg399x_chip, irq_work);
++	/*mutex_lock(&chip->lock);
++	   do
++	   {
++	   tmg399x_check_and_report(chip);
++	   }
++	   while (!gpio_get_value(irq_to_gpio(chip->client->irq)));
++	   mutex_unlock(&chip->lock); */
++	tmg399x_check_and_report(chip);
++	enable_irq(chip->client->irq);
++
++};
++
++static irqreturn_t tmg399x_irq(int irq, void *handle)
++{
++	struct tmg399x_chip *chip = handle;
++
++	disable_irq_nosync(chip->client->irq);
++
++	if (chip->in_suspend) {
++		pr_info("%s: in suspend\n", __func__);
++		chip->irq_pending = 1;
++		goto bypass;
++	}
++	schedule_work(&chip->irq_work);
++
++bypass:
++	return IRQ_HANDLED;
++}
++
++static int tmg399x_set_segment_table(struct tmg399x_chip *chip,
++				     struct lux_segment *segment, int seg_num)
++{
++	int i;
++
++	chip->seg_num_max = ARRAY_SIZE(segment_default);
++
++	if (!chip->segment) {
++		pr_info("%s: allocating segment table\n", __func__);
++		chip->segment = kzalloc(sizeof(*chip->segment) *
++					chip->seg_num_max, GFP_KERNEL);
++		if (!chip->segment) {
++			pr_info("%s: no memory!\n", __func__);
++			return -ENOMEM;
++		}
++	}
++	if (seg_num > chip->seg_num_max) {
++		pr_info("%s: %d segment requested, %d applied\n",
++			__func__, seg_num, chip->seg_num_max);
++		chip->segment_num = chip->seg_num_max;
++	} else
++		chip->segment_num = seg_num;
++	memcpy(chip->segment, segment,
++	       chip->segment_num * sizeof(*chip->segment));
++	pr_info("%s: %d segment requested, %d applied\n", __func__,
++		seg_num, chip->seg_num_max);
++	for (i = 0; i < chip->segment_num; i++) {
++		pr_info
++		    ("%s seg %d: d_factor %d, r_coef %d, g_coef %d, ",
++		     __func__, i, chip->segment[i].d_factor,
++		     chip->segment[i].r_coef, chip->segment[i].g_coef);
++		pr_info
++		    ("b_coef %d, ct_coef %d ct_offset %d\n",
++		     chip->segment[i].b_coef, chip->segment[i].ct_coef,
++		     chip->segment[i].ct_offset);
++	}
++	return 0;
++}
++
++static void tmg399x_set_defaults(struct tmg399x_chip *chip)
++{
++	pr_info("%s: use defaults\n", __func__);
++	chip->params.als_time = param_default.als_time;
++	chip->params.als_gain = param_default.als_gain;
++	chip->params.wait_time = param_default.wait_time;
++	/*chip->params.prox_th_min = param_default.prox_th_min;
++	chip->params.prox_th_max = param_default.prox_th_max;*/
++	chip->params.persist = param_default.persist;
++	chip->params.als_prox_cfg1 = param_default.als_prox_cfg1;
++	chip->params.prox_pulse = param_default.prox_pulse;
++	chip->params.prox_gain = param_default.prox_gain;
++	chip->params.ldrive = param_default.ldrive;
++	chip->params.als_prox_cfg2 = param_default.als_prox_cfg2;
++	chip->params.prox_offset_ne = param_default.prox_offset_ne;
++	chip->params.prox_offset_sw = param_default.prox_offset_sw;
++	chip->params.als_prox_cfg3 = param_default.als_prox_cfg3;
++
++	chip->als_gain_auto = true;
++
++	/* Initial proximity threshold */
++	chip->shadow[TMG399X_PRX_MINTHRESHLO] = 0;
++	chip->shadow[TMG399X_PRX_MAXTHRESHHI] = chip->params.prox_th_max;
++	tmg399x_i2c_write_byte(chip, TMG399X_PRX_MINTHRESHLO,
++			       chip->shadow[TMG399X_PRX_MINTHRESHLO]);
++	tmg399x_i2c_write_byte(chip, TMG399X_PRX_MAXTHRESHHI,
++			       chip->shadow[TMG399X_PRX_MAXTHRESHHI]);
++
++	tmg399x_i2c_write_byte(chip, TMG399X_ALS_MINTHRESHLO, 0x00);
++	tmg399x_i2c_write_byte(chip, TMG399X_ALS_MINTHRESHHI, 0x00);
++	tmg399x_i2c_write_byte(chip, TMG399X_ALS_MAXTHRESHLO, 0xFF);
++	tmg399x_i2c_write_byte(chip, TMG399X_ALS_MAXTHRESHHI, 0xFF);
++
++	chip->shadow[TMG399X_ALS_TIME] = chip->params.als_time;
++	chip->shadow[TMG399X_WAIT_TIME] = chip->params.wait_time;
++	chip->shadow[TMG399X_PERSISTENCE] = chip->params.persist;
++	chip->shadow[TMG399X_CONFIG_1] = chip->params.als_prox_cfg1;
++	chip->shadow[TMG399X_PRX_PULSE] = chip->params.prox_pulse;
++	chip->shadow[TMG399X_GAIN] = chip->params.als_gain |
++	    chip->params.prox_gain | chip->params.ldrive;
++	chip->shadow[TMG399X_CONFIG_2] = chip->params.als_prox_cfg2;
++	chip->shadow[TMG399X_PRX_OFFSET_NE] = chip->params.prox_offset_ne;
++	chip->shadow[TMG399X_PRX_OFFSET_SW] = chip->params.prox_offset_sw;
++	chip->shadow[TMG399X_CONFIG_3] = chip->params.als_prox_cfg3;
++}
++
++static int tmg399x_get_id(struct tmg399x_chip *chip, u8 *id, u8 *rev)
++{
++	int ret;
++	ret = tmg399x_i2c_read_byte(chip, TMG399X_REVID, rev);
++	ret |= tmg399x_i2c_read_byte(chip, TMG399X_CHIPID, id);
++	return ret;
++}
++
++static int tmg399x_pltf_power_on(struct tmg399x_chip *chip)
++{
++	int ret = 0;
++	if (chip->pdata->platform_power) {
++		ret = chip->pdata->platform_power(&chip->client->dev, POWER_ON);
++		/*mdelay(10); */
++	}
++	chip->unpowered = ret != 0;
++	return ret;
++}
++
++static int tmg399x_pltf_power_off(struct tmg399x_chip *chip)
++{
++	int ret = 0;
++	if (chip->pdata->platform_power) {
++		ret = chip->pdata->platform_power(&chip->client->dev,
++						  POWER_OFF);
++		chip->unpowered = ret == 0;
++	} else {
++		chip->unpowered = false;
++	}
++	return ret;
++}
++
++static int tmg399x_power_on(struct tmg399x_chip *chip)
++{
++	int ret;
++	ret = tmg399x_pltf_power_on(chip);
++	if (ret)
++		return ret;
++	pr_info("%s: chip was off, restoring regs\n", __func__);
++	return tmg399x_flush_regs(chip);
++}
++
++static int tmg399x_prox_idev_open(struct input_dev *idev)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(&idev->dev);
++	int ret;
++	bool als = chip->a_idev && chip->a_idev->users;
++
++	pr_info("%s\n", __func__);
++	mutex_lock(&chip->lock);
++	if (chip->unpowered) {
++		ret = tmg399x_power_on(chip);
++		if (ret)
++			goto chip_on_err;
++	}
++	ret = tmg399x_prox_enable(chip, 0);
++	if (ret && !als)
++		tmg399x_pltf_power_off(chip);
++chip_on_err:
++	mutex_unlock(&chip->lock);
++	return ret;
++}
++
++static void tmg399x_prox_idev_close(struct input_dev *idev)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(&idev->dev);
++
++	pr_info("%s\n", __func__);
++	mutex_lock(&chip->lock);
++	tmg399x_prox_enable(chip, 0);
++	if (!chip->a_idev || !chip->a_idev->users)
++		tmg399x_pltf_power_off(chip);
++	mutex_unlock(&chip->lock);
++}
++
++static int tmg399x_als_idev_open(struct input_dev *idev)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(&idev->dev);
++	int ret;
++	bool prox = chip->p_idev && chip->p_idev->users;
++
++	pr_info("%s\n", __func__);
++	mutex_lock(&chip->lock);
++	if (chip->unpowered) {
++		ret = tmg399x_power_on(chip);
++		if (ret)
++			goto chip_on_err;
++	}
++	ret = tmg399x_als_enable(chip, 1);
++	if (ret && !prox)
++		tmg399x_pltf_power_off(chip);
++chip_on_err:
++	mutex_unlock(&chip->lock);
++	return ret;
++}
++
++static void tmg399x_als_idev_close(struct input_dev *idev)
++{
++	struct tmg399x_chip *chip = dev_get_drvdata(&idev->dev);
++	pr_info("%s\n", __func__);
++	mutex_lock(&chip->lock);
++	tmg399x_als_enable(chip, 0);
++	if (!chip->p_idev || !chip->p_idev->users)
++		tmg399x_pltf_power_off(chip);
++	mutex_unlock(&chip->lock);
++}
++
++static int tmg399x_add_sysfs_interfaces(struct device *dev,
++					struct device_attribute *a, int size)
++{
++	int i;
++	for (i = 0; i < size; i++)
++		if (device_create_file(dev, a + i))
++			goto undo;
++	return 0;
++undo:
++	for (; i >= 0; i--)
++		device_remove_file(dev, a + i);
++	pr_info("%s: failed to create sysfs interface\n", __func__);
++	return -ENODEV;
++}
++
++static void tmg399x_remove_sysfs_interfaces(struct device *dev,
++					    struct device_attribute *a,
++					    int size)
++{
++	int i;
++	for (i = 0; i < size; i++)
++		device_remove_file(dev, a + i);
++}
++
++static int tmg3993_als_input_init(struct tmg399x_chip *chip)
++{
++	int ret;
++	/*struct tmg399x_i2c_platform_data *pdata = chip->pdata; */
++
++	chip->a_idev = input_allocate_device();
++	if (!chip->a_idev)
++		ret = -ENODEV;
++
++	chip->a_idev->name = "light";
++	chip->a_idev->id.bustype = BUS_I2C;
++	set_bit(EV_ABS, chip->a_idev->evbit);
++	set_bit(ABS_MISC, chip->a_idev->absbit);
++	input_set_abs_params(chip->a_idev, ABS_MISC, 0, 65535, 0, 0);
++	chip->a_idev->open = tmg399x_als_idev_open;
++	chip->a_idev->close = tmg399x_als_idev_close;
++	dev_set_drvdata(&chip->a_idev->dev, chip);
++	ret = input_register_device(chip->a_idev);
++
++	return ret;
++}
++
++static int tmg3993_ps_ges_input_init(struct tmg399x_chip *chip)
++{
++	int ret;
++	/*struct tmg399x_i2c_platform_data *pdata = chip->pdata; */
++	chip->p_idev = input_allocate_device();
++	if (!chip->p_idev)
++		ret = -ENODEV;
++
++	chip->p_idev->name = "proximity";
++	chip->p_idev->id.bustype = BUS_I2C;
++	set_bit(ABS_DISTANCE, chip->p_idev->absbit);
++	input_set_abs_params(chip->p_idev, ABS_DISTANCE, 0, 1, 0, 0);
++
++	set_bit(ABS_MT_TOUCH_MAJOR, chip->p_idev->absbit);
++	set_bit(ABS_MT_POSITION_X, chip->p_idev->absbit);
++	set_bit(ABS_MT_POSITION_Y, chip->p_idev->absbit);
++	set_bit(ABS_MT_WIDTH_MAJOR, chip->p_idev->absbit);
++
++	input_set_abs_params(chip->p_idev, ABS_MT_POSITION_X, 0, 800, 0, 0);
++	input_set_abs_params(chip->p_idev, ABS_MT_POSITION_Y, 0, 480, 0, 0);
++	input_set_abs_params(chip->p_idev, ABS_MT_TOUCH_MAJOR, 0, 255, 0, 0);
++	input_set_abs_params(chip->p_idev, ABS_MT_WIDTH_MAJOR, 0, 200, 0, 0);
++
++	set_bit(EV_ABS, chip->p_idev->evbit);
++	set_bit(EV_KEY, chip->p_idev->evbit);
++
++	chip->p_idev->open = tmg399x_prox_idev_open;
++	chip->p_idev->close = tmg399x_prox_idev_close;
++	dev_set_drvdata(&chip->p_idev->dev, chip);
++	ret = input_register_device(chip->p_idev);
++
++	if (ret)
++		input_free_device(chip->p_idev);
++
++	return ret;
++}
++
++static int tmg3993_enable_als_sensor(struct i2c_client *client, int val)
++{
++	struct tmg399x_chip *data = i2c_get_clientdata(client);
++	struct tmg399x_i2c_platform_data *pdata = data->pdata;
++	int ret;
++
++	pr_debug("%s: val=%d\n", __func__, val);
++
++	if ((val != 0) && (val != 1)) {
++		pr_err("%s: invalid value (val = %d)\n", __func__, val);
++		return -EINVAL;
++	}
++
++	if (val == 1) {
++		if ((data->als_open_state == 0) && (data->ps_open_state == 0)) {
++			/* Power on and initalize the device */
++			if (pdata->power_on)
++				pdata->power_on(true);
++		}
++
++		ret = tmg399x_flush_regs(data);
++		if (ret) {
++			pr_info("%s: TMG3993 device init failed.\n",
++				__func__);
++			goto error;
++		}
++		if (data->als_open_state == 1)
++			return 0;
++		data->als_open_state = 1;
++		tmg399x_als_enable(data, 1);
++	} else {
++		if (data->als_open_state == 0)
++			return 0;
++		data->als_open_state = 0;
++
++		tmg399x_als_enable(data, 0);
++	}
++
++	/* Vote off  regulators if both light and prox sensor are off */
++	if ((data->als_open_state == 0) &&
++	    (data->ps_open_state == 0) && (pdata->power_on))
++		pdata->power_on(false);
++
++	return 0;
++
++error:
++	return 0;
++}
++
++static int tmg3993_enable_ps_sensor(struct i2c_client *client, int val)
++{
++	struct tmg399x_chip *data = i2c_get_clientdata(client);
++	struct tmg399x_i2c_platform_data *pdata = data->pdata;
++	int ret;
++
++	pr_debug("%s: val=%d\n", __func__, val);
++
++	if ((val != 0) && (val != 1)) {
++		pr_err("%s: invalid value (val = %d)\n", __func__, val);
++		return -EINVAL;
++	}
++
++	if (val == 1) {
++		if ((data->als_open_state == 0) && (data->ps_open_state == 0)) {
++			/* Power on and initalize the device */
++			if (pdata->power_on)
++				pdata->power_on(true);
++
++			ret = tmg399x_flush_regs(data);
++			if (ret) {
++				pr_info("%s: TMG3993 device init failed.\n",
++					__func__);
++				goto error;
++			}
++		}
++		if (data->ps_open_state == 1)
++			return 0;
++		data->ps_open_state = 1;
++
++		tmg399x_prox_enable(data, 1);
++		enable_irq(data->wake_irq);
++		irq_set_irq_wake(client->irq, 1);
++	} else {
++		if (data->ps_open_state == 0)
++			return 0;
++		data->ps_open_state = 0;
++
++		tmg399x_prox_enable(data, 0);
++		irq_set_irq_wake(client->irq, 0);
++		disable_irq(data->wake_irq);
++	}
++
++	/* Vote off  regulators if both light and prox sensor are off */
++	if ((data->als_open_state == 0) &&
++	    (data->ps_open_state == 0) && (pdata->power_on))
++		pdata->power_on(false);
++
++	return 0;
++
++error:
++	return 0;
++}
++
++static int tmg3993_als_set_enable(struct sensors_classdev *sensors_cdev,
++				  unsigned int enable)
++{
++	struct tmg399x_chip *data = container_of(sensors_cdev,
++						 struct tmg399x_chip, als_cdev);
++
++	if ((enable != 0) && (enable != 1)) {
++		pr_err("%s: invalid value(%d)\n", __func__, enable);
++		return -EINVAL;
++	}
++
++	return tmg3993_enable_als_sensor(data->client, enable);
++}
++
++static int tmg3993_als_poll_delay_set(struct sensors_classdev *sensors_cdev,
++				      unsigned int delay_msec)
++{
++	struct tmg399x_chip *data = container_of(sensors_cdev,
++						 struct tmg399x_chip, als_cdev);
++
++	if ((delay_msec < TMG3993_LS_MIN_POLL_DELAY) ||
++	    (delay_msec > TMG3993_LS_MAX_POLL_DELAY))
++		return -EINVAL;
++
++	atomic_set(&data->als_delay, delay_msec);
++
++	return 0;
++}
++
++static int tmg3993_ps_set_enable(struct sensors_classdev *sensors_cdev,
++				 unsigned int enable)
++{
++	struct tmg399x_chip *data = container_of(sensors_cdev,
++						 struct tmg399x_chip, ps_cdev);
++
++	if ((enable != 0) && (enable != 1)) {
++		pr_err("%s: invalid value(%d)\n", __func__, enable);
++		return -EINVAL;
++	}
++
++	return tmg3993_enable_ps_sensor(data->client, enable);
++}
++
++static int tmg3993_parse_dt(struct device *dev,
++			    struct tmg399x_i2c_platform_data *pdata)
++{
++	struct device_node *np = dev->of_node;
++	unsigned int tmp;
++	int rc = 0;
++
++	/* set functions of platform data */
++	pdata->init = tmg3993_platform_hw_init;
++	pdata->exit = tmg3993_platform_hw_exit;
++	pdata->power_on = tmg3993_platform_hw_power_on;
++
++	/* irq gpio */
++	rc = of_get_named_gpio_flags(dev->of_node, "taos,irq-gpio", 0, NULL);
++	if (rc < 0) {
++		dev_err(dev, "Unable to read irq gpio\n");
++		return rc;
++	}
++	pdata->irq_gpio = rc;
++
++	/* ps tuning data */
++	rc = of_property_read_u32(np, "taos,prox_high_threshold", &tmp);
++	if (rc) {
++		dev_err(dev, "Unable to read ps prox_high_threshold\n");
++		return rc;
++	}
++	pdata->prox_high_threshold = tmp;
++
++	rc = of_property_read_u32(np, "taos,prox_low_threshold", &tmp);
++	if (rc) {
++		dev_err(dev, "Unable to read ps prox_low_threshold\n");
++		return rc;
++	}
++	pdata->prox_low_threshold = tmp;
++
++	/* als tuning data */
++	rc = of_property_read_u32(np, "taos,als_delay", &tmp);
++	if (rc) {
++		dev_err(dev, "Unable to read ps threshold\n");
++		return rc;
++	}
++	atomic_set(&pdata->als_delay, (u8) tmp);
++
++	return 0;
++}
++
++static int tmg399x_probe(struct i2c_client *client,
++			 const struct i2c_device_id *idp)
++{
++	struct device *dev = &client->dev;
++	static struct tmg399x_chip *chip;
++	struct tmg399x_i2c_platform_data *pdata;
++	int i, ret;
++	u8 id, rev;
++	bool powered = 0;
++
++	if (!i2c_check_functionality
++	    (client->adapter,
++	     I2C_FUNC_SMBUS_WRITE_BYTE | I2C_FUNC_SMBUS_READ_BYTE_DATA)) {
++		pr_info("%s: TMG3993 functionality check failed.\n", __func__);
++		ret = -EIO;
++		goto exit;
++	}
++
++	chip = kzalloc(sizeof(struct tmg399x_chip), GFP_KERNEL);
++	if (NULL == chip) {
++		pr_info("%s: TMG3993 kzalloc failed.\n", __func__);
++		ret = -ENOMEM;
++		goto exit;
++	}
++	g_tmg3993_data = chip;
++	pdata = kzalloc(sizeof(struct tmg399x_i2c_platform_data), GFP_KERNEL);
++	if (!pdata) {
++		pr_info("%s: failed to allocate memory for platfrom data\n",
++			__func__);
++		return -ENOMEM;
++	}
++
++	if (client->dev.of_node) {
++		memset(pdata, 0, sizeof(*pdata));
++		ret = tmg3993_parse_dt(&client->dev, pdata);
++		if (ret) {
++			pr_info("%s: Unable to parse platfrom data err=%d\n",
++				__func__, ret);
++			return ret;
++		}
++	} else {
++		if (client->dev.platform_data)
++			pdata = client->dev.platform_data;
++		else {
++			pr_info("%s: platform data is NULL; exiting\n",
++				__func__);
++			return -EINVAL;
++		}
++	}
++
++	if (pdata->platform_init) {
++		ret = pdata->platform_init();
++		if (ret)
++			goto exit_kfree;
++	}
++	if (pdata->platform_power) {
++		ret = pdata->platform_power(dev, POWER_ON);
++		if (ret) {
++			pr_info("%s: pltf power on failed\n", __func__);
++			goto pon_failed;
++		}
++		powered = true;
++		/*mdelay(10); */
++	}
++
++	chip->client = client;
++	chip->pdata = pdata;
++	chip->als_delay = pdata->als_delay;
++	i2c_set_clientdata(client, chip);
++
++	chip->params.prox_th_min = pdata->prox_low_threshold;
++	chip->params.prox_th_max = pdata->prox_high_threshold;
++
++	/* h/w initialization */
++	if (pdata->init)
++		ret = pdata->init();
++
++	if (pdata->power_on)
++		ret = pdata->power_on(true);
++
++	chip->seg_num_max = chip->pdata->segment_num ?
++	    chip->pdata->segment_num : ARRAY_SIZE(segment_default);
++	if (chip->pdata->segment)
++		ret = tmg399x_set_segment_table(chip, chip->pdata->segment,
++						chip->pdata->segment_num);
++	else
++		ret = tmg399x_set_segment_table(chip, segment_default,
++						ARRAY_SIZE(segment_default));
++	if (ret)
++		goto exit_uninit;
++
++	ret = tmg399x_get_id(chip, &id, &rev);
++	if (ret < 0)
++		pr_info("%s: failed to get tmg399x id\n", __func__);
++
++	pr_info("%s: device id:%02x device rev:%02x\n", __func__, id, rev);
++
++	for (i = 0; i < ARRAY_SIZE(tmg399x_ids); i++) {
++		if (id == tmg399x_ids[i])
++			break;
++	}
++	if (i < ARRAY_SIZE(tmg399x_names)) {
++		pr_info("%s: '%s rev. %d' detected\n", __func__,
++			tmg399x_names[i], rev);
++		chip->device_index = i;
++	} else {
++		pr_info("%s: not supported chip id\n", __func__);
++		ret = -EOPNOTSUPP;
++		goto set_segment_failed;
++	}
++
++	mutex_init(&chip->lock);
++
++	/* disable all */
++	tmg399x_als_enable(chip, 0);
++	tmg399x_prox_enable(chip, 0);
++	tmg399x_ges_enable(chip, 0);
++
++	tmg399x_set_defaults(chip);
++	ret = tmg399x_flush_regs(chip);
++	if (ret)
++		goto id_failed;
++	if (pdata->platform_power) {
++		pdata->platform_power(dev, POWER_OFF);
++		powered = false;
++		chip->unpowered = true;
++	}
++
++	/* Setup the input subsystem for the ALS */
++	ret = tmg3993_als_input_init(chip);
++	if (ret < 0) {
++		goto flush_regs_failed;
++		pr_info("%s: ALS Setup Fail...\n", __func__);
++	}
++
++	/* Setup the input subsystem for the PS */
++	ret = tmg3993_ps_ges_input_init(chip);
++	if (ret < 0) {
++		goto err_als_input_register;
++		pr_info("%s: PS Setup Fail...\n", __func__);
++	}
++	ret = tmg399x_add_sysfs_interfaces(&chip->a_idev->dev,
++					   als_attrs, ARRAY_SIZE(als_attrs));
++	if (ret)
++		goto err_ps_input_register;
++
++	ret = tmg399x_add_sysfs_interfaces(&chip->p_idev->dev,
++					   prox_attrs, ARRAY_SIZE(prox_attrs));
++	if (ret)
++		goto input_a_sysfs_failed;
++
++	init_timer(&chip->rgbc_timer);
++	INIT_WORK(&chip->als_work, tmg399x_als_work);
++	INIT_WORK(&chip->irq_work, tmg399x_irq_work);
++
++	ret = request_threaded_irq(client->irq, NULL, &tmg399x_irq,
++				   /*IRQF_TRIGGER_FALLING | IRQF_ONESHOT, */
++				   IRQF_TRIGGER_LOW | IRQF_ONESHOT,
++				   dev_name(dev), chip);
++	if (ret) {
++		pr_info("Failed to request irq %d\n", client->irq);
++		goto input_p_sysfs_failed;
++	}
++
++	/* Register to sensors class */
++	chip->als_cdev = sensors_light_cdev;
++	chip->als_cdev.sensors_enable = tmg3993_als_set_enable;
++	chip->als_cdev.sensors_poll_delay = tmg3993_als_poll_delay_set;
++	chip->ps_cdev = sensors_proximity_cdev;
++	chip->ps_cdev.sensors_enable = tmg3993_ps_set_enable;
++	chip->ps_cdev.sensors_poll_delay = NULL;
++
++	ret = sensors_classdev_register(&client->dev, &chip->als_cdev);
++	if (ret) {
++		pr_err("%s: Unable to register to sensors class: %d\n",
++		       __func__, ret);
++		goto err_request_irq;
++	}
++
++	ret = sensors_classdev_register(&client->dev, &chip->ps_cdev);
++	if (ret) {
++		pr_err("%s: Unable to register to sensors class: %d\n",
++		       __func__, ret);
++		goto exit_unregister_als_class;
++	}
++
++	if (pdata->power_on)
++		ret = pdata->power_on(false);
++
++	pr_info("%s:Probe ok.\n", __func__);
++
++	return 0;
++
++exit_unregister_als_class:
++	sensors_classdev_unregister(&chip->als_cdev);
++err_request_irq:
++	free_irq(client->irq, client);
++input_p_sysfs_failed:
++	input_unregister_device(chip->p_idev);
++input_a_sysfs_failed:
++	input_unregister_device(chip->a_idev);
++err_ps_input_register:
++	input_free_device(chip->p_idev);
++err_als_input_register:
++	input_free_device(chip->a_idev);
++flush_regs_failed:
++id_failed:
++	kfree(chip->segment);
++set_segment_failed:
++	i2c_set_clientdata(client, NULL);
++exit_uninit:
++	if (pdata->power_on)
++		pdata->power_on(false);
++	if (pdata->exit)
++		pdata->exit();
++pon_failed:
++	if (pdata->platform_teardown)
++		pdata->platform_teardown(dev);
++exit_kfree:
++	g_tmg3993_data = NULL;
++	kfree(chip);
++exit:
++	return ret;
++}
++
++static int tmg399x_suspend(struct device *dev)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	struct tmg399x_chip *data = i2c_get_clientdata(client);
++
++	pr_info("%s:TMG3993_suspend.\n", __func__);
++
++	/*
++	 * Save sensor state and disable them,
++	 * this is to ensure internal state flags are set correctly.
++	 * device will power off after both sensors are disabled.
++	 * P sensor will not be disabled because it  is a wakeup sensor.
++	 */
++	data->enable_als_state = data->als_open_state;
++	data->enable_ps_state = data->ps_open_state;
++
++#if SUPPORT_AUTO_BACKLIGHT
++	if (data->enable_als_state == 1)
++		tmg3993_enable_als_sensor(data->client, 0);
++#endif
++
++	return 0;
++}
++
++static int tmg399x_resume(struct device *dev)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	struct tmg399x_chip *data = i2c_get_clientdata(client);
++	int ret;
++
++	pr_info("%s:TMG3993_resume\n", __func__);
++
++	ret = tmg399x_power_on(data);
++	if (ret)
++		goto error;
++
++#if SUPPORT_AUTO_BACKLIGHT
++	if (data->enable_als_state == 0)
++		tmg3993_enable_als_sensor(data->client, 1);
++#endif
++
++error:
++	return 0;
++}
++
++static int tmg399x_remove(struct i2c_client *client)
++{
++	struct tmg399x_chip *chip = i2c_get_clientdata(client);
++	mutex_lock(&chip->lock);
++	free_irq(client->irq, chip);
++	if (chip->a_idev) {
++		tmg399x_remove_sysfs_interfaces(&chip->a_idev->dev,
++						als_attrs,
++						ARRAY_SIZE(als_attrs));
++		input_unregister_device(chip->a_idev);
++	}
++	if (chip->p_idev) {
++		tmg399x_remove_sysfs_interfaces(&chip->p_idev->dev,
++						prox_attrs,
++						ARRAY_SIZE(prox_attrs));
++		input_unregister_device(chip->p_idev);
++	}
++	if (chip->pdata->platform_teardown)
++		chip->pdata->platform_teardown(&client->dev);
++	i2c_set_clientdata(client, NULL);
++	kfree(chip->segment);
++	kfree(chip);
++	g_tmg3993_data = NULL;
++	mutex_unlock(&chip->lock);
++	return 0;
++}
++
++static struct i2c_device_id tmg399x_idtable[] = {
++	{"tmg399x", 0},
++	{}
++};
++
++MODULE_DEVICE_TABLE(i2c, tmg399x_idtable);
++
++static struct of_device_id tmg3993_match_table[] = {
++	{.compatible = "taos,tmg3993",},
++	{},
++};
++
++static const struct dev_pm_ops tmg399x_pm_ops = {
++	.suspend = tmg399x_suspend,
++	.resume = tmg399x_resume,
++};
++
++static struct i2c_driver tmg399x_driver = {
++	.driver = {
++		   .name = "tmg399x",
++		   .pm = &tmg399x_pm_ops,
++		   .of_match_table = tmg3993_match_table,
++		   },
++	.id_table = tmg399x_idtable,
++	.probe = tmg399x_probe,
++	.remove = tmg399x_remove,
++};
++
++static int __init tmg399x_init(void)
++{
++	return i2c_add_driver(&tmg399x_driver);
++}
++
++static void __exit tmg399x_exit(void)
++{
++	i2c_del_driver(&tmg399x_driver);
++}
++
++module_init(tmg399x_init);
++module_exit(tmg399x_exit);
++
++MODULE_AUTHOR("Byron Shi<byron.shi@ams.com>");
++MODULE_DESCRIPTION("AMS-TAOS tmg3993 Ambient, Proximity, Gesture sensor driver");
++MODULE_LICENSE("GPL");
+diff --git a/include/linux/input/tmg3993.h b/include/linux/input/tmg3993.h
+new file mode 100644
+index 0000000..28e0983
+--- /dev/null
++++ b/include/linux/input/tmg3993.h
+@@ -0,0 +1,503 @@
++/*
++ * Device driver for monitoring ambient light intensity in (lux)
++ * proximity detection (prox), Gesture, and Beam functionality within the
++ * AMS-TAOS TMG399X family of devices.
++ *
++ * Copyright (c) 2014, AMS-TAOS USA, Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along
++ * with this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
++ */
++
++#ifndef __TMG399X_H
++#define __TMG399X_H
++
++#include <linux/types.h>
++#include <linux/timer.h>
++#include <linux/sensors.h>
++#include <linux/regulator/consumer.h>
++
++/* Max number of segments allowable in LUX table */
++#define TMG399X_MAX_LUX_TABLE_SIZE		9
++#define MAX_DEFAULT_TABLE_BYTES (sizeof(int) * TMG399X_MAX_LUX_TABLE_SIZE)
++
++/* whether disable light or not at phone
++  * calling while the automatic backlight is on.
++  * the default value is 1.
++  */
++#define SUPPORT_AUTO_BACKLIGHT 1
++
++/* Default LUX and Color coefficients */
++#define D_Factor	241
++#define R_Coef		144
++#define G_Coef		1000
++#define B_Coef		400
++#define CT_Coef		(3972)
++#define CT_Offset	(1672)
++
++#define D_Factor1	436
++#define R_Coef1		195
++#define G_Coef1		1000
++#define B_Coef1		293
++#define CT_Coef1	4417
++#define CT_Offset1	1053
++
++/* Proximity threshold definition */
++#define	PROX_THRESH_LOW		50
++#define	PROX_THRESH_HIGH	80
++
++#define HIGH_LIGHT_THRESH	10000
++#define LOW_LIGHT_THRESH	2000
++
++struct device;
++
++#define TMG399X_CMD_PROX_INT_CLR	0xE5
++#define TMG399X_CMD_ALS_INT_CLR		0xE6
++#define TMG399X_CMD_NON_GES_INT_CLR	0xE7
++
++#define PRX_PERSIST(p) (((p) & 0xf) << 4)
++#define ALS_PERSIST(p) (((p) & 0xf) << 0)
++#define PRX_PULSE_CNT(p) (((p-1) & 0x3f) << 0)
++#define GES_PULSE_CNT(p) (((p-1) & 0x3f) << 0)
++
++
++/*#define INT2OFFSET(offset, value) if (value < 0) offset = 128 - value; \
++				else offset = value
++*/
++#define I2C_ADDR_OFFSET	0x80
++
++enum tmg399x_regs {
++	TMG399X_CONTROL,
++	TMG399X_ALS_TIME,
++	TMG399X_RESV_1,
++	TMG399X_WAIT_TIME,
++	TMG399X_ALS_MINTHRESHLO,
++	TMG399X_ALS_MINTHRESHHI,
++	TMG399X_ALS_MAXTHRESHLO,
++	TMG399X_ALS_MAXTHRESHHI,
++	TMG399X_RESV_2,
++	TMG399X_PRX_MINTHRESHLO,
++	TMG399X_RESV_3,
++	TMG399X_PRX_MAXTHRESHHI,
++	TMG399X_PERSISTENCE,
++	TMG399X_CONFIG_1,
++	TMG399X_PRX_PULSE,
++	TMG399X_GAIN,
++
++	TMG399X_CONFIG_2,
++	TMG399X_REVID,
++	TMG399X_CHIPID,
++	TMG399X_STATUS,
++	TMG399X_CLR_CHANLO,
++	TMG399X_CLR_CHANHI,
++	TMG399X_RED_CHANLO,
++	TMG399X_RED_CHANHI,
++	TMG399X_GRN_CHANLO,
++	TMG399X_GRN_CHANHI,
++	TMG399X_BLU_CHANLO,
++	TMG399X_BLU_CHANHI,
++	TMG399X_PRX_CHAN,
++	TMG399X_PRX_OFFSET_NE,
++	TMG399X_PRX_OFFSET_SW,
++	TMG399X_CONFIG_3,
++
++	TMG399X_GES_ENTH,
++	TMG399X_GES_EXTH,
++	TMG399X_GES_CFG_1,
++	TMG399X_GES_CFG_2,
++	TMG399X_GES_OFFSET_N,
++	TMG399X_GES_OFFSET_S,
++	TMG399X_GES_PULSE,
++	TMG399X_GES_OFFSET_W,
++	TMG399X_GES_RESV,
++	TMG399X_GES_OFFSET_E,
++	TMG399X_GES_CFG_3,
++	TMG399X_GES_CFG_4,
++	TMG399X_RESV_4,
++	TMG399X_RESV_5,
++	TMG399X_GES_FLVL,
++	TMG399X_GES_STAT,
++
++	TMG399X_REG_MAX,
++};
++
++enum tmg399x_gesfifo_regs {
++	TMG399X_GES_NFIFO = 0x7C,
++	TMG399X_GES_SFIFO,
++	TMG399X_GES_WFIFO,
++	TMG399X_GES_EFIFO,
++};
++
++enum tmg399x_pwr_state {
++	POWER_ON,
++	POWER_OFF,
++	POWER_STANDBY,
++};
++
++enum tmg399x_en_reg {
++	TMG399X_EN_PWR_ON   = (1 << 0),
++	TMG399X_EN_ALS      = (1 << 1),
++	TMG399X_EN_PRX      = (1 << 2),
++	TMG399X_EN_WAIT     = (1 << 3),
++	TMG399X_EN_ALS_IRQ  = (1 << 4),
++	TMG399X_EN_PRX_IRQ  = (1 << 5),
++	TMG399X_EN_GES      = (1 << 6),
++};
++
++enum tmg399x_cfgl_reg {
++	WLONG          = (1 << 1),
++};
++
++enum tmg399x_ppulse_reg {
++	PPLEN_4US      = (0 << 6),
++	PPLEN_8US      = (1 << 6),
++	PPLEN_16US     = (2 << 6),
++	PPLEN_32US     = (3 << 6),
++};
++
++enum tmg399x_ctrl_reg {
++	AGAIN_1        = (0 << 0),
++	AGAIN_4        = (1 << 0),
++	AGAIN_16       = (2 << 0),
++	AGAIN_64       = (3 << 0),
++	PGAIN_1        = (0 << 2),
++	PGAIN_2        = (1 << 2),
++	PGAIN_4        = (2 << 2),
++	PGAIN_8        = (3 << 2),
++	PDRIVE_100MA   = (0 << 6),
++	PDRIVE_50MA    = (1 << 6),
++	PDRIVE_25MA    = (2 << 6),
++	PDRIVE_12MA    = (3 << 6),
++};
++
++enum tmg399x_cfg2_reg {
++	LEDBOOST_100   = (0 << 4),
++	LEDBOOST_150   = (1 << 4),
++	LEDBOOST_200   = (2 << 4),
++	LEDBOOST_300   = (3 << 4),
++	CPSIEN         = (1 << 6),
++	PSIEN          = (1 << 7),
++};
++
++enum tmg399x_status {
++	TMG399X_ST_ALS_VALID  = (1 << 0),
++	TMG399X_ST_PRX_VALID  = (1 << 1),
++	TMG399X_ST_GES_IRQ    = (1 << 2),
++	TMG399X_ST_ALS_IRQ    = (1 << 4),
++	TMG399X_ST_PRX_IRQ    = (1 << 5),
++	TMG399X_ST_PRX_SAT    = (1 << 6),
++	TMG399X_ST_CP_SAT     = (1 << 7),
++};
++
++enum tmg399x_cfg3_reg {
++	PMASK_E        = (1 << 0),
++	PMASK_W        = (1 << 1),
++	PMASK_S        = (1 << 2),
++	PMASK_N        = (1 << 3),
++	SAI            = (1 << 4),
++	PCMP           = (1 << 5),
++};
++
++enum tmg399x_ges_cfg1_reg {
++	GEXPERS_1      = (0 << 0),
++	GEXPERS_2      = (1 << 0),
++	GEXPERS_4      = (2 << 0),
++	GEXPERS_7      = (3 << 0),
++	GEXMSK_E       = (1 << 2),
++	GEXMSK_W       = (1 << 3),
++	GEXMSK_S       = (1 << 4),
++	GEXMSK_N       = (1 << 5),
++	GEXMSK_ALL     = (0xF << 2),
++	FIFOTH_1       = (0 << 6),
++	FIFOTH_4       = (1 << 6),
++	FIFOTH_8       = (2 << 6),
++	FIFOTH_16      = (3 << 6),
++};
++
++enum tmg399x_ges_cfg2_reg {
++	GWTIME_0       = (0 << 0),
++	GWTIME_3       = (1 << 0),
++	GWTIME_6       = (2 << 0),
++	GWTIME_8       = (3 << 0),
++	GWTIME_14      = (4 << 0),
++	GWTIME_22      = (5 << 0),
++	GWTIME_30      = (6 << 0),
++	GWTIME_39      = (7 << 0),
++	GLDRIVE_100    = (0 << 3),
++	GLDRIVE_50     = (1 << 3),
++	GLDRIVE_25     = (2 << 3),
++	GLDRIVE_12     = (3 << 3),
++	GGAIN_1        = (0 << 5),
++	GGAIN_2        = (1 << 5),
++	GGAIN_4        = (2 << 5),
++	GGAIN_8        = (3 << 5),
++};
++
++enum tmg399x_gpulse_reg {
++	GPLEN_4US      = (0 << 6),
++	GPLEN_8US      = (1 << 6),
++	GPLEN_16US     = (2 << 6),
++	GPLEN_32US     = (3 << 6),
++};
++
++enum tmg399x_ges_cfg3_reg {
++	GBOTH_PAIR     = (0 << 0),
++	GONLY_NS       = (1 << 0),
++	GONLY_WE       = (2 << 0),
++};
++
++enum tmg399x_ges_cfg4 {
++	TMG399X_GES_MODE     = (1 << 0),
++	TMG399X_GES_EN_IRQ   = (1 << 1),
++	TMG399X_GES_INT_CLR  = (1 << 2),
++};
++
++enum tmg399x_ges_status {
++	TMG399X_GES_VALID     = (1 << 0),
++	TMG399X_GES_FOV       = (1 << 1),
++};
++
++enum {
++	TMG399X_ALS_GAIN_MASK = (3 << 0),
++	TMG399X_PRX_GAIN_MASK = (3 << 2),
++	TMG399X_LDRIVE_MASK   = (3 << 6),
++	TMG399X_ALS_AGL_MASK  = (1 << 2),
++	TMG399X_ALS_AGL_BOOST = 2,
++	TMG399X_ATIME_PER_100 = 278,
++	SCALE_SHIFT = 11,
++	RATIO_SHIFT = 10,
++	MAX_ALS_VALUE = 0xffff,
++	MIN_ALS_VALUE = 10,
++	GAIN_SWITCH_LEVEL = 100,
++	TMG399X_GES_ST_MASK   = (3 << 0),
++};
++
++enum tmg399x_caloffsetstates {
++	START_CALOFF,
++	CHECK_PROX_NE,
++	CHECK_PROX_SW,
++	CHECK_NSWE_ZERO,
++	CALOFF_OK
++};
++
++enum tmg399x_caloffsetdirections {
++	DIR_NONE,
++	DIR_UP,
++	DIR_DOWN
++};
++
++enum tmg399x_datatypes {
++	PROX_DATA,
++	GES_DATA,
++	RGBC_DATA,
++	CAL_DATA
++};
++
++enum tmg399x_op_modes {
++	ALL_OFF,
++	ALS_ONLY,
++	PROX_ONLY,
++	ALS_PROX,
++	GES_ONLY,
++	ALS_GES,
++	PROX_GES,
++	ALS_PROX_GES
++};
++
++enum tmg399x_func {
++	ALS_FUNC = 0x01,
++	PROX_FUNC = 0x02,
++	GES_FUNC = 0x04,
++};
++
++struct tmg399x_als_info {
++	u32 cpl;
++	u32 saturation;
++	u16 clear_raw;
++	u16 red_raw;
++	u16 green_raw;
++	u16 blue_raw;
++	u16 lux;
++	u16 cct;
++	s16 ir;
++};
++
++struct tmg399x_prox_info {
++	int raw;
++	int detected;
++};
++
++struct tmg399x_parameters {
++	u8 als_time;
++	u8 als_gain;
++	u8 wait_time;
++	u8 prox_th_min;
++	u8 prox_th_max;
++	u8 persist;
++	u8 als_prox_cfg1;
++	u8 prox_pulse;
++	u8 prox_gain;
++	u8 ldrive;
++	u8 als_prox_cfg2;
++	s8 prox_offset_ne;
++	s8 prox_offset_sw;
++	u8 als_prox_cfg3;
++
++	u8 ges_entry_th;
++	u8 ges_exit_th;
++	u8 ges_cfg1;
++	u8 ges_cfg2;
++	s8 ges_offset_n;
++	s8 ges_offset_s;
++	u8 ges_pulse;
++	s8 ges_offset_w;
++	s8 ges_offset_e;
++	u8 ges_dimension;
++};
++
++struct tmg399x_ges_nswe {
++	u8 north;
++	u8 south;
++	u8 west;
++	u8 east;
++};
++
++struct tmg399x_data_buf {
++	u8 datasrc;
++	struct tmg399x_ges_nswe nswe;
++};
++
++struct tmg399x_chip {
++	struct mutex lock;
++	struct i2c_client *client;
++	struct sensors_classdev als_cdev;
++	struct sensors_classdev ps_cdev;
++
++	atomic_t als_delay;
++	/* regulator data */
++	bool power_on_state;
++	struct regulator *vdd;
++	struct regulator *vio;
++	bool power_enabled;
++
++	u8 ps_open_state;
++	u8 als_open_state;
++	u8 enable_als_state;
++	u8 enable_ps_state;
++
++	struct work_struct irq_work;
++	struct work_struct als_work;
++	struct delayed_work ps_work;
++	struct tmg399x_prox_info prx_inf;
++	struct tmg399x_als_info als_inf;
++	struct tmg399x_parameters params;
++	struct tmg399x_i2c_platform_data *pdata;
++	u8 shadow[48];
++	struct input_dev *p_idev;
++	struct input_dev *a_idev;
++	struct timer_list rgbc_timer;
++	int in_suspend;
++	int wake_irq;
++	int irq_pending;
++	bool unpowered;
++	bool als_enabled;
++	bool wait_enabled;
++	bool prx_enabled;
++	bool ges_enabled;
++	struct tmg399x_ges_nswe ges_raw_data[32];
++	struct lux_segment *segment;
++	int segment_num;
++	int seg_num_max;
++	bool als_gain_auto;
++	u8 prox_th_factor;
++	u8 reg;
++	u8 datasrc;
++	u8 device_index;
++};
++
++static struct sensors_classdev sensors_light_cdev = {
++	.name = "tmg3993-light",
++	.vendor = "taos",
++	.version = 1,
++	.handle = SENSORS_LIGHT_HANDLE,
++	.type = SENSOR_TYPE_LIGHT,
++	.max_range = "60000",
++	.resolution = "0.0125",
++	.sensor_power = "0.20",
++	.min_delay = 0, /* in microseconds */
++	.fifo_reserved_event_count = 0,
++	.fifo_max_event_count = 0,
++	.enabled = 0,
++	.delay_msec = 100,
++	.sensors_enable = NULL,
++	.sensors_poll_delay = NULL,
++};
++
++static struct sensors_classdev sensors_proximity_cdev = {
++	.name = "tmg3993-proximity",
++	.vendor = "taos",
++	.version = 1,
++	.handle = SENSORS_PROXIMITY_HANDLE,
++	.type = SENSOR_TYPE_PROXIMITY,
++	.max_range = "5",
++	.resolution = "5.0",
++	.sensor_power = "3",
++	.min_delay = 0, /* in microseconds */
++	.fifo_reserved_event_count = 0,
++	.fifo_max_event_count = 0,
++	.enabled = 0,
++	.delay_msec = 100,
++	.sensors_enable = NULL,
++	.sensors_poll_delay = NULL,
++};
++
++struct lux_segment {
++	int d_factor;
++	int r_coef;
++	int g_coef;
++	int b_coef;
++	int ct_coef;
++	int ct_offset;
++};
++
++struct tmg399x_i2c_platform_data {
++	/* The following callback for power events received and handled by
++	   the driver.  Currently only for SUSPEND and RESUME */
++	int (*platform_power)(struct device *dev, enum tmg399x_pwr_state state);
++	int (*platform_init)(void);
++	void (*platform_teardown)(struct device *dev);
++	char const *prox_name;
++	char const *als_name;
++	struct tmg399x_parameters parameters;
++	bool proximity_can_wake;
++	bool als_can_wake;
++	struct lux_segment *segment;
++	int segment_num;
++	int irq_gpio;
++	int prox_high_threshold;
++	int prox_low_threshold;
++
++	atomic_t als_delay;
++	int (*init)(void);
++	void (*exit)(void);
++	int (*power_on)(bool);
++};
++
++/*VDD 2.375V-3.46V VIO 1.8V +-5%*/
++#define TMG3993_VDD_MIN_UV		1710000
++#define TMG3993_VDD_MAX_UV	3600000
++#define TMG3993_VIO_MIN_UV		1800000
++#define TMG3993_VIO_MAX_UV		1800000
++
++#endif /* __TMG399X_H */
+-- 
+2.2.1
+

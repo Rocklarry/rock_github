@@ -1,0 +1,137 @@
+From 5bfef8ebcf6be770b3356fdba47ffd915bc82b6c Mon Sep 17 00:00:00 2001
+From: Shaosong Zhang <zhangss1028@thundersoft.com>
+Date: Fri, 11 Mar 2016 13:25:29 +0800
+Subject: [PATCH] ARM: dts: msm: Add ar1337 camera dtsi
+
+Add ar1337 devicetree description for msm8952
+Change-Id: I6ad9ff281027fd3f8a77a5fcea3c87d7a4471748
+Signed-off-by: Shaosong Zhang <zhangss1028@thundersoft.com>
+---
+ .../boot/dts/qcom/msm8952-camera-sensor-qrd.dtsi   | 97 +++++++++++++++++++++-
+ 1 file changed, 94 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8952-camera-sensor-qrd.dtsi b/arch/arm/boot/dts/qcom/msm8952-camera-sensor-qrd.dtsi
+index b5b0669..2ae29ee 100644
+--- a/arch/arm/boot/dts/qcom/msm8952-camera-sensor-qrd.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8952-camera-sensor-qrd.dtsi
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (c) 2015, The Linux Foundation. All rights reserved.
++ * Copyright (c) 2015-2016, The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 and
+@@ -365,17 +365,108 @@
+ 				<&clock_gcc clk_gcc_camss_mclk0_clk>;
+ 		clock-names = "cam_src_clk", "cam_clk";
+ 	};
++    eeprom3: qcom,eeprom@3{
++        cell-index = <0>;
++        reg = <0x03>;
++        qcom,eeprom-name = "onsemi_ar1337";
++        compatible = "qcom,eeprom";
++        qcom,slave-addr = <0x6c>;
++        qcom,cci-master = <0>;
++        qcom,num-blocks = <12>;
++
++        qcom,page0 = <1 0x301a 2 0x0001 2 10>;
++        qcom,poll0 = <0 0x0 2 0 1 1>;
++        qcom,mem0 = <0 0x0 2 0 1 0>;
++        qcom,page1 = <1 0x301a 2 0x0218 2 10>;
++        qcom,poll1 = <0 0x0 2 0 1 1>;
++        qcom,mem1 = <0 0x0 2 0 1 0>;
++
++        qcom,page2 = <1 0x304c 2 0x3100 2 10>;
++        qcom,poll2 = <0 0x0 2 0 1 1>;
++        qcom,mem2 = <0 0x0 2 0 1 0>;
++        qcom,page3 = <1 0x304a 2 0x0210 2 50>;
++        qcom,poll3 = <0 0x0 2 0 1 1>;
++        qcom,mem3 = <8 0x3800 2 0 1 100>;
++
++        qcom,page4 = <1 0x304c 2 0x3700 2 10>;
++        qcom,poll4 = <0 0x0 2 0 1 1>;
++        qcom,mem4 = <0 0x0 2 0 1 0>;
++        qcom,page5 = <1 0x304a 2 0x0210 2 50>;
++        qcom,poll5 = <0 0x0 2 0 1 1>;
++        qcom,mem5 = <8 0x3800 2 0 1 100>;
++
++        qcom,page6 = <1 0x304c 2 0x3800 2 10>;
++        qcom,poll6 = <0 0x0 2 0 1 1>;
++        qcom,mem6 = <0 0x0 2 0 1 0>;
++        qcom,page7 = <1 0x304a 2 0x0210 2 50>;
++        qcom,poll7 = <0 0x0 2 0 1 1>;
++        qcom,mem7 = <8 0x3800 2 0 1 100>;
++
++        qcom,page8 = <1 0x304c 2 0x3A00 2 10>;
++        qcom,poll8 = <0 0x0 2 0 1 1>;
++        qcom,mem8 = <0 0x0 2 0 1 0>;
++        qcom,page9 = <1 0x304a 2 0x0210 2 50>;
++        qcom,poll9 = <0 0x0 2 0 1 1>;
++        qcom,mem9 = <8 0x3800 2 0 1 100>;
++
++        qcom,page10 = <1 0x304c 2 0x3000 2 10>;
++        qcom,poll10 = <0 0x0 2 0 1 1>;
++        qcom,mem10 = <0 0x0 2 0 1 0>;
++        qcom,page11 = <1 0x304a 2 0x0210 2 50>;
++        qcom,poll11 = <0 0x0 2 0 1 1>;
++        qcom,mem11 = <22 0x3800 2 0 1 100>;
++
++        cam_vdig-supply = <&pm8950_l23>;
++        cam_vana-supply = <&pm8950_l22>;
++        cam_vio-supply = <&pm8950_l6>;
++        cam_vaf-supply = <&pm8950_l17>;
++        qcom,cam-vreg-name = "cam_vdig", "cam_vio", "cam_vana",
++                            "cam_vaf";
++        qcom,cam-vreg-min-voltage = <1200000 0 2800000 2850000>;
++        qcom,cam-vreg-max-voltage = <1200000 0 2800000 2850000>;
++        qcom,cam-vreg-op-mode = <200000 0 80000 100000>;
++        pinctrl-names = "cam_default", "cam_suspend";
++        pinctrl-0 = <&cam_sensor_mclk0_default
++                &cam_sensor_rear_default>;
++        pinctrl-1 = <&cam_sensor_mclk0_sleep &cam_sensor_rear_sleep>;
++        gpios = <&msm_gpio 26 0>,
++            <&msm_gpio 36 0>,
++            <&msm_gpio 35 0>;
++        qcom,gpio-reset = <1>;
++        qcom,gpio-standby = <2>;
++        qcom,gpio-req-tbl-num = <0 1 2>;
++        qcom,gpio-req-tbl-flags = <1 0 0>;
++        qcom,gpio-req-tbl-label = "CAMIF_MCLK0",
++            "MCAM_RESET0",
++            "MCAM_STANDBY0";
++
++        qcom,cam-power-seq-type = "sensor_vreg",
++            "sensor_vreg", "sensor_vreg",
++            "sensor_clk",
++            "sensor_gpio", "sensor_gpio";
++        qcom,cam-power-seq-val = "cam_vio",
++            "cam_vana", "cam_vdig",
++            "sensor_cam_mclk",
++            "sensor_gpio_reset",
++            "sensor_gpio_standby";
++        qcom,cam-power-seq-cfg-val = <1 1 1 24000000 1 1>;
++        qcom,cam-power-seq-delay = <1 1 5 5 5 10>;
++        status = "ok";
++        clocks = <&clock_gcc clk_mclk0_clk_src>,
++                <&clock_gcc clk_gcc_camss_mclk0_clk>;
++        clock-names = "cam_src_clk", "cam_clk";
++    };
+ 	qcom,camera@0 {
+ 		cell-index = <0>;
+ 		compatible = "qcom,camera";
+ 		reg = <0x0>;
+-		qcom,special-support-sensors = "ov13850_q13v06k", "s5k3m2xm";
++		qcom,special-support-sensors = "ov13850_q13v06k", "s5k3m2xm", "ar1337";
+ 		qcom,csiphy-sd-index = <0>;
+ 		qcom,csid-sd-index = <0>;
+ 		qcom,mount-angle = <90>;
+ 		qcom,actuator-src = <&actuator0>;
+ 		qcom,led-flash-src = <&led_flash0>;
+-		qcom,eeprom-src = <&eeprom0 &eeprom2>;
++		qcom,eeprom-src = <&eeprom0 &eeprom2 &eeprom3>;
+ 		cam_vdig-supply = <&pm8950_l23>;
+ 		cam_vana-supply = <&pm8950_l22>;
+ 		cam_vio-supply = <&pm8950_l6>;
+-- 
+1.9.1
+

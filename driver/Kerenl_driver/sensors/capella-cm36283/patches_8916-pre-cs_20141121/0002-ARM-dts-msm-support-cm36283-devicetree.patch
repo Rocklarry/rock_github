@@ -1,0 +1,81 @@
+From 929a33d721d8299f8023f7b24f1b0f7bc1443138 Mon Sep 17 00:00:00 2001
+From: Yukun Wan <wanyk0402@thundersoft.com>
+Date: Tue, 18 Nov 2014 11:00:39 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support cm36283 devicetree
+
+Devicetree support cm36283
+
+Change-Id: Ic3a7f1511f3e3de33a028fe0ccf46af487e55104
+Signed-off-by: Yukun Wan <wanyk0402@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi |   33 ++++++++++++++++++++++++--
+ 1 file changed, 31 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi b/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
+index 9981e42..3b27815 100644
+--- a/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
+@@ -44,6 +44,18 @@
+ 		};
+ 	};
+ 
++
++	cm36283_int_pin {
++		qcom,pins = <&gp 113>;
++		qcom,pin-func = <0>;
++		qcom,num-grp-pins = <1>;
++		label = "cm36283-irq";
++		cm36283_default: cm36283_default {
++			drive-strength = <6>;
++			bias-pull-up;
++		};
++	};
++
+ 	tps65132-en-pin {
+ 		qcom,pins = <&gp 32>, <&gp 97>;
+ 		qcom,num-grp-pins = <2>;
+@@ -87,7 +99,7 @@
+ 		akm,gpio_rstn = <&msm_gpio 36 0x0>;
+ 		akm,auto-report;
+ 	};
+-
++/*
+ 	avago@39 {
+ 		compatible = "avago,apds9930";
+ 		reg = <0x39>;
+@@ -108,7 +120,7 @@
+ 		avago,als-D = <129>;
+ 		avago,ga-value = <98>;
+ 	};
+-
++*/
+ 	st@18 {
+ 		compatible = "st,lis3dh";
+ 		reg = <0x18>;
+@@ -129,6 +141,23 @@
+ 		st,negate-y;
+ 	};
+ 
++	capella@60 { /* Ambient light and proximity sensor */
++		compatible = "capella,cm36283";
++		reg = <0x60>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&cm36283_default>;
++		interrupt-parent = <&msm_gpio>;
++		interrupts = <113 0x2002>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++		capella,interrupt-gpio = <&msm_gpio 113 0x2002>;
++		capella,use-polling = <0>;
++		capella,ls_poll_delay = <200>;
++		capella,ps_poll_delay = <200>;
++		capella,ps_away_thd_set = <3>;
++		capella,ps_close_thd_set = <8>;
++	};
++
+ 	tps65132@3e {
+ 		compatible = "ti,tps65132";
+ 		reg = <0x3e>;
+-- 
+1.7.9.5
+

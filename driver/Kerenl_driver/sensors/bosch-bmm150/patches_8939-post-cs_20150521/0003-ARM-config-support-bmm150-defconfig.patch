@@ -1,0 +1,34 @@
+From d781d6993d5589c7c066884ba744a0924951812b Mon Sep 17 00:00:00 2001
+From: Li Zhanchao <lizc1023@thundersoft.com>
+Date: Thu, 21 May 2015 16:50:20 +0800
+Subject: [PATCH 3/3] ARM:config: support bmm150 defconfig
+
+Defconfig support bmm150
+
+Change-Id: I65e318101dfbf7735834645cca693353ecacf173
+Signed-off-by: Li Zhanchao <lizc1023@thundersoft.com>
+---
+ arch/arm/configs/msm8916-perf_defconfig | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/configs/msm8916-perf_defconfig b/arch/arm/configs/msm8916-perf_defconfig
+index 7dd8192..095951e 100644
+--- a/arch/arm/configs/msm8916-perf_defconfig
++++ b/arch/arm/configs/msm8916-perf_defconfig
+@@ -265,10 +265,11 @@ CONFIG_INPUT_MISC=y
+ CONFIG_INPUT_UINPUT=y
+ CONFIG_INPUT_GPIO=m
+ CONFIG_SENSORS_LIS3DH=y
+-CONFIG_SENSORS_MPU6050=y
++#CONFIG_SENSORS_MPU6050 is not set
+ CONFIG_SENSORS_AKM09911=y
+ CONFIG_SENSORS_BMA2X2=y
+-CONFIG_SENSORS_MMC3416X=y
++#CONFIG_SENSORS_MMC3416X is not set
++CONFIG_SENSORS_BMM150=y
+ CONFIG_SENSORS_AKM8963=y
+ # CONFIG_SERIAL_MSM_HSL is not set
+ # CONFIG_SERIAL_MSM_HSL_CONSOLE is not set
+-- 
+1.9.1
+

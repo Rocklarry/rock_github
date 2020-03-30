@@ -1,0 +1,41 @@
+From d0e005f773292e4382985a0a69c7f2a2e17b1c1b Mon Sep 17 00:00:00 2001
+From: yangzh <yangzh0324@thundersoft.com>
+Date: Thu, 10 Jul 2014 10:07:12 +0800
+Subject: [PATCH 1/3] ARM:dts:qcom: support ctp msg2133a
+
+Add CTP EACHOPTO@TF0368B@MSG2133A device tree
+
+Signed-off-by: yangzh <yagnzh0324@thundersoft.com>
+
+Change-Id: I6f39b1fd8a086c12d3c6fa67c4aa158e8140e590
+---
+ arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
+ mode change 100755 => 100644 arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+
+diff --git a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+old mode 100755
+new mode 100644
+index e9902b8..ee8f2b0
+--- a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+@@ -189,6 +189,16 @@
+ 			focaltech,fw-auto-cal;
+ 			focaltech,ignore-id-check;
+ 		};
++        mstar@26 {
++            compatible = "mstar,msg2133";
++            reg = <0x26>;
++            interrupt-parent = <&msm_gpio>;
++            interrupts = <13 0x2>;
++            vdd-supply = <&pm8916_l17>;
++            vcc_i2c-supply = <&pm8916_l6>;
++            msg,reset-gpio = <&msm_gpio 12 0x00>;
++            msg,irq-gpio = <&msm_gpio 13 0x00>;
++        };
+ 	};
+ 
+ 	gen-vkeys {
+-- 
+1.7.9.5
+

@@ -1,0 +1,267 @@
+From 994b841b7ced5a5e59887fe582a0654067d35d36 Mon Sep 17 00:00:00 2001
+From: Lin Zhang <zhanglin0425@thundersoft.com>
+Date: Fri, 14 Feb 2014 13:43:43 +0800
+Subject: [PATCH 1/3] msm: camera_v2: Add ov5648 p5v18g camera dirver
+
+Add ov5648 p5v18g camera dirver for msm8610.
+
+Change-Id: I618b8473a9ce7b9be14f7f1899edd76c086bb645
+Signed-off-by: Lin Zhang <zhanglin0425@thundersoft.com>
+---
+ arch/arm/mach-msm/clock-8610.c                     |    7 +-
+ drivers/media/platform/msm/camera_v2/Kconfig       |    9 +
+ .../media/platform/msm/camera_v2/sensor/Makefile   |    1 +
+ .../platform/msm/camera_v2/sensor/ov5648_p5v18g.c  |  179 ++++++++++++++++++++
+ 4 files changed, 195 insertions(+), 1 deletions(-)
+ create mode 100644 drivers/media/platform/msm/camera_v2/sensor/ov5648_p5v18g.c
+
+diff --git a/arch/arm/mach-msm/clock-8610.c b/arch/arm/mach-msm/clock-8610.c
+index 89d462c..2f5c133 100644
+--- a/arch/arm/mach-msm/clock-8610.c
++++ b/arch/arm/mach-msm/clock-8610.c
+@@ -1,4 +1,4 @@
+-/* Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
++/* Copyright (c) 2012-2014, The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 and
+@@ -3026,6 +3026,7 @@ static struct clk_lookup msm_clocks_8610[] = {
+ 	CLK_LOOKUP("cam_src_clk", mclk1_clk_src.c, "6-0078"),
+ 	CLK_LOOKUP("cam_src_clk", mclk0_clk_src.c, "6-0020"),
+ 	CLK_LOOKUP("cam_src_clk", mclk0_clk_src.c, "6-006a"),
++	CLK_LOOKUP("cam_src_clk", mclk0_clk_src.c, "6-0068"),
+ 	CLK_LOOKUP("cam_clk", mclk0_clk.c, "6-006f"),
+ 	CLK_LOOKUP("cam_clk", mclk0_clk.c, "6-0034"),
+ 	CLK_LOOKUP("cam_clk", mclk0_clk.c, "6-007d"),
+@@ -3033,7 +3034,11 @@ static struct clk_lookup msm_clocks_8610[] = {
+ 	CLK_LOOKUP("cam_clk", mclk1_clk.c, "6-0078"),
+ 	CLK_LOOKUP("cam_clk", mclk0_clk.c, "6-0020"),
+ 	CLK_LOOKUP("cam_clk", mclk0_clk.c, "6-006a"),
++	CLK_LOOKUP("cam_clk", mclk0_clk.c, "6-0068"),
+ 
++	/* eeprom clocks */
++	CLK_LOOKUP("cam_src_clk", mclk0_clk_src.c, "6-0067"),
++	CLK_LOOKUP("cam_clk", mclk0_clk.c, "6-0067"),
+ 
+ 	/* CSIPHY clocks */
+ 	CLK_LOOKUP("csiphy_timer_src_clk", csi0phytimer_clk_src.c,
+diff --git a/drivers/media/platform/msm/camera_v2/Kconfig b/drivers/media/platform/msm/camera_v2/Kconfig
+index 262fb38..b61844cd 100644
+--- a/drivers/media/platform/msm/camera_v2/Kconfig
++++ b/drivers/media/platform/msm/camera_v2/Kconfig
+@@ -227,6 +227,15 @@ config OV12830
+ 		snapshot config = 4224 * 3000 at 15 fps.
+ 		2 lanes max fps is 18, 4 lanes max fps is 24.
+ 
++config OV5648_P5V18G
++	bool "Sensor OV5648 (BAYER 5M)"
++	depends on MSMB_CAMERA
++	---help---
++		OmniVision 5 MP Bayer Sensor, two mipi lane,
++		preview set to 1296*972 at 30 fps,
++		snapshot set to 2592*1944 at 15 fps,
++		This sensor driver support auto focus.
++
+ config MSM_V4L2_VIDEO_OVERLAY_DEVICE
+ 	tristate "Qualcomm MSM V4l2 video overlay device"
+ 	---help---
+diff --git a/drivers/media/platform/msm/camera_v2/sensor/Makefile b/drivers/media/platform/msm/camera_v2/sensor/Makefile
+index 280a9a0..4274985 100644
+--- a/drivers/media/platform/msm/camera_v2/sensor/Makefile
++++ b/drivers/media/platform/msm/camera_v2/sensor/Makefile
+@@ -12,6 +12,7 @@ obj-$(CONFIG_OV8825) += ov8825.o
+ obj-$(CONFIG_OV8865) += ov8865.o
+ obj-$(CONFIG_s5k4e1) += s5k4e1.o
+ obj-$(CONFIG_OV12830) += ov12830.o
++obj-$(CONFIG_OV5648_P5V18G) += ov5648_p5v18g.o
+ obj-$(CONFIG_OV2720) += ov2720.o
+ obj-$(CONFIG_OV9724) += ov9724.o
+ obj-$(CONFIG_HI256) += hi256.o
+diff --git a/drivers/media/platform/msm/camera_v2/sensor/ov5648_p5v18g.c b/drivers/media/platform/msm/camera_v2/sensor/ov5648_p5v18g.c
+new file mode 100644
+index 0000000..31fb391
+--- /dev/null
++++ b/drivers/media/platform/msm/camera_v2/sensor/ov5648_p5v18g.c
+@@ -0,0 +1,179 @@
++/* Copyright (c) 2014, The Linux Foundation. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++#include "msm_sensor.h"
++
++#define OV5648_P5V18G_SENSOR_NAME "ov5648_p5v18g"
++DEFINE_MSM_MUTEX(ov5648_p5v18g_mut);
++
++static struct msm_sensor_ctrl_t ov5648_p5v18g_s_ctrl;
++
++static struct msm_sensor_power_setting ov5648_p5v18g_power_setting[] = {
++	{
++		.seq_type = SENSOR_VREG,
++		.seq_val = CAM_VANA,
++		.config_val = 0,
++		.delay = 5,
++	},
++	{
++		.seq_type = SENSOR_VREG,
++		.seq_val = CAM_VIO,
++		.config_val = 0,
++		.delay = 5,
++	},
++	{
++		.seq_type = SENSOR_GPIO,
++		.seq_val = SENSOR_GPIO_STANDBY,
++		.config_val = GPIO_OUT_LOW,
++		.delay = 5,
++	},
++	{
++		.seq_type = SENSOR_GPIO,
++		.seq_val = SENSOR_GPIO_RESET,
++		.config_val = GPIO_OUT_LOW,
++		.delay = 5,
++	},
++	{
++		.seq_type = SENSOR_GPIO,
++		.seq_val = SENSOR_GPIO_AF_PWDM,
++		.config_val = GPIO_OUT_LOW,
++		.delay = 5,
++	},
++	{
++		.seq_type = SENSOR_GPIO,
++		.seq_val = SENSOR_GPIO_STANDBY,
++		.config_val = GPIO_OUT_HIGH,
++		.delay = 10,
++	},
++	{
++		.seq_type = SENSOR_GPIO,
++		.seq_val = SENSOR_GPIO_RESET,
++		.config_val = GPIO_OUT_HIGH,
++		.delay = 10,
++	},
++	{
++		.seq_type = SENSOR_GPIO,
++		.seq_val = SENSOR_GPIO_AF_PWDM,
++		.config_val = GPIO_OUT_HIGH,
++		.delay = 10,
++	},
++	{
++		.seq_type = SENSOR_CLK,
++		.seq_val = SENSOR_CAM_MCLK,
++		.config_val = 24000000,
++		.delay = 10,
++	},
++	{
++		.seq_type = SENSOR_I2C_MUX,
++		.seq_val = 0,
++		.config_val = 0,
++		.delay = 0,
++	},
++};
++
++static struct v4l2_subdev_info ov5648_p5v18g_subdev_info[] = {
++	{
++		.code   = V4L2_MBUS_FMT_SBGGR10_1X10,
++		.colorspace = V4L2_COLORSPACE_JPEG,
++		.fmt    = 1,
++		.order    = 0,
++	},
++};
++
++static const struct i2c_device_id ov5648_p5v18g_i2c_id[] = {
++	{OV5648_P5V18G_SENSOR_NAME,
++		(kernel_ulong_t)&ov5648_p5v18g_s_ctrl},
++	{ }
++};
++
++static int32_t msm_ov5648_p5v18g_i2c_probe(struct i2c_client *client,
++	const struct i2c_device_id *id)
++{
++	return msm_sensor_i2c_probe(client, id, &ov5648_p5v18g_s_ctrl);
++}
++
++static struct i2c_driver ov5648_p5v18g_i2c_driver = {
++	.id_table = ov5648_p5v18g_i2c_id,
++	.probe  = msm_ov5648_p5v18g_i2c_probe,
++	.driver = {
++		.name = OV5648_P5V18G_SENSOR_NAME,
++	},
++};
++
++static struct msm_camera_i2c_client ov5648_p5v18g_sensor_i2c_client = {
++	.addr_type = MSM_CAMERA_I2C_WORD_ADDR,
++};
++
++static struct msm_sensor_ctrl_t ov5648_p5v18g_s_ctrl = {
++	.sensor_i2c_client = &ov5648_p5v18g_sensor_i2c_client,
++	.power_setting_array.power_setting = ov5648_p5v18g_power_setting,
++	.power_setting_array.size =
++			ARRAY_SIZE(ov5648_p5v18g_power_setting),
++	.msm_sensor_mutex = &ov5648_p5v18g_mut,
++	.sensor_v4l2_subdev_info = ov5648_p5v18g_subdev_info,
++	.sensor_v4l2_subdev_info_size =
++			ARRAY_SIZE(ov5648_p5v18g_subdev_info),
++};
++
++static const struct of_device_id ov5648_p5v18g_dt_match[] = {
++	{
++		.compatible = "qcom,ov5648_p5v18g",
++		.data = &ov5648_p5v18g_s_ctrl
++	},
++	{}
++};
++
++MODULE_DEVICE_TABLE(of, ov5648_p5v18g_dt_match);
++
++static struct platform_driver ov5648_p5v18g_platform_driver = {
++	.driver = {
++		.name = "qcom,ov5648_p5v18g",
++		.owner = THIS_MODULE,
++		.of_match_table = ov5648_p5v18g_dt_match,
++	},
++};
++
++static int32_t ov5648_p5v18g_platform_probe(struct platform_device *pdev)
++{
++	int32_t rc = 0;
++	const struct of_device_id *match;
++
++	match = of_match_device(ov5648_p5v18g_dt_match, &pdev->dev);
++	rc = msm_sensor_platform_probe(pdev, match->data);
++	return rc;
++}
++
++static int __init ov5648_p5v18g_init_module(void)
++{
++	int32_t rc = 0;
++
++	rc = platform_driver_probe(&ov5648_p5v18g_platform_driver,
++		ov5648_p5v18g_platform_probe);
++	if (!rc)
++		return rc;
++	return i2c_add_driver(&ov5648_p5v18g_i2c_driver);
++}
++
++static void __exit ov5648_p5v18g_exit_module(void)
++{
++	if (ov5648_p5v18g_s_ctrl.pdev) {
++		msm_sensor_free_sensor_data(&ov5648_p5v18g_s_ctrl);
++		platform_driver_unregister(&ov5648_p5v18g_platform_driver);
++	} else
++		i2c_del_driver(&ov5648_p5v18g_i2c_driver);
++	return;
++}
++
++module_init(ov5648_p5v18g_init_module);
++module_exit(ov5648_p5v18g_exit_module);
++MODULE_DESCRIPTION("ov5648_p5v18g");
++MODULE_LICENSE("GPL v2");
+-- 
+1.7.4.1
+

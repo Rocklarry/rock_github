@@ -1,0 +1,38 @@
+From 83f95fb13497e8df2bb5227e81a1764b5e9ff150 Mon Sep 17 00:00:00 2001
+From: wanyk0402 <wanyk0402@thundersoft.com>
+Date: Fri, 13 Jun 2014 17:23:22 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support isl29147 devicetree
+
+Devicetree support isl29147
+
+Change-Id: I3354d1f053586f1b88538ff5cb84f7a4614729ac
+Signed-off-by: Yukun Wan <wanyk0402@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8916-qrd-skui.dtsi |   11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8916-qrd-skui.dtsi b/arch/arm/boot/dts/qcom/msm8916-qrd-skui.dtsi
+index bfbce89..147dcec 100644
+--- a/arch/arm/boot/dts/qcom/msm8916-qrd-skui.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8916-qrd-skui.dtsi
+@@ -203,6 +203,17 @@
+ 		avago,als_D = <142>;
+ 		avago,ga_value = <48>;
+ 	};
++	intersil@44 { /* Ambient light and proximity sensor */
++			compatible = "intersil,isl29147";
++			reg = <0x44>;
++			interrupt-parent = <&msm_gpio>;
++			interrupts = <113 0x2>;
++			vdd-supply = <&pm8916_l17>;
++			vio-supply = <&pm8916_l6>;
++			intersil,als_range = <3>;
++			intersil,ps_lt = <9>;
++			intersil,ps_ht = <35>;
++	};
+ 	bosch@18 { /* Accelerometer sensor */
+ 		compatible = "bosch,bma2x2";
+ 		reg = <0x18>;
+-- 
+1.7.9.5
+

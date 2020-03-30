@@ -1,0 +1,30 @@
+From 68f269e92a6f2ca1b02567230eaf4fcc82277c16 Mon Sep 17 00:00:00 2001
+From: chenx <chenxiang0527@thundersoft.com>
+Date: Fri, 23 Jan 2015 13:08:38 +0800
+Subject: [PATCH 3/3] ARM:config: support kxtj2-1009 defconfig
+
+Defconfig support kxtj2-1009
+
+Change-Id: I259cda4f814da70b1dec4e5f15cc7757dda6a12e
+Signed-off-by: Xiang Chen <chenxiang0527@thundersoft.com>
+---
+ arch/arm/configs/msm8909-1gb_defconfig |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/configs/msm8909-1gb_defconfig b/arch/arm/configs/msm8909-1gb_defconfig
+index 593dc85..20a7110 100644
+--- a/arch/arm/configs/msm8909-1gb_defconfig
++++ b/arch/arm/configs/msm8909-1gb_defconfig
+@@ -310,7 +310,8 @@ CONFIG_SENSORS_LTR553=y
+ CONFIG_SENSORS_MPU6050=y
+ CONFIG_SENSORS_MMC3416X=y
+ CONFIG_SENSORS_AKM8963=y
+-CONFIG_SENSORS_BMA2X2=y
++#CONFIG_SENSORS_BMA2X2 is not set
++CONFIG_SENSORS_KIONIX_ACCEL=y
+ CONFIG_SENSORS_AP3426=y
+ CONFIG_SERIAL_MSM_HSL=y
+ CONFIG_SERIAL_MSM_HSL_CONSOLE=y
+-- 
+1.7.9.5
+

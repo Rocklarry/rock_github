@@ -1,0 +1,35 @@
+From 569ac0320a99a1f4a27dcd16cfca409a09658a31 Mon Sep 17 00:00:00 2001
+From: chenqingfeng <chenqf0228@thundersoft.com>
+Date: Tue, 23 Sep 2014 11:11:14 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support hscdtd007a devicetree
+
+Devicetree support hscdtd007a
+
+Change-Id: I676dde8d9eb702a6aba543bea9d56476cab8ae84
+Signed-off-by: Qingfeng Chen <chenqf0228@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8916-qrd-skui.dtsi |    8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8916-qrd-skui.dtsi b/arch/arm/boot/dts/qcom/msm8916-qrd-skui.dtsi
+index 859680e..79f270e 100644
+--- a/arch/arm/boot/dts/qcom/msm8916-qrd-skui.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8916-qrd-skui.dtsi
+@@ -238,6 +238,14 @@
+ 		memsic,dir = "obverse-x-axis-forward";
+ 		memsic,auto-report;
+ 	};
++
++	alps@c { /* Magnetic field sensor */
++		compatible = "alps,hscdtd007a";
++		reg = <0x0c>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++		hscdtd,layout = <0x0>;
++	};
+ };
+ 
+ &usb_otg {
+-- 
+1.7.9.5
+

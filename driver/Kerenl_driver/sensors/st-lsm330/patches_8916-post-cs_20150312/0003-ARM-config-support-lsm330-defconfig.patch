@@ -1,0 +1,31 @@
+From f72418296bc12d093e71c9fa021711e477e0fa20 Mon Sep 17 00:00:00 2001
+From: Yukun Wan <wanyk0402@thundersoft.com>
+Date: Tue, 10 Mar 2015 11:18:35 +0800
+Subject: [PATCH 3/3] ARM:config: support lsm330 defconfig
+
+Defconfig support lsm330
+
+Change-Id: I19d694cad2a4cf8d122663310f7679728594fafb
+Signed-off-by: Yukun Wan <wanyk0402@thundersoft.com>
+---
+ arch/arm/configs/msm8916_defconfig | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/configs/msm8916_defconfig b/arch/arm/configs/msm8916_defconfig
+index 08fd762..9540d49 100644
+--- a/arch/arm/configs/msm8916_defconfig
++++ b/arch/arm/configs/msm8916_defconfig
+@@ -261,7 +261,9 @@ CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE=y
+ CONFIG_INPUT_MISC=y
+ CONFIG_INPUT_UINPUT=y
+ CONFIG_INPUT_GPIO=m
+-CONFIG_SENSORS_LIS3DH=y
++#CONFIG_SENSORS_LIS3DH is not set
++CONFIG_SENSORS_LSM330_ACC=y
++CONFIG_SENSORS_LSM330_GYR=y
+ CONFIG_SENSORS_MPU6050=y
+ CONFIG_SENSORS_AKM09911=y
+ CONFIG_SENSORS_BMA2X2=y
+-- 
+2.2.2
+

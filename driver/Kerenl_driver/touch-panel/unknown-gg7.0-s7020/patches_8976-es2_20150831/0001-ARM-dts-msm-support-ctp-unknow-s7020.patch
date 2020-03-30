@@ -1,0 +1,43 @@
+From 1168cc02d7d9e1b72782e4db709c734af1ed0e27 Mon Sep 17 00:00:00 2001
+From: maoyq0504 <maoyq0504@thundersoft.com>
+Date: Mon, 24 Aug 2015 15:38:10 +0800
+Subject: [PATCH 1/2] ARM:dts:msm: support ctp unknow s7020
+
+Add CTP IHV-UNKNOW@GG7.0@S7020 device tree
+
+Change-Id: I6a18233e6c6cac6077a70a44b0333fe2ac47dadd
+Signed-off-by: Yuanqiu Mao <maoyq0504@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8976-qrd-skun.dtsi | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8976-qrd-skun.dtsi b/arch/arm/boot/dts/qcom/msm8976-qrd-skun.dtsi
+index 276c176..74a5fdb 100644
+--- a/arch/arm/boot/dts/qcom/msm8976-qrd-skun.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8976-qrd-skun.dtsi
+@@ -49,9 +49,9 @@
+ 		focaltech,ignore-id-check;
+ 	};
+ 
+-	synaptics@20 {
++	synaptics@70 {
+ 		compatible = "synaptics,rmi4";
+-		reg = <0x20>;
++		reg = <0x70>;
+ 		interrupt-parent = <&msm_gpio>;
+ 		interrupts = <65 0x2008>;
+ 		vdd-supply = <&pm8950_l17>;
+@@ -61,8 +61,8 @@
+ 		pinctrl-0 = <&ts_int_active &ts_reset_active>;
+ 		pinctrl-1 = <&ts_int_suspend &ts_reset_suspend>;
+ 		pinctrl-2 = <&ts_release>;
+-		synaptics,display-coords = <0 0 1079 1919>;
+-		synaptics,panel-coords = <0 0 1079 2084>;
++		synaptics,display-coords = <0 0 720 1280>;
++		synaptics,panel-coords = <0 0 720 1400>;
+ 		synaptics,irq-gpio = <&msm_gpio 65 0x2008>;
+ 		synaptics,reset-gpio = <&msm_gpio 64 0x0>;
+ 		synaptics,i2c-pull-up;
+-- 
+1.9.1
+

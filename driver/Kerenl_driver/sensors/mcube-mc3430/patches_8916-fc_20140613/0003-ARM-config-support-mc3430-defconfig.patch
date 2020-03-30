@@ -1,0 +1,48 @@
+From 9cc4cf84be858cd8f30abd6750fb55839f58d572 Mon Sep 17 00:00:00 2001
+From: chenqingfeng <chenqf0228@thundersoft.com>
+Date: Fri, 12 Sep 2014 16:55:44 +0800
+Subject: [PATCH 3/3] ARM:config: support mc3430 defconfig
+
+Defconfig support mc3430
+
+Change-Id: Id7b8b0f9ced8851b8e5b0819916eb565dc261e27
+Signed-off-by: Qingfeng Chen <chenqf0228@thundersoft.com>
+---
+ arch/arm/configs/msm8916_defconfig |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm/configs/msm8916_defconfig b/arch/arm/configs/msm8916_defconfig
+index 3fc5fa2..ea602a5 100644
+--- a/arch/arm/configs/msm8916_defconfig
++++ b/arch/arm/configs/msm8916_defconfig
+@@ -211,7 +211,7 @@ CONFIG_IPC_ROUTER_SECURITY=y
+ CONFIG_CMA=y
+ CONFIG_BLK_DEV_LOOP=y
+ CONFIG_BLK_DEV_RAM=y
+-CONFIG_APDS9930=y
++#CONFIG_APDS9930=y
+ CONFIG_QSEECOM=y
+ CONFIG_SCSI=y
+ CONFIG_SCSI_TGT=y
+@@ -256,10 +256,10 @@ CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE=y
+ CONFIG_INPUT_MISC=y
+ CONFIG_INPUT_UINPUT=y
+ CONFIG_INPUT_GPIO=m
+-CONFIG_SENSORS_LIS3DH=y
+-CONFIG_SENSORS_MPU6050=y
++# CONFIG_SENSORS_LIS3DH is not set
++# CONFIG_SENSORS_MPU6050 is not set
+ CONFIG_SENSORS_AKM09911=y
+-CONFIG_SENSORS_BMA2X2=y
++# CONFIG_SENSORS_BMA2X2 is not set
+ CONFIG_SENSORS_MMC3416X=y
+ CONFIG_SENSORS_AKM8963=y
+ CONFIG_SERIAL_MSM_HSL=y
+@@ -520,3 +520,4 @@ CONFIG_CRYPTO_ECB=y
+ CONFIG_CRYPTO_XCBC=y
+ CONFIG_CRYPTO_SHA256=y
+ CONFIG_MSM_BUSPM_DEV=m
++CONFIG_SENSORS_MC3430=y
+-- 
+1.7.9.5
+

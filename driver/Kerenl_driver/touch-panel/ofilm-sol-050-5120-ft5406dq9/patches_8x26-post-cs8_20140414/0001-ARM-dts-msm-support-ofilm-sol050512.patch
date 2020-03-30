@@ -1,0 +1,64 @@
+From 02c43cd229a0c695069516092ea5eb1e7f332af0 Mon Sep 17 00:00:00 2001
+From: Zhang Zhenzhen <zhangzz6687@thundersoft.com>
+Date: Tue, 1 Apr 2014 17:24:38 +0800
+Subject: [PATCH 1/2] ARM:dts:msm: support ofilm sol050512
+
+Add O-FILM@SOL-050-5120@FT5406DQ9 device tree
+
+Change-Id: I7521821b46db582b1cf203e144483648e027d2bf
+Signed-off-by: Zhang Zhenzhen <zhangzz6687@thundersoft.com>
+---
+ arch/arm/boot/dts/msm8226-qrd.dtsi | 21 +++++++++++----------
+ 1 file changed, 11 insertions(+), 10 deletions(-)
+
+diff --git a/arch/arm/boot/dts/msm8226-qrd.dtsi b/arch/arm/boot/dts/msm8226-qrd.dtsi
+index 7ff97f6..72d0909 100644
+--- a/arch/arm/boot/dts/msm8226-qrd.dtsi
++++ b/arch/arm/boot/dts/msm8226-qrd.dtsi
+@@ -41,20 +41,21 @@
+ 			interrupts = <17 0x2>;
+ 			vdd-supply = <&pm8226_l19>;
+ 			vcc_i2c-supply = <&pm8226_lvs1>;
+-			focaltech,name = "ft5x06";
++			focaltech,name = "FT5406DQ9";
+ 			focaltech,family-id = <0x55>;
+ 			focaltech,reset-gpio = <&msmgpio 16 0x00>;
+ 			focaltech,irq-gpio = <&msmgpio 17 0x00>;
+-			focaltech,display-coords = <0 0 1080 1920>;
+-			focaltech,panel-coords = <0 0 1080 2000>;
+-			focaltech,button-map= <139 102 158>;
++			focaltech,display-coords = <0 0 720 1280>;
++			focaltech,panel-coords = <0 0 720 1380>;
++			focaltech,button-map= <139 172 158>;
+ 			focaltech,no-force-update;
+ 			focaltech,i2c-pull-up;
++			focaltech,fw-vkey-support;
+ 			focaltech,group-id = <1>;
+ 			focaltech,hard-reset-delay-ms = <20>;
+ 			focaltech,soft-reset-delay-ms = <150>;
+ 			focaltech,num-max-touches = <5>;
+-			focaltech,fw-name = "ft_8226_qrd_1080p_fw.bin";
++			focaltech,fw-name = "ft_8226_qrd_fw.bin";
+ 			focaltech,fw-delay-aa-ms = <50>;
+ 			focaltech,fw-delay-55-ms = <30>;
+ 			focaltech,fw-upgrade-id1 = <0x79>;
+@@ -67,11 +68,11 @@
+ 	gen-vkeys {
+ 		compatible = "qcom,gen-vkeys";
+ 		label = "ft5x06_ts";
+-		qcom,disp-maxx = <1080>;
+-		qcom,disp-maxy = <1920>;
+-		qcom,panel-maxx = <1080>;
+-		qcom,panel-maxy = <2080>;
+-		qcom,key-codes = <139 102 158>;
++		qcom,disp-maxx = <720>;
++		qcom,disp-maxy = <1280>;
++		qcom,panel-maxx = <720>;
++		qcom,panel-maxy = <1380>;
++		qcom,key-codes = <139 172 158>;
+ 		qcom,y-offset = <0>;
+ 	};
+ 
+-- 
+1.8.3.1
+

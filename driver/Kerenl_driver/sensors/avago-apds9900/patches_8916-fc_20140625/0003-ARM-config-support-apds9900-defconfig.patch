@@ -1,0 +1,30 @@
+From f9f813746c1c1dc32a23be3b6b2c8b5b97e7ef6b Mon Sep 17 00:00:00 2001
+From: wanyk0402 <wanyk0402@thundersoft.com>
+Date: Wed, 18 Jun 2014 14:52:49 +0800
+Subject: [PATCH 3/3] ARM:config: support apds9900 defconfig
+
+Defconfig support apds9900
+
+Change-Id: I34ec896d9dfddb9026768c4009822d0eb386679f
+Signed-off-by: Yukun Wan <wanyk0402@thundersoft.com>
+---
+ arch/arm/configs/msm8916_defconfig |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/configs/msm8916_defconfig b/arch/arm/configs/msm8916_defconfig
+index 3fc5fa2..8802a26 100644
+--- a/arch/arm/configs/msm8916_defconfig
++++ b/arch/arm/configs/msm8916_defconfig
+@@ -211,7 +211,8 @@ CONFIG_IPC_ROUTER_SECURITY=y
+ CONFIG_CMA=y
+ CONFIG_BLK_DEV_LOOP=y
+ CONFIG_BLK_DEV_RAM=y
+-CONFIG_APDS9930=y
++#CONFIG_APDS9930 is not set
++CONFIG_AVAGO_APDS990X=y
+ CONFIG_QSEECOM=y
+ CONFIG_SCSI=y
+ CONFIG_SCSI_TGT=y
+-- 
+1.7.9.5
+

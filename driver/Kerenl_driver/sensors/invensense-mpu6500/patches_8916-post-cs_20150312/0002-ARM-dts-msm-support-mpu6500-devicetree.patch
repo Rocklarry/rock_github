@@ -1,0 +1,40 @@
+From 2f4a4a88ecef6d76ca079bb09d451db2d2527d46 Mon Sep 17 00:00:00 2001
+From: Yukun Wan <wanyk0402@thundersoft.com>
+Date: Mon, 9 Mar 2015 15:37:01 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support mpu6500 devicetree
+
+Devicetree support mpu6500
+
+Change-Id: I7b34bbe27528067d1373c8ca7b96e74cb5aea828
+Signed-off-by: Yukun Wan <wanyk0402@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi b/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
+index 5bb6734..c8b487a 100644
+--- a/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
+@@ -109,6 +109,19 @@
+ 		avago,ga-value = <98>;
+ 	};
+ 
++	mpu6500@68{
++		compatible = "invn,mpu6500";
++		reg = <0x68>;
++		interrupt-parent = <&msm_gpio>;
++		interrupts = <113 0x2>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++		invn,gpio-int = <&msm_gpio 113 0x2>;
++		invn,gyro_poll_ms = <200>;
++		invn,accel_poll_ms = <200>;
++		invn,place = "Portrait Up Back Side";
++	};
++
+ 	st@18 {
+ 		compatible = "st,lis3dh";
+ 		reg = <0x18>;
+-- 
+2.2.2
+

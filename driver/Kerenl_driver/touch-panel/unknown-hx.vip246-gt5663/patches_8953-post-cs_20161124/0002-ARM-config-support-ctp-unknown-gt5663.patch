@@ -1,0 +1,33 @@
+From 41d56446ddef295153ce8f3828b4ad213bfc4bed Mon Sep 17 00:00:00 2001
+From: Li Zhanchao <lizc1023@thundersoft.com>
+Date: Tue, 13 Dec 2016 15:00:00 +0800
+Subject: [PATCH 2/3] ARM:config: support ctp unknown gt5663
+
+Add CTP UNKNOWN@HX.VIP246@GT5663 config
+
+Change-Id: I35ae94cbbfeea066c56acd1275484a6da11cc9d8
+Signed-off-by: Li Zhanchao <lizc1023@thundersoft.com>
+---
+ arch/arm64/configs/msmcortex_defconfig | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm64/configs/msmcortex_defconfig b/arch/arm64/configs/msmcortex_defconfig
+index 2b97d9e..04c20d2 100644
+--- a/arch/arm64/configs/msmcortex_defconfig
++++ b/arch/arm64/configs/msmcortex_defconfig
+@@ -297,7 +297,11 @@ CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE_v26=y
+ CONFIG_SECURE_TOUCH_SYNAPTICS_DSX_V26=y
+ CONFIG_TOUCHSCREEN_ATMEL_MXT=y
+ CONFIG_TOUCHSCREEN_GEN_VKEYS=y
+-CONFIG_TOUCHSCREEN_FT5X06=y
++#CONFIG_TOUCHSCREEN_FT5X06 is not set
++CONFIG_TOUCHSCREEN_GT9XX=y
++CONFIG_GT9XX_TOUCHPANEL_DRIVER=y
++CONFIG_GT9XX_TOUCHPANEL_UPDATE=y
++CONFIG_GT9XX_TOUCHPANEL_DEBUG=y
+ CONFIG_TOUCHSCREEN_MAXIM_STI=y
+ CONFIG_INPUT_MISC=y
+ CONFIG_INPUT_HBTP_INPUT=y
+-- 
+1.9.1
+

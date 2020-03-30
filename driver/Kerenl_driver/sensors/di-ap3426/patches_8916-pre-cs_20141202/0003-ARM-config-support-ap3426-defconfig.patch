@@ -1,0 +1,30 @@
+From 7b393919870ae6aac6f7e5a80ccdbd3523c3ad53 Mon Sep 17 00:00:00 2001
+From: longxw <longxw0410@thundersoft.com>
+Date: Tue, 2 Dec 2014 16:11:49 +0800
+Subject: [PATCH 3/3] ARM:config: support ap3426 defconfig
+
+Defconfig support ap3426
+
+Change-Id: I4712f237b70f7e318eb0b592aed169629c944b95
+Signed-off-by: Xiaowu Long <longxw0410@thundersoft.com>
+---
+ arch/arm/configs/msm8916_defconfig |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/configs/msm8916_defconfig b/arch/arm/configs/msm8916_defconfig
+index 3d19788..19b0b44 100644
+--- a/arch/arm/configs/msm8916_defconfig
++++ b/arch/arm/configs/msm8916_defconfig
+@@ -213,7 +213,8 @@ CONFIG_CMA=y
+ CONFIG_CMA_SIZE_MBYTES=8
+ CONFIG_BLK_DEV_LOOP=y
+ CONFIG_BLK_DEV_RAM=y
+-CONFIG_APDS9930=y
++#CONFIG_APDS9930 is not set
++CONFIG_AP3426=y
+ CONFIG_QSEECOM=y
+ CONFIG_SCSI=y
+ CONFIG_SCSI_TGT=y
+-- 
+1.7.9.5
+

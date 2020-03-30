@@ -1,0 +1,80 @@
+From b777143cda2792f676b70f7601498ca3a8819c86 Mon Sep 17 00:00:00 2001
+From: Li Zhanchao <lizc1023@thundersoft.com>
+Date: Mon, 5 Jan 2015 18:31:15 +0800
+Subject: [PATCH 1/3] ARM:dts:msm: support hx8526-d32 devicetree
+
+Devicetree support hx8526-d32
+
+Change-Id: I6ae70e0ee8f0bb606fa4c8cb48ff37a31db05e3f
+Signed-off-by: Li Zhanchao <lizc1023@thundersoft.com>
+---
+ .../devicetree/bindings/vendor-prefixes.txt        |    1 +
+ arch/arm/boot/dts/qcom/msm8909-qrd-skuc.dtsi       |   29 ++++++++++++++++++--
+ 2 files changed, 28 insertions(+), 2 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
+index 35c0d66..b66f3a2 100644
+--- a/Documentation/devicetree/bindings/vendor-prefixes.txt
++++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+@@ -32,6 +32,7 @@ GEFanuc	GE Fanuc Intelligent Platforms Embedded Systems, Inc.
+ goodix	Goodix. Ltd.
+ gef	GE Fanuc Intelligent Platforms Embedded Systems, Inc.
+ hp	Hewlett Packard
++himax	Himax.
+ ibm	International Business Machines (IBM)
+ idt	Integrated Device Technologies, Inc.
+ img	Imagination Technologies Ltd.
+diff --git a/arch/arm/boot/dts/qcom/msm8909-qrd-skuc.dtsi b/arch/arm/boot/dts/qcom/msm8909-qrd-skuc.dtsi
+index 8030789..2c48668 100644
+--- a/arch/arm/boot/dts/qcom/msm8909-qrd-skuc.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8909-qrd-skuc.dtsi
+@@ -91,6 +91,25 @@
+ 			focaltech,ignore-id-check;
+ 		};
+ 
++		himax@4a {
++			compatible = "himax,hx8526-d32";
++			reg = <0x4a>;
++			interrupt-parent = <&msm_gpio>;
++			interrupts = <13 0x2008>;
++			vdd-supply = <&pm8909_l17>;
++			vcc_i2c-supply = <&pm8909_l6>;
++			himax,name = "hx8526";
++			himax,reset-gpio = <&msm_gpio 12 0x00>;
++			himax,irq-gpio = <&msm_gpio 13 0x00>;
++			himax,virtual_key;
++			himax,i2c-pull-up;
++			himax,reg-en;
++			himax,button-map = <139 172 158>;
++			himax,num-max-touches = <5>;
++			himax,x-max = <480>;
++			himax,y-max = <854>;
++		};
++
+ 	};
+ 
+ 	i2c@78b5000 { /* BLSP1 QUP1 */
+@@ -134,12 +153,18 @@
+ 
+ 	gen-vkeys {
+ 		compatible = "qcom,gen-vkeys";
+-		label = "ft5x06_ts";
++/*		label = "ft5x06_ts";
++*/		label = "himax8526";
+ 		qcom,disp-maxx = <480>;
+ 		qcom,disp-maxy = <854>;
+ 		qcom,panel-maxx = <480>;
+ 		qcom,panel-maxy = <946>;
+-		qcom,key-codes = <139 172 158>;
++/*		label = "himax8526";
++		qcom,disp-maxx = <720>;
++		qcom,disp-maxy = <1280>;
++		qcom,panel-maxx = <720>;
++		qcom,panel-maxy = <1440>;
++*/		qcom,key-codes = <139 172 158>;
+ 		qcom,y-offset = <0>;
+ 	};
+ 
+-- 
+1.7.9.5
+

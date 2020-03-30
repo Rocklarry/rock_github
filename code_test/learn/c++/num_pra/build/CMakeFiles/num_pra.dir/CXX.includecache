@@ -1,0 +1,26 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/rock/qccode/workspace/code_test/c++/num_pra/src/test.cpp
+iostream
+-
+array
+-
+stdlib.h
+-
+vector
+-
+algorithm
+-
+string.h
+-
+fstream
+-
+stdio.h
+-
+

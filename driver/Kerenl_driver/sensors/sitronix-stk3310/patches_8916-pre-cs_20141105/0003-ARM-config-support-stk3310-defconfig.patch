@@ -1,0 +1,30 @@
+From e707fed3dacbbae77596d8ced46a10aaa2c052a2 Mon Sep 17 00:00:00 2001
+From: chenx <chenxiang0527@thundersoft.com>
+Date: Tue, 4 Nov 2014 16:58:18 +0800
+Subject: [PATCH 3/3] ARM:config: support stk3310 defconfig
+
+Defconfig support stk3310
+
+Change-Id: I54627e939e3fb785936c045e058d4635b37e90bd
+Signed-off-by: Xiang Chen <chenxiang0527@thundersoft.com>
+---
+ arch/arm/configs/msm8916_defconfig |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/configs/msm8916_defconfig b/arch/arm/configs/msm8916_defconfig
+index 3d19788..3478f1f 100644
+--- a/arch/arm/configs/msm8916_defconfig
++++ b/arch/arm/configs/msm8916_defconfig
+@@ -213,7 +213,8 @@ CONFIG_CMA=y
+ CONFIG_CMA_SIZE_MBYTES=8
+ CONFIG_BLK_DEV_LOOP=y
+ CONFIG_BLK_DEV_RAM=y
+-CONFIG_APDS9930=y
++# CONFIG_APDS9930 is not set
++CONFIG_SENSORS_STK3X1X=y
+ CONFIG_QSEECOM=y
+ CONFIG_SCSI=y
+ CONFIG_SCSI_TGT=y
+-- 
+1.7.9.5
+

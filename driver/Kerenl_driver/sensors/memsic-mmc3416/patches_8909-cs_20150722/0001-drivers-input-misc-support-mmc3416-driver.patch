@@ -1,0 +1,648 @@
+From 7a2f3807a3b0df266b98939eb0b915c5deb43d9d Mon Sep 17 00:00:00 2001
+From: Li Zhanchao <lizc1023@thundersoft.com>
+Date: Wed, 22 Jul 2015 11:27:13 +0800
+Subject: [PATCH 1/2] drivers:input:misc: support mmc3416 driver
+
+Driver support mmc3416
+
+Change-Id: Ib521143ce33b392331bf6c476f47a37b21714b91
+Signed-off-by: Li Zhanchao <lizc1023@thundersoft.com>
+---
+ .../devicetree/bindings/input/misc/mmc3416x.txt    |  20 +-
+ drivers/input/misc/mmc3416x.c                      | 345 +++++++++++++++++----
+ 2 files changed, 298 insertions(+), 67 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/input/misc/mmc3416x.txt b/Documentation/devicetree/bindings/input/misc/mmc3416x.txt
+index c06266f..bab6a77 100644
+--- a/Documentation/devicetree/bindings/input/misc/mmc3416x.txt
++++ b/Documentation/devicetree/bindings/input/misc/mmc3416x.txt
+@@ -42,17 +42,19 @@ Required properties:
+ Optional properites:
+ 
+  - memsic,auto-report	: Boolean value to indicate if enable auto-report mode.
++ - memsic,use-hrtimer	: use hrtimer to start the work queue.
+ 
+  Example:
+-	A chip on 8916 platform with the pattern as the above graph:
+-	&i2c_0 { /* BLSP1 QUP2 */
+-		memsic@30 {
+-				compatible = "memsic,mmc3416x";
+-				reg = <0x30>;
+-				vdd-supply = <&pm8916_l17>;
+-				vio-supply = <&pm8916_l6>;
+-				memsic,dir = "obverse-x-axis-forward";
+-				memsic,auto-report;
++	A chip on 8909 platform with the pattern as the above graph:
++	i2c@78b5000 { /* BLSP1 QUP1 */
++		memsic@30 { /* Magnetic field sensor */
++			compatible = "memsic,mmc3416x";
++			reg = <0x30>;
++			vdd-supply = <&pm8909_l17>;
++			vio-supply = <&pm8909_l6>;
++			memsic,dir = "obverse-x-axis-forward";
++			memsic,auto-report;
++			memsic,use-hrtimer;
+ 		};
+ 	};
+ 
+diff --git a/drivers/input/misc/mmc3416x.c b/drivers/input/misc/mmc3416x.c
+index 49ed8b7..410aa01 100644
+--- a/drivers/input/misc/mmc3416x.c
++++ b/drivers/input/misc/mmc3416x.c
+@@ -38,13 +38,14 @@
+ #include <linux/input.h>
+ #include <linux/regmap.h>
+ #include <linux/sensors.h>
+-#include <asm/uaccess.h>
++#include <linux/uaccess.h>
++#include <linux/of_gpio.h>
+ 
+ #include "mmc3416x.h"
+ 
+ #define MMC3416X_DELAY_TM_MS	10
+ 
+-#define MMC3416X_DELAY_SET_MS	75
++#define MMC3416X_DELAY_SET_MS	50	/* change 75 to 50 */
+ #define MMC3416X_DELAY_RESET_MS	75
+ 
+ #define MMC3416X_RETRY_COUNT	10
+@@ -59,6 +60,8 @@
+ #define MMC3416X_VIO_MIN_UV	1750000
+ #define MMC3416X_VIO_MAX_UV	1950000
+ 
++#define NUM_SENSORS		3
++#define MAG_DATA_FLAG		1
+ enum {
+ 	OBVERSE_X_AXIS_FORWARD = 0,
+ 	OBVERSE_X_AXIS_RIGHTWARD,
+@@ -97,6 +100,11 @@ struct mmc3416x_vec {
+ 	int x;
+ 	int y;
+ 	int z;
++
++	/*the value of the input event for the last time*/
++	int	last_x;
++	int	last_y;
++	int	last_z;
+ };
+ 
+ struct mmc3416x_data {
+@@ -112,9 +120,14 @@ struct mmc3416x_data {
+ 	struct regulator	*vdd;
+ 	struct regulator	*vio;
+ 	struct regmap		*regmap;
++	struct hrtimer		poll_timer;
+ 
++	/* dummy value to avoid sensor event get eaten */
++	int			rep_cnt;
++	int64_t			delay[NUM_SENSORS];
+ 	int			dir;
+ 	int			auto_report;
++	int			use_hrtimer;
+ 	int			enable;
+ 	int			poll_interval;
+ 	int			power_enabled;
+@@ -140,57 +153,61 @@ static struct sensors_classdev sensors_cdev = {
+ 	.sensors_poll_delay = NULL,
+ };
+ 
++static struct mmc3416x_data *mmc3416x_data_struct;
+ static int mmc3416x_read_xyz(struct mmc3416x_data *memsic,
+ 		struct mmc3416x_vec *vec)
+ {
+-	int count = 0;
++/*	int count = 0;*/
+ 	unsigned char data[6];
+-	unsigned int status;
++/*	unsigned int status;*/
+ 	struct mmc3416x_vec tmp;
+ 	int rc = 0;
+ 
+ 	mutex_lock(&memsic->ecompass_lock);
+ 
+ 	/* mmc3416x need to be set periodly to avoid overflow */
+-	if (time_after(jiffies, memsic->timeout)) {
++/*	if (time_after(jiffies, memsic->timeout)) {
+ 		rc = regmap_write(memsic->regmap, MMC3416X_REG_CTRL,
+ 				MMC3416X_CTRL_REFILL);
+ 		if (rc) {
+-			dev_err(&memsic->i2c->dev, "write reg %d failed at %d.(%d)\n",
++			dev_err(&memsic->i2c->dev,
++				"write reg %d failed at %d.(%d)\n",
+ 					MMC3416X_REG_CTRL, __LINE__, rc);
+ 			goto exit;
+ 		}
+-
++*/
+ 		/* Time from refill cap to SET */
+-		msleep(MMC3416X_DELAY_SET_MS);
++/*		msleep(MMC3416X_DELAY_SET_MS);
+ 
+ 		rc = regmap_write(memsic->regmap, MMC3416X_REG_CTRL,
+ 				MMC3416X_CTRL_SET);
+ 		if (rc) {
+-			dev_err(&memsic->i2c->dev, "write reg %d failed at %d.(%d)\n",
++			dev_err(&memsic->i2c->dev,
++				"write reg %d failed at %d.(%d)\n",
+ 					MMC3416X_REG_CTRL, __LINE__, rc);
+ 			goto exit;
+ 		}
+-
++*/
+ 		/* Wait time to complete SET/RESET */
+-		usleep_range(1000, 1500);
++/*		usleep_range(1000, 1500);
+ 		memsic->timeout = jiffies +
+ 			msecs_to_jiffies(MMC3416X_TIMEOUT_SET_MS);
+ 
+ 		dev_dbg(&memsic->i2c->dev, "mmc3416x reset is done\n");
+-
++*/
+ 		/* Re-send the TM command */
+-		rc = regmap_write(memsic->regmap, MMC3416X_REG_CTRL,
++/*		rc = regmap_write(memsic->regmap, MMC3416X_REG_CTRL,
+ 				MMC3416X_CTRL_TM);
+ 		if (rc) {
+-			dev_err(&memsic->i2c->dev, "write reg %d failed at %d.(%d)\n",
++			dev_err(&memsic->i2c->dev,
++				"write reg %d failed at %d.(%d)\n",
+ 					MMC3416X_REG_CTRL, __LINE__, rc);
+ 			goto exit;
+ 		}
+ 	}
+-
++*/
+ 	/* Read MD */
+-	rc = regmap_read(memsic->regmap, MMC3416X_REG_DS, &status);
++/*	rc = regmap_read(memsic->regmap, MMC3416X_REG_DS, &status);
+ 	if (rc) {
+ 		dev_err(&memsic->i2c->dev, "read reg %d failed at %d.(%d)\n",
+ 				MMC3416X_REG_DS, __LINE__, rc);
+@@ -199,17 +216,18 @@ static int mmc3416x_read_xyz(struct mmc3416x_data *memsic,
+ 	}
+ 
+ 	while ((!(status & 0x01)) && (count < MMC3416X_RETRY_COUNT)) {
+-		/* Read MD again*/
+-		rc = regmap_read(memsic->regmap, MMC3416X_REG_DS, &status);
++*/		/* Read MD again*/
++/*		rc = regmap_read(memsic->regmap, MMC3416X_REG_DS, &status);
+ 		if (rc) {
+-			dev_err(&memsic->i2c->dev, "read reg %d failed at %d.(%d)\n",
++			dev_err(&memsic->i2c->dev,
++				"read reg %d failed at %d.(%d)\n",
+ 					MMC3416X_REG_DS, __LINE__, rc);
+ 			goto exit;
+ 
+ 		}
+-
++*/
+ 		/* Wait more time to get valid data */
+-		usleep_range(1000, 1500);
++/*		usleep_range(500, 550);
+ 		count++;
+ 	}
+ 
+@@ -218,13 +236,21 @@ static int mmc3416x_read_xyz(struct mmc3416x_data *memsic,
+ 		rc = -EFAULT;
+ 		goto exit;
+ 	}
++*/
++
++	/* send TM cmd before read */
++	if (regmap_write(memsic->regmap, MMC3416X_REG_CTRL, MMC3416X_CTRL_TM)) {
++		dev_warn(&memsic->i2c->dev, "write reg %d failed at %d.(%d)\n",
++				MMC3416X_REG_CTRL, __LINE__, rc);
++	}
++	usleep_range(4020, 4090);
+ 
+ 	/* read xyz raw data */
+ 	rc = regmap_bulk_read(memsic->regmap, MMC3416X_REG_DATA, data, 6);
+ 	if (rc) {
+ 		dev_err(&memsic->i2c->dev, "read reg %d failed at %d.(%d)\n",
+ 				MMC3416X_REG_DS, __LINE__, rc);
+-		goto exit;
++/*		goto exit;*/
+ 	}
+ 
+ 	tmp.x = (((u8)data[1]) << 8 | (u8)data[0]) - 32768;
+@@ -239,13 +265,7 @@ static int mmc3416x_read_xyz(struct mmc3416x_data *memsic,
+ 	vec->y = tmp.y;
+ 	vec->z = -tmp.z;
+ 
+-exit:
+-	/* send TM cmd before read */
+-	if (regmap_write(memsic->regmap, MMC3416X_REG_CTRL, MMC3416X_CTRL_TM)) {
+-		dev_warn(&memsic->i2c->dev, "write reg %d failed at %d.(%d)\n",
+-				MMC3416X_REG_CTRL, __LINE__, rc);
+-	}
+-
++/*exit:*/
+ 	mutex_unlock(&memsic->ecompass_lock);
+ 	return rc;
+ }
+@@ -275,14 +295,35 @@ static void mmc3416x_poll(struct work_struct *work)
+ 	input_report_abs(memsic->idev, ABS_X, report.x);
+ 	input_report_abs(memsic->idev, ABS_Y, report.y);
+ 	input_report_abs(memsic->idev, ABS_Z, report.z);
++
++	/* avoid eaten by input subsystem framework */
++	if ((report.x == report.last_x) && (report.y == report.last_y) &&
++			(report.z == report.last_z))
++		input_report_abs(memsic->idev, ABS_MISC, memsic->rep_cnt++);
++	report.last_x = report.x;
++	report.last_y = report.y;
++	report.last_z = report.z;
+ 	input_sync(memsic->idev);
+ 
+ exit:
+-	queue_delayed_work(memsic->data_wq,
+-			&memsic->dwork,
++	if (!memsic->use_hrtimer)
++		queue_delayed_work(memsic->data_wq, &memsic->dwork,
+ 			msecs_to_jiffies(memsic->poll_interval));
+ }
+ 
++static enum hrtimer_restart sensor_timer_func(struct hrtimer *timer)
++{
++	struct mmc3416x_data *memsic;
++
++	memsic = container_of(timer, struct mmc3416x_data, poll_timer);
++
++	queue_work(memsic->data_wq, &memsic->dwork.work);
++	hrtimer_forward_now(&memsic->poll_timer,
++		ns_to_ktime(memsic->delay[MAG_DATA_FLAG]));
++
++	return HRTIMER_RESTART;
++}
++
+ static struct input_dev *mmc3416x_init_input(struct i2c_client *client)
+ {
+ 	int status;
+@@ -306,6 +347,10 @@ static struct input_dev *mmc3416x_init_input(struct i2c_client *client)
+ 	input_set_capability(input, EV_REL, REL_Y);
+ 	input_set_capability(input, EV_REL, REL_Z);
+ 
++	/* Report the dummy value */
++	input_set_abs_params(input, ABS_MISC,
++			INT_MIN, INT_MAX, 0, 0);
++
+ 	status = input_register_device(input);
+ 	if (status) {
+ 		dev_err(&client->dev,
+@@ -499,6 +544,7 @@ static int mmc3416x_parse_dt(struct i2c_client *client,
+ {
+ 	struct device_node *np = client->dev.of_node;
+ 	const char *tmp;
++
+ 	int rc;
+ 	int i;
+ 
+@@ -527,6 +573,10 @@ static int mmc3416x_parse_dt(struct i2c_client *client,
+ 	else
+ 		memsic->auto_report = 0;
+ 
++	if (of_property_read_bool(np, "memsic,use-hrtimer"))
++		memsic->use_hrtimer = 1;
++	else
++		memsic->use_hrtimer = 0;
+ 	return 0;
+ }
+ 
+@@ -556,14 +606,24 @@ static int mmc3416x_set_enable(struct sensors_classdev *sensors_cdev,
+ 		}
+ 
+ 		memsic->timeout = jiffies;
+-		if (memsic->auto_report)
+-			queue_delayed_work(memsic->data_wq,
+-				&memsic->dwork,
+-				msecs_to_jiffies(memsic->poll_interval));
++		if (memsic->auto_report) {
++			if (memsic->use_hrtimer)
++				hrtimer_start(&memsic->poll_timer,
++				  ns_to_ktime(memsic->delay[MAG_DATA_FLAG]),
++					HRTIMER_MODE_REL);
++			else
++				queue_delayed_work(memsic->data_wq,
++					&memsic->dwork,
++				  msecs_to_jiffies(memsic->poll_interval));
++		}
+ 	} else if ((!enable) && memsic->enable) {
+-		if (memsic->auto_report)
+-			cancel_delayed_work_sync(&memsic->dwork);
+-
++		if (memsic->auto_report) {
++			if (memsic->use_hrtimer) {
++				hrtimer_cancel(&memsic->poll_timer);
++				cancel_work_sync(&memsic->dwork.work);
++			} else
++				cancel_delayed_work_sync(&memsic->dwork);
++		}
+ 		if (mmc3416x_power_set(memsic, false))
+ 			dev_warn(&memsic->i2c->dev, "Power off failed\n");
+ 	} else {
+@@ -588,9 +648,12 @@ static int mmc3416x_set_poll_delay(struct sensors_classdev *sensors_cdev,
+ 	if (memsic->poll_interval != delay_msec)
+ 		memsic->poll_interval = delay_msec;
+ 
++	memsic->delay[MAG_DATA_FLAG] = delay_msec * 1000000;
+ 	if (memsic->auto_report && memsic->enable)
+-		mod_delayed_work(system_wq, &memsic->dwork,
++		if (!memsic->use_hrtimer)
++			mod_delayed_work(system_wq, &memsic->dwork,
+ 				msecs_to_jiffies(delay_msec));
++
+ 	mutex_unlock(&memsic->ops_lock);
+ 
+ 	return 0;
+@@ -601,9 +664,113 @@ static struct regmap_config mmc3416x_regmap_config = {
+ 	.val_bits = 8,
+ };
+ 
+-static int mmc3416x_probe(struct i2c_client *client, const struct i2c_device_id *id)
++static int mmc3416x_open(struct inode *inode, struct file *file)
+ {
+-	int res = 0;
++	return nonseekable_open(inode, file);
++}
++
++static int mmc3416x_release(struct inode *inode, struct file *file)
++{
++	return 0;
++}
++
++static long mmc3416x_ioctl(struct file *file, unsigned int cmd,
++	unsigned long arg)
++{
++/*
++	void __user *pa = (void __user *)arg;
++	int __user *pa_i = (void __user *)arg;
++	unsigned char data[16] = {0};
++	int vec[3] = {0};
++	int reg;
++	short flag;
++	short delay;
++	unsigned char reg_addr;
++	unsigned char reg_value;
++*/
++	int rc = -1;
++
++/*	mutex_lock(&ecompass_ioctl_lock);*/
++	switch (cmd) {
++	case MMC3416X_IOC_SET:
++		rc = regmap_write(mmc3416x_data_struct->regmap,
++			MMC3416X_REG_CTRL, MMC3416X_CTRL_REFILL);
++		if (rc) {
++			dev_err(&mmc3416x_data_struct->i2c->dev,
++				"write reg %d failed at %d.(%d)\n",
++					MMC3416X_REG_CTRL, __LINE__, rc);
++/*			mutex_unlock(&ecompass_ioctl_lock);*/
++			return -EFAULT;
++		}
++
++		/* Time from refill cap to SET */
++		msleep(MMC3416X_DELAY_SET_MS);
++
++		rc = regmap_write(mmc3416x_data_struct->regmap,
++			MMC3416X_REG_CTRL, MMC3416X_CTRL_SET);
++		if (rc) {
++			dev_err(&mmc3416x_data_struct->i2c->dev, "write reg %d failed at %d.(%d)\n",
++					MMC3416X_REG_CTRL, __LINE__, rc);
++/*			mutex_unlock(&ecompass_ioctl_lock);*/
++			return -EFAULT;
++		}
++		dev_dbg(&mmc3416x_data_struct->i2c->dev, "mmc3416x reset is done\n");
++		break;
++
++	case MMC3416X_IOC_RESET:
++		rc = regmap_write(mmc3416x_data_struct->regmap,
++			MMC3416X_REG_CTRL, MMC3416X_CTRL_REFILL);
++		if (rc) {
++			dev_err(&mmc3416x_data_struct->i2c->dev, "write reg %d failed at %d.(%d)\n",
++					MMC3416X_REG_CTRL, __LINE__, rc);
++/*			mutex_unlock(&ecompass_ioctl_lock);*/
++			return -EFAULT;
++		}
++
++		/* Time from refill cap to SET */
++		msleep(MMC3416X_DELAY_SET_MS);
++
++		rc = regmap_write(mmc3416x_data_struct->regmap,
++			MMC3416X_REG_CTRL, MMC3416X_CTRL_RESET);
++		if (rc) {
++			dev_err(&mmc3416x_data_struct->i2c->dev,
++				"write reg %d failed at %d.(%d)\n",
++					MMC3416X_REG_CTRL, __LINE__, rc);
++/*			mutex_unlock(&ecompass_ioctl_lock);*/
++			return -EFAULT;
++		}
++
++		dev_dbg(&mmc3416x_data_struct->i2c->dev, "mmc3416x reset is done\n");
++		break;
++
++	default:
++		break;
++	}
++
++/*	mutex_unlock(&ecompass_ioctl_lock);*/
++
++	return 0;
++
++}
++
++static const struct file_operations mmc3416x_fops = {
++	.owner		= THIS_MODULE,
++	.open		= mmc3416x_open,
++	.release	= mmc3416x_release,
++	.unlocked_ioctl = mmc3416x_ioctl,
++};
++
++static struct miscdevice mmc3416x_device = {
++	.minor = MISC_DYNAMIC_MINOR,
++	.name = MMC3416X_I2C_NAME,
++	.fops = &mmc3416x_fops,
++};
++
++
++static int mmc3416x_probe(struct i2c_client *client,
++	const struct i2c_device_id *id)
++{
++	int i, res = 0;
+ 	struct mmc3416x_data *memsic;
+ 
+ 	dev_dbg(&client->dev, "probing mmc3416x\n");
+@@ -622,6 +789,8 @@ static int mmc3416x_probe(struct i2c_client *client, const struct i2c_device_id
+ 		goto out;
+ 	}
+ 
++	mmc3416x_data_struct = memsic;
++
+ 	if (client->dev.of_node) {
+ 		res = mmc3416x_parse_dt(client, memsic);
+ 		if (res) {
+@@ -637,6 +806,9 @@ static int mmc3416x_probe(struct i2c_client *client, const struct i2c_device_id
+ 	memsic->i2c = client;
+ 	dev_set_drvdata(&client->dev, memsic);
+ 
++	for (i = 0; i < NUM_SENSORS; i++)
++		memsic->delay[i] = -1;
++
+ 	mutex_init(&memsic->ecompass_lock);
+ 	mutex_init(&memsic->ops_lock);
+ 
+@@ -670,12 +842,25 @@ static int mmc3416x_probe(struct i2c_client *client, const struct i2c_device_id
+ 	memsic->data_wq = NULL;
+ 	if (memsic->auto_report) {
+ 		dev_dbg(&client->dev, "auto report is enabled\n");
+-		INIT_DELAYED_WORK(&memsic->dwork, mmc3416x_poll);
+-		memsic->data_wq =
+-			create_freezable_workqueue("mmc3416_data_work");
+-		if (!memsic->data_wq) {
+-			dev_err(&client->dev, "Cannot create workqueue.\n");
+-			goto out_create_workqueue;
++		if (memsic->use_hrtimer) {
++			hrtimer_init(&memsic->poll_timer, CLOCK_MONOTONIC,
++				HRTIMER_MODE_REL);
++			memsic->poll_timer.function = sensor_timer_func;
++			memsic->data_wq = alloc_workqueue("mmc3416x_poll_work",
++				WQ_UNBOUND | WQ_MEM_RECLAIM | WQ_HIGHPRI, 1);
++			if (!memsic->data_wq) {
++				dev_err(&client->dev, "Cannot alloc workqueue.\n");
++				goto out_create_workqueue;
++			}
++			INIT_WORK(&memsic->dwork.work, mmc3416x_poll);
++		} else {
++			INIT_DELAYED_WORK(&memsic->dwork, mmc3416x_poll);
++			memsic->data_wq =
++			  create_freezable_workqueue("mmc3416_data_work");
++			if (!memsic->data_wq) {
++				dev_err(&client->dev, "Cannot create workqueue.\n");
++				goto out_create_workqueue;
++			}
+ 		}
+ 	}
+ 
+@@ -688,6 +873,20 @@ static int mmc3416x_probe(struct i2c_client *client, const struct i2c_device_id
+ 		goto out_register_classdev;
+ 	}
+ 
++	res = misc_register(&mmc3416x_device);
++	if (res) {
++		pr_err("%s: mmc3416x_device register failed\n", __func__);
++		goto out_deregister;
++	}
++
++	res = regmap_write(memsic->regmap, MMC3416X_REG_BITS,
++			MMC3416X_CTRL_TM);
++	if (res) {
++		dev_err(&memsic->i2c->dev, "write reg %d failed.(%d)\n",
++				MMC3416X_REG_CTRL, res);
++		goto out_power_set;
++	}
++
+ 	res = mmc3416x_power_set(memsic, false);
+ 	if (res) {
+ 		dev_err(&client->dev, "Power off failed\n");
+@@ -695,13 +894,15 @@ static int mmc3416x_probe(struct i2c_client *client, const struct i2c_device_id
+ 	}
+ 
+ 	memsic->poll_interval = MMC3416X_DEFAULT_INTERVAL_MS;
+-
++	memsic->delay[MAG_DATA_FLAG] = sensors_cdev.delay_msec * 1000000;
+ 	dev_info(&client->dev, "mmc3416x successfully probed\n");
+ 
+ 	return 0;
+ 
+ out_power_set:
+ 	sensors_classdev_unregister(&memsic->cdev);
++out_deregister:
++	misc_deregister(&mmc3416x_device);
+ out_register_classdev:
+ 	if (memsic->data_wq)
+ 		destroy_workqueue(memsic->data_wq);
+@@ -719,6 +920,13 @@ static int mmc3416x_remove(struct i2c_client *client)
+ 	struct mmc3416x_data *memsic = dev_get_drvdata(&client->dev);
+ 
+ 	sensors_classdev_unregister(&memsic->cdev);
++	misc_deregister(&mmc3416x_device);
++	if (memsic->use_hrtimer) {
++		hrtimer_cancel(&memsic->poll_timer);
++		cancel_work_sync(&memsic->dwork.work);
++	} else
++		cancel_delayed_work_sync(&memsic->dwork);
++
+ 	if (memsic->data_wq)
+ 		destroy_workqueue(memsic->data_wq);
+ 	mmc3416x_power_deinit(memsic);
+@@ -738,8 +946,12 @@ static int mmc3416x_suspend(struct device *dev)
+ 	mutex_lock(&memsic->ops_lock);
+ 
+ 	if (memsic->enable) {
+-		if (memsic->auto_report)
+-			cancel_delayed_work_sync(&memsic->dwork);
++		if (memsic->auto_report) {
++			if (memsic->use_hrtimer)
++				hrtimer_cancel(&memsic->poll_timer);
++			else
++				cancel_delayed_work_sync(&memsic->dwork);
++		}
+ 
+ 		res = mmc3416x_power_set(memsic, false);
+ 		if (res) {
+@@ -766,10 +978,16 @@ static int mmc3416x_resume(struct device *dev)
+ 			goto exit;
+ 		}
+ 
+-		if (memsic->auto_report)
+-			queue_delayed_work(memsic->data_wq,
+-				&memsic->dwork,
+-				msecs_to_jiffies(memsic->poll_interval));
++		if (memsic->auto_report) {
++			if (memsic->use_hrtimer)
++				hrtimer_start(&memsic->poll_timer,
++				  ns_to_ktime(memsic->delay[MAG_DATA_FLAG]),
++					HRTIMER_MODE_REL);
++			else
++				queue_delayed_work(memsic->data_wq,
++					&memsic->dwork,
++				  msecs_to_jiffies(memsic->poll_interval));
++		}
+ 	}
+ 
+ exit:
+@@ -792,10 +1010,10 @@ static const struct dev_pm_ops mmc3416x_pm_ops = {
+ };
+ 
+ static struct i2c_driver mmc3416x_driver = {
+-	.probe 		= mmc3416x_probe,
+-	.remove 	= mmc3416x_remove,
++	.probe		= mmc3416x_probe,
++	.remove		= mmc3416x_remove,
+ 	.id_table	= mmc3416x_id,
+-	.driver 	= {
++	.driver		= {
+ 		.owner	= THIS_MODULE,
+ 		.name	= MMC3416X_I2C_NAME,
+ 		.of_match_table = mmc3416x_match_table,
+@@ -803,7 +1021,18 @@ static struct i2c_driver mmc3416x_driver = {
+ 	},
+ };
+ 
+-module_i2c_driver(mmc3416x_driver);
++static int __init mmc3416x_init(void)
++{
++	return i2c_add_driver(&mmc3416x_driver);
++}
++
++static void __exit mmc3416x_exit(void)
++{
++	i2c_del_driver(&mmc3416x_driver);
++}
++
++late_initcall(mmc3416x_init);
++module_exit(mmc3416x_exit);
+ 
+ MODULE_DESCRIPTION("MEMSIC MMC3416X Magnetic Sensor Driver");
+ MODULE_LICENSE("GPL");
+-- 
+1.9.1
+

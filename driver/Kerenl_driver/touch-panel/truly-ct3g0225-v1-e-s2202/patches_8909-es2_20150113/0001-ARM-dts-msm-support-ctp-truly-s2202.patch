@@ -1,0 +1,78 @@
+From ca49d6352b2a76e5e32aae9a2a1632d526f7277f Mon Sep 17 00:00:00 2001
+From: yanqy <yanqy0911@thundersoft.com>
+Date: Mon, 12 Jan 2015 19:08:13 +0800
+Subject: [PATCH 1/2] ARM:dts:msm: support ctp truly s2202
+
+Add CTP IHV-TRULY@CT3G0225-V1-E@S2202 device tree
+
+Change-Id: I9eace2e46f1bfe6931aca99af793484de0520713
+Signed-off-by: Qiyang Yan <yanqy0911@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8909-qrd-skuc.dtsi |   33 +++++++++++++++++++++++---
+ 1 file changed, 30 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8909-qrd-skuc.dtsi b/arch/arm/boot/dts/qcom/msm8909-qrd-skuc.dtsi
+index 8030789..72b5875 100644
+--- a/arch/arm/boot/dts/qcom/msm8909-qrd-skuc.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8909-qrd-skuc.dtsi
+@@ -53,6 +53,17 @@
+ 			bias-pull-up;
+ 		};
+ 	};
++
++	s2202_int_pin {
++		qcom,pins = <&gp 13>;
++		qcom,pin-func = <0>;
++		qcom,num-grp-pins = <1>;
++		label = "s2202-irq";
++		s2202_default: s2202_default {
++			drive-strength = <6>;
++			bias-pull-up;
++		};
++	};
+ };
+ 
+ &soc {
+@@ -90,7 +101,23 @@
+ 			focaltech,fw-auto-cal;
+ 			focaltech,ignore-id-check;
+ 		};
+-
++		synaptics@22 {
++			compatible = "synaptics,rmi4";
++			reg = <0x22>;
++			interrupt-parent = <&msm_gpio>;
++			interrupts = <13 0x2008>;
++			pinctrl-names = "default";
++			pinctrl-0 = <&s2202_default>;
++			vdd-supply = <&pm8909_l17>;
++			vcc_i2c-supply = <&pm8909_l6>;
++			synaptics,irq-gpio = <&msm_gpio 13 0x2008>;
++			synaptics,reset-gpio = <&msm_gpio 12 0x0>;
++			synaptics,button-map = <158 102 139>;
++			synaptics,i2c-pull-up;
++			synaptics,power-down;
++			synaptics,disable-gpios;
++			synaptics,fw-vkey-support;
++		};
+ 	};
+ 
+ 	i2c@78b5000 { /* BLSP1 QUP1 */
+@@ -134,12 +161,12 @@
+ 
+ 	gen-vkeys {
+ 		compatible = "qcom,gen-vkeys";
+-		label = "ft5x06_ts";
++		label = "synaptics_rmi4_i2c";
+ 		qcom,disp-maxx = <480>;
+ 		qcom,disp-maxy = <854>;
+ 		qcom,panel-maxx = <480>;
+ 		qcom,panel-maxy = <946>;
+-		qcom,key-codes = <139 172 158>;
++		qcom,key-codes = <158 172 139>;
+ 		qcom,y-offset = <0>;
+ 	};
+ 
+-- 
+1.7.9.5
+

@@ -1,0 +1,42 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/rock/workspack/code_test/mongoose/ssdp/ssdp.c
+stdio.h
+-
+errno.h
+-
+string.h
+-
+sys/ioctl.h
+-
+sys/socket.h
+-
+sys/time.h
+-
+net/if.h
+-
+netinet/in.h
+-
+arpa/inet.h
+-
+stdlib.h
+-
+unistd.h
+-
+sys/types.h
+-
+sys/stat.h
+-
+fcntl.h
+-
+ssdp.h
+/home/rock/workspack/code_test/mongoose/ssdp/ssdp.h
+
+/home/rock/workspack/code_test/mongoose/ssdp/ssdp.h
+

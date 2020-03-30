@@ -1,0 +1,29 @@
+From ddb0db49b2e5d2d1e444950513a19a96cea1d0e4 Mon Sep 17 00:00:00 2001
+From: lijy0620 <lijy0620@thundersoft.com>
+Date: Wed, 30 Aug 2017 13:56:59 +0800
+Subject: [PATCH] ARM: dts: msm: Add ov16885 camera dtsi
+
+Add ov16885 devicetree description for msm8998
+
+Change-Id: I21a55c998ee926727af8d1ca2026d002ec85e1e6
+Signed-off-by: lijy0620 <lijy0620@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8998-camera-sensor-skuk-evt3.dtsi | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8998-camera-sensor-skuk-evt3.dtsi b/arch/arm/boot/dts/qcom/msm8998-camera-sensor-skuk-evt3.dtsi
+index 7e52b02..3e443a8 100644
+--- a/arch/arm/boot/dts/qcom/msm8998-camera-sensor-skuk-evt3.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8998-camera-sensor-skuk-evt3.dtsi
+@@ -302,8 +302,6 @@
+ 		cell-index = <0>;
+ 		compatible = "qcom,camera";
+ 		reg = <0x0>;
+-		qcom,special-support-sensors = "imx362_gt24c64a",
+-					"s5k3m3sm", "s5k2l7sx";
+ 		qcom,csiphy-sd-index = <0>;
+ 		qcom,csid-sd-index = <0>;
+ 		qcom,mount-angle = <270>;
+-- 
+1.9.1
+

@@ -1,0 +1,29 @@
+From 2e402e0eea3a64e1c1c2f7d915a47c27781b21e6 Mon Sep 17 00:00:00 2001
+From: Wei Ding <weiding@qti.qualcomm.com>
+Date: Mon, 23 Mar 2015 16:41:44 +0800
+Subject: [PATCH] ARM: dts: msm: Add imx214 8929 camera dtsi
+
+Add imx214 8929 camera dtsi
+
+Change-Id: I2d45cae7df880aea77befaaec9ac59b088f324b6
+Signed-off-by: Wei Ding <weiding@qti.qualcomm.com>
+---
+ arch/arm/boot/dts/qcom/msm8929-camera-sensor-qrd.dtsi | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8929-camera-sensor-qrd.dtsi b/arch/arm/boot/dts/qcom/msm8929-camera-sensor-qrd.dtsi
+index d5ae42a..2b180e1 100644
+--- a/arch/arm/boot/dts/qcom/msm8929-camera-sensor-qrd.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8929-camera-sensor-qrd.dtsi
+@@ -209,7 +209,7 @@
+ 		cell-index = <0>;
+ 		compatible = "qcom,camera";
+ 		reg = <0x0>;
+-		qcom,special-support-sensors="ov13850_q13v06k";
++		qcom,special-support-sensors="imx214_8929";
+ 		qcom,csiphy-sd-index = <0>;
+ 		qcom,csid-sd-index = <0>;
+ 		qcom,mount-angle = <90>;
+-- 
+1.9.1
+

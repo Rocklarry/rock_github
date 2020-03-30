@@ -1,0 +1,31 @@
+<resources>
+    <string name="app_name">Companion</string>
+    <string name="connectDeviceButton">1. Connect_Device</string>
+    <string name="getDeviceIPButton">3. Get___Device__IP</string>
+    <string name="setupWifiTitle">2. Setup_______Wifi</string>
+    <string name="ssidLabel">SSID</string>
+    <string name="reloadLink">[ reload ]</string>
+    <string name="passwordLabel">Password</string>
+    <string name="hide">[ hide ] </string>
+    <string name="show">[ show ] </string>
+    <string name="connectToAP">Connect</string>
+    <string name="reconnectInternetAP">Reconnect Wifi</string>
+    <string name="authAVSTitle">4. Authorize___AVS</string>
+    <string name="connectingDevice">Connect device...</string>
+    <string name="gettingDevice">Getting device IP...</string>
+    <string name="authrizingDevice">Autorizing device with amazon</string>
+    <string name="getDeviceIPMessage">Device IP is </string>
+    <string name="connectDeviceFailed">Connect device failed</string>
+    <string name="getAPIPfailed">Connect device or get ip failed\nTry again or try \"3. GET___DEVICE__IP\"</string>
+    <string name="getDeviceFailed">Get device IP failed\nMake sure your phone and device connect to the same wifi\nAnd then try \"3. GET___DEVICE__IP\" again</string>
+    <string name="avsAuthFailed">AVS Authorization failed</string>
+    <string name="avsAuthCancelled">AVS Authorization cancelled</string>
+    <string name="inSameWifiNote">Please make sure your phone connect to the same SSID as you will send to the device</string>
+    <string name="getAPListFailed">SSID seems incorrect, please click \"[ reload ]\"</string>
+    <string name="sendingwifiInfo">Sending wifi info: ssid password...</string>
+    <string name="success">Reqsponse succeed</string>
+    <string name="sentWifiInfo">Send wifi info successfully, you can click \"RECONNECT WIFI\"</string>
+    <string name="deviceConnectedWifi">Device connecting some wifi now</string>
+    <string name="deviceInSameWifi">Device in same wifi now, go back to main page</string>
+    <string name="getIPWarning">Device not reachable\nIf you have not setup wifi for device\nClick \"1. CONNECT_DEVICE\"\nIf you have setup wifi for device\nClick \"3. GET___DEVICE__IP\"</string>
+</resources>

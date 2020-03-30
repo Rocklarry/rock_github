@@ -1,0 +1,2 @@
+/home/idea/code_test/sensor_drivers/CMakeFiles/mag0_hmc5883_driver.dir
+/home/idea/code_test/sensor_drivers/CMakeFiles/mag0_hmc5883l_driver.dir

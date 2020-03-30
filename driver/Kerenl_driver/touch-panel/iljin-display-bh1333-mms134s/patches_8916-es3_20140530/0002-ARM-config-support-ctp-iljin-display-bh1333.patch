@@ -1,0 +1,28 @@
+From 6f6b61bbd711eaccdc302d2aca81715d0086738c Mon Sep 17 00:00:00 2001
+From: yangzh <yangzh0324@thundersoft.com>
+Date: Thu, 22 May 2014 13:05:22 +0800
+Subject: [PATCH 2/3] ARM:config: support ctp iljin display bh1333
+
+Add CTP ILJIN-DISPLAY@BH1333@MMS134S config
+
+Change-Id: Ifcacc717ecb5b822cea50ee7cac4c7b958a5738f
+Signed-off-by: yangzh <yagnzh0324@thundersoft.com>
+---
+ arch/arm/configs/msm8916_defconfig |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm/configs/msm8916_defconfig b/arch/arm/configs/msm8916_defconfig
+index adf74a4..911b86a 100644
+--- a/arch/arm/configs/msm8916_defconfig
++++ b/arch/arm/configs/msm8916_defconfig
+@@ -246,6 +246,7 @@ CONFIG_INPUT_TOUCHSCREEN=y
+ CONFIG_TOUCHSCREEN_ATMEL_MXT=y
+ CONFIG_TOUCHSCREEN_FT5X06=y
+ CONFIG_TOUCHSCREEN_GEN_VKEYS=y
++CONFIG_TOUCHSCREEN_MMS134S=y
+ CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI4=y
+ CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_RMI4_DEV=y
+ CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE=y
+-- 
+1.7.9.5
+

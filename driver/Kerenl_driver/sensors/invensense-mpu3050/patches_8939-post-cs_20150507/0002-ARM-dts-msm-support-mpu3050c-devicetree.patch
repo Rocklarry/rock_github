@@ -1,0 +1,131 @@
+From 12cc245b5dca36765b194be9105bfdf6eec0c104 Mon Sep 17 00:00:00 2001
+From: Li Zhanchao <lizc1023@thundersoft.com>
+Date: Thu, 7 May 2015 14:41:13 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support mpu3050c devicetree
+
+Devicetree support mpu3050c
+
+Change-Id: Ibdb32f671ac5dd6eb4a87a4f755f78f8abb5fdee
+Signed-off-by: Li Zhanchao <lizc1023@thundersoft.com>
+---
+ .../devicetree/bindings/input/misc/mpu3050.txt     | 19 ++++++-----
+ arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi       | 39 ++++++++++++++++++++--
+ 2 files changed, 47 insertions(+), 11 deletions(-)
+ mode change 100755 => 100644 arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+
+diff --git a/Documentation/devicetree/bindings/input/misc/mpu3050.txt b/Documentation/devicetree/bindings/input/misc/mpu3050.txt
+index edbe147..2926f2c 100644
+--- a/Documentation/devicetree/bindings/input/misc/mpu3050.txt
++++ b/Documentation/devicetree/bindings/input/misc/mpu3050.txt
+@@ -3,7 +3,7 @@ InvenSense MPU30X0-series gyrometer driver
+ Required properties:
+ 
+  - compatible		: Should be "invn,mpu3050".
+- - reg				: i2c slave address of the device.
++ - reg			: i2c slave address of the device.
+  - interrupt-parent	: Parent of interrupt.
+  - interrupts		: Gyrometer sample interrupt to indicate new data ready.
+  - vdd-supply		: Analog power supply needed to power device.
+@@ -13,19 +13,22 @@ Required properties:
+  - invn,poll-interval	: Initial data polling interval in milliseconds.
+ 
+ Example:
+-	i2c@f9925000 {
++	&i2c_0 { /* BLSP1 QUP2 */
+ 		mpu3050@68 {
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
+ 			status = "okay";
+ 			reg = <0x68>;
+ 			compatible = "invn,mpu3050";
+-			interrupt-parent = <&msmgpio>;
+-			interrupts = <84 0x2>;
+-			vlogic-supply = <&pm8110_l14>;
+-			vdd-supply = <&pm8110_l19>;
+-			invn,gpio-int = <&msmgpio 84 0x2>;
+-			invn,gpio-en = <&pm8110_gpios 2 0x2>;
++			pinctrl-names = "default","sleep";
++			pinctrl-0 = <&mpu3050_default>;
++			pinctrl-1 = <&mpu3050_sleep>;
++			interrupt-parent = <&msm_gpio>;
++			interrupts = <113 0x2002>;
++			vdd-supply = <&pm8916_l17>;
++			vlogic-supply = <&pm8916_l6>;
++			invn,gpio-int = <&msm_gpio 113 0x2002>;
++			invn,gpio-en = <&pm8916_gpios 2 0x2>;
+ 			invn,poll-interval = <200>;
+ 		};
+ 	};
+diff --git a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+old mode 100755
+new mode 100644
+index 1039722..2c768b5
+--- a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+@@ -1,4 +1,4 @@
+-/* Copyright (c) 2014, The Linux Foundation. All rights reserved.
++/* Copyright (c) 2014-2015, The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 and
+@@ -47,6 +47,21 @@
+ 		};
+ 	};
+ 
++	mpu3050_int_pin {
++		qcom,pins = <&gp 113>;
++		qcom,pin-func = <0>;
++		qcom,num-grp-pins = <1>;
++		label = "mpu3050-irq";
++		mpu3050_default: mpu3050_default {
++			drive-strength = <6>;
++			bias-pull-up;
++		};
++		mpu3050_sleep: mpu3050_sleep {
++			drive-strength = <2>;
++			bias-pull-down;
++		};
++	};
++
+ 	tps65132-en-pin {
+ 		qcom,pins = <&gp 97>, <&gp 98>;
+ 		qcom,num-grp-pins = <2>;
+@@ -107,8 +122,8 @@
+ 		memsic,auto-report;
+ 	};
+ 
+-	mpu6050@68 { /* Gyroscope and accelerometer sensor combo */
+-		compatible = "invn,mpu6050";
++/*	mpu6050@68 { /* Gyroscope and accelerometer sensor combo */
++/*		compatible = "invn,mpu6050";
+ 		reg = <0x68>;
+ 		pinctrl-names = "mpu_default","mpu_sleep";
+ 		pinctrl-0 = <&mpu6050_default>;
+@@ -121,6 +136,24 @@
+ 		invn,gpio-int = <&msm_gpio 115 0x2002>;
+ 		invn,place = "Portrait Down Back Side";
+ 	};
++*/
++	mpu3050@68 {
++		#address-cells = <1>;
++		#size-cells = <0>;
++		status = "okay";
++		reg = <0x68>;
++		compatible = "invn,mpu3050";
++		pinctrl-names = "default","sleep";
++		pinctrl-0 = <&mpu3050_default>;
++		pinctrl-1 = <&mpu3050_sleep>;
++		interrupt-parent = <&msm_gpio>;
++		interrupts = <113 0x2002>;
++		vdd-supply = <&pm8916_l17>;
++		vlogic-supply = <&pm8916_l6>;
++		invn,gpio-int = <&msm_gpio 113 0x2002>;
++		invn,gpio-en = <&pm8916_gpios 2 0x2>;
++		invn,poll-interval = <200>;
++	};
+ 
+ 	tps65132@3e {
+ 		compatible = "ti,tps65132";
+-- 
+1.9.1
+

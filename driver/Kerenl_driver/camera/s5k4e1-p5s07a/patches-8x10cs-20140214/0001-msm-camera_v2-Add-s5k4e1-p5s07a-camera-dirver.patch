@@ -1,0 +1,234 @@
+From c20aeff68f51a77d3984c394fc42a45528d34ef1 Mon Sep 17 00:00:00 2001
+From: Lin Zhang <zhanglin0425@thundersoft.com>
+Date: Fri, 14 Feb 2014 14:43:55 +0800
+Subject: [PATCH 1/3] msm: camera_v2: Add s5k4e1 p5s07a camera dirver
+
+Add s5k4e1 p5s07a camera dirver for msm8610.
+
+Change-Id: I5c4574f47f7115a14be0b20ae5a09c573b8bb32e
+Signed-off-by: Lin Zhang <zhanglin0425@thundersoft.com>
+---
+ arch/arm/mach-msm/clock-8610.c                     |    7 +-
+ drivers/media/platform/msm/camera_v2/Kconfig       |    9 ++
+ .../media/platform/msm/camera_v2/sensor/Makefile   |    1 +
+ .../platform/msm/camera_v2/sensor/s5k4e1_p5s07a.c  |  149 ++++++++++++++++++++
+ 4 files changed, 165 insertions(+), 1 deletions(-)
+ create mode 100644 drivers/media/platform/msm/camera_v2/sensor/s5k4e1_p5s07a.c
+
+diff --git a/arch/arm/mach-msm/clock-8610.c b/arch/arm/mach-msm/clock-8610.c
+index 89d462c..76be3cf 100644
+--- a/arch/arm/mach-msm/clock-8610.c
++++ b/arch/arm/mach-msm/clock-8610.c
+@@ -1,4 +1,4 @@
+-/* Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
++/* Copyright (c) 2012-2014, The Linux Foundation. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 and
+@@ -3026,6 +3026,7 @@ static struct clk_lookup msm_clocks_8610[] = {
+ 	CLK_LOOKUP("cam_src_clk", mclk1_clk_src.c, "6-0078"),
+ 	CLK_LOOKUP("cam_src_clk", mclk0_clk_src.c, "6-0020"),
+ 	CLK_LOOKUP("cam_src_clk", mclk0_clk_src.c, "6-006a"),
++	CLK_LOOKUP("cam_src_clk", mclk0_clk_src.c, "6-0030"),
+ 	CLK_LOOKUP("cam_clk", mclk0_clk.c, "6-006f"),
+ 	CLK_LOOKUP("cam_clk", mclk0_clk.c, "6-0034"),
+ 	CLK_LOOKUP("cam_clk", mclk0_clk.c, "6-007d"),
+@@ -3033,7 +3034,11 @@ static struct clk_lookup msm_clocks_8610[] = {
+ 	CLK_LOOKUP("cam_clk", mclk1_clk.c, "6-0078"),
+ 	CLK_LOOKUP("cam_clk", mclk0_clk.c, "6-0020"),
+ 	CLK_LOOKUP("cam_clk", mclk0_clk.c, "6-006a"),
++	CLK_LOOKUP("cam_clk", mclk0_clk.c, "6-0030"),
+ 
++	/*eeprom clocks*/
++	CLK_LOOKUP("cam_src_clk", mclk0_clk_src.c, "6-0032"),
++	CLK_LOOKUP("cam_clk", mclk0_clk.c, "6-0032"),
+ 
+ 	/* CSIPHY clocks */
+ 	CLK_LOOKUP("csiphy_timer_src_clk", csi0phytimer_clk_src.c,
+diff --git a/drivers/media/platform/msm/camera_v2/Kconfig b/drivers/media/platform/msm/camera_v2/Kconfig
+index 262fb38..dd26ed0 100644
+--- a/drivers/media/platform/msm/camera_v2/Kconfig
++++ b/drivers/media/platform/msm/camera_v2/Kconfig
+@@ -191,6 +191,15 @@ config GC0339
+ 		Preview and snapshot resolution shall be 640*480 at 30 fps,
+ 		It does not support auto focus.
+ 
++config S5K4E1_P5S07A
++	bool "Sensor S5K4E1 (BAYER 5M)"
++	depends on MSMB_CAMERA
++	---help---
++		Samsung 5 MP Bayer Sensor, only use 1 mipi lane,
++		preview set to 1280*960 at 16 fps,
++		snapshot set to 2592*1944 at 8 fps,
++		This sensor driver does not support auto focus.
++
+ config OV8825
+ 	bool "OmniVision OV8825 (BAYER 8MP)"
+ 	depends on MSMB_CAMERA
+diff --git a/drivers/media/platform/msm/camera_v2/sensor/Makefile b/drivers/media/platform/msm/camera_v2/sensor/Makefile
+index 280a9a0..5903c51 100644
+--- a/drivers/media/platform/msm/camera_v2/sensor/Makefile
++++ b/drivers/media/platform/msm/camera_v2/sensor/Makefile
+@@ -19,3 +19,4 @@ obj-$(CONFIG_OV5648) += ov5648.o
+ obj-$(CONFIG_MT9M114) += mt9m114.o
+ obj-$(CONFIG_SP1628) += sp1628.o
+ obj-$(CONFIG_GC0339) += gc0339.o
++obj-$(CONFIG_S5K4E1_P5S07A) += s5k4e1_p5s07a.o
+diff --git a/drivers/media/platform/msm/camera_v2/sensor/s5k4e1_p5s07a.c b/drivers/media/platform/msm/camera_v2/sensor/s5k4e1_p5s07a.c
+new file mode 100644
+index 0000000..cf27c18
+--- /dev/null
++++ b/drivers/media/platform/msm/camera_v2/sensor/s5k4e1_p5s07a.c
+@@ -0,0 +1,149 @@
++/* Copyright (c) 2014, The Linux Foundation. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++#include "msm_sensor.h"
++#define S5K4E1_P5S07A_SENSOR_NAME "s5k4e1_p5s07a"
++DEFINE_MSM_MUTEX(s5k4e1_p5s07a_mut);
++
++static struct msm_sensor_ctrl_t s5k4e1_p5s07a_s_ctrl;
++
++static struct msm_sensor_power_setting s5k4e1_p5s07a_power_setting[] = {
++	{
++		.seq_type = SENSOR_VREG,
++		.seq_val = CAM_VANA,
++		.config_val = 0,
++		.delay = 5,
++	},
++	{
++		.seq_type = SENSOR_VREG,
++		.seq_val = CAM_VIO,
++		.config_val = 0,
++		.delay = 5,
++	},
++	{
++		.seq_type = SENSOR_GPIO,
++		.seq_val = SENSOR_GPIO_RESET,
++		.config_val = GPIO_OUT_LOW,
++		.delay = 10,
++	},
++	{
++		.seq_type = SENSOR_GPIO,
++		.seq_val = SENSOR_GPIO_RESET,
++		.config_val = GPIO_OUT_HIGH,
++		.delay = 10,
++	},
++	{
++		.seq_type = SENSOR_CLK,
++		.seq_val = SENSOR_CAM_MCLK,
++		.config_val = 24000000,
++		.delay = 5,
++	},
++	{
++		.seq_type = SENSOR_I2C_MUX,
++		.seq_val = 0,
++		.config_val = 0,
++		.delay = 0,
++	},
++};
++
++static struct v4l2_subdev_info s5k4e1_p5s07a_subdev_info[] = {
++	{
++		.code   = V4L2_MBUS_FMT_SGRBG10_1X10,
++		.colorspace = V4L2_COLORSPACE_JPEG,
++		.fmt    = 1,
++		.order    = 0,
++	},
++};
++
++static const struct i2c_device_id s5k4e1_p5s07a_i2c_id[] = {
++	{S5K4E1_P5S07A_SENSOR_NAME, (kernel_ulong_t)&s5k4e1_p5s07a_s_ctrl},
++	{ }
++};
++
++static int32_t msm_s5k4e1_p5s07a_i2c_probe(struct i2c_client *client,
++	const struct i2c_device_id *id)
++{
++	return msm_sensor_i2c_probe(client, id, &s5k4e1_p5s07a_s_ctrl);
++}
++
++static struct i2c_driver s5k4e1_p5s07a_i2c_driver = {
++	.id_table = s5k4e1_p5s07a_i2c_id,
++	.probe  = msm_s5k4e1_p5s07a_i2c_probe,
++	.driver = {
++		.name = S5K4E1_P5S07A_SENSOR_NAME,
++	},
++};
++
++static struct msm_camera_i2c_client s5k4e1_p5s07a_sensor_i2c_client = {
++	.addr_type = MSM_CAMERA_I2C_WORD_ADDR,
++};
++
++static const struct of_device_id s5k4e1_p5s07a_dt_match[] = {
++	{.compatible = "qcom,s5k4e1_p5s07a", .data = &s5k4e1_p5s07a_s_ctrl},
++	{}
++};
++
++MODULE_DEVICE_TABLE(of, s5k4e1_p5s07a_dt_match);
++
++static struct platform_driver s5k4e1_p5s07a_platform_driver = {
++	.driver = {
++		.name = "qcom,s5k4e1_p5s07a",
++		.owner = THIS_MODULE,
++		.of_match_table = s5k4e1_p5s07a_dt_match,
++	},
++};
++
++static int32_t s5k4e1_p5s07a_platform_probe(struct platform_device *pdev)
++{
++	int32_t rc = 0;
++	const struct of_device_id *match;
++	match = of_match_device(s5k4e1_p5s07a_dt_match, &pdev->dev);
++	rc = msm_sensor_platform_probe(pdev, match->data);
++	return rc;
++}
++
++static int __init s5k4e1_p5s07a_init_module(void)
++{
++	int32_t rc = 0;
++	pr_info("%s:%d\n", __func__, __LINE__);
++	rc = platform_driver_probe(&s5k4e1_p5s07a_platform_driver,
++		s5k4e1_p5s07a_platform_probe);
++	if (!rc)
++		return rc;
++	pr_err("%s:%d rc %d\n", __func__, __LINE__, rc);
++	return i2c_add_driver(&s5k4e1_p5s07a_i2c_driver);
++}
++
++static void __exit s5k4e1_p5s07a_exit_module(void)
++{
++	pr_info("%s:%d\n", __func__, __LINE__);
++	if (s5k4e1_p5s07a_s_ctrl.pdev) {
++		msm_sensor_free_sensor_data(&s5k4e1_p5s07a_s_ctrl);
++		platform_driver_unregister(&s5k4e1_p5s07a_platform_driver);
++	} else
++		i2c_del_driver(&s5k4e1_p5s07a_i2c_driver);
++	return;
++}
++
++static struct msm_sensor_ctrl_t s5k4e1_p5s07a_s_ctrl = {
++	.sensor_i2c_client = &s5k4e1_p5s07a_sensor_i2c_client,
++	.power_setting_array.power_setting = s5k4e1_p5s07a_power_setting,
++	.power_setting_array.size = ARRAY_SIZE(s5k4e1_p5s07a_power_setting),
++	.msm_sensor_mutex = &s5k4e1_p5s07a_mut,
++	.sensor_v4l2_subdev_info = s5k4e1_p5s07a_subdev_info,
++	.sensor_v4l2_subdev_info_size = ARRAY_SIZE(s5k4e1_p5s07a_subdev_info),
++};
++
++module_init(s5k4e1_p5s07a_init_module);
++module_exit(s5k4e1_p5s07a_exit_module);
++MODULE_DESCRIPTION("s5k4e1_p5s07a");
++MODULE_LICENSE("GPL v2");
+-- 
+1.7.4.1
+

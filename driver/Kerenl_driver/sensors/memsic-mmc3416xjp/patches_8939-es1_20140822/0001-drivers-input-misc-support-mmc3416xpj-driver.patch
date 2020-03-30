@@ -1,0 +1,56 @@
+From a49aba1449e4b3428ca7400beb127c5ac4531155 Mon Sep 17 00:00:00 2001
+From: chenqingfeng <chenqf0228@thundersoft.com>
+Date: Thu, 21 Aug 2014 13:34:08 +0800
+Subject: [PATCH 1/3] drivers:input:misc: support mmc3416xpj driver
+
+Driver support mmc3416xpj
+
+Change-Id: Ifbce0d7ba3ef44b8faec22042ae3b49677739aab
+Signed-off-by: Qingfeng Chen <chenqf0228@thundersoft.com>
+---
+ drivers/input/misc/mmc3416x.c |   12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/input/misc/mmc3416x.c b/drivers/input/misc/mmc3416x.c
+index 4a2cde7..91aa435 100644
+--- a/drivers/input/misc/mmc3416x.c
++++ b/drivers/input/misc/mmc3416x.c
+@@ -39,6 +39,7 @@
+ #include <linux/regmap.h>
+ #include <linux/sensors.h>
+ #include <asm/uaccess.h>
++#include <linux/of_gpio.h>
+ 
+ #include "mmc3416x.h"
+ 
+@@ -496,9 +497,18 @@ static int mmc3416x_parse_dt(struct i2c_client *client,
+ {
+ 	struct device_node *np = client->dev.of_node;
+ 	const char *tmp;
++	unsigned int temp;
+ 	int rc;
+ 	int i;
+ 
++	/* poll_interval */
++	rc = of_property_read_u32(np, "memsic,poll_interval", &temp);
++	if (rc) {
++		dev_err(&client->dev, "Unable to read poll_interval\n");
++		return rc;
++	}
++	memsic->poll_interval = temp;
++
+ 	rc = of_property_read_string(np, "memsic,dir", &tmp);
+ 
+ 	/* does not have a value or the string is not null-terminated */
+@@ -683,7 +693,7 @@ static int mmc3416x_probe(struct i2c_client *client, const struct i2c_device_id
+ 		goto out_power_set;
+ 	}
+ 
+-	memsic->poll_interval = MMC3416X_DEFAULT_INTERVAL_MS;
++	/* memsic->poll_interval = MMC3416X_DEFAULT_INTERVAL_MS; */
+ 
+ 	dev_info(&client->dev, "mmc3416x successfully probed\n");
+ 
+-- 
+1.7.9.5
+

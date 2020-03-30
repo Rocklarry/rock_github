@@ -1,0 +1,62 @@
+From d36934668f4513c4b29848a3937cddf99650cdc6 Mon Sep 17 00:00:00 2001
+From: chenxl0723 <chenxl0723@thundersoft.com>
+Date: Wed, 2 Apr 2014 16:31:19 +0800
+Subject: [PATCH 1/2] ARM:dts:msm: support ctp ihv-truly ct3g0225-v1-e
+
+Add CTP IHV-TRULY@CT3G0225-V1-E@S2202 device tree
+
+Change-Id: I441a7d82e25b85645aa6339d078280fefa79f2e9
+Signed-off-by: Chen Xuelong <chenxl0723@thundersoft.com>
+---
+ arch/arm/boot/dts/msm8610-qrd.dtsi |   28 ++++++++++++++++++++++------
+ 1 file changed, 22 insertions(+), 6 deletions(-)
+
+diff --git a/arch/arm/boot/dts/msm8610-qrd.dtsi b/arch/arm/boot/dts/msm8610-qrd.dtsi
+index 92d1a77..44bdcb3 100644
+--- a/arch/arm/boot/dts/msm8610-qrd.dtsi
++++ b/arch/arm/boot/dts/msm8610-qrd.dtsi
+@@ -28,6 +28,22 @@
+ 
+ &soc {
+ 	i2c@f9923000{
++		synaptics@22 {
++			compatible = "synaptics,rmi4";
++			reg = <0x22>;
++			interrupt-parent = <&msmgpio>;
++			interrupts = <1 0x2>;
++			vdd-supply = <&pm8110_l19>;
++			vcc_i2c-supply = <&pm8110_l14>;
++			synaptics,reset-gpio = <&msmgpio 0 0x00>;
++			synaptics,irq-gpio = <&msmgpio 1 0x2008>;
++			synaptics,button-map = <158 102 139>;
++			synaptics,fw-image-name = "PR1468813.img";
++			synaptics,i2c-pull-up;
++			synaptics,power-down;
++			synaptics,disable-gpios;
++			synaptics,fw-vkey-support;
++		};
+ 		focaltech@38{
+ 			compatible = "focaltech,5x06";
+ 			reg = <0x38>;
+@@ -60,12 +76,12 @@
+ 
+ 	gen-vkeys {
+ 		compatible = "qcom,gen-vkeys";
+-		label = "ft5x06_ts";
+-		qcom,disp-maxx = <480>;
+-		qcom,disp-maxy = <800>;
+-		qcom,panel-maxx = <481>;
+-		qcom,panel-maxy = <940>;
+-		qcom,key-codes = <139 0 102 158 0 0 0>;
++		label = "synaptics_rmi4_i2c";
++		qcom,disp-maxx = <720>;
++		qcom,disp-maxy = <1280>;
++		qcom,panel-maxx = <720>;
++		qcom,panel-maxy = <1380>;
++		qcom,key-codes = <158 102 139>;
+ 		qcom,y-offset = <0>;
+ 	};
+ 	serial@f991e000 {
+-- 
+1.7.9.5
+

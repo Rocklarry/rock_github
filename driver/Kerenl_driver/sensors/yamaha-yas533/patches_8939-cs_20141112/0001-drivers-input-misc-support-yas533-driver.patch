@@ -1,0 +1,4316 @@
+From 102e4b532479f636607bd0c2a788c04d3205da49 Mon Sep 17 00:00:00 2001
+From: chenqingfeng <chenqf0228@thundersoft.com>
+Date: Wed, 12 Nov 2014 16:34:17 +0800
+Subject: [PATCH 1/3] drivers:input:misc: support yas533 driver
+
+Driver support yas533
+
+Change-Id: I9cef3637901911feb1e3ff269ce326b21a1f3245
+Signed-off-by: Qingfeng Chen <chenqf0228@thundersoft.com>
+---
+ .../devicetree/bindings/input/misc/yas533.txt      |   17 +
+ drivers/input/misc/Kconfig                         |   10 +
+ drivers/input/misc/Makefile                        |    4 +
+ drivers/input/misc/yas.h                           | 1854 ++++++++++++++++++++
+ drivers/input/misc/yas_cfg.h                       |  240 +++
+ drivers/input/misc/yas_mag_drv-yas532.c            |  793 +++++++++
+ drivers/input/misc/yas_mag_drv-yas537.c            |  699 ++++++++
+ drivers/input/misc/yas_mag_kernel.c                |  615 +++++++
+ 8 files changed, 4232 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/input/misc/yas533.txt
+ create mode 100644 drivers/input/misc/yas.h
+ create mode 100644 drivers/input/misc/yas_cfg.h
+ create mode 100644 drivers/input/misc/yas_mag_drv-yas532.c
+ create mode 100644 drivers/input/misc/yas_mag_drv-yas537.c
+ create mode 100644 drivers/input/misc/yas_mag_kernel.c
+
+diff --git a/Documentation/devicetree/bindings/input/misc/yas533.txt b/Documentation/devicetree/bindings/input/misc/yas533.txt
+new file mode 100644
+index 0000000..c46d7a0
+--- /dev/null
++++ b/Documentation/devicetree/bindings/input/misc/yas533.txt
+@@ -0,0 +1,17 @@
++YAMAHA YAS533 3-axis electronic compass driver
++
++Required properties:
++
++ - compatible		: Should be "yamaha,yas533".
++ - reg				: i2c address of the device.
++ - vdd-supply		: Analog power supply needed to power up the device.
++ - vio-supply		: Digital IO power supply needed for IO and I2C.
++
++ Example:
++	yamaha@2e {
++		compatible = "yamaha,yas533";
++		reg = <0x2e>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++	};
++
+diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
+index b358471..b26e28a 100644
+--- a/drivers/input/misc/Kconfig
++++ b/drivers/input/misc/Kconfig
+@@ -734,6 +734,16 @@ config SENSORS_MMC3416X
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called mmc3416x.
+ 
++config SENSORS_YAS533
++       tristate "YAS Geomagnetic Sensor"
++       depends on I2C
++       help
++         Say Y here if you want to enable the YAS533 magnetic sensor
++         driver.
++
++         To compile this driver as a module, choose M here: the
++         module will be called akm09911.
++
+ config SENSORS_AKM09911
+ 	tristate "AKM09911 3-axis electronic compass sensor driver"
+ 	depends on I2C
+diff --git a/drivers/input/misc/Makefile b/drivers/input/misc/Makefile
+index 139a4fb..e71dd3c 100644
+--- a/drivers/input/misc/Makefile
++++ b/drivers/input/misc/Makefile
+@@ -83,3 +83,7 @@ endif
+ ifeq ($(CONFIG_BOSCH_BMA2X2_ENABLE_INT2),y)
+ 	EXTRA_CFLAGS += -DBMA2X2_ENABLE_INT2
+ endif
++
++obj-$(CONFIG_SENSORS_YAS533)  += yas_mag_drv-yas532.o
++obj-$(CONFIG_SENSORS_YAS533)  += yas_mag_drv-yas537.o
++obj-$(CONFIG_SENSORS_YAS533)  += yas_mag_kernel.o
+diff --git a/drivers/input/misc/yas.h b/drivers/input/misc/yas.h
+new file mode 100644
+index 0000000..23bacb7
+--- /dev/null
++++ b/drivers/input/misc/yas.h
+@@ -0,0 +1,1854 @@
++/**
++ * Header file of the core driver API @file yas.h
++ *
++ * Copyright (c) 2013-2014 Yamaha Corporation
++ *
++ * This software is provided 'as-is', without any express or implied
++ * warranty.  In no event will the authors be held liable for any damages
++ * arising from the use of this software.
++ *
++ * Permission is granted to anyone to use this software for any purpose,
++ * including commercial applications, and to alter it and redistribute it
++ * freely, subject to the following restrictions:
++ *
++ * 1. The origin of this software must not be misrepresented; you must not
++ *    claim that you wrote the original software. If you use this software
++ *    in a product, an acknowledgment in the product documentation would be
++ *    appreciated but is not required.
++ * 2. Altered source versions must be plainly marked as such, and must not be
++ *    misrepresented as being the original software.
++ * 3. This notice may not be removed or altered from any source distribution.
++ */
++
++#ifndef __YAS_H__
++#define __YAS_H__
++
++#include "yas_cfg.h"
++
++#define YAS_VERSION	"10.2.0d"	/*!< MS-x Driver Version */
++
++/* ----------------------------------------------------------------------------
++ *                             Typedef definition
++ *--------------------------------------------------------------------------- */
++
++#if defined(__KERNEL__)
++#include <linux/types.h>
++#else
++#include <stdint.h>
++/*typedef signed char	int8_t;*/
++/*typedef unsigned char	uint8_t;*/
++/*typedef signed short	int16_t;*/
++/*typedef unsigned short	uint16_t;*/
++/*typedef signed int	int32_t;*/
++/*typedef unsigned int	uint32_t;*/
++#endif
++
++/* ----------------------------------------------------------------------------
++ *                              Macro definition
++ *--------------------------------------------------------------------------- */
++
++#define YAS_DEBUG			(0) /*!< Debug print (0:disabled,
++					      1:enabled) */
++
++#define YAS_NO_ERROR			(0) /*!< Succeed */
++#define YAS_ERROR_ARG			(-1) /*!< Invalid argument */
++#define YAS_ERROR_INITIALIZE		(-2) /*!< Invalid initialization status
++					      */
++#define YAS_ERROR_BUSY			(-3) /*!< Sensor is busy */
++#define YAS_ERROR_DEVICE_COMMUNICATION	(-4) /*!< Device communication error */
++#define YAS_ERROR_CHIP_ID		(-5) /*!< Invalid chip id */
++#define YAS_ERROR_CALREG		(-6) /*!< Invalid CAL register */
++#define YAS_ERROR_OVERFLOW		(-7) /*!< Overflow occured */
++#define YAS_ERROR_UNDERFLOW		(-8) /*!< Underflow occured */
++#define YAS_ERROR_DIRCALC		(-9) /*!< Direction calcuration error */
++#define YAS_ERROR_ERROR			(-128) /*!< other error */
++
++#ifndef NULL
++#ifdef __cplusplus
++#define NULL				(0) /*!< NULL */
++#else
++#define NULL				((void *)(0)) /*!< NULL */
++#endif
++#endif
++#ifndef NELEMS
++#define NELEMS(a)	((int)(sizeof(a)/sizeof(a[0]))) /*!< Number of array
++							  elements */
++#endif
++#ifndef ABS
++#define ABS(a)		((a) > 0 ? (a) : -(a)) /*!< Absolute value */
++#endif
++#ifndef M_PI
++#define M_PI		(3.14159265358979323846) /*!< Math PI */
++#endif
++
++#define YAS_MATRIX_NORM		(10000) /*!< Matrix normalize unit */
++/* YAS_MATRIX_NORM_RECIP_BIT = SFIXED_RECIP_Q31(YAS_MATRIX_NORM,
++ * &YAS_MATRIX_NORM_RECIP) */
++#define YAS_MATRIX_NORM_RECIP		(0x68DB8BAC)
++#define YAS_MATRIX_NORM_RECIP_BIT	(18)
++#define YAS_QUATERNION_NORM	(10000) /*!< Quaternion normalize unit */
++
++#if YAS_DEBUG
++#ifdef __KERNEL__
++#include <linux/kernel.h>
++#define YLOGD(args) (printk args)	/*!< Debug log (DEBUG) */
++#define YLOGI(args) (printk args)	/*!< Debug log (INFO) */
++#define YLOGE(args) (printk args)	/*!< Debug log (ERROR) */
++#define YLOGW(args) (printk args)	/*!< Debug log (WARNING) */
++#elif defined __ANDROID__
++#include <cutils/log.h>
++#ifdef LOG_TAG
++#undef LOG_TAG
++#endif
++#define LOG_TAG "yas"
++#define YLOGD(args) (ALOGD args)	/*!< Debug log (DEBUG) */
++#define YLOGI(args) (ALOGI args)	/*!< Debug log (INFO) */
++#define YLOGE(args) (ALOGE args)	/*!< Debug log (ERROR) */
++#define YLOGW(args) (ALOGW args)	/*!< Debug log (WARNING) */
++#else /* __ANDROID__ */
++#include <stdio.h>
++#define YLOGD(args) (printf args)	/*!< Debug log (DEBUG) */
++#define YLOGI(args) (printf args)	/*!< Debug log (INFO) */
++#define YLOGE(args) (printf args)	/*!< Debug log (ERROR) */
++#define YLOGW(args) (printf args)	/*!< Debug log (WARNING) */
++#endif /* __ANDROID__ */
++#else /* DEBUG */
++#define YLOGD(args)	/*!< Debug log (DEBUG) */
++#define YLOGI(args)	/*!< Debug log (INFO) */
++#define YLOGW(args)	/*!< Debug log (ERROR) */
++#define YLOGE(args)	/*!< Debug log (WARNING) */
++#endif /* DEBUG */
++
++#define YAS_TYPE_ACC_NONE		(0x00000001) /*!< No Acceleration */
++#define YAS_TYPE_MAG_NONE		(0x00000002) /*!< No Magnetometer */
++#define YAS_TYPE_GYRO_NONE		(0x00000004) /*!< No Gyroscope */
++#define YAS_TYPE_A_ACC			(0x00000008) /*!< 3-axis Acceleration */
++#define YAS_TYPE_M_MAG			(0x00000010) /*!< 3-axis Magnetometer */
++#define YAS_TYPE_G_GYRO			(0x00000020) /*!< 3-axis Gyroscope */
++#define YAS_TYPE_AM_ACC			(0x00100000) /*!< 6-axis (Acc+Mag)
++						       Acceleration */
++#define YAS_TYPE_AM_MAG			(0x00200000) /*!< 6-axis (Acc+Mag)
++						       Magnetometer */
++#define YAS_TYPE_AG_ACC			(0x01000000) /*!< 6-axis (Acc+Gyro)
++						       Acceleration */
++#define YAS_TYPE_AG_GYRO		(0x02000000) /*!< 6-axis (Acc+Gyro)
++						       Gyroscope */
++#define YAS_TYPE_AMG_ACC		(0x10000000) /*!< 9-axis (Acc+Gyro+Mag)
++						       Acceleration */
++#define YAS_TYPE_AMG_MAG		(0x20000000) /*!< 9-axis (Acc+Gyro+Mag)
++						       Magnetometer */
++#define YAS_TYPE_AMG_GYRO		(0x40000000) /*!< 9-axis (Acc+Gyro+Mag)
++						       Gyroscope */
++
++#if YAS_ACC_DRIVER == YAS_ACC_DRIVER_NONE
++#define YAS_TYPE_ACC YAS_TYPE_ACC_NONE
++#elif YAS_ACC_DRIVER == YAS_ACC_DRIVER_ADXL345
++#define YAS_TYPE_ACC YAS_TYPE_A_ACC
++#elif YAS_ACC_DRIVER == YAS_ACC_DRIVER_ADXL346
++#define YAS_TYPE_ACC YAS_TYPE_A_ACC
++#elif YAS_ACC_DRIVER == YAS_ACC_DRIVER_BMA150
++#define YAS_TYPE_ACC YAS_TYPE_A_ACC
++#elif YAS_ACC_DRIVER == YAS_ACC_DRIVER_BMA222
++#define YAS_TYPE_ACC YAS_TYPE_A_ACC
++#elif YAS_ACC_DRIVER == YAS_ACC_DRIVER_BMA222E
++#define YAS_TYPE_ACC YAS_TYPE_A_ACC
++#elif YAS_ACC_DRIVER == YAS_ACC_DRIVER_BMA250
++#define YAS_TYPE_ACC YAS_TYPE_A_ACC
++#elif YAS_ACC_DRIVER == YAS_ACC_DRIVER_BMA250E
++#define YAS_TYPE_ACC YAS_TYPE_A_ACC
++#elif YAS_ACC_DRIVER == YAS_ACC_DRIVER_BMA254
++#define YAS_TYPE_ACC YAS_TYPE_A_ACC
++#elif YAS_ACC_DRIVER == YAS_ACC_DRIVER_BMA255
++#define YAS_TYPE_ACC YAS_TYPE_A_ACC
++#elif YAS_ACC_DRIVER == YAS_ACC_DRIVER_BMI055
++#define YAS_TYPE_ACC YAS_TYPE_A_ACC
++#elif YAS_ACC_DRIVER == YAS_ACC_DRIVER_BMI058
++#define YAS_TYPE_ACC YAS_TYPE_A_ACC
++#elif YAS_ACC_DRIVER == YAS_ACC_DRIVER_DMARD08
++#define YAS_TYPE_ACC YAS_TYPE_A_ACC
++#elif YAS_ACC_DRIVER == YAS_ACC_DRIVER_KXSD9
++#define YAS_TYPE_ACC YAS_TYPE_A_ACC
++#elif YAS_ACC_DRIVER == YAS_ACC_DRIVER_KXTE9
++#define YAS_TYPE_ACC YAS_TYPE_A_ACC
++#elif YAS_ACC_DRIVER == YAS_ACC_DRIVER_KXTF9
++#define YAS_TYPE_ACC YAS_TYPE_A_ACC
++#elif YAS_ACC_DRIVER == YAS_ACC_DRIVER_KXTI9
++#define YAS_TYPE_ACC YAS_TYPE_A_ACC
++#elif YAS_ACC_DRIVER == YAS_ACC_DRIVER_KXTJ2
++#define YAS_TYPE_ACC YAS_TYPE_A_ACC
++#elif YAS_ACC_DRIVER == YAS_ACC_DRIVER_KXUD9
++#define YAS_TYPE_ACC YAS_TYPE_A_ACC
++#elif YAS_ACC_DRIVER == YAS_ACC_DRIVER_LIS331DL
++#define YAS_TYPE_ACC YAS_TYPE_A_ACC
++#elif YAS_ACC_DRIVER == YAS_ACC_DRIVER_LIS331DLH
++#define YAS_TYPE_ACC YAS_TYPE_A_ACC
++#elif YAS_ACC_DRIVER == YAS_ACC_DRIVER_LIS331DLM
++#define YAS_TYPE_ACC YAS_TYPE_A_ACC
++#elif YAS_ACC_DRIVER == YAS_ACC_DRIVER_LIS3DH
++#define YAS_TYPE_ACC YAS_TYPE_A_ACC
++#elif YAS_ACC_DRIVER == YAS_ACC_DRIVER_LSM330DLC
++#define YAS_TYPE_ACC YAS_TYPE_A_ACC
++#elif YAS_ACC_DRIVER == YAS_ACC_DRIVER_MMA8452Q
++#define YAS_TYPE_ACC YAS_TYPE_A_ACC
++#elif YAS_ACC_DRIVER == YAS_ACC_DRIVER_MMA8453Q
++#define YAS_TYPE_ACC YAS_TYPE_A_ACC
++#elif YAS_ACC_DRIVER == YAS_ACC_DRIVER_U2DH
++#define YAS_TYPE_ACC YAS_TYPE_A_ACC
++#elif YAS_ACC_DRIVER == YAS_ACC_DRIVER_YAS535
++#define YAS_TYPE_ACC YAS_TYPE_AM_ACC
++#elif YAS_ACC_DRIVER == YAS_ACC_DRIVER_YAS53x
++#define YAS_TYPE_ACC YAS_TYPE_AMG_ACC
++#endif
++
++#if YAS_MAG_DRIVER == YAS_MAG_DRIVER_NONE
++#define YAS_TYPE_MAG YAS_TYPE_MAG_NONE
++#elif YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS529 /* MS-3C */
++#define YAS_TYPE_MAG YAS_TYPE_M_MAG
++#elif YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS530 /* MS-3E */
++#define YAS_TYPE_MAG YAS_TYPE_M_MAG
++#elif YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS532 /* MS-3R */
++#define YAS_TYPE_MAG YAS_TYPE_M_MAG
++#elif YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS533 /* MS-3F */
++#define YAS_TYPE_MAG YAS_TYPE_M_MAG
++#elif YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS535 /* MS-6C */
++#define YAS_TYPE_MAG YAS_TYPE_AM_MAG
++#elif YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS536 /* MS-3W */
++#define YAS_TYPE_MAG YAS_TYPE_M_MAG
++#elif YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS537 /* MS-3T */
++#define YAS_TYPE_MAG YAS_TYPE_M_MAG
++#elif YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS53x
++#define YAS_TYPE_MAG YAS_TYPE_AMG_MAG
++#endif
++
++#if YAS_GYRO_DRIVER == YAS_GYRO_DRIVER_NONE
++#define YAS_TYPE_GYRO YAS_TYPE_GYRO_NONE
++#elif YAS_GYRO_DRIVER == YAS_GYRO_DRIVER_BMG160
++#define YAS_TYPE_GYRO YAS_TYPE_G_GYRO
++#elif YAS_GYRO_DRIVER == YAS_GYRO_DRIVER_BMI055
++#define YAS_TYPE_GYRO YAS_TYPE_G_GYRO
++#elif YAS_GYRO_DRIVER == YAS_GYRO_DRIVER_BMI058
++#define YAS_TYPE_GYRO YAS_TYPE_G_GYRO
++#elif YAS_GYRO_DRIVER == YAS_GYRO_DRIVER_EWTZMU
++#define YAS_TYPE_GYRO YAS_TYPE_G_GYRO
++#elif YAS_GYRO_DRIVER == YAS_GYRO_DRIVER_ITG3200
++#define YAS_TYPE_GYRO YAS_TYPE_G_GYRO
++#elif YAS_GYRO_DRIVER == YAS_GYRO_DRIVER_ITG3500
++#define YAS_TYPE_GYRO YAS_TYPE_G_GYRO
++#elif YAS_GYRO_DRIVER == YAS_GYRO_DRIVER_L3G3200D
++#define YAS_TYPE_GYRO YAS_TYPE_G_GYRO
++#elif YAS_GYRO_DRIVER == YAS_GYRO_DRIVER_L3G4200D
++#define YAS_TYPE_GYRO YAS_TYPE_G_GYRO
++#elif YAS_GYRO_DRIVER == YAS_GYRO_DRIVER_LSM330DLC
++#define YAS_TYPE_GYRO YAS_TYPE_G_GYRO
++#elif YAS_GYRO_DRIVER == YAS_GYRO_DRIVER_MPU3050
++#define YAS_TYPE_GYRO YAS_TYPE_G_GYRO
++#elif YAS_GYRO_DRIVER == YAS_GYRO_DRIVER_YAS53x
++#define YAS_TYPE_GYRO YAS_TYPE_AMG_GYRO
++#endif
++
++/* ----------------------------------------------------------------------------
++ *                   Geomagnetic Calibration Configuration
++ *--------------------------------------------------------------------------- */
++
++/*! Geomagnetic calibration mode: spherical only */
++#define YAS_MAG_CALIB_MODE_SPHERE		(0)
++/*! Geomagnetic calibration mode: ellipsoidal only */
++#define YAS_MAG_CALIB_MODE_ELLIPSOID		(1)
++/*! Geomagnetic calibration mode: spherical with gyroscope */
++#define YAS_MAG_CALIB_MODE_SPHERE_WITH_GYRO	(2)
++/*! Geomagnetic calibration mode: ellisoldal with gyroscope */
++#define YAS_MAG_CALIB_MODE_ELLIPSOID_WITH_GYRO	(3)
++/*! Geomagnetic calibration mode: gyroscope only */
++#define YAS_MAG_CALIB_MODE_WITH_GYRO		(4)
++
++/* ----------------------------------------------------------------------------
++ *                      Extension Command Definition
++ *--------------------------------------------------------------------------- */
++/*! YAS532 extension command: self test */
++#define YAS532_SELF_TEST		(0x00000001)
++/*! YAS532 extension command: self test noise */
++#define YAS532_SELF_TEST_NOISE		(0x00000002)
++/*! YAS532 extension command: obtains the hardware offset */
++#define YAS532_GET_HW_OFFSET		(0x00000003)
++/*! YAS532 extension command: sets the hardware offset */
++#define YAS532_SET_HW_OFFSET		(0x00000004)
++/*! YAS532 extension command: obtains last raw data (x, y1, y2, t) */
++#define YAS532_GET_LAST_RAWDATA		(0x00000006)
++
++/*! YAS535 extension command: obtains last raw data (xy1y2[3] t xyz[3]) */
++#define YAS535_GET_LAST_RAWDATA		(0x00000001)
++/*! YAS535 extension command: self test for magnetometer */
++#define YAS535_MAG_SELF_TEST		(0x00000002)
++/*! YAS535 extension command: self test noise for magnetometer */
++#define YAS535_MAG_SELF_TEST_NOISE	(0x00000003)
++/*! YAS535 extension command: obtains the hardware offset */
++#define YAS535_MAG_GET_HW_OFFSET	(0x00000004)
++/*! YAS535 extension command: sets the hardware offset */
++#define YAS535_MAG_SET_HW_OFFSET	(0x00000005)
++/*! YAS535 extension command: obtains the average samples for magnetometer */
++#define YAS535_MAG_GET_AVERAGE_SAMPLE	(0x00000006)
++/*! YAS535 extension command: sets the average samples for magnetometer */
++#define YAS535_MAG_SET_AVERAGE_SAMPLE	(0x00000007)
++/*! YAS535 extension command: self test for accelerometer */
++#define YAS535_ACC_SELF_TEST		(0x00010000)
++/*! YAS535 extension command: obtains the average samples for accelerometer */
++#define YAS535_ACC_GET_AVERAGE_SAMPLE	(0x00020000)
++/*! YAS535 extension command: sets the average samples for accelerometer */
++#define YAS535_ACC_SET_AVERAGE_SAMPLE	(0x00040000)
++
++/*! YAS536 extension command: self test */
++#define YAS536_SELF_TEST		(0x00000001)
++/*! YAS536 extension command: obtains the hardware offset */
++#define YAS536_GET_HW_OFFSET		(0x00000002)
++/*! YAS536 extension command: obtains the average filter length */
++#define YAS536_GET_AVERAGE_LEN		(0x00000004)
++/*! YAS536 extension command: sets the average filter length */
++#define YAS536_SET_AVERAGE_LEN		(0x00000005)
++/*! YAS536 extension command: obtains last raw data (x, y1, y2, t) */
++#define YAS536_GET_LAST_RAWDATA		(0x00000006)
++
++/*! YAS537 extension command: self test */
++#define YAS537_SELF_TEST		(0x00000001)
++/*! YAS537 extension command: self test noise */
++#define YAS537_SELF_TEST_NOISE		(0x00000002)
++/*! YAS537 extension command: obtains last raw data (x, y1, y2, t) */
++#define YAS537_GET_LAST_RAWDATA		(0x00000003)
++/*! YAS537 extension command: obtains the average samples */
++#define YAS537_GET_AVERAGE_SAMPLE	(0x00000004)
++/*! YAS537 extension command: sets the average samples */
++#define YAS537_SET_AVERAGE_SAMPLE	(0x00000005)
++/*! YAS537 extension command: obtains the hardware offset */
++#define YAS537_GET_HW_OFFSET		(0x00000006)
++
++/* ----------------------------------------------------------------------------
++ *                            Structure definition
++ *--------------------------------------------------------------------------- */
++
++/**
++ * @struct yas_vector
++ * @brief Stores the sensor data
++ */
++struct yas_vector {
++	int32_t v[3]; /*!< vector data */
++};
++
++/**
++ * @struct yas_quaternion
++ * @brief Stores the quaternion
++ */
++struct yas_quaternion {
++	int32_t q[4]; /*!< quaternion */
++	int32_t heading_error; /*!< heading error in mdegree,
++				 -1 if unavailable */
++};
++
++/**
++ * @struct yas_matrix
++ * @brief Stores the matrix data
++ */
++struct yas_matrix {
++	int16_t m[9]; /*!< matrix data */
++};
++
++/**
++ * @struct yas_data
++ * @brief Stores the sensor data
++ */
++struct yas_data {
++	int32_t type; /*!< Sensor type */
++	struct yas_vector xyz; /*!< X, Y, Z measurement data of the sensor */
++	uint32_t timestamp; /*!< Measurement time */
++	uint8_t accuracy; /*!< Measurement data accuracy */
++};
++
++/**
++ * @struct yas_driver_callback
++ * @brief User-written callback functions specific to each implementation, such
++ * as communication controls with the device
++ */
++struct yas_driver_callback {
++	/**
++	 * Open the device
++	 * @param[in] type Sensor type
++	 * @retval 0 Success
++	 * @retval Negative Failure
++	 */
++	int (*device_open)(int32_t type);
++	/**
++	 * Close the device
++	 * @param[in] type Sensor type
++	 * @retval 0 Success
++	 * @retval Negative Failure
++	 */
++	int (*device_close)(int32_t type);
++	/**
++	 * Send data to the device
++	 * @param[in] type Sensor type
++	 * @param[in] addr Register address
++	 * @param[in] buf The pointer to the data buffer to be sent
++	 * @param[in] len The length of the data buffer
++	 * @retval 0 Success
++	 * @retval Negative Failure
++	 */
++	int (*device_write)(int32_t type, uint8_t addr, const uint8_t *buf,
++			int len);
++	/**
++	 * Receive data from the device
++	 * @param[in] type Sensor type
++	 * @param[in] addr Register address
++	 * @param[out] buf The pointer to the data buffer to be received
++	 * @param[in] len The length of the data buffer
++	 * @retval 0 Success
++	 * @retval Negative Failure
++	 */
++	int (*device_read)(int32_t type, uint8_t addr, uint8_t *buf, int len);
++	/**
++	 * Sleep in micro-seconds
++	 * @param[in] usec Sleep time in micro-seconds
++	 */
++	void (*usleep)(int usec);
++	/**
++	 * Obtains the current time in milli-seconds
++	 * @return The current time in milli-seconds
++	 */
++	uint32_t (*current_time)(void);
++};
++
++/**
++ * @struct yas_acc_driver
++ * @brief Acceleration sensor driver
++ */
++struct yas_acc_driver {
++	/**
++	 * Initializes the sensor, starts communication with the device
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*init)(void);
++	/**
++	 * Terminates the communications with the device
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*term)(void);
++	/**
++	 * Obtains measurment period in milli-seconds
++	 * @retval Non-Negatiev Measurement period in milli-seconds
++	 * @retval Negative Failure
++	 */
++	int (*get_delay)(void);
++	/**
++	 * Sets measurment period in milli-seconds
++	 * @param[in] delay Measurement period in milli-seconds
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*set_delay)(int delay);
++	/**
++	 * Reports the sensor status (Enabled or Disabled)
++	 * @retval 0 Disabled
++	 * @retval 1 Enabled
++	 * @retval Negative Failure
++	 */
++	int (*get_enable)(void);
++	/**
++	 * Enables or disables sensors
++	 * @param[in] enable The status of the sensor (0: Disable, 1: Enable)
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*set_enable)(int enable);
++	/**
++	 * Obtains the sensor position
++	 * @retval 0-7 The position of the sensor
++	 * @retval Negative Failure
++	 */
++	int (*get_position)(void);
++	/**
++	 * Sets the sensor position
++	 * @param[in] position The position of the sensor (0-7)
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*set_position)(int position);
++	/**
++	 * Measures the sensor
++	 * @param[out] raw Measured sensor data
++	 * @param[in] num The number of the measured sensor data
++	 * @retval Non-Negative The number of the measured sensor data
++	 * @retval Negative Failure
++	 */
++	int (*measure)(struct yas_data *raw, int num);
++	/**
++	 * Extension command execution specific to the part number
++	 * @param[in] cmd Extension command id
++	 * @param[out] result Extension command result
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*ext)(int32_t cmd, void *result);
++	struct yas_driver_callback callback; /*!< Callback functions */
++};
++
++/**
++ * @struct yas_mag_driver
++ * @brief Magnetic sensor driver
++ */
++struct yas_mag_driver {
++	/**
++	 * Initializes the sensor, starts communication with the device
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*init)(void);
++	/**
++	 * Terminates the communications with the device
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*term)(void);
++	/**
++	 * Obtains measurment period in milli-seconds
++	 * @retval Non-Negatiev Measurement period in milli-seconds
++	 * @retval Negative Failure
++	 */
++	int (*get_delay)(void);
++	/**
++	 * Sets measurment period in milli-seconds
++	 * @param[in] delay Measurement period in milli-seconds
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*set_delay)(int delay);
++	/**
++	 * Reports the sensor status (Enabled or Disabled)
++	 * @retval 0 Disabled
++	 * @retval 1 Enabled
++	 * @retval Negative Failure
++	 */
++	int (*get_enable)(void);
++	/**
++	 * Enables or disables sensors
++	 * @param[in] enable The status of the sensor (0: Disable, 1: Enable)
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*set_enable)(int enable);
++	/**
++	 * Obtains the sensor position
++	 * @retval 0-7 The position of the sensor
++	 * @retval Negative Failure
++	 */
++	int (*get_position)(void);
++	/**
++	 * Sets the sensor position
++	 * @param[in] position The position of the sensor (0-7)
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*set_position)(int position);
++	/**
++	 * Measures the sensor
++	 * @param[out] raw Measured sensor data
++	 * @param[in] num The number of the measured sensor data
++	 * @retval Non-Negative The number of the measured sensor data
++	 * @retval Negative Failure
++	 */
++	int (*measure)(struct yas_data *raw, int num);
++	/**
++	 * Extension command execution specific to the part number
++	 * @param[in] cmd Extension command id
++	 * @param[out] result Extension command result
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*ext)(int32_t cmd, void *result);
++	struct yas_driver_callback callback; /*!< Callback functions */
++};
++
++/**
++ * @struct yas_gyro_driver
++ * @brief Gyroscope sensor driver
++ */
++struct yas_gyro_driver {
++	/**
++	 * Initializes the sensor, starts communication with the device
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*init)(void);
++	/**
++	 * Terminates the communications with the device
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*term)(void);
++	/**
++	 * Obtains measurment period in milli-seconds
++	 * @retval Non-Negatiev Measurement period in milli-seconds
++	 * @retval Negative Failure
++	 */
++	int (*get_delay)(void);
++	/**
++	 * Sets measurment period in milli-seconds
++	 * @param[in] delay Measurement period in milli-seconds
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*set_delay)(int delay);
++	/**
++	 * Reports the sensor status (Enabled or Disabled)
++	 * @retval 0 Disabled
++	 * @retval 1 Enabled
++	 * @retval Negative Failure
++	 */
++	int (*get_enable)(void);
++	/**
++	 * Enables or disables sensors
++	 * @param[in] enable The status of the sensor (0: Disable, 1: Enable)
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*set_enable)(int enable);
++	/**
++	 * Obtains the sensor position
++	 * @retval 0-7 The position of the sensor
++	 * @retval Negative Failure
++	 */
++	int (*get_position)(void);
++	/**
++	 * Sets the sensor position
++	 * @param[in] position The position of the sensor (0-7)
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*set_position)(int position);
++	/**
++	 * Measures the sensor
++	 * @param[out] raw Measured sensor data
++	 * @param[in] num The number of the measured sensor data
++	 * @retval Non-Negative The number of the measured sensor data
++	 * @retval Negative Failure
++	 */
++	int (*measure)(struct yas_data *raw, int num);
++	/**
++	 * Extension command execution specific to the part number
++	 * @param[in] cmd Extension command id
++	 * @param[out] result Extension command result
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*ext)(int32_t cmd, void *result);
++	struct yas_driver_callback callback; /*!< Callback functions */
++};
++
++/**
++ * @struct yas_acc_mag_driver
++ * @brief Acceleration and geomagnetix sensor driver (6-axis).
++ */
++struct yas_acc_mag_driver {
++	/**
++	 * Initializes the sensor, starts communication with the device
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*init)(void);
++	/**
++	 * Terminates the communications with the device
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*term)(void);
++	/**
++	 * Obtains measurment period in milli-seconds
++	 * @param[in] type Sensor type
++	 * @retval Non-Negatiev Measurement period in milli-seconds
++	 * @retval Negative Failure
++	 */
++	int (*get_delay)(int32_t type);
++	/**
++	 * Sets measurment period in milli-seconds
++	 * @param[in] type Sensor type
++	 * @param[in] delay Measurement period in milli-seconds
++	 * @retval Non-Negative The bit or of the sensor type successfully
++	 * delay changed.
++	 * @retval Negative Failure
++	 */
++	int (*set_delay)(int32_t type, int delay);
++	/**
++	 * Reports the sensor status (Enabled or Disabled)
++	 * @param[in] type Sensor type
++	 * @retval 0 Disabled
++	 * @retval 1 Enabled
++	 * @retval Negative Failure
++	 */
++	int (*get_enable)(int32_t type);
++	/**
++	 * Enables or disables sensors
++	 * @param[in] type Sensor type
++	 * @param[in] enable The status of the sensor (0: Disable, 1: Enable)
++	 * @retval Non-Negative The bit or of the sensor type successfully
++	 * enabled/disabled.
++	 * @retval Negative Failure
++	 */
++	int (*set_enable)(int32_t type, int enable);
++	/**
++	 * Obtains the sensor position
++	 * @retval 0-7 The position of the sensor
++	 * @retval Negative Failure
++	 */
++	int (*get_position)(void);
++	/**
++	 * Sets the sensor position
++	 * @param[in] position The position of the sensor (0-7)
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*set_position)(int position);
++	/**
++	 * Measures the sensor
++	 * @param[in] type Sensor type
++	 * @param[out] raw Measured sensor data
++	 * @param[in] num The number of the measured sensor data
++	 * @retval Non-Negative The number of the measured sensor data
++	 * @retval Negative Failure
++	 */
++	int (*measure)(int32_t type, struct yas_data *raw, int num);
++	/**
++	 * Extension command execution specific to the part number
++	 * @param[in] cmd Extension command id
++	 * @param[out] result Extension command result
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*ext)(int32_t cmd, void *result);
++	struct yas_driver_callback callback; /*!< Callback functions */
++};
++
++/**
++ * @struct yas_acc_gyro_driver
++ * @brief Acceleration and gyroscope sensor driver (6-axis).
++ */
++struct yas_acc_gyro_driver {
++	/**
++	 * Initializes the sensor, starts communication with the device
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*init)(void);
++	/**
++	 * Terminates the communications with the device
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*term)(void);
++	/**
++	 * Obtains measurment period in milli-seconds
++	 * @param[in] type Sensor type
++	 * @retval Non-Negatiev Measurement period in milli-seconds
++	 * @retval Negative Failure
++	 */
++	int (*get_delay)(int32_t type);
++	/**
++	 * Sets measurment period in milli-seconds
++	 * @param[in] type Sensor type
++	 * @param[in] delay Measurement period in milli-seconds
++	 * @retval Non-Negative The bit or of the sensor type successfully
++	 * delay changed.
++	 * @retval Negative Failure
++	 */
++	int (*set_delay)(int32_t type, int delay);
++	/**
++	 * Reports the sensor status (Enabled or Disabled)
++	 * @param[in] type Sensor type
++	 * @retval 0 Disabled
++	 * @retval 1 Enabled
++	 * @retval Negative Failure
++	 */
++	int (*get_enable)(int32_t type);
++	/**
++	 * Enables or disables sensors
++	 * @param[in] type Sensor type
++	 * @param[in] enable The status of the sensor (0: Disable, 1: Enable)
++	 * @retval Non-Negative The bit or of the sensor type successfully
++	 * enabled/disabled.
++	 * @retval Negative Failure
++	 */
++	int (*set_enable)(int32_t type, int enable);
++	/**
++	 * Obtains the sensor position
++	 * @retval 0-7 The position of the sensor
++	 * @retval Negative Failure
++	 */
++	int (*get_position)(void);
++	/**
++	 * Sets the sensor position
++	 * @param[in] position The position of the sensor (0-7)
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*set_position)(int position);
++	/**
++	 * Measures the sensor
++	 * @param[in] type Sensor type
++	 * @param[out] raw Measured sensor data
++	 * @param[in] num The number of the measured sensor data
++	 * @retval Non-Negative The number of the measured sensor data
++	 * @retval Negative Failure
++	 */
++	int (*measure)(int32_t type, struct yas_data *raw, int num);
++	/**
++	 * Extension command execution specific to the part number
++	 * @param[in] cmd Extension command id
++	 * @param[out] result Extension command result
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*ext)(int32_t cmd, void *result);
++	struct yas_driver_callback callback; /*!< Callback functions */
++};
++
++/**
++ * @struct yas_acc_mag_gyro_driver
++ * @brief Acceleration, geomagnetic and gyroscope sensor driver (9-axis).
++ */
++struct yas_acc_mag_gyro_driver {
++	/**
++	 * Initializes the sensor, starts communication with the device
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*init)(void);
++	/**
++	 * Terminates the communications with the device
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*term)(void);
++	/**
++	 * Obtains measurment period in milli-seconds
++	 * @param[in] type Sensor type
++	 * @retval Non-Negatiev Measurement period in milli-seconds
++	 * @retval Negative Failure
++	 */
++	int (*get_delay)(int32_t type);
++	/**
++	 * Sets measurment period in milli-seconds
++	 * @param[in] type Sensor type
++	 * @param[in] delay Measurement period in milli-seconds
++	 * @retval Non-Negative The bit or of the sensor type successfully
++	 * delay changed.
++	 * @retval Negative Failure
++	 */
++	int (*set_delay)(int32_t type, int delay);
++	/**
++	 * Reports the sensor status (Enabled or Disabled)
++	 * @param[in] type Sensor type
++	 * @retval 0 Disabled
++	 * @retval 1 Enabled
++	 * @retval Negative Failure
++	 */
++	int (*get_enable)(int32_t type);
++	/**
++	 * Enables or disables sensors
++	 * @param[in] type Sensor type
++	 * @param[in] enable The status of the sensor (0: Disable, 1: Enable)
++	 * @retval Non-Negative The bit or of the sensor type successfully
++	 * enabled/disabled.
++	 * @retval Negative Failure
++	 */
++	int (*set_enable)(int32_t type, int enable);
++	/**
++	 * Obtains the sensor position
++	 * @retval 0-7 The position of the sensor
++	 * @retval Negative Failure
++	 */
++	int (*get_position)(void);
++	/**
++	 * Sets the sensor position
++	 * @param[in] position The position of the sensor (0-7)
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*set_position)(int position);
++	/**
++	 * Measures the sensor
++	 * @param[in] type Sensor type
++	 * @param[out] raw Measured sensor data
++	 * @param[in] num The number of the measured sensor data
++	 * @retval Non-Negative The number of the measured sensor data
++	 * @retval Negative Failure
++	 */
++	int (*measure)(int32_t type, struct yas_data *raw, int num);
++	/**
++	 * Extension command execution specific to the part number
++	 * @param[in] cmd Extension command id
++	 * @param[out] result Extension command result
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*ext)(int32_t cmd, void *result);
++	struct yas_driver_callback callback; /*!< Callback functions */
++};
++
++#if YAS_MAG_FILTER_ENABLE
++/**
++ * @struct yas_mag_filter_config
++ * @brief Magnetic filter configuration
++ */
++struct yas_mag_filter_config {
++	uint8_t len; /*!< Filter length */
++	uint16_t noise[3]; /*!< Filter noise X, Y, Z in [nT] */
++	uint16_t threshold; /*!< Filter threshold in [nT] */
++};
++
++/**
++ * @struct yas_mag_filter
++ * @brief Magnetic filter
++ */
++struct yas_mag_filter {
++	/**
++	 * Initializes the filter
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*init)(void);
++	/**
++	 * Terminates the filter
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*term)(void);
++	/**
++	 * Resets the filter
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*reset)(void);
++	/**
++	 * Filters the sensor data
++	 * @param[in] input Measured sensor data
++	 * @param[out] output Filtered sensor data
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*update)(struct yas_vector *input, struct yas_vector *output);
++	/**
++	 * Obtains filter configuration
++	 * @param[out] config Sensor filter configuration
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*get_config)(struct yas_mag_filter_config *config);
++	/**
++	 * Sets filter configuration
++	 * @param[in] config Sensor filter configuration
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*set_config)(struct yas_mag_filter_config *config);
++};
++#endif
++
++#if YAS_MAG_CALIB_ENABLE
++/**
++ * @struct yas_mag_calib_config
++ * @brief Magnetic calibration configuration
++ */
++struct yas_mag_calib_config {
++	uint8_t mode; /*!< Calibration mode : #YAS_MAG_CALIB_MODE_SPHERE,
++		    #YAS_MAG_CALIB_MODE_ELLIPSOID,
++		    #YAS_MAG_CALIB_MODE_SPHERE_WITH_GYRO,
++		    #YAS_MAG_CALIB_MODE_ELLIPSOID_WITH_GYRO */
++	uint16_t spread[3]; /*!< Spread threshold for accuracy 1-3
++			      (YAS_MAG_CALIB_MODE_SPHERE) */
++	uint16_t variation[3]; /*!< Variation threshold for accuracy 1-3
++				 (YAS_MAG_CALIB_MODE_SPHERE) */
++#if YAS_MAG_CALIB_ELLIPSOID_ENABLE
++	uint16_t el_spread[3]; /*!< Spread threshold for accuracy 1-3
++				 (YAS_MAG_CALIB_MODE_ELLIPSOID) */
++	uint16_t el_variation[3]; /*!< Variation threshold for accuracy 1-3
++				    (YAS_MAG_CALIB_MODE_ELLIPSOID) */
++#endif
++#if !YAS_MAG_CALIB_MINI_ENABLE
++	uint16_t trad_variation[3]; /*!< Traditional variation for accuracy 1-3
++				     */
++#endif
++#if YAS_MAG_CALIB_WITH_GYRO_ENABLE
++	uint16_t cwg_threshold[12]; /*!< Threshold for calibration with gyro.
++				     Order is {eval_th_for_narrow,
++				      diff_angle_th_for_narrow,
++				      eval_th_for_wide, eval_th_for_wide }
++				      for accuracy 1, 2, and 3. */
++#endif
++};
++
++/**
++ * @struct yas_mag_calib_result
++ * @brief Magnetic calibration result
++ */
++struct yas_mag_calib_result {
++	struct yas_vector offset; /*!< Calibration offset [nT] */
++	uint16_t spread; /*!< Spread value */
++	uint16_t variation; /*!< Variation value */
++	uint16_t radius; /*!< Magnetic radius [nT] */
++	uint8_t axis; /*!< Update axis */
++	uint8_t accuracy; /*!< Accuracy [0-3] */
++	uint8_t level; /*!< The number of sample */
++#if !YAS_MAG_CALIB_MINI_ENABLE
++	int success_mode; /*!< Success mode. 1:cwm, 2:cwg. */
++	uint16_t trad_variation; /*!< Traditional variation value */
++#endif
++#if YAS_MAG_CALIB_WITH_GYRO_ENABLE
++	uint16_t cwg_spread;
++	uint16_t cwg_variation;
++#endif
++#if YAS_MAG_CALIB_ELLIPSOID_ENABLE
++	struct yas_matrix dynamic_matrix;
++#endif
++};
++
++/**
++ * @struct yas_mag_calib
++ * @brief Magnetic calibration
++ */
++struct yas_mag_calib {
++	/**
++	 * Initializes the calibration
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*init)(void);
++	/**
++	 * Terminates the calibration
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*term)(void);
++	/**
++	 * Resets the calibration
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*reset)(void);
++	/**
++	 * Updates the calibration
++	 * @param[in] raw Measured sensor data
++	 * @param[in] num The number of the measured sensor data
++	 * @retval 0 Calibration offset and accuracy are NOT changed
++	 * @retval 1 Calibration offset or accuracy is changed
++	 * @retval Negative Failure
++	 */
++	int (*update)(struct yas_data *raw, int num);
++	/**
++	 * Obtains the calibration offset
++	 * @param[in] type Sensor type
++	 * @param[out] offset Calibration offset
++	 * @param[out] accuracy Calibration offset accuracy
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*get_offset)(int type, struct yas_vector *offset,
++			uint8_t *accuracy);
++	/**
++	 * Sets the calibration offset
++	 * @param[in] type Sensor type
++	 * @param[in] offset Calibration offset
++	 * @param[in] accuracy Calibration offset accuracy
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*set_offset)(int type, struct yas_vector *offset,
++			uint8_t accuracy);
++	/**
++	 * Obtains the calibration configuration
++	 * @param[out] config Calibration configuration
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*get_config)(struct yas_mag_calib_config *config);
++	/**
++	 * Sets the calibration configuration
++	 * @param[in] config Calibration configuration
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*set_config)(struct yas_mag_calib_config *config);
++#if YAS_MAG_CALIB_ELLIPSOID_ENABLE
++	/**
++	 * Obtains the dynamic ellipsoid correction matrix
++	 * @param[out] m dynamic ellipsoid correction matrix
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*get_dynamic_matrix)(struct yas_matrix *m);
++	/**
++	 * Sets the dynamic ellipsoid correction matrix
++	 * @param[in] m Dynamic ellipsoid correction matrix
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*set_dynamic_matrix)(struct yas_matrix *m);
++#endif
++	/**
++	 * Obtains the detail of the last calibration result
++	 * @param[out] r Last calibration result
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*get_result)(struct yas_mag_calib_result *r);
++};
++#endif
++
++#if YAS_GYRO_CALIB_ENABLE
++/**
++ * @struct yas_gyro_calib_config
++ * @brief Gyroscope calibration configuration
++ */
++struct yas_gyro_calib_config {
++	uint16_t mag_noise; /*!< Magnetic sensor noise in standard deviation
++			     [nT] */
++	uint16_t gyro_noise; /*!< Gyroscope sensor noise in [dps per root HZ] */
++};
++
++/**
++ * @struct yas_gyro_calib_result
++ * @brief Gyroscope calibration result
++ */
++struct yas_gyro_calib_result {
++	struct yas_vector offset; /*!< Calibration offset [mdps] */
++	uint8_t accuracy; /*!< Accuracy [0-3] */
++};
++
++/**
++ * @struct yas_gyro_calib
++ * @brief Gyroscope calibration
++ */
++struct yas_gyro_calib {
++	/**
++	 * Initializes the calibration
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*init)(void);
++	/**
++	 * Terminates the calibration
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*term)(void);
++	/**
++	 * Resets the calibration
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*reset)(void);
++	/**
++	 * Updates the calibration
++	 * @param[in] raw Measured sensor data
++	 * @param[in] num The number of the measured sensor data
++	 * @retval 0 Calibration offset or accuracy is NOT changed
++	 * @retval 1 Calibration offset or accuracy is changed
++	 * @retval Negative Failure
++	 */
++	int (*update)(struct yas_data *raw, int num);
++	/**
++	 * Obtains the calibration offset
++	 * @param[in] type Sensor type
++	 * @param[out] offset Calibration offset
++	 * @param[out] accuracy Calibration offset accuracy
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*get_offset)(int type, struct yas_vector *offset,
++			uint8_t *accuracy);
++	/**
++	 * Sets the calibration offset
++	 * @param[in] type Sensor type
++	 * @param[in] offset Calibration offset
++	 * @param[in] accuracy Calibration offset accuracy
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*set_offset)(int type, struct yas_vector *offset,
++			uint8_t accuracy);
++	/**
++	 * Obtains the calibration configuration
++	 * @param[out] config Calibration configuration
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*get_config)(struct yas_gyro_calib_config *config);
++	/**
++	 * Sets the calibration configuration
++	 * @param[in] config Calibration configuration
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*set_config)(struct yas_gyro_calib_config *config);
++	/**
++	 * Obtains the detail of the last calibration result
++	 * @param[out] r Last calibration result
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*get_result)(struct yas_gyro_calib_result *r);
++};
++#endif
++
++#if YAS_MAG_AVERAGE_FILTER_ENABLE
++/**
++ * @struct yas_mag_avg_config
++ * @brief Magnetic average filter configuration
++ */
++struct yas_mag_avg_config {
++	int tap_min; /*!< Minimum average filter length (0:32, 1:64, 2:128,
++			  3:256) */
++	int tap_hard; /*!< Average filter length currently set to the sensor
++			(0:32, 1:64, 2:128, 3:256) */
++	int filter_len; /*!< Average filter length */
++	uint32_t dfine; /*!< Measured standard deviation threshold [nT] */
++	uint32_t dthresh; /*!< Median standard deviation threshold [nT] */
++};
++
++/**
++ * @struct yas_mag_avg_result
++ * @brief Magnetic average filter result
++ */
++struct yas_mag_avg_result {
++	int32_t tap_new; /*!< New average filter taps
++			    (0:32, 1:64, 2:128, 3:256) */
++	int32_t dm;	/*!< Median standard deviation */
++};
++
++/**
++ * @struct yas_mag_avg
++ * @brief Magnetic average filter
++ */
++struct yas_mag_avg {
++	/**
++	 * Initializes the magnetic average filter
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*init)(void);
++	/**
++	 * Terminates the magnetic average filter
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*term)(void);
++	/**
++	 * Resets the magnetic average filter
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*reset)(void);
++	/**
++	 * Updates the filter
++	 * @param[in] raw Measured sensor data
++	 * @param[in] num The number of the measured sensor data
++	 * @param[out] r Average filter result
++	 * @retval 0 Average filter taps is NOT changed
++	 * @retval 1 Average filter taps is changed
++	 * @retval Negative Failure
++	 */
++	int (*update)(struct yas_data *raw, int num);
++	/**
++	 * Obtains the average filter tap
++	 * @param[out] curtap Current average filter tap (0:32, 1:64, 2:128,
++	 * 3:256)
++	 * @param[out] newtap Average filter tap to be set (0:32, 1:64, 2:128,
++	 * 3:256)
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*get_tap)(int *curtap, int *newtap);
++	/**
++	 * Sets the average filter tap
++	 * @param[in] tap The average filter tap (0:32, 1:64, 2:128, 3:256)
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*set_tap)(int tap);
++	/**
++	 * Obtains the average filter configuration
++	 * @param[out] config Average filter configuration
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*get_config)(struct yas_mag_avg_config *config);
++	/**
++	 * Sets the average filter configuration
++	 * @param[in] config Average filter configuration
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*set_config)(struct yas_mag_avg_config *config);
++	/**
++	 * Obtains the detail of filter result
++	 * @param[out] r Filter result
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*get_result)(struct yas_mag_avg_result *r);
++};
++#endif
++
++#if YAS_GAMEVEC_ENABLE
++/**
++ * @struct yas_gamevec_config
++ * @brief Gamevec config
++ */
++struct yas_gamevec_config {
++	int32_t weight;
++	int32_t hpf_sq_out_threshold;
++	int16_t sustain;
++};
++#endif
++
++#if YAS_FUSION_ENABLE
++/**
++ * @struct yas_fusion_config
++ * @brief Sensor fusion configuration
++ */
++struct yas_fusion_config {
++	uint8_t mag_fusion_enable; /*!< 6 axis fusion enable or disable */
++	uint8_t gyro_fusion_enable; /*!< 9 axis fusion enable or disable */
++#if YAS_GAMEVEC_ENABLE
++	struct yas_gamevec_config gamevec_config;
++#endif
++};
++
++/**
++ * @struct yas_fusion_result
++ * @brief Sensor fusion result
++ */
++struct yas_fusion_result {
++#if YAS_ORIENTATION_ENABLE
++	struct yas_vector orientation_mag; /*!< orientation angle (acc and mag)
++					  [mdegree].  Azimuth, Pitch, Roll */
++#endif
++	struct yas_quaternion quaternion_mag; /*!< quaternion (acc and mag)
++						[normalized in
++						YAS_QUATERNION_NORM] */
++#if YAS_GAMEVEC_ENABLE
++	struct yas_quaternion quaternion_gyro; /*!< quaternion (gyro)
++						 [normalized in
++						 YAS_QUATERNION_NORM] */
++#endif
++#if YAS_FUSION_WITH_GYRO_ENABLE
++#if YAS_ORIENTATION_ENABLE
++	struct yas_vector orientation_fusion; /*!< orientation angle (acc, mag
++						and gyro) [mdegree].  Azimuth,
++						Pitch, Roll */
++#endif
++	struct yas_quaternion quaternion_fusion; /*!< quaternion (acc, mag and
++						   gyro) [normalized in
++						   YAS_QUATERNION_NORM] */
++	struct yas_vector gravity; /*!< Gravity [um/s^2] */
++	struct yas_vector linear_acceleration; /*!< Linear acceleration
++						 [um/s^2] */
++#endif
++};
++
++/**
++ * @struct yas_fusion
++ * @brief Sensor fusion
++ */
++struct yas_fusion {
++	/**
++	 * Initializes the sensor fusion
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*init)(void);
++	/**
++	 * Terminates the sensor fusion
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*term)(void);
++	/**
++	 * Resets the sensor fusion
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*reset)(void);
++	/**
++	 * Notifies the square of offset change.
++	 * @param[in] square of offset change in [nT].
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*notify_offset_change)(int32_t square_offset_change);
++	/**
++	 * Updates the sensor fusion
++	 * @param[in] raw Measured sensor data
++	 * @param[in] num The number of the measured sensor data
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*update)(struct yas_data *raw, int num);
++	/**
++	 * Obtains the sensor fusion configuration
++	 * @param[out] config Sensor fusion configuration
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*get_config)(struct yas_fusion_config *config);
++	/**
++	 * Sets the sensor fusion configuration
++	 * @param[in] config Sensor fusion configuration
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*set_config)(struct yas_fusion_config *config);
++	/**
++	 * Obtains the detail of the last fusion result
++	 * @param[out] r Last fusion result
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*get_result)(struct yas_fusion_result *r);
++};
++#endif
++
++#if YAS_STEPCOUNTER_ENABLE
++/**
++ * @struct yas_stepcounter_config
++ * @brief Stepcounter configuration
++ */
++struct yas_stepcounter_config {
++	int8_t interval; /*!< Step counter calculate interval (ms)
++					0 to 20 */
++	int8_t noisecancel; /*!< Noise cancel setting
++					0: off
++					1: on */
++};
++
++/**
++ * @struct yas_stepcounter_result
++ * @brief Stepcounter result
++ */
++struct yas_stepcounter_result {
++	int32_t walk_and_run_count[2];
++	int32_t walk_and_run_time[2];
++	int32_t totalcount; /*!< Total (walk and run) count */
++	int32_t totaltime; /*!<  Total (walk and run) time */
++};
++
++/**
++ * @struct yas_stepcounter
++ * @brief Step counter function
++ */
++struct yas_stepcounter {
++	/**
++	 * Initializes the stepcounter
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*init)(void);
++	/**
++	 * Terminates the stepcounter
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*term)(void);
++	/**
++	 * Resets the stepcounter
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*reset)(void);
++	/**
++	 * Updates the stepcounter
++	 * @param[in] Measured sensor data (accelerometer)
++	 * @param[in] num The number of the measured sensor data
++	 * @retval 0 Walk count and run count are NOT changed
++	 * @retval 1 Walk count or run count is changed
++	 * @retval Negative Failure
++	 */
++	int (*update)(struct yas_data *ydata, int num);
++	/**
++	 * Obtains the stepcounter configuration
++	 * @param[out] config stepcounter configuration
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*get_config)(struct yas_stepcounter_config *config);
++	/**
++	 * Sets the stepcounter configuration
++	 * @param[in] config stepcounter configuration
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*set_config)(struct yas_stepcounter_config *config);
++	/**
++	 * Obtains the detail of the last stepcounter result
++	 * @param[out] Last stepcounter result
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*get_result)(struct yas_stepcounter_result *r);
++};
++#endif
++
++#if YAS_SIGNIFICANT_MOTION_ENABLE
++/**
++ * @struct yas_sfm_config
++ * @brief Significant motion configuration
++ */
++struct yas_sfm_config {
++	int dummy;
++};
++
++/**
++ * @struct yas_sfm_result
++ * @brief Significant Motion result
++ */
++struct yas_sfm_result {
++	int edge_state;
++	int edge_type;
++	int acc_count;
++	int var_count;
++	int err_count;
++};
++
++/**
++ * @struct yas_sfm
++ * @brief Significant motion function
++ */
++struct yas_sfm {
++	/**
++	 * Initializes the significant motion
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*init)(void);
++	/**
++	 * Terminates the significant motion
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*term)(void);
++	/**
++	 * Resets the significant motion
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*reset)(void);
++	/**
++	 * Updates the significant motion
++	 * @param[in] Measured sensor data (accelerometer)
++	 * @param[in] num The number of the measured sensor data
++	 * @retval 0 Walk count and run count are NOT changed
++	 * @retval 1 Walk count or run count is changed
++	 * @retval Negative Failure
++	 */
++	int (*update)(struct yas_data *ydata, int num);
++	/**
++	 * Obtains the significant motion configuration
++	 * @param[out] config significant motion configuration
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*get_config)(struct yas_sfm_config *config);
++	/**
++	 * Sets the significant motion configuration
++	 * @param[in] config significant motion configuration
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*set_config)(struct yas_sfm_config *config);
++	/**
++	 * Obtains the detail of the last significant motion result
++	 * @param[out] Last significant motion result
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*get_result)(struct yas_sfm_result *r);
++};
++#endif
++
++#if YAS_SOFTWARE_GYROSCOPE_ENABLE
++/**
++ * @struct yas_swgyro_config
++ * @brief Software gyroscope configuration
++ */
++struct yas_swgyro_config {
++	int dummy; /*!< dummy */
++};
++
++/**
++ * @struct yas_swgyro_result
++ * @brief Software gyroscope result
++ */
++struct yas_swgyro_result {
++	struct yas_vector swgyro; /*!< Software gyroscope value in mdps */
++};
++
++/**
++ * @struct yas_swgyro
++ * @brief Software gyroscope
++ */
++struct yas_swgyro {
++	/**
++	 * Initializes the software gyroscope
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*init)(void);
++	/**
++	 * Terminates the software gyroscope
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*term)(void);
++	/**
++	 * Resets the software gyroscope
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*reset)(void);
++	/**
++	 * Updates the software gyroscope
++	 * @param[in] calibrated Measured sensor data
++	 * @param[in] num The number of the measured sensor data
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*update)(struct yas_data *calibrated, int num);
++	/**
++	 * Obtains software gyroscope configuration
++	 * @param[out] config Software gyroscope configuration
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*get_config)(struct yas_swgyro_config *config);
++	/**
++	 * Sets software gyroscope configuration
++	 * @param[in] config Software gyroscope configuration
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*set_config)(struct yas_swgyro_config *config);
++	/**
++	 * Obtains the detail of the last software gyroscope result
++	 * @param[out] r Last software gyroscope result
++	 * @retval #YAS_NO_ERROR Success
++	 * @retval Negative Failure
++	 */
++	int (*get_result)(struct yas_swgyro_result *r);
++};
++#endif
++
++#if YAS_LOG_ENABLE
++
++/**
++ * @struct yas_log
++ * @brief User-written callback functions for log control
++ */
++struct yas_log {
++	/**
++	 * Open the log
++	 * @retval 0 Success
++	 * @retval Negative Failure
++	 */
++	int (*log_open)(void);
++	/**
++	 * Close the log
++	 * @retval 0 Success
++	 * @retval Negative Failure
++	 */
++	int (*log_close)(void);
++	/**
++	 * Write the log
++	 * @param[in] buf Log string
++	 * @param[in] len Log string length
++	 * @retval 0 Success
++	 * @retval Negative Failure
++	 */
++	int (*log_write)(const char *buf, int len);
++};
++#endif
++
++#if YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS532
++struct yas532_self_test_result {
++	int32_t id;
++	int8_t xy1y2[3];
++	int32_t dir;
++	int32_t sx, sy;
++	int32_t xyz[3];
++};
++#endif
++
++#if YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS537
++struct yas537_self_test_result {
++	int32_t id;
++	int32_t dir;
++	int32_t sx, sy;
++	int32_t xyz[3];
++};
++#endif
++
++#if YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS535
++struct yas535_acc_self_test_result {
++	int dummy; /* TBD */
++};
++struct yas535_mag_self_test_result {
++	int32_t id;
++	int8_t xy1y2[3];
++	int32_t dir;
++	int32_t sx, sy;
++	int32_t xyz[3];
++};
++#endif
++
++/* ----------------------------------------------------------------------------
++ *                         Global function definition
++ *--------------------------------------------------------------------------- */
++
++#ifdef __cplusplus
++extern "C" {
++#endif
++
++/**
++ * Initializes the acceleration sensor driver module.  Call thie function by
++ * specifying a callback function.
++ * @param[in,out] f Pointer to yas_acc_driver struct
++ * @retval #YAS_NO_ERROR Success
++ * @retval Negative Number Error
++ */
++int yas_acc_driver_init(struct yas_acc_driver *f);
++
++/**
++ * Initializes the magnetic sensor driver module.  Call thie function by
++ * specifying a callback function.
++ * @param[in,out] f Pointer to yas_mag_driver struct
++ * @retval #YAS_NO_ERROR Success
++ * @retval Negative Number Error
++ */
++int yas_mag_driver_init(struct yas_mag_driver *f);
++
++/**
++ * Initializes the gyroscope sensor driver module.  Call thie function by
++ * specifying a callback function.
++ * @param[in,out] f Pointer to yas_gyro_driver struct
++ * @retval #YAS_NO_ERROR Success
++ * @retval Negative Number Error
++ */
++int yas_gyro_driver_init(struct yas_gyro_driver *f);
++
++/**
++ * Initializes the acceleration and gyroscope sensor (6-axis) driver module.
++ * Call thie function by specifying a callback function.
++ * @param[in,out] f Pointer to yas_acc_gyro_driver struct
++ * @retval #YAS_NO_ERROR Success
++ * @retval Negative Number Error
++ */
++int yas_acc_gyro_driver_init(struct yas_acc_gyro_driver *f);
++
++/**
++ * Initializes the acceleration and magnetic sensor (6-axis) driver module.
++ * Call thie function by specifying a callback function.
++ * @param[in,out] f Pointer to yas_acc_mag_driver struct
++ * @retval #YAS_NO_ERROR Success
++ * @retval Negative Number Error
++ */
++int yas_acc_mag_driver_init(struct yas_acc_mag_driver *f);
++
++/**
++ * Initializes the acceleration, magnetic and gyroscope sensor (9-axis) driver
++ * module.  Call thie function by specifying a callback function.
++ * @param[in,out] f Pointer to yas_acc_mag_gyro_driver struct
++ * @retval #YAS_NO_ERROR Success
++ * @retval Negative Number Error
++ */
++int yas_acc_mag_gyro_driver_init(struct yas_acc_mag_gyro_driver *f);
++
++#if YAS_MAG_CALIB_ENABLE
++/**
++ * Initializes the magnetic calibration module.
++ * @param[in,out] f Pointer to yas_mag_calib struct
++ * @retval #YAS_NO_ERROR Success
++ * @retval Negative Number Error
++ */
++int yas_mag_calib_init(struct yas_mag_calib *f);
++#endif
++
++#if YAS_GYRO_CALIB_ENABLE
++/**
++ * Initializes the gyroscope calibration module.
++ * @param[in,out] f Pointer to yas_gyro_calib struct
++ * @retval #YAS_NO_ERROR Success
++ * @retval Negative Number Error
++ */
++int yas_gyro_calib_init(struct yas_gyro_calib *f);
++#endif
++
++#if YAS_MAG_FILTER_ENABLE
++/**
++ * Initializes the magnetic filter module.
++ * @param[in,out] f Pointer to yas_mag_filter struct
++ * @retval #YAS_NO_ERROR Success
++ * @retval Negative Number Error
++ */
++int yas_mag_filter_init(struct yas_mag_filter *f);
++#endif
++
++#if YAS_MAG_AVERAGE_FILTER_ENABLE
++/**
++ * Initializes the magnetic average filter module.
++ * @param[in,out] f Pointer to yas_mag_avg struct
++ * @retval #YAS_NO_ERROR Success
++ * @retval Negative Number Error
++ */
++int yas_mag_avg_init(struct yas_mag_avg *f);
++#endif
++
++#if YAS_FUSION_ENABLE
++/**
++ * Initializes the sensor fusion module.
++ * @param[in,out] f Pointer to yas_fusion struct
++ * @retval #YAS_NO_ERROR Success
++ * @retval Negative Number Error
++ */
++int yas_fusion_init(struct yas_fusion *f);
++#endif
++
++#if YAS_STEPCOUNTER_ENABLE
++/**
++ * Initializes the stepcounter module.
++ * @param[in,out] f Pointer to yas_stepcounter struct
++ * @retval #YAS_NO_ERROR Success
++ * @retval Negative Number Error
++ */
++int yas_stepcounter_init(struct yas_stepcounter *f);
++#endif
++
++#if YAS_SIGNIFICANT_MOTION_ENABLE
++/**
++ * Initializes the significant motion module.
++ * @param[in,out] f Pointer to yas_sfm struct
++ * @retval #YAS_NO_ERROR Success
++ * @retval Negative Number Error
++ */
++int yas_sfm_init(struct yas_sfm *f);
++#endif
++
++#if YAS_SOFTWARE_GYROSCOPE_ENABLE
++/**
++ * Initializes the software gyroscope module
++ * @param[in,out] f Pointer to yas_swgyro struct
++ * @retval #YAS_NO_ERROR Success
++ * @retval Negative Number Error
++ */
++int yas_swgyro_init(struct yas_swgyro *f);
++#endif
++
++#ifdef __cplusplus
++}
++#endif
++
++#endif /* __YAS_H__ */
+diff --git a/drivers/input/misc/yas_cfg.h b/drivers/input/misc/yas_cfg.h
+new file mode 100644
+index 0000000..95e110b
+--- /dev/null
++++ b/drivers/input/misc/yas_cfg.h
+@@ -0,0 +1,240 @@
++/**
++ * Configuration header file of the core driver API @file yas_cfg.h
++ *
++ * Copyright (c) 2013-2014 Yamaha Corporation
++ *
++ * This software is provided 'as-is', without any express or implied
++ * warranty.  In no event will the authors be held liable for any damages
++ * arising from the use of this software.
++ *
++ * Permission is granted to anyone to use this software for any purpose,
++ * including commercial applications, and to alter it and redistribute it
++ * freely, subject to the following restrictions:
++ *
++ * 1. The origin of this software must not be misrepresented; you must not
++ *    claim that you wrote the original software. If you use this software
++ *    in a product, an acknowledgment in the product documentation would be
++ *    appreciated but is not required.
++ * 2. Altered source versions must be plainly marked as such, and must not be
++ *    misrepresented as being the original software.
++ * 3. This notice may not be removed or altered from any source distribution.
++ */
++#ifndef __YAS_CFG_H__
++#define __YAS_CFG_H__
++
++#define YAS_MAG_DRIVER_NONE			(0) /*!< No Magnetometer */
++#define YAS_MAG_DRIVER_YAS529			(1) /*!< YAS 529 (MS-3C) */
++#define YAS_MAG_DRIVER_YAS530			(2) /*!< YAS 530 (MS-3E) */
++#define YAS_MAG_DRIVER_YAS532			(3) /*!< YAS 532 (MS-3R) */
++#define YAS_MAG_DRIVER_YAS533			(4) /*!< YAS 533 (MS-3F) */
++#define YAS_MAG_DRIVER_YAS535			(5) /*!< YAS 535 (MS-6C) */
++#define YAS_MAG_DRIVER_YAS536			(6) /*!< YAS 536 (MS-3W) */
++#define YAS_MAG_DRIVER_YAS537			(7) /*!< YAS 537 (MS-3T) */
++#define YAS_MAG_DRIVER_YAS53x			(0x7fff) /*!< YAS XXX */
++
++#define YAS_ACC_DRIVER_NONE			(0) /*!< No Accelerometer */
++#define YAS_ACC_DRIVER_ADXL345			(1) /*!< ADXL 345 */
++#define YAS_ACC_DRIVER_ADXL346			(2) /*!< ADXL 346 */
++#define YAS_ACC_DRIVER_BMA150			(3) /*!< BMA 150 */
++#define YAS_ACC_DRIVER_BMA222			(4) /*!< BMA 222 */
++#define YAS_ACC_DRIVER_BMA222E			(5) /*!< BMA 222E */
++#define YAS_ACC_DRIVER_BMA250			(6) /*!< BMA 250 */
++#define YAS_ACC_DRIVER_BMA250E			(7) /*!< BMA 250E */
++#define YAS_ACC_DRIVER_BMA254			(8) /*!< BMA 254 */
++#define YAS_ACC_DRIVER_BMA255			(9) /*!< BMA 255 */
++#define YAS_ACC_DRIVER_BMI055			(10) /*!< BMI 055 */
++#define YAS_ACC_DRIVER_BMI058			(11) /*!< BMI 058 */
++#define YAS_ACC_DRIVER_DMARD08			(12) /*!< DMARD08 */
++#define YAS_ACC_DRIVER_KXSD9			(13) /*!< KXSD9 */
++#define YAS_ACC_DRIVER_KXTE9			(14) /*!< KXTE9 */
++#define YAS_ACC_DRIVER_KXTF9			(15) /*!< KXTF9 */
++#define YAS_ACC_DRIVER_KXTI9			(16) /*!< KXTI9 */
++#define YAS_ACC_DRIVER_KXTJ2			(17) /*!< KXTJ2 */
++#define YAS_ACC_DRIVER_KXUD9			(18) /*!< KXUD9 */
++#define YAS_ACC_DRIVER_LIS331DL			(19) /*!< LIS331DL */
++#define YAS_ACC_DRIVER_LIS331DLH		(20) /*!< LIS331DLH */
++#define YAS_ACC_DRIVER_LIS331DLM		(21) /*!< LIS331DLM */
++#define YAS_ACC_DRIVER_LIS3DH			(22) /*!< LIS3DH */
++#define YAS_ACC_DRIVER_LSM330DLC		(23) /*!< LSM330DLC */
++#define YAS_ACC_DRIVER_MMA8452Q			(24) /*!< MMA8452Q */
++#define YAS_ACC_DRIVER_MMA8453Q			(25) /*!< MMA8453Q */
++#define YAS_ACC_DRIVER_U2DH			(26) /*!< U2DH */
++#define YAS_ACC_DRIVER_YAS535			(27) /*!< YAS 535 (MS-6C) */
++#define YAS_ACC_DRIVER_YAS53x			(0x7fff) /*!< YAS XXX */
++
++#define YAS_GYRO_DRIVER_NONE			(0) /*!< No Gyroscope */
++#define YAS_GYRO_DRIVER_BMG160			(1) /*!< BMG160 */
++#define YAS_GYRO_DRIVER_BMI055			(2) /*!< BMI055 */
++#define YAS_GYRO_DRIVER_BMI058			(3) /*!< BMI058 */
++#define YAS_GYRO_DRIVER_EWTZMU			(4) /*!< EWTZMU */
++#define YAS_GYRO_DRIVER_ITG3200			(5) /*!< ITG3200 */
++#define YAS_GYRO_DRIVER_ITG3500			(6) /*!< ITG3500 */
++#define YAS_GYRO_DRIVER_L3G3200D		(7) /*!< L3G3200D */
++#define YAS_GYRO_DRIVER_L3G4200D		(8) /*!< L3G4200D */
++#define YAS_GYRO_DRIVER_LSM330DLC		(9) /*!< LSM330DLC */
++#define YAS_GYRO_DRIVER_MPU3050			(10) /*!< MPU3050 */
++#define YAS_GYRO_DRIVER_MPU6050			(11) /*!< MPU6050 */
++#define YAS_GYRO_DRIVER_YAS53x			(0x7fff) /*!< YAS XXX */
++
++/*----------------------------------------------------------------------------
++ *                               Configuration
++ *----------------------------------------------------------------------------*/
++
++#define YAS_ACC_DRIVER				(YAS_ACC_DRIVER_BMI055)
++#define YAS_MAG_DRIVER				(YAS_MAG_DRIVER_YAS532)
++#define YAS_GYRO_DRIVER				(YAS_GYRO_DRIVER_BMI055)
++
++/*! Magnetic minimum calibration enable (0:Disable, 1: Enable) */
++#define YAS_MAG_CALIB_MINI_ENABLE		(0)
++/*! Magnetic floating point calibration enable (0:Disable, 1: Enable) */
++#define YAS_MAG_CALIB_FLOAT_ENABLE		(0)
++/*! Magnetic sphere calibration enable (0:Disable, 1: Enable) */
++#define YAS_MAG_CALIB_SPHERE_ENABLE		(1)
++/*! Magnetic ellipsoid calibration enable (0:Disable, 1: Enable) */
++#define YAS_MAG_CALIB_ELLIPSOID_ENABLE		(1)
++/*! Magnetic calibration with gyroscope enable (0:Disable, 1: Enable) */
++#define YAS_MAG_CALIB_WITH_GYRO_ENABLE		(1)
++#if YAS_MAG_CALIB_MINI_ENABLE
++#undef YAS_MAG_CALIB_FLOAT_ENABLE
++#undef YAS_MAG_CALIB_SPHERE_ENABLE
++#undef YAS_MAG_CALIB_ELLIPSOID_ENABLE
++#undef YAS_MAG_CALIB_WITH_GYRO_ENABLE
++#define YAS_MAG_CALIB_FLOAT_ENABLE		(0)
++#define YAS_MAG_CALIB_SPHERE_ENABLE		(0)
++#define YAS_MAG_CALIB_ELLIPSOID_ENABLE		(0)
++#define YAS_MAG_CALIB_WITH_GYRO_ENABLE		(0)
++#elif YAS_MAG_CALIB_FLOAT_ENABLE
++#undef YAS_MAG_CALIB_WITH_GYRO_ENABLE
++#define YAS_MAG_CALIB_WITH_GYRO_ENABLE		(0)
++#endif
++/*! Magnetic calibration enable (0:Disable, 1: Enable) */
++#define YAS_MAG_CALIB_ENABLE	(YAS_MAG_CALIB_FLOAT_ENABLE | \
++		YAS_MAG_CALIB_MINI_ENABLE | \
++		YAS_MAG_CALIB_SPHERE_ENABLE | \
++		YAS_MAG_CALIB_ELLIPSOID_ENABLE | \
++		YAS_MAG_CALIB_WITH_GYRO_ENABLE)
++
++/*! Gyroscope calibration enable (0:Disable, 1: Enable) */
++#define YAS_GYRO_CALIB_ENABLE			(1)
++/*! Magnetic filter enable (0:Disable, 1: Enable) */
++#define YAS_MAG_FILTER_ENABLE			(1)
++/*! Fusion with gyroscope enable (0:Disable, 1: Enable) */
++#define YAS_FUSION_ENABLE			(1)
++/*! Fusion with gyroscope enable (0:Disable, 1: Enable) */
++#define YAS_FUSION_WITH_GYRO_ENABLE		(1)
++/*! Quaternion (gyroscope) enable (0:Disable, 1: Enable) */
++#define YAS_GAMEVEC_ENABLE			(1)
++/*! Magnetic average filter enable (0:Disable, 1:Enable) */
++#define YAS_MAG_AVERAGE_FILTER_ENABLE		(0)
++/*! step counter enable (0:Disable, 1:Enable) */
++#define YAS_STEPCOUNTER_ENABLE			(1)
++/*! Significant motion enable (0:Disable, 1:Enable) */
++#define YAS_SIGNIFICANT_MOTION_ENABLE		(1)
++/*! Software gyroscope enable (0:Disable, 1:Enable) */
++#define YAS_SOFTWARE_GYROSCOPE_ENABLE		(1)
++/*! Log enable (0:Disable, 1:Enable) */
++#define YAS_LOG_ENABLE				(0)
++/*! Orientation enable (0:Disable, 1:Enable) */
++#define YAS_ORIENTATION_ENABLE			(1)
++
++/*! Mangetic vdd in mV */
++#define YAS_MAG_VCORE				(1800)
++
++/*! No sleep version of YAS532 driver */
++#define YAS532_DRIVER_NO_SLEEP			(0)
++
++/* ----------------------------------------------------------------------------
++ *                            Driver Configuration
++ *--------------------------------------------------------------------------- */
++/*! Default sensor delay in [msec] */
++#define YAS_DEFAULT_SENSOR_DELAY		(50)
++
++/* ----------------------------------------------------------------------------
++ *                      Geomagnetic Filter Configuration
++ *--------------------------------------------------------------------------- */
++
++/*! Geomagnetic adaptive filter noise threshold X (dispersion in [nT]) */
++#define YAS_MAG_DEFAULT_FILTER_NOISE_X		(1200)
++/*! Geomagnetic adaptive filter noise threshold Y (dispersion in [nT]) */
++#define YAS_MAG_DEFAULT_FILTER_NOISE_Y		(1200)
++/*! Geomagnetic adaptive filter noise threshold Z (dispersion in [nT]) */
++#define YAS_MAG_DEFAULT_FILTER_NOISE_Z		(1200)
++/*! Geomagnetic adaptive filter length */
++#define YAS_MAG_DEFAULT_FILTER_LEN		(20)
++/*! Geomagnetic threshold filter threshold in [nT] */
++#define YAS_MAG_DEFAULT_FILTER_THRESH		(300)
++
++/* ----------------------------------------------------------------------------
++ *                           Other Configuration
++ *--------------------------------------------------------------------------- */
++
++#if YAS_ACC_DRIVER == YAS_ACC_DRIVER_NONE
++#undef YAS_STEPCOUNTER_ENABLE
++#define YAS_STEPCOUNTER_ENABLE			(0)
++#undef YAS_SIGNIFICANT_MOTION_ENABLE
++#define YAS_SIGNIFICANT_MOTION_ENABLE		(0)
++#endif
++
++#if YAS_MAG_DRIVER == YAS_MAG_DRIVER_NONE
++#undef YAS_MAG_CALIB_ENABLE
++#define YAS_MAG_CALIB_ENABLE			(0)
++#undef YAS_MAG_FILTER_ENABLE
++#define YAS_MAG_FILTER_ENABLE			(0)
++#endif
++#if YAS_MAG_DRIVER != YAS_MAG_DRIVER_YAS536
++#undef YAS_MAG_AVERAGE_FILTER_ENABLE
++#define YAS_MAG_AVERAGE_FILTER_ENABLE		(0)
++#endif
++
++#if YAS_MAG_DRIVER == YAS_MAG_DRIVER_NONE \
++		    || YAS_ACC_DRIVER == YAS_ACC_DRIVER_NONE
++#undef YAS_SOFTWARE_GYROSCOPE_ENABLE
++#define YAS_SOFTWARE_GYROSCOPE_ENABLE		(0)
++#undef YAS_FUSION_ENABLE
++#define YAS_FUSION_ENABLE			(0)
++#endif
++
++#if YAS_ACC_DRIVER == YAS_ACC_DRIVER_NONE \
++		    || YAS_GYRO_DRIVER == YAS_GYRO_DRIVER_NONE
++#undef YAS_GAMEVEC_ENABLE
++#define YAS_GAMEVEC_ENABLE			(0)
++#endif
++
++#if YAS_GYRO_DRIVER == YAS_GYRO_DRIVER_NONE \
++		     || YAS_MAG_DRIVER == YAS_MAG_DRIVER_NONE
++#undef YAS_GYRO_CALIB_ENABLE
++#define YAS_GYRO_CALIB_ENABLE			(0)
++#endif
++
++#if YAS_GYRO_DRIVER == YAS_GYRO_DRIVER_NONE
++#undef YAS_FUSION_WITH_GYRO_ENABLE
++#define YAS_FUSION_WITH_GYRO_ENABLE		(0)
++#endif
++
++#if !YAS_FUSION_ENABLE
++#undef YAS_FUSION_WITH_GYRO_ENABLE
++#define YAS_FUSION_WITH_GYRO_ENABLE		(0)
++#endif
++
++#if YAS_LOG_ENABLE
++#ifdef __KERNEL__
++#undef YAS_LOG_ENABLE
++#define YAS_LOG_ENABLE				(0)
++#else
++#include <stdio.h>
++#include <string.h>
++#endif
++#endif
++
++/*! yas magnetometer name */
++#define YAS_MAG_NAME		"yas_magnetometer"
++/*! yas accelerometer name */
++#define YAS_ACC_NAME		"yas_accelerometer"
++/*! yas accelerometer and magnetometer 6axis sensor name */
++#define YAS_ACC_MAG_NAME	"yas_acc_mag_6axis"
++/*! yas accelerometer and gyroscope 6axis sensor name */
++#define YAS_ACC_GYRO_NAME	"yas_acc_gyro_6axis"
++/*! yas gyroscope name */
++#define YAS_GYRO_NAME		"yas_gyroscope"
++
++#endif
+diff --git a/drivers/input/misc/yas_mag_drv-yas532.c b/drivers/input/misc/yas_mag_drv-yas532.c
+new file mode 100644
+index 0000000..cc539af
+--- /dev/null
++++ b/drivers/input/misc/yas_mag_drv-yas532.c
+@@ -0,0 +1,793 @@
++/*
++ * Copyright (c) 2013-2014 Yamaha Corporation
++ *
++ * This software is provided 'as-is', without any express or implied
++ * warranty.  In no event will the authors be held liable for any damages
++ * arising from the use of this software.
++ *
++ * Permission is granted to anyone to use this software for any purpose,
++ * including commercial applications, and to alter it and redistribute it
++ * freely, subject to the following restrictions:
++ *
++ * 1. The origin of this software must not be misrepresented; you must not
++ *    claim that you wrote the original software. If you use this software
++ *    in a product, an acknowledgment in the product documentation would be
++ *    appreciated but is not required.
++ * 2. Altered source versions must be plainly marked as such, and must not be
++ *    misrepresented as being the original software.
++ * 3. This notice may not be removed or altered from any source distribution.
++ */
++
++#include "yas.h"
++
++#if YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS532 \
++	|| YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS533
++
++#define YAS532_REG_DEVID		(0x80)
++#define YAS532_REG_RCOILR		(0x81)
++#define YAS532_REG_CMDR			(0x82)
++#define YAS532_REG_CONFR		(0x83)
++#define YAS532_REG_DLYR			(0x84)
++#define YAS532_REG_OXR			(0x85)
++#define YAS532_REG_OY1R			(0x86)
++#define YAS532_REG_OY2R			(0x87)
++#define YAS532_REG_TEST1R		(0x88)
++#define YAS532_REG_TEST2R		(0x89)
++#define YAS532_REG_CALR			(0x90)
++#define YAS532_REG_DATAR		(0xB0)
++
++#define YAS532_VERSION_AC_COEF_X	(850)
++#define YAS532_VERSION_AC_COEF_Y1	(750)
++#define YAS532_VERSION_AC_COEF_Y2	(750)
++#define YAS532_DATA_CENTER		(4096)
++#define YAS532_DATA_UNDERFLOW		(0)
++#define YAS532_DATA_OVERFLOW		(8190)
++#define YAS532_DEVICE_ID		(0x02)	/* YAS532 (MS-3R/3F) */
++#define YAS532_TEMP20DEGREE_TYPICAL	(390)
++
++#define YAS_X_OVERFLOW			(0x01)
++#define YAS_X_UNDERFLOW			(0x02)
++#define YAS_Y1_OVERFLOW			(0x04)
++#define YAS_Y1_UNDERFLOW		(0x08)
++#define YAS_Y2_OVERFLOW			(0x10)
++#define YAS_Y2_UNDERFLOW		(0x20)
++#define YAS_OVERFLOW	(YAS_X_OVERFLOW|YAS_Y1_OVERFLOW|YAS_Y2_OVERFLOW)
++#define YAS_UNDERFLOW	(YAS_X_UNDERFLOW|YAS_Y1_UNDERFLOW|YAS_Y2_UNDERFLOW)
++
++#define YAS532_MAG_STATE_NORMAL		(0)
++#define YAS532_MAG_STATE_INIT_COIL	(1)
++#define YAS532_MAG_STATE_MEASURE_OFFSET	(2)
++#define YAS532_MAG_INITCOIL_TIMEOUT	(1000)	/* msec */
++#define YAS532_MAG_TEMPERATURE_LOG	(10)
++#define YAS532_MAG_NOTRANS_POSITION	(3)
++#if YAS532_DRIVER_NO_SLEEP
++#define YAS_MAG_MAX_BUSY_LOOP		(1000)
++#endif
++
++#define set_vector(to, from) \
++	{int _l; for (_l = 0; _l < 3; _l++) (to)[_l] = (from)[_l]; }
++#define is_valid_offset(a) \
++	(((a)[0] <= 31) && ((a)[1] <= 31) && ((a)[2] <= 31) \
++		&& (-31 <= (a)[0]) && (-31 <= (a)[1]) && (-31 <= (a)[2]))
++
++struct yas_cal_data {
++	int8_t rxy1y2[3];
++	uint8_t fxy1y2[3];
++	int32_t cx, cy1, cy2;
++	int32_t a2, a3, a4, a5, a6, a7, a8, a9, k;
++};
++#if (1 < YAS532_MAG_TEMPERATURE_LOG)
++struct yas_temperature_filter {
++	uint16_t log[YAS532_MAG_TEMPERATURE_LOG];
++	int num;
++	int idx;
++};
++#endif
++struct yas_cdriver {
++	int initialized;
++	struct yas_cal_data cal;
++	struct yas_driver_callback cbk;
++	int measure_state;
++	int8_t hard_offset[3];
++	int32_t coef[3];
++	int overflow;
++	uint32_t overflow_time;
++	int position;
++	int delay;
++	int enable;
++	uint8_t dev_id;
++	const int8_t *transform;
++#if (1 < YAS532_MAG_TEMPERATURE_LOG)
++	struct yas_temperature_filter t;
++#endif
++	uint32_t current_time;
++	uint16_t last_raw[4];
++#if YAS532_DRIVER_NO_SLEEP
++	int start_flag;
++	int wait_flag;
++#endif
++};
++
++static const int yas532_version_ac_coef[] = {YAS532_VERSION_AC_COEF_X,
++	YAS532_VERSION_AC_COEF_Y1, YAS532_VERSION_AC_COEF_Y2};
++static const int8_t INVALID_OFFSET[] = {0x7f, 0x7f, 0x7f};
++static const int8_t YAS532_TRANSFORMATION[][9] = {
++	{ 0,  1,  0, -1,  0,  0,  0,  0,  1 },
++	{-1,  0,  0,  0, -1,  0,  0,  0,  1 },
++	{ 0, -1,  0,  1,  0,  0,  0,  0,  1 },
++	{ 1,  0,  0,  0,  1,  0,  0,  0,  1 },
++	{ 0, -1,  0, -1,  0,  0,  0,  0, -1 },
++	{ 1,  0,  0,  0, -1,  0,  0,  0, -1 },
++	{ 0,  1,  0,  1,  0,  0,  0,  0, -1 },
++	{-1,  0,  0,  0,  1,  0,  0,  0, -1 },
++};
++static struct yas_cdriver driver;
++
++#define yas_read(a, b, c) \
++	(driver.cbk.device_read(YAS_TYPE_MAG, (a), (b), (c)))
++static int yas_single_write(uint8_t addr, uint8_t data)
++{
++	return driver.cbk.device_write(YAS_TYPE_MAG, addr, &data, 1);
++}
++
++static uint32_t curtime(void)
++{
++	if (driver.cbk.current_time)
++		return driver.cbk.current_time();
++	else
++		return driver.current_time;
++}
++
++static void xy1y2_to_linear(uint16_t *xy1y2, int32_t *xy1y2_linear)
++{
++	static const uint16_t cval[] = {3721, 3971, 4221, 4471};
++	int i;
++	for (i = 0; i < 3; i++)
++		xy1y2_linear[i] = xy1y2[i] - cval[driver.cal.fxy1y2[i]]
++			+ (driver.hard_offset[i] - driver.cal.rxy1y2[i])
++			* driver.coef[i];
++}
++
++static int get_cal_data_yas532(struct yas_cal_data *c)
++{
++	uint8_t data[14]; int i;
++	if (yas_read(YAS532_REG_CALR, data, 14) < 0)
++		return YAS_ERROR_DEVICE_COMMUNICATION;
++	if (yas_read(YAS532_REG_CALR, data, 14) < 0)
++		return YAS_ERROR_DEVICE_COMMUNICATION;
++	c->fxy1y2[0] = (uint8_t)(((data[10]&0x01)<<1) | ((data[11]>>7)&0x01));
++	c->rxy1y2[0] = ((int8_t)(((data[10]>>1) & 0x3f)<<2))>>2;
++	c->fxy1y2[1] = (uint8_t)(((data[11]&0x01)<<1) | ((data[12]>>7)&0x01));
++	c->rxy1y2[1] = ((int8_t)(((data[11]>>1) & 0x3f)<<2))>>2;
++	c->fxy1y2[2] = (uint8_t)(((data[12]&0x01)<<1) | ((data[13]>>7)&0x01));
++	c->rxy1y2[2] = ((int8_t)(((data[12]>>1) & 0x3f)<<2))>>2;
++	c->cx = data[0] * 10 - 1280;
++	c->cy1 = data[1] * 10 - 1280;
++	c->cy2 = data[2] * 10 - 1280;
++	c->a2 = ((data[3]>>2)&0x03f) - 32;
++	c->a3 = (uint8_t)(((data[3]<<2) & 0x0c) | ((data[4]>>6) & 0x03)) - 8;
++	c->a4 = (uint8_t)(data[4] & 0x3f) - 32;
++	c->a5 = ((data[5]>>2) & 0x3f) + 38;
++	c->a6 = (uint8_t)(((data[5]<<4) & 0x30) | ((data[6]>>4) & 0x0f)) - 32;
++	c->a7 = (uint8_t)(((data[6]<<3) & 0x78) | ((data[7]>>5) & 0x07)) - 64;
++	c->a8 = (uint8_t)(((data[7]<<1) & 0x3e) | ((data[8]>>7) & 0x01)) - 32;
++	c->a9 = (uint8_t)(((data[8]<<1) & 0xfe) | ((data[9]>>7) & 0x01));
++	c->k = (uint8_t)((data[9]>>2) & 0x1f);
++	for (i = 0; i < 13; i++)
++		if (data[i] != 0)
++			return YAS_NO_ERROR;
++	if (data[13] & 0x80)
++		return YAS_NO_ERROR;
++	return YAS_ERROR_CALREG;
++}
++
++#if YAS532_DRIVER_NO_SLEEP
++static int busy_wait(void)
++{
++	int i;
++	uint8_t busy;
++	for (i = 0; i < YAS_MAG_MAX_BUSY_LOOP; i++) {
++		if (yas_read(YAS532_REG_DATAR, &busy, 1) < 0)
++			return YAS_ERROR_DEVICE_COMMUNICATION;
++		if (!(busy & 0x80))
++			return YAS_NO_ERROR;
++	}
++	return YAS_ERROR_BUSY;
++}
++
++static int wait_if_busy(void)
++{
++	int rt;
++	if (driver.start_flag && driver.wait_flag) {
++		rt = busy_wait();
++		if (rt < 0)
++			return rt;
++		driver.wait_flag = 0;
++	}
++	return YAS_NO_ERROR;
++}
++#endif
++
++static int measure_start_yas532(int ldtc, int fors, int wait)
++{
++	uint8_t data = 0x01;
++	data = (uint8_t)(data | (((!!ldtc)<<1) & 0x02));
++	data = (uint8_t)(data | (((!!fors)<<2) & 0x04));
++	if (yas_single_write(YAS532_REG_CMDR, data) < 0)
++		return YAS_ERROR_DEVICE_COMMUNICATION;
++#if YAS532_DRIVER_NO_SLEEP
++	if (wait) {
++		int rt;
++		rt = busy_wait();
++		if (rt < 0)
++			return rt;
++		driver.wait_flag = 0;
++	} else
++		driver.wait_flag = 1;
++	driver.start_flag = 1;
++#else
++	(void) wait;
++	driver.cbk.usleep(1500);
++#endif
++	return YAS_NO_ERROR;
++}
++
++static int measure_normal_yas532(int ldtc, int fors, int *busy, uint16_t *t,
++		uint16_t *xy1y2, int *ouflow)
++{
++	uint8_t data[8];
++	int i, rt;
++#if YAS532_DRIVER_NO_SLEEP
++	if (!driver.start_flag) {
++#endif
++		rt = measure_start_yas532(ldtc, fors, 1);
++		if (rt < 0)
++			return rt;
++#if YAS532_DRIVER_NO_SLEEP
++	}
++#endif
++	if (yas_read(YAS532_REG_DATAR, data, 8) < 0)
++		return YAS_ERROR_DEVICE_COMMUNICATION;
++#if YAS532_DRIVER_NO_SLEEP
++	driver.start_flag = 0;
++#endif
++	*busy = (data[0]>>7) & 0x01;
++	*t = (uint16_t)((((int32_t)data[0]<<3) & 0x3f8)|((data[1]>>5) & 0x07));
++	xy1y2[0] = (uint16_t)((((int32_t)data[2]<<6) & 0x1fc0)
++			| ((data[3]>>2) & 0x3f));
++	xy1y2[1] = (uint16_t)((((int32_t)data[4]<<6) & 0x1fc0)
++			| ((data[5]>>2) & 0x3f));
++	xy1y2[2] = (uint16_t)((((int32_t)data[6]<<6) & 0x1fc0)
++			| ((data[7]>>2) & 0x3f));
++	*ouflow = 0;
++	for (i = 0; i < 3; i++) {
++		if (xy1y2[i] == YAS532_DATA_OVERFLOW)
++			*ouflow |= (1<<(i*2));
++		if (xy1y2[i] == YAS532_DATA_UNDERFLOW)
++			*ouflow |= (1<<(i*2+1));
++	}
++	return YAS_NO_ERROR;
++}
++
++static int yas_cdrv_set_offset(const int8_t *offset)
++{
++	if (yas_single_write(YAS532_REG_OXR, (uint8_t)offset[0]) < 0)
++		return YAS_ERROR_DEVICE_COMMUNICATION;
++	if (yas_single_write(YAS532_REG_OY1R, (uint8_t)offset[1]) < 0)
++		return YAS_ERROR_DEVICE_COMMUNICATION;
++	if (yas_single_write(YAS532_REG_OY2R, (uint8_t)offset[2]) < 0)
++		return YAS_ERROR_DEVICE_COMMUNICATION;
++	set_vector(driver.hard_offset, offset);
++	return YAS_NO_ERROR;
++}
++
++static int yas_cdrv_measure_and_set_offset(void)
++{
++	static const int correct[5] = {16, 8, 4, 2, 1};
++	int8_t hard_offset[3] = {0, 0, 0};
++	uint16_t t, xy1y2[3];
++	int32_t flag[3];
++	int i, j, busy, ouflow, rt;
++#if YAS532_DRIVER_NO_SLEEP
++	driver.start_flag = 0;
++#endif
++	for (i = 0; i < 5; i++) {
++		rt = yas_cdrv_set_offset(hard_offset);
++		if (rt < 0)
++			return rt;
++		rt = measure_normal_yas532(0, 0, &busy, &t, xy1y2, &ouflow);
++		if (rt < 0)
++			return rt;
++		if (busy)
++			return YAS_ERROR_BUSY;
++		for (j = 0; j < 3; j++) {
++			if (YAS532_DATA_CENTER == xy1y2[j])
++				flag[j] = 0;
++			if (YAS532_DATA_CENTER < xy1y2[j])
++				flag[j] = 1;
++			if (xy1y2[j] < YAS532_DATA_CENTER)
++				flag[j] = -1;
++		}
++		for (j = 0; j < 3; j++)
++			if (flag[j])
++				hard_offset[j] = (int8_t)(hard_offset[j]
++						+ flag[j] * correct[i]);
++	}
++	return yas_cdrv_set_offset(hard_offset);
++}
++
++static int yas_cdrv_sensitivity_measuremnet(int32_t *sx, int32_t *sy)
++{
++	struct yas_cal_data *c = &driver.cal;
++	uint16_t xy1y2_on[3], xy1y2_off[3], t;
++	int busy, flowon = 0, flowoff = 0;
++	if (measure_normal_yas532(1, 0, &busy, &t, xy1y2_on, &flowon) < 0)
++		return YAS_ERROR_DEVICE_COMMUNICATION;
++	if (busy)
++		return YAS_ERROR_BUSY;
++	if (measure_normal_yas532(1, 1, &busy, &t, xy1y2_off, &flowoff) < 0)
++		return YAS_ERROR_DEVICE_COMMUNICATION;
++	if (busy)
++		return YAS_ERROR_BUSY;
++	*sx = c->k * (xy1y2_on[0] - xy1y2_off[0]) * 10 / YAS_MAG_VCORE;
++	*sy = c->k * c->a5 * ((xy1y2_on[1] - xy1y2_off[1])
++			- (xy1y2_on[2] - xy1y2_off[2])) / 10 / YAS_MAG_VCORE;
++	return flowon | flowoff;
++}
++
++static int yas_get_position(void)
++{
++	if (!driver.initialized)
++		return YAS_ERROR_INITIALIZE;
++	return driver.position;
++}
++
++static int yas_set_position(int position)
++{
++	if (!driver.initialized)
++		return YAS_ERROR_INITIALIZE;
++	if (position < 0 || 7 < position)
++		return YAS_ERROR_ARG;
++	if (position == YAS532_MAG_NOTRANS_POSITION)
++		driver.transform = NULL;
++	else
++		driver.transform = YAS532_TRANSFORMATION[position];
++	driver.position = position;
++	return YAS_NO_ERROR;
++}
++
++static int yas_set_offset(const int8_t *hard_offset)
++{
++	if (!driver.enable) {
++		set_vector(driver.hard_offset, hard_offset);
++		return YAS_NO_ERROR;
++	}
++	if (is_valid_offset(hard_offset)) {
++#if YAS532_DRIVER_NO_SLEEP
++		int rt;
++		rt = wait_if_busy();
++		if (rt < 0)
++			return rt;
++#endif
++		if (yas_cdrv_set_offset(hard_offset) < 0)
++			return YAS_ERROR_DEVICE_COMMUNICATION;
++		driver.measure_state = YAS532_MAG_STATE_NORMAL;
++	} else {
++		set_vector(driver.hard_offset, INVALID_OFFSET);
++		driver.measure_state = YAS532_MAG_STATE_MEASURE_OFFSET;
++	}
++	return YAS_NO_ERROR;
++}
++
++static int yas_measure(struct yas_data *data, int num, int temp_correction,
++		int *ouflow)
++{
++	struct yas_cal_data *c = &driver.cal;
++	int32_t xy1y2_linear[3];
++	int32_t xyz_tmp[3], tmp;
++	int32_t sx, sy1, sy2, sy, sz;
++	int i, busy;
++	uint16_t t, xy1y2[3];
++	uint32_t tm;
++	int rt;
++#if (1 < YAS532_MAG_TEMPERATURE_LOG)
++	int32_t sum = 0;
++#endif
++	*ouflow = 0;
++	if (!driver.initialized)
++		return YAS_ERROR_INITIALIZE;
++	if (data == NULL || num < 0)
++		return YAS_ERROR_ARG;
++	if (driver.cbk.current_time == NULL)
++		driver.current_time += (uint32_t)driver.delay;
++	if (num == 0)
++		return 0;
++	if (!driver.enable)
++		return 0;
++	switch (driver.measure_state) {
++	case YAS532_MAG_STATE_INIT_COIL:
++		tm = curtime();
++		if (tm - driver.overflow_time < YAS532_MAG_INITCOIL_TIMEOUT)
++			break;
++		driver.overflow_time = tm;
++		if (yas_single_write(YAS532_REG_RCOILR, 0x00) < 0)
++			return YAS_ERROR_DEVICE_COMMUNICATION;
++		if (!driver.overflow && is_valid_offset(driver.hard_offset)) {
++			driver.measure_state = YAS532_MAG_STATE_NORMAL;
++			break;
++		}
++		/* FALLTHRU */
++	case YAS532_MAG_STATE_MEASURE_OFFSET:
++		rt = yas_cdrv_measure_and_set_offset();
++		if (rt < 0)
++			return rt;
++		driver.measure_state = YAS532_MAG_STATE_NORMAL;
++		break;
++	}
++
++	if (measure_normal_yas532(0, 0, &busy, &t, xy1y2, ouflow) < 0)
++		return YAS_ERROR_DEVICE_COMMUNICATION;
++	xy1y2_to_linear(xy1y2, xy1y2_linear);
++#if (1 < YAS532_MAG_TEMPERATURE_LOG)
++	driver.t.log[driver.t.idx++] = t;
++	if (YAS532_MAG_TEMPERATURE_LOG <= driver.t.idx)
++		driver.t.idx = 0;
++	driver.t.num++;
++	if (YAS532_MAG_TEMPERATURE_LOG <= driver.t.num)
++		driver.t.num = YAS532_MAG_TEMPERATURE_LOG;
++	for (i = 0; i < driver.t.num; i++)
++		sum += driver.t.log[i];
++	tmp = sum * 10 / driver.t.num - YAS532_TEMP20DEGREE_TYPICAL * 10;
++#else
++	tmp = (t - YAS532_TEMP20DEGREE_TYPICAL) * 10;
++#endif
++	sx  = xy1y2_linear[0];
++	sy1 = xy1y2_linear[1];
++	sy2 = xy1y2_linear[2];
++	if (temp_correction) {
++		sx  -= (c->cx  * tmp) / 1000;
++		sy1 -= (c->cy1 * tmp) / 1000;
++		sy2 -= (c->cy2 * tmp) / 1000;
++	}
++	sy = sy1 - sy2;
++	sz = -sy1 - sy2;
++	data->xyz.v[0] = c->k * ((100   * sx + c->a2 * sy + c->a3 * sz) / 10);
++	data->xyz.v[1] = c->k * ((c->a4 * sx + c->a5 * sy + c->a6 * sz) / 10);
++	data->xyz.v[2] = c->k * ((c->a7 * sx + c->a8 * sy + c->a9 * sz) / 10);
++	if (driver.transform != NULL) {
++		for (i = 0; i < 3; i++) {
++			xyz_tmp[i] = driver.transform[i*3] * data->xyz.v[0]
++				+ driver.transform[i*3+1] * data->xyz.v[1]
++				+ driver.transform[i*3+2] * data->xyz.v[2];
++		}
++		set_vector(data->xyz.v, xyz_tmp);
++	}
++	for (i = 0; i < 3; i++) {
++		data->xyz.v[i] -= data->xyz.v[i] % 10;
++		if (*ouflow & (1<<(i*2)))
++			data->xyz.v[i] += 1; /* set overflow */
++		if (*ouflow & (1<<(i*2+1)))
++			data->xyz.v[i] += 2; /* set underflow */
++	}
++	tm = curtime();
++	data->type = YAS_TYPE_MAG;
++	if (driver.cbk.current_time)
++		data->timestamp = tm;
++	else
++		data->timestamp = 0;
++	data->accuracy = 0;
++	if (busy)
++		return YAS_ERROR_BUSY;
++	if (0 < *ouflow) {
++		if (!driver.overflow)
++			driver.overflow_time = tm;
++		driver.overflow = 1;
++		driver.measure_state = YAS532_MAG_STATE_INIT_COIL;
++	} else
++		driver.overflow = 0;
++	for (i = 0; i < 3; i++)
++		driver.last_raw[i] = xy1y2[i];
++	driver.last_raw[i] = t;
++#if YAS532_DRIVER_NO_SLEEP
++	rt = measure_start_yas532(0, 0, 0);
++	if (rt < 0)
++		return rt;
++#endif
++	return 1;
++}
++
++static int yas_measure_wrap(struct yas_data *data, int num)
++{
++	int ouflow;
++	return yas_measure(data, num, 1, &ouflow);
++}
++
++static int yas_get_delay(void)
++{
++	if (!driver.initialized)
++		return YAS_ERROR_INITIALIZE;
++	return driver.delay;
++}
++
++static int yas_set_delay(int delay)
++{
++	if (!driver.initialized)
++		return YAS_ERROR_INITIALIZE;
++	if (delay < 0)
++		return YAS_ERROR_ARG;
++	driver.delay = delay;
++	return YAS_NO_ERROR;
++}
++
++static int yas_get_enable(void)
++{
++	if (!driver.initialized)
++		return YAS_ERROR_INITIALIZE;
++	return driver.enable;
++}
++
++static int yas_set_enable(int enable)
++{
++	int rt = YAS_NO_ERROR;
++	if (!driver.initialized)
++		return YAS_ERROR_INITIALIZE;
++	enable = !!enable;
++	if (driver.enable == enable)
++		return YAS_NO_ERROR;
++	if (enable) {
++		if (driver.cbk.device_open(YAS_TYPE_MAG) < 0)
++			return YAS_ERROR_DEVICE_COMMUNICATION;
++		if (yas_single_write(YAS532_REG_TEST1R, 0x00) < 0) {
++			driver.cbk.device_close(YAS_TYPE_MAG);
++			return YAS_ERROR_DEVICE_COMMUNICATION;
++		}
++		if (yas_single_write(YAS532_REG_TEST2R, 0x00) < 0) {
++			driver.cbk.device_close(YAS_TYPE_MAG);
++			return YAS_ERROR_DEVICE_COMMUNICATION;
++		}
++		if (yas_single_write(YAS532_REG_RCOILR, 0x00) < 0) {
++			driver.cbk.device_close(YAS_TYPE_MAG);
++			return YAS_ERROR_DEVICE_COMMUNICATION;
++		}
++		if (is_valid_offset(driver.hard_offset)) {
++			if (yas_cdrv_set_offset(driver.hard_offset) < 0) {
++				driver.cbk.device_close(YAS_TYPE_MAG);
++				return YAS_ERROR_DEVICE_COMMUNICATION;
++			}
++			driver.measure_state = YAS532_MAG_STATE_NORMAL;
++		} else {
++			set_vector(driver.hard_offset, INVALID_OFFSET);
++			driver.measure_state = YAS532_MAG_STATE_MEASURE_OFFSET;
++		}
++	} else {
++#if YAS532_DRIVER_NO_SLEEP
++		rt = wait_if_busy();
++#endif
++		driver.cbk.device_close(YAS_TYPE_MAG);
++	}
++	driver.enable = enable;
++	return rt;
++}
++
++static int yas_ext(int32_t cmd, void *p)
++{
++	struct yas532_self_test_result *r;
++	struct yas_data data;
++	int32_t xy1y2_linear[3], *raw_xyz;
++	int rt, i, enable, ouflow, position;
++	if (!driver.initialized)
++		return YAS_ERROR_INITIALIZE;
++	if (p == NULL)
++		return YAS_ERROR_ARG;
++	switch (cmd) {
++	case YAS532_SELF_TEST:
++		r = (struct yas532_self_test_result *) p;
++		r->id = driver.dev_id;
++		enable = driver.enable;
++		if (!enable) {
++			rt = yas_set_enable(1);
++			if (rt < 0)
++				return rt;
++		}
++#if YAS532_DRIVER_NO_SLEEP
++		rt = wait_if_busy();
++		if (rt < 0)
++			return rt;
++#endif
++		if (yas_single_write(YAS532_REG_RCOILR, 0x00) < 0) {
++			if (!enable)
++				yas_set_enable(0);
++			return YAS_ERROR_DEVICE_COMMUNICATION;
++		}
++		yas_set_offset(INVALID_OFFSET);
++		position = yas_get_position();
++		yas_set_position(YAS532_MAG_NOTRANS_POSITION);
++		rt = yas_measure(&data, 1, 0, &ouflow);
++		yas_set_position(position);
++		set_vector(r->xy1y2, driver.hard_offset);
++		if (rt < 0) {
++			if (!enable)
++				yas_set_enable(0);
++			return rt;
++		}
++		if (ouflow & YAS_OVERFLOW) {
++			if (!enable)
++				yas_set_enable(0);
++			return YAS_ERROR_OVERFLOW;
++		}
++		if (ouflow & YAS_UNDERFLOW) {
++			if (!enable)
++				yas_set_enable(0);
++			return YAS_ERROR_UNDERFLOW;
++		}
++		if (data.xyz.v[0] == 0 && data.xyz.v[1] == 0
++				&& data.xyz.v[2] == 0) {
++			if (!enable)
++				yas_set_enable(0);
++			return YAS_ERROR_DIRCALC;
++		}
++		r->dir = 99;
++		for (i = 0; i < 3; i++)
++			r->xyz[i] = data.xyz.v[i] / 1000;
++#if YAS532_DRIVER_NO_SLEEP
++		rt = wait_if_busy();
++		if (rt < 0) {
++			if (!enable)
++				yas_set_enable(0);
++			return rt;
++		}
++		driver.start_flag = 0;
++#endif
++		rt = yas_cdrv_sensitivity_measuremnet(&r->sx, &r->sy);
++		if (rt < 0) {
++			if (!enable)
++				yas_set_enable(0);
++			return rt;
++		}
++		if (rt & YAS_OVERFLOW) {
++			if (!enable)
++				yas_set_enable(0);
++			return YAS_ERROR_OVERFLOW;
++		}
++		if (rt & YAS_UNDERFLOW) {
++			if (!enable)
++				yas_set_enable(0);
++			return YAS_ERROR_UNDERFLOW;
++		}
++		if (!enable)
++			yas_set_enable(0);
++		return YAS_NO_ERROR;
++	case YAS532_SELF_TEST_NOISE:
++		raw_xyz = (int32_t *) p;
++		enable = driver.enable;
++		if (!enable) {
++			rt = yas_set_enable(1);
++			if (rt < 0)
++				return rt;
++		}
++#if YAS532_DRIVER_NO_SLEEP
++		rt = wait_if_busy();
++		if (rt < 0)
++			return rt;
++#endif
++		rt = yas_measure(&data, 1, 0, &ouflow);
++		if (rt < 0) {
++			if (!enable)
++				yas_set_enable(0);
++			return rt;
++		}
++#if YAS532_DRIVER_NO_SLEEP
++		rt = wait_if_busy();
++		if (rt < 0) {
++			if (!enable)
++				yas_set_enable(0);
++			return rt;
++		}
++#endif
++		xy1y2_to_linear(driver.last_raw, xy1y2_linear);
++		raw_xyz[0] = xy1y2_linear[0];
++		raw_xyz[1] = xy1y2_linear[1] - xy1y2_linear[2];
++		raw_xyz[2] = -xy1y2_linear[1] - xy1y2_linear[2];
++		if (!enable)
++			yas_set_enable(0);
++		return YAS_NO_ERROR;
++	case YAS532_GET_HW_OFFSET:
++		set_vector((int8_t *) p, driver.hard_offset);
++		return YAS_NO_ERROR;
++	case YAS532_SET_HW_OFFSET:
++		return yas_set_offset((int8_t *) p);
++	case YAS532_GET_LAST_RAWDATA:
++		for (i = 0; i < 4; i++)
++			((uint16_t *) p)[i] = driver.last_raw[i];
++		return YAS_NO_ERROR;
++	default:
++		break;
++	}
++	return YAS_ERROR_ARG;
++}
++
++static int yas_init(void)
++{
++	int i, rt;
++	uint8_t data;
++	if (driver.initialized)
++		return YAS_ERROR_INITIALIZE;
++	if (driver.cbk.device_open(YAS_TYPE_MAG) < 0)
++		return YAS_ERROR_DEVICE_COMMUNICATION;
++	if (yas_read(YAS532_REG_DEVID, &data, 1) < 0) {
++		driver.cbk.device_close(YAS_TYPE_MAG);
++		return YAS_ERROR_DEVICE_COMMUNICATION;
++	}
++	driver.dev_id = data;
++	if (driver.dev_id != YAS532_DEVICE_ID) {
++		driver.cbk.device_close(YAS_TYPE_MAG);
++		return YAS_ERROR_CHIP_ID;
++	}
++	rt = get_cal_data_yas532(&driver.cal);
++	if (rt < 0) {
++		driver.cbk.device_close(YAS_TYPE_MAG);
++		return rt;
++	}
++	driver.cbk.device_close(YAS_TYPE_MAG);
++
++	driver.measure_state = YAS532_MAG_STATE_INIT_COIL;
++	set_vector(driver.hard_offset, INVALID_OFFSET);
++	driver.overflow = 0;
++	driver.overflow_time = driver.current_time;
++	driver.position = YAS532_MAG_NOTRANS_POSITION;
++	driver.delay = YAS_DEFAULT_SENSOR_DELAY;
++	driver.enable = 0;
++	driver.transform = NULL;
++#if YAS532_DRIVER_NO_SLEEP
++	driver.start_flag = 0;
++	driver.wait_flag = 0;
++#endif
++#if (1 < YAS532_MAG_TEMPERATURE_LOG)
++	driver.t.num = driver.t.idx = 0;
++#endif
++	driver.current_time = curtime();
++	for (i = 0; i < 3; i++) {
++		driver.coef[i] = yas532_version_ac_coef[i];
++		driver.last_raw[i] = 0;
++	}
++	driver.last_raw[3] = 0;
++	driver.initialized = 1;
++	return YAS_NO_ERROR;
++}
++
++static int yas_term(void)
++{
++	int rt;
++	if (!driver.initialized)
++		return YAS_ERROR_INITIALIZE;
++	rt = yas_set_enable(0);
++	driver.initialized = 0;
++	return rt;
++}
++
++int yas_mag_driver_init(struct yas_mag_driver *f)
++{
++	if (f == NULL || f->callback.device_open == NULL
++			|| f->callback.device_close == NULL
++			|| f->callback.device_read == NULL
++			|| f->callback.device_write == NULL
++#if !YAS532_DRIVER_NO_SLEEP
++			|| f->callback.usleep == NULL
++#endif
++	   )
++		return YAS_ERROR_ARG;
++	f->init = yas_init;
++	f->term = yas_term;
++	f->get_delay = yas_get_delay;
++	f->set_delay = yas_set_delay;
++	f->get_enable = yas_get_enable;
++	f->set_enable = yas_set_enable;
++	f->get_position = yas_get_position;
++	f->set_position = yas_set_position;
++	f->measure = yas_measure_wrap;
++	f->ext = yas_ext;
++	driver.cbk = f->callback;
++	yas_term();
++	return YAS_NO_ERROR;
++}
++#endif
+diff --git a/drivers/input/misc/yas_mag_drv-yas537.c b/drivers/input/misc/yas_mag_drv-yas537.c
+new file mode 100644
+index 0000000..01bc010
+--- /dev/null
++++ b/drivers/input/misc/yas_mag_drv-yas537.c
+@@ -0,0 +1,699 @@
++/*
++ * Copyright (c) 2014 Yamaha Corporation
++ *
++ * This software is provided 'as-is', without any express or implied
++ * warranty.  In no event will the authors be held liable for any damages
++ * arising from the use of this software.
++ *
++ * Permission is granted to anyone to use this software for any purpose,
++ * including commercial applications, and to alter it and redistribute it
++ * freely, subject to the following restrictions:
++ *
++ * 1. The origin of this software must not be misrepresented; you must not
++ *    claim that you wrote the original software. If you use this software
++ *    in a product, an acknowledgment in the product documentation would be
++ *    appreciated but is not required.
++ * 2. Altered source versions must be plainly marked as such, and must not be
++ *    misrepresented as being the original software.
++ * 3. This notice may not be removed or altered from any source distribution.
++ */
++
++#include "yas.h"
++
++#if YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS537
++
++#define YAS537_REG_DIDR			(0x80)
++#define YAS537_REG_CMDR			(0x81)
++#define YAS537_REG_CONFR		(0x82)
++#define YAS537_REG_INTRVLR		(0x83)
++#define YAS537_REG_OXR			(0x84)
++#define YAS537_REG_OY1R			(0x85)
++#define YAS537_REG_OY2R			(0x86)
++#define YAS537_REG_AVRR			(0x87)
++#define YAS537_REG_HCKR			(0x88)
++#define YAS537_REG_LCKR			(0x89)
++#define YAS537_REG_SRSTR		(0x90)
++#define YAS537_REG_ADCCALR		(0x91)
++#define YAS537_REG_MTCR			(0x93)
++#define YAS537_REG_OCR			(0x9e)
++#define YAS537_REG_TRMR			(0x9f)
++#define YAS537_REG_DATAR		(0xb0)
++#define YAS537_REG_CALR			(0xc0)
++
++#define YAS537_DATA_UNDERFLOW		(0)
++#define YAS537_DATA_OVERFLOW		(16383)
++#define YAS537_DEVICE_ID		(0x07)	/* YAS537 (MS-3T) */
++
++#define YAS_X_OVERFLOW			(0x01)
++#define YAS_X_UNDERFLOW			(0x02)
++#define YAS_Y1_OVERFLOW			(0x04)
++#define YAS_Y1_UNDERFLOW		(0x08)
++#define YAS_Y2_OVERFLOW			(0x10)
++#define YAS_Y2_UNDERFLOW		(0x20)
++#define YAS_OVERFLOW	(YAS_X_OVERFLOW|YAS_Y1_OVERFLOW|YAS_Y2_OVERFLOW)
++#define YAS_UNDERFLOW	(YAS_X_UNDERFLOW|YAS_Y1_UNDERFLOW|YAS_Y2_UNDERFLOW)
++
++#define YAS537_MAG_STATE_NORMAL		(0)
++#define YAS537_MAG_STATE_INIT_COIL	(1)
++#define YAS537_MAG_STATE_RECORD_DATA	(2)
++#define YAS537_MAG_INITCOIL_TIMEOUT	(1000)	/* msec */
++#define YAS537_MAG_POWER_ON_RESET_TIME	(4000)	/* usec */
++#define YAS537_MAG_NOTRANS_POSITION	(2)
++
++#define YAS537_MAG_AVERAGE_32		(0)
++#define YAS537_MAG_AVERAGE_64		(1)
++#define YAS537_MAG_AVERAGE_128		(2)
++#define YAS537_MAG_AVERAGE_256		(3)
++
++#define set_vector(to, from) \
++	{int _l; for (_l = 0; _l < 3; _l++) (to)[_l] = (from)[_l]; }
++
++struct yas_cal {
++	int8_t a2, a3, a4, a6, a7, a8;
++	int16_t a5, a9;
++	uint8_t k, ver;
++};
++
++struct yas_cdriver {
++	int initialized;
++	struct yas_driver_callback cbk;
++	int measure_state;
++	int invalid_data;
++	uint32_t invalid_data_time;
++	int position;
++	int delay;
++	int enable;
++	uint8_t dev_id;
++	const int8_t *transform;
++	int record_data;
++	int average;
++	int8_t hard_offset[3];
++	uint32_t current_time;
++	uint16_t last_raw[4];
++	uint16_t last_after_rcoil[3];
++	struct yas_cal cal;
++};
++
++static const int measure_time_worst[] = {2000, 4000, 8000, 16000};
++
++static const int8_t YAS537_TRANSFORMATION[][9] = {
++	{-1,  0,  0,  0, -1,  0,  0,  0,  1 },
++	{ 0, -1,  0,  1,  0,  0,  0,  0,  1 },
++	{ 1,  0,  0,  0,  1,  0,  0,  0,  1 },
++	{ 0,  1,  0, -1,  0,  0,  0,  0,  1 },
++	{ 1,  0,  0,  0, -1,  0,  0,  0, -1 },
++	{ 0,  1,  0,  1,  0,  0,  0,  0, -1 },
++	{-1,  0,  0,  0,  1,  0,  0,  0, -1 },
++	{ 0, -1,  0, -1,  0,  0,  0,  0, -1 },
++};
++static struct yas_cdriver driver;
++
++static int yas_set_enable(int enable);
++
++static int yas_open(void)
++{
++	if (driver.cbk.device_open(YAS_TYPE_MAG) < 0)
++		return YAS_ERROR_DEVICE_COMMUNICATION;
++	driver.cbk.usleep(YAS537_MAG_POWER_ON_RESET_TIME);
++	return YAS_NO_ERROR;
++}
++#define yas_read(a, b, c) \
++	(driver.cbk.device_read(YAS_TYPE_MAG, (a), (b), (c)))
++static int yas_single_write(uint8_t addr, uint8_t data)
++{
++	return driver.cbk.device_write(YAS_TYPE_MAG, addr, &data, 1);
++}
++
++static uint32_t curtime(void)
++{
++	if (driver.cbk.current_time)
++		return driver.cbk.current_time();
++	else
++		return driver.current_time;
++}
++
++static int invalid_magnetic_field(uint16_t *cur, uint16_t *last)
++{
++	int16_t invalid_thresh[] = {1500, 1500, 1500};
++	int i;
++	for (i = 0; i < 3; i++)
++		if (invalid_thresh[i] < ABS(cur[i] - last[i]))
++			return 1;
++	return 0;
++}
++
++static int start_yas537(int ldtc, int fors, int cont)
++{
++	uint8_t data = 0x01;
++	data = (uint8_t)(data | (ldtc<<1));
++	data = (uint8_t)(data | (fors<<2));
++	data = (uint8_t)(data | (cont<<5));
++	if (yas_single_write(YAS537_REG_CMDR, data) < 0)
++		return YAS_ERROR_DEVICE_COMMUNICATION;
++	return YAS_NO_ERROR;
++}
++
++static int cont_start_yas537(void)
++{
++	if (start_yas537(0, 0, 1) < 0)
++		return YAS_ERROR_DEVICE_COMMUNICATION;
++	/* wait for the first measurement */
++	driver.cbk.usleep(measure_time_worst[driver.average]);
++	driver.measure_state = YAS537_MAG_STATE_RECORD_DATA;
++	return YAS_NO_ERROR;
++}
++
++static int read_yas537(int *bad, int *busy, uint16_t *t, uint16_t *xy1y2,
++		int *ouflow)
++{
++	uint8_t data[8];
++	int i;
++	if (yas_read(YAS537_REG_DATAR, data, 8) < 0)
++		return YAS_ERROR_DEVICE_COMMUNICATION;
++	*busy = data[2]>>7;
++	*bad = (data[2]>>6) & 0x01;
++	*t = (uint16_t)((data[0]<<8) | data[1]);
++	xy1y2[0] = (uint16_t)(((data[2]&0x3f)<<8) | data[3]);
++	xy1y2[1] = (uint16_t)((data[4]<<8) | data[5]);
++	xy1y2[2] = (uint16_t)((data[6]<<8) | data[7]);
++	for (i = 0; i < 3; i++)
++		driver.last_raw[i] = xy1y2[i];
++	driver.last_raw[i] = *t;
++	if (driver.cal.ver == 1) {
++		struct yas_cal *c = &driver.cal;
++		int32_t h[3], s[3];
++		for (i = 0; i < 3; i++)
++			s[i] = xy1y2[i] - 8192;
++		h[0] = (c->k *   (128*s[0] + c->a2*s[1] + c->a3*s[2])) / 8192;
++		h[1] = (c->k * (c->a4*s[0] + c->a5*s[1] + c->a6*s[2])) / 8192;
++		h[2] = (c->k * (c->a7*s[0] + c->a8*s[1] + c->a9*s[2])) / 8192;
++		for (i = 0; i < 3; i++) {
++			if (h[i] < -8192)
++				h[i] = -8192;
++			if (8191 < h[i])
++				h[i] = 8191;
++			xy1y2[i] = h[i] + 8192;
++		}
++	}
++	*ouflow = 0;
++	for (i = 0; i < 3; i++) {
++		if (YAS537_DATA_OVERFLOW <= xy1y2[i])
++			*ouflow |= (1<<(i*2));
++		if (xy1y2[i] == YAS537_DATA_UNDERFLOW)
++			*ouflow |= (1<<(i*2+1));
++	}
++	return YAS_NO_ERROR;
++}
++
++static int update_intrvlr(int delay)
++{
++	uint8_t data;
++	/* delay worst 6.15 x SMPLTIM [7:0] msec */
++	if ((1568250 + measure_time_worst[driver.average]) / 1000 < delay)
++		delay = 1568250 + measure_time_worst[driver.average];
++	else
++		delay *= 1000;
++	delay = (delay - measure_time_worst[driver.average]) / 6150;
++	if (delay <= 0)
++		data = 1;
++	else
++		data = (uint8_t) delay;
++	if (yas_single_write(YAS537_REG_INTRVLR, data) < 0)
++		return YAS_ERROR_DEVICE_COMMUNICATION;
++	return YAS_NO_ERROR;
++}
++
++static int reset_yas537(void)
++{
++	int cal_valid = 0, i;
++	uint8_t data[17];
++	if (yas_single_write(YAS537_REG_SRSTR, 0x02) < 0)
++		return YAS_ERROR_DEVICE_COMMUNICATION;
++	if (yas_read(YAS537_REG_CALR, data, 17) < 0)
++		return YAS_ERROR_DEVICE_COMMUNICATION;
++	driver.cal.ver = data[16] >> 6;
++	for (i = 0; i < 17; i++) {
++		if (i < 16 && data[i] != 0)
++			cal_valid = 1;
++		if (i == 16 && (data[i] & 0x3f) != 0)
++			cal_valid = 1;
++	}
++	if (!cal_valid)
++		return YAS_ERROR_CALREG;
++	if (driver.cal.ver == 0) {
++		for (i = 0; i < 17; i++) {
++			if (i < 12) {
++				if (yas_single_write(YAS537_REG_MTCR+i,
++							data[i]) < 0)
++					return YAS_ERROR_DEVICE_COMMUNICATION;
++			} else if (i < 15) {
++				if (yas_single_write(YAS537_REG_OXR+i-12,
++							data[i]) < 0)
++					return YAS_ERROR_DEVICE_COMMUNICATION;
++				driver.hard_offset[i-12] = data[i];
++			} else {
++				if (yas_single_write(YAS537_REG_OXR+i-11,
++							data[i]) < 0)
++					return YAS_ERROR_DEVICE_COMMUNICATION;
++			}
++		}
++	} else if (driver.cal.ver == 1) {
++		for (i = 0; i < 3; i++) {
++			if (yas_single_write(YAS537_REG_MTCR+i,
++						data[i]) < 0)
++				return YAS_ERROR_DEVICE_COMMUNICATION;
++			if (yas_single_write(YAS537_REG_OXR+i,
++						data[i+12]) < 0)
++				return YAS_ERROR_DEVICE_COMMUNICATION;
++			driver.hard_offset[i] = data[i+12];
++		}
++		if (yas_single_write(YAS537_REG_MTCR+i,
++					(data[i] & 0xe0) | 0x10) < 0)
++			return YAS_ERROR_DEVICE_COMMUNICATION;
++		if (yas_single_write(YAS537_REG_HCKR, (data[15]>>3)&0x1e) < 0)
++			return YAS_ERROR_DEVICE_COMMUNICATION;
++		if (yas_single_write(YAS537_REG_LCKR, (data[15]<<1)&0x1e) < 0)
++			return YAS_ERROR_DEVICE_COMMUNICATION;
++		if (yas_single_write(YAS537_REG_OCR, data[16]&0x3f) < 0)
++			return YAS_ERROR_DEVICE_COMMUNICATION;
++		driver.cal.a2 = (((data[3]<<2)&0x7c) | (data[4]>>6)) - 64;
++		driver.cal.a3 = (((data[4]<<1)&0x7e) | (data[5]>>7)) - 64;
++		driver.cal.a4 = (((data[5]<<1)&0xfe) | (data[6]>>7)) - 128;
++		driver.cal.a5 = (((data[6]<<2)&0x1fc) | (data[7]>>6)) - 112;
++		driver.cal.a6 = (((data[7]<<1)&0x7e) | (data[8]>>7)) - 64;
++		driver.cal.a7 = (((data[8]<<1)&0xfe) | (data[9]>>7)) - 128;
++		driver.cal.a8 = (data[9]&0x7f) - 64;
++		driver.cal.a9 = (((data[10]<<1)&0x1fe) | (data[11]>>7)) - 112;
++		driver.cal.k = data[11]&0x7f;
++	} else
++		return YAS_ERROR_CALREG;
++	/* FIXME */
++	if (yas_single_write(YAS537_REG_ADCCALR, 0x00) < 0)
++		return YAS_ERROR_DEVICE_COMMUNICATION;
++	if (yas_single_write(YAS537_REG_ADCCALR+1, 0x00) < 0)
++		return YAS_ERROR_DEVICE_COMMUNICATION;
++	if (yas_single_write(YAS537_REG_TRMR, 0xff) < 0)
++		return YAS_ERROR_DEVICE_COMMUNICATION;
++	if (update_intrvlr(driver.delay) < 0)
++		return YAS_ERROR_DEVICE_COMMUNICATION;
++	if (yas_single_write(YAS537_REG_AVRR, 0x70 | driver.average) < 0)
++		return YAS_ERROR_DEVICE_COMMUNICATION;
++	if (yas_single_write(YAS537_REG_CONFR, 0x08) < 0)
++		return YAS_ERROR_DEVICE_COMMUNICATION;
++	/* FIXME */
++	return YAS_NO_ERROR;
++}
++
++static int single_read(int ldtc, int fors, int *bad, int *busy, uint16_t *t,
++		uint16_t *xy1y2, int *ouflow)
++{
++	if (start_yas537(ldtc, fors, 0) < 0)
++		return YAS_ERROR_DEVICE_COMMUNICATION;
++	driver.cbk.usleep(measure_time_worst[driver.average]);
++	if (read_yas537(bad, busy, t, xy1y2, ouflow) < 0)
++		return YAS_ERROR_DEVICE_COMMUNICATION;
++	return YAS_NO_ERROR;
++}
++
++static void xy1y2_to_xyz(uint16_t *xy1y2, int32_t *xyz)
++{
++	xyz[0] = (xy1y2[0] - 8192) * 300;
++	xyz[1] = (xy1y2[1] - xy1y2[2]) * 1732 / 10;
++	xyz[2] = (-xy1y2[1] - xy1y2[2] + 16384) * 300;
++}
++
++static int yas_cdrv_sensitivity_measuremnet(int32_t *sx, int32_t *sy)
++{
++	uint16_t p[3], m[3], xy1y2[3], t;
++	struct yas_cal *c = &driver.cal;
++	int busy, flowon = 0, flowoff = 0, bad, rt, i;
++	rt = single_read(1, 0, &bad, &busy, &t, xy1y2, &flowon);
++	if (rt < 0)
++		return rt;
++	if (busy)
++		return YAS_ERROR_BUSY;
++	for (i = 0; i < 3; i++)
++		p[i] = driver.last_raw[i];
++	rt = single_read(1, 1, &bad, &busy, &t, xy1y2, &flowoff);
++	if (rt < 0)
++		return rt;
++	if (busy)
++		return YAS_ERROR_BUSY;
++	for (i = 0; i < 3; i++)
++		m[i] = driver.last_raw[i];
++	*sx = c->k * 128 * (p[0] - m[0]) / 8192 * 300 / YAS_MAG_VCORE;
++	*sy = c->k * (c->a5 * (p[1] - m[1]) - c->a9 * (p[2] - m[2])) / 8192
++		* 1732 / YAS_MAG_VCORE / 10;
++	return flowon | flowoff;
++}
++
++static int yas_get_position(void)
++{
++	if (!driver.initialized)
++		return YAS_ERROR_INITIALIZE;
++	return driver.position;
++}
++
++static int yas_set_position(int position)
++{
++	if (!driver.initialized)
++		return YAS_ERROR_INITIALIZE;
++	if (position < 0 || 7 < position)
++		return YAS_ERROR_ARG;
++	if (position == YAS537_MAG_NOTRANS_POSITION)
++		driver.transform = NULL;
++	else
++		driver.transform = YAS537_TRANSFORMATION[position];
++	driver.position = position;
++	return YAS_NO_ERROR;
++}
++
++static int yas_measure(struct yas_data *data, int num, int *ouflow)
++{
++	int32_t xyz_tmp[3];
++	int i, busy, bad;
++	uint16_t t, xy1y2[3];
++	uint32_t tm;
++	*ouflow = 0;
++	if (!driver.initialized)
++		return YAS_ERROR_INITIALIZE;
++	if (data == NULL || num < 0)
++		return YAS_ERROR_ARG;
++	if (driver.cbk.current_time == NULL)
++		driver.current_time += (uint32_t)driver.delay;
++	if (num == 0)
++		return 0;
++	if (!driver.enable)
++		return 0;
++	if (read_yas537(&bad, &busy, &t, xy1y2, ouflow) < 0)
++		return YAS_ERROR_DEVICE_COMMUNICATION;
++	xy1y2_to_xyz(xy1y2, data->xyz.v);
++	if (driver.transform != NULL) {
++		for (i = 0; i < 3; i++) {
++			xyz_tmp[i] = driver.transform[i*3] * data->xyz.v[0]
++				+ driver.transform[i*3+1] * data->xyz.v[1]
++				+ driver.transform[i*3+2] * data->xyz.v[2];
++		}
++		set_vector(data->xyz.v, xyz_tmp);
++	}
++	for (i = 0; i < 3; i++) {
++		data->xyz.v[i] -= data->xyz.v[i] % 10;
++		if (*ouflow & (1<<(i*2)))
++			data->xyz.v[i] += 1; /* set overflow */
++		if (*ouflow & (1<<(i*2+1)))
++			data->xyz.v[i] += 2; /* set underflow */
++	}
++	tm = curtime();
++	data->type = YAS_TYPE_MAG;
++	if (driver.cbk.current_time)
++		data->timestamp = tm;
++	else
++		data->timestamp = 0;
++	data->accuracy = 0;
++	if (busy)
++		return YAS_ERROR_BUSY;
++	switch (driver.measure_state) {
++	case YAS537_MAG_STATE_INIT_COIL:
++		tm = curtime();
++		if (tm - driver.invalid_data_time < YAS537_MAG_INITCOIL_TIMEOUT)
++			break;
++		driver.invalid_data_time = tm;
++		if (yas_single_write(YAS537_REG_CONFR, 0x08) < 0)
++			return YAS_ERROR_DEVICE_COMMUNICATION;
++		driver.measure_state = YAS537_MAG_STATE_RECORD_DATA;
++		break;
++	case YAS537_MAG_STATE_RECORD_DATA:
++		if (bad)
++			break;
++		set_vector(driver.last_after_rcoil, xy1y2);
++		driver.measure_state = YAS537_MAG_STATE_NORMAL;
++		/* FALLTHRU */
++	case YAS537_MAG_STATE_NORMAL:
++		if (0 < *ouflow || invalid_magnetic_field(xy1y2,
++					driver.last_after_rcoil)) {
++			if (!driver.invalid_data)
++				driver.invalid_data_time = tm;
++			driver.invalid_data = 1;
++			driver.measure_state = YAS537_MAG_STATE_INIT_COIL;
++			for (i = 0; i < 3; i++) {
++				if (!*ouflow)
++					data->xyz.v[i] += 3;
++			}
++		} else
++			driver.invalid_data = 0;
++		break;
++	}
++	return 1;
++}
++
++static int yas_measure_wrap(struct yas_data *data, int num)
++{
++	int ouflow;
++	return yas_measure(data, num, &ouflow);
++}
++
++static int yas_get_delay(void)
++{
++	if (!driver.initialized)
++		return YAS_ERROR_INITIALIZE;
++	return driver.delay;
++}
++
++static int yas_set_delay(int delay)
++{
++	if (!driver.initialized)
++		return YAS_ERROR_INITIALIZE;
++	if (delay < 0)
++		return YAS_ERROR_ARG;
++	driver.delay = delay;
++	if (!driver.enable)
++		return YAS_NO_ERROR;
++	yas_set_enable(0);
++	yas_set_enable(1);
++	return YAS_NO_ERROR;
++}
++
++static int yas_get_enable(void)
++{
++	if (!driver.initialized)
++		return YAS_ERROR_INITIALIZE;
++	return driver.enable;
++}
++
++static int yas_set_enable(int enable)
++{
++	int rt = YAS_NO_ERROR;
++	if (!driver.initialized)
++		return YAS_ERROR_INITIALIZE;
++	enable = !!enable;
++	if (driver.enable == enable)
++		return YAS_NO_ERROR;
++	if (enable) {
++		if (yas_open() < 0)
++			return YAS_ERROR_DEVICE_COMMUNICATION;
++		rt = reset_yas537();
++		if (rt < 0) {
++			driver.cbk.device_close(YAS_TYPE_MAG);
++			return rt;
++		}
++		if (cont_start_yas537() < 0) {
++			driver.cbk.device_close(YAS_TYPE_MAG);
++			return YAS_ERROR_DEVICE_COMMUNICATION;
++		}
++	} else {
++		yas_single_write(YAS537_REG_SRSTR, 0x02);
++		driver.cbk.device_close(YAS_TYPE_MAG);
++	}
++	driver.enable = enable;
++	return rt;
++}
++
++static int yas_ext(int32_t cmd, void *p)
++{
++	struct yas537_self_test_result *r;
++	struct yas_data data;
++	int32_t *xyz;
++	int8_t average, *hard_offset;
++	int rt, i, enable, ouflow, bad, busy;
++	uint16_t t, xy1y2[3];
++	if (!driver.initialized)
++		return YAS_ERROR_INITIALIZE;
++	if (p == NULL)
++		return YAS_ERROR_ARG;
++	switch (cmd) {
++	case YAS537_SELF_TEST:
++		r = (struct yas537_self_test_result *) p;
++		r->id = driver.dev_id;
++		enable = driver.enable;
++		if (!enable) {
++			if (yas_open() < 0)
++				return YAS_ERROR_DEVICE_COMMUNICATION;
++		}
++		rt = reset_yas537();
++		if (rt < 0)
++			goto self_test_exit;
++		rt = single_read(0, 0, &bad, &busy, &t, xy1y2, &ouflow);
++		if (rt < 0)
++			goto self_test_exit;
++		if (busy) {
++			rt = YAS_ERROR_BUSY;
++			goto self_test_exit;
++		}
++		xy1y2_to_xyz(xy1y2, r->xyz);
++		for (i = 0; i < 3; i++)
++			r->xyz[i] = r->xyz[i] / 1000;
++		if (ouflow & YAS_OVERFLOW) {
++			rt = YAS_ERROR_OVERFLOW;
++			goto self_test_exit;
++		}
++		if (ouflow & YAS_UNDERFLOW) {
++			rt = YAS_ERROR_UNDERFLOW;
++			goto self_test_exit;
++		}
++		if (r->xyz[0] == 0 && r->xyz[1] == 0 && r->xyz[2] == 0) {
++			rt = YAS_ERROR_DIRCALC;
++			goto self_test_exit;
++		}
++		r->dir = 99;
++		rt = yas_cdrv_sensitivity_measuremnet(&r->sx, &r->sy);
++		if (rt < 0)
++			goto self_test_exit;
++		if (rt & YAS_OVERFLOW) {
++			rt = YAS_ERROR_OVERFLOW;
++			goto self_test_exit;
++		}
++		if (rt & YAS_UNDERFLOW) {
++			rt = YAS_ERROR_UNDERFLOW;
++			goto self_test_exit;
++		}
++		rt = YAS_NO_ERROR;
++self_test_exit:
++		if (enable)
++			cont_start_yas537();
++		else
++			driver.cbk.device_close(YAS_TYPE_MAG);
++		return rt;
++	case YAS537_SELF_TEST_NOISE:
++		xyz = (int32_t *) p;
++		enable = driver.enable;
++		if (!enable) {
++			rt = yas_set_enable(1);
++			if (rt < 0)
++				return rt;
++		}
++		rt = yas_measure(&data, 1, &ouflow);
++		if (rt < 0) {
++			if (!enable)
++				yas_set_enable(0);
++			return rt;
++		}
++		xyz[0] = driver.last_raw[0] - 8192;
++		xyz[1] = driver.last_raw[1] - driver.last_raw[2];
++		xyz[2] = 16384 - driver.last_raw[1] - driver.last_raw[2];
++		if (!enable)
++			yas_set_enable(0);
++		return YAS_NO_ERROR;
++	case YAS537_GET_LAST_RAWDATA:
++		for (i = 0; i < 4; i++)
++			((uint16_t *) p)[i] = driver.last_raw[i];
++		return YAS_NO_ERROR;
++	case YAS537_GET_AVERAGE_SAMPLE:
++		*(int8_t *) p = driver.average;
++		return YAS_NO_ERROR;
++	case YAS537_SET_AVERAGE_SAMPLE:
++		average = *(int8_t *) p;
++		if (average < 0 || 3 < average)
++			return YAS_ERROR_ARG;
++		driver.average = average;
++		if (!driver.enable)
++			return YAS_NO_ERROR;
++		yas_set_enable(0);
++		yas_set_enable(1);
++		return YAS_NO_ERROR;
++	case YAS537_GET_HW_OFFSET:
++		hard_offset = (int8_t *) p;
++		for (i = 0; i < 3; i++)
++			hard_offset[i] = driver.hard_offset[i];
++		return YAS_NO_ERROR;
++	default:
++		break;
++	}
++	return YAS_ERROR_ARG;
++}
++
++static int yas_init(void)
++{
++	int i;
++	uint8_t data;
++	if (driver.initialized)
++		return YAS_ERROR_INITIALIZE;
++	if (yas_open() < 0)
++		return YAS_ERROR_DEVICE_COMMUNICATION;
++	if (yas_read(YAS537_REG_DIDR, &data, 1) < 0) {
++		driver.cbk.device_close(YAS_TYPE_MAG);
++		return YAS_ERROR_DEVICE_COMMUNICATION;
++	}
++	driver.dev_id = data;
++	if (driver.dev_id != YAS537_DEVICE_ID) {
++		driver.cbk.device_close(YAS_TYPE_MAG);
++		return YAS_ERROR_CHIP_ID;
++	}
++	driver.cbk.device_close(YAS_TYPE_MAG);
++
++	driver.measure_state = YAS537_MAG_STATE_NORMAL;
++	if (driver.cbk.current_time)
++		driver.current_time =  driver.cbk.current_time();
++	else
++		driver.current_time = 0;
++	driver.invalid_data = 0;
++	driver.invalid_data_time = driver.current_time;
++	driver.position = YAS537_MAG_NOTRANS_POSITION;
++	driver.delay = YAS_DEFAULT_SENSOR_DELAY;
++	driver.enable = 0;
++	driver.transform = NULL;
++	driver.record_data = 0;
++	driver.average = YAS537_MAG_AVERAGE_32;
++	for (i = 0; i < 3; i++) {
++		driver.hard_offset[i] = -128;
++		driver.last_after_rcoil[i] = 0;
++	}
++	for (i = 0; i < 4; i++)
++		driver.last_raw[i] = 0;
++	driver.initialized = 1;
++	return YAS_NO_ERROR;
++}
++
++static int yas_term(void)
++{
++	int rt;
++	if (!driver.initialized)
++		return YAS_ERROR_INITIALIZE;
++	rt = yas_set_enable(0);
++	driver.initialized = 0;
++	return rt;
++}
++
++int yas_mag_driver_init(struct yas_mag_driver *f)
++{
++	if (f == NULL || f->callback.device_open == NULL
++			|| f->callback.device_close == NULL
++			|| f->callback.device_read == NULL
++			|| f->callback.device_write == NULL
++			|| f->callback.usleep == NULL
++	   )
++		return YAS_ERROR_ARG;
++	f->init = yas_init;
++	f->term = yas_term;
++	f->get_delay = yas_get_delay;
++	f->set_delay = yas_set_delay;
++	f->get_enable = yas_get_enable;
++	f->set_enable = yas_set_enable;
++	f->get_position = yas_get_position;
++	f->set_position = yas_set_position;
++	f->measure = yas_measure_wrap;
++	f->ext = yas_ext;
++	driver.cbk = f->callback;
++	yas_term();
++	return YAS_NO_ERROR;
++}
++#endif
+diff --git a/drivers/input/misc/yas_mag_kernel.c b/drivers/input/misc/yas_mag_kernel.c
+new file mode 100644
+index 0000000..3f5ee93
+--- /dev/null
++++ b/drivers/input/misc/yas_mag_kernel.c
+@@ -0,0 +1,615 @@
++/*
++ * Copyright (c) 2014 Yamaha Corporation
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version 2
++ * of the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
++ * MA  02110-1301, USA.
++ */
++
++#include <linux/delay.h>
++#include <linux/errno.h>
++#include <linux/i2c.h>
++#include <linux/init.h>
++#include <linux/input.h>
++#include <linux/kernel.h>
++#include <linux/list.h>
++#include <linux/module.h>
++#include <linux/mutex.h>
++#include <linux/poll.h>
++#include <linux/slab.h>
++#include <linux/types.h>
++#include <linux/uaccess.h>
++#include <linux/workqueue.h>
++#include <linux/of_gpio.h>
++#include <linux/sensors.h>
++
++#ifdef CONFIG_HAS_EARLYSUSPEND
++#include <linux/earlysuspend.h>
++#endif
++
++#include "yas.h"
++
++#if YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS532 \
++	|| YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS533
++#define YAS_MSM_NAME		"compass"
++#define YAS_MSM_VENDOR		"Yamaha"
++#define YAS_MSM_VERSION		(1)
++#define YAS_MSM_HANDLE		(1)
++#define YAS_MSM_TYPE		(2)
++#define YAS_MSM_MIN_DELAY	(10000)
++#define YAS_MSM_MAX_RANGE	(1200)
++#define YAS_MSM_RESOLUTION	"1"
++#define YAS_MSM_SENSOR_POWER	"0.40"
++#endif
++#if YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS537
++#define YAS_MSM_NAME		"compass"
++#define YAS_MSM_VENDOR		"Yamaha"
++#define YAS_MSM_VERSION		(1)
++#define YAS_MSM_HANDLE		(1)
++#define YAS_MSM_TYPE		(2)
++#define YAS_MSM_MIN_DELAY	(10000)
++#define YAS_MSM_MAX_RANGE	(2000)
++#define YAS_MSM_RESOLUTION	"1"
++#define YAS_MSM_SENSOR_POWER	"0.28"
++#endif
++
++static struct i2c_client *this_client;
++
++struct yas_state {
++	struct mutex lock;
++	struct yas_mag_driver mag;
++	struct input_dev *input_dev;
++	struct sensors_classdev cdev;
++	struct delayed_work work;
++	int32_t poll_delay;
++	atomic_t enable;
++	int32_t compass_data[3];
++#ifdef CONFIG_HAS_EARLYSUSPEND
++	struct early_suspend sus;
++#endif
++	struct device *dev;
++	struct class *class;
++};
++
++static struct sensors_classdev sensors_cdev = {
++	.name = "yas533-mag",
++	.vendor = "Yamaha",
++	.version = 1,
++	.handle = SENSORS_MAGNETIC_FIELD_HANDLE,
++	.type = SENSOR_TYPE_MAGNETIC_FIELD,
++	.max_range = "1200",
++	.resolution = "1",
++	.sensor_power = "0.40",
++	.min_delay = 10000,
++	.fifo_reserved_event_count = 0,
++	.fifo_max_event_count = 0,
++	.enabled = 0,
++	.delay_msec = 10000,
++	.sensors_enable = NULL,
++	.sensors_poll_delay = NULL,
++};
++
++static int yas_device_open(int32_t type)
++{
++	return 0;
++}
++
++static int yas_device_close(int32_t type)
++{
++	return 0;
++}
++
++static int yas_device_write(int32_t type, uint8_t addr, const uint8_t *buf,
++		int len)
++{
++	uint8_t tmp[2];
++	int error;
++
++	if (sizeof(tmp) - 1 < len)
++		return -EPERM;
++	tmp[0] = addr;
++	memcpy(&tmp[1], buf, len);
++	error = i2c_master_send(this_client, tmp, len + 1);
++
++	if (unlikely(error < 0)) {
++		dev_err(&this_client->dev, "I2C send error: %d\n", error);
++		return error;
++	}
++	return 0;
++}
++
++static int yas_device_read(int32_t type, uint8_t addr, uint8_t *buf, int len)
++{
++	struct i2c_msg msg[2];
++	int err;
++	msg[0].addr = this_client->addr;
++	msg[0].flags = 0;
++	msg[0].len = 1;
++	msg[0].buf = &addr;
++	msg[1].addr = this_client->addr;
++	msg[1].flags = I2C_M_RD;
++	msg[1].len = len;
++	msg[1].buf = buf;
++	err = i2c_transfer(this_client->adapter, msg, 2);
++	if (err != 2) {
++		dev_err(&this_client->dev,
++				"i2c_transfer() read error: "
++				"slave_addr=%02x, reg_addr=%02x, err=%d\n",
++				this_client->addr, addr, err);
++		return err;
++	}
++	return 0;
++}
++
++static void yas_usleep(int us)
++{
++	usleep_range(us, us + 1000);
++}
++
++static uint32_t yas_current_time(void)
++{
++	return jiffies_to_msecs(jiffies);
++}
++
++static int yas_enable(struct yas_state *st)
++{
++	if (!atomic_cmpxchg(&st->enable, 0, 1)) {
++		mutex_lock(&st->lock);
++		st->mag.set_enable(1);
++		mutex_unlock(&st->lock);
++		schedule_delayed_work(&st->work, 0);
++	}
++	return 0;
++}
++
++static int yas_disable(struct yas_state *st)
++{
++	if (atomic_cmpxchg(&st->enable, 1, 0)) {
++		cancel_delayed_work_sync(&st->work);
++		mutex_lock(&st->lock);
++		st->mag.set_enable(0);
++		mutex_unlock(&st->lock);
++	}
++	return 0;
++}
++
++/* Sysfs interface */
++
++static ssize_t yas_position_show(struct device *dev,
++		struct device_attribute *attr, char *buf)
++{
++	struct yas_state *st = i2c_get_clientdata(this_client);
++	int ret;
++	mutex_lock(&st->lock);
++	ret = st->mag.get_position();
++	mutex_unlock(&st->lock);
++	if (ret < 0)
++		return -EFAULT;
++	return snprintf(buf, sizeof(buf), "%d\n", ret);
++}
++
++static ssize_t yas_position_store(struct device *dev,
++		struct device_attribute *attr, const char *buf, size_t count)
++{
++	struct yas_state *st = i2c_get_clientdata(this_client);
++	int ret, position;
++	sscanf(buf, "%d\n", &position);
++	mutex_lock(&st->lock);
++	ret = st->mag.set_position(position);
++	mutex_unlock(&st->lock);
++	if (ret < 0)
++		return -EFAULT;
++	return count;
++}
++static int yas_enable_set(struct sensors_classdev *sensors_cdev,
++		unsigned int enable)
++{
++	struct yas_state *st = i2c_get_clientdata(this_client);
++	if (enable)
++		yas_enable(st);
++	else
++		yas_disable(st);
++	return 0;
++}
++
++static int yas_poll_delay_set(struct sensors_classdev *sensors_cdev,
++		unsigned int delay_ms)
++{
++	struct yas_state *st = i2c_get_clientdata(this_client);
++	if (delay_ms <= 0)
++		delay_ms = 10;
++	mutex_lock(&st->lock);
++	if (st->mag.set_delay(delay_ms) == YAS_NO_ERROR)
++		st->poll_delay = delay_ms;
++	mutex_unlock(&st->lock);
++
++	return 0;
++
++}
++
++
++#if YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS532 \
++	|| YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS533 \
++	|| YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS537
++static ssize_t yas_hard_offset_show(struct device *dev,
++		struct device_attribute *attr, char *buf)
++{
++	struct yas_state *st = i2c_get_clientdata(this_client);
++	int8_t hard_offset[3];
++	int ret;
++	mutex_lock(&st->lock);
++#if YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS532 \
++	|| YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS533
++	ret = st->mag.ext(YAS532_GET_HW_OFFSET, hard_offset);
++#endif
++#if YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS537
++	ret = st->mag.ext(YAS537_GET_HW_OFFSET, hard_offset);
++#endif
++	mutex_unlock(&st->lock);
++	if (ret < 0)
++		return -EFAULT;
++	return snprintf(buf, sizeof(buf), "%d %d %d\n",
++			hard_offset[0], hard_offset[1], hard_offset[2]);
++}
++#endif
++
++#if YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS532 \
++	|| YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS533
++static ssize_t yas_hard_offset_store(struct device *dev,
++		struct device_attribute *attr, const char *buf, size_t count)
++{
++	struct yas_state *st = i2c_get_clientdata(this_client);
++	int32_t tmp[3];
++	int8_t hard_offset[3];
++	int ret, i;
++	sscanf(buf, "%d %d %d\n", &tmp[0], &tmp[1], &tmp[2]);
++	for (i = 0; i < 3; i++)
++		hard_offset[i] = (int8_t)tmp[i];
++	mutex_lock(&st->lock);
++	ret = st->mag.ext(YAS532_SET_HW_OFFSET, hard_offset);
++	mutex_unlock(&st->lock);
++	if (ret < 0)
++		return -EFAULT;
++	return count;
++}
++#endif
++
++#if YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS537
++
++
++static ssize_t yas_mag_average_sample_show(struct device *dev,
++		struct device_attribute *attr, char *buf)
++{
++	struct yas_state *st = i2c_get_clientdata(this_client);
++	int8_t mag_average_sample;
++	int ret;
++	mutex_lock(&st->lock);
++	ret = st->mag.ext(YAS537_GET_AVERAGE_SAMPLE, &mag_average_sample);
++	mutex_unlock(&st->lock);
++	if (ret < 0)
++		return -EFAULT;
++	return snprintf(buf, sizeof(buf), "%d\n", mag_average_sample);
++}
++
++static ssize_t yas_mag_average_sample_store(struct device *dev,
++		struct device_attribute *attr, const char *buf, size_t count)
++{
++	struct yas_state *st = i2c_get_clientdata(this_client);
++	int32_t tmp;
++	int8_t mag_average_sample;
++	int ret;
++	sscanf(buf, "%d\n", &tmp);
++	mag_average_sample = (int8_t)tmp;
++	mutex_lock(&st->lock);
++	ret = st->mag.ext(YAS537_SET_AVERAGE_SAMPLE, &mag_average_sample);
++	mutex_unlock(&st->lock);
++	if (ret < 0)
++		return -EFAULT;
++	return count;
++}
++#endif
++
++static ssize_t yas_data_show(struct device *dev, struct device_attribute *attr,
++		char *buf)
++{
++	struct yas_state *st = i2c_get_clientdata(this_client);
++	int32_t last[3], i;
++	mutex_lock(&st->lock);
++	for (i = 0; i < 3; i++)
++		last[i] = st->compass_data[i];
++	mutex_unlock(&st->lock);
++	return snprintf(buf, sizeof(buf), "%d %d %d\n",
++					last[0], last[1], last[2]);
++}
++
++
++static DEVICE_ATTR(data, S_IRUGO, yas_data_show, NULL);
++static DEVICE_ATTR(position, S_IRUGO|S_IWUSR, yas_position_show,
++		yas_position_store);
++#if YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS532 \
++	|| YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS533
++static DEVICE_ATTR(hard_offset, S_IRUGO|S_IWUSR, yas_hard_offset_show,
++		yas_hard_offset_store);
++#endif
++#if YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS532 \
++	|| YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS533 \
++	|| YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS537
++
++#endif
++#if YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS537
++static DEVICE_ATTR(hard_offset, S_IRUGO|S_IWUSR, yas_hard_offset_show, NULL);
++static DEVICE_ATTR(mag_average_sample, S_IRUGO|S_IWUSR,
++		yas_mag_average_sample_show, yas_mag_average_sample_store);
++#endif
++
++static struct attribute *yas_attributes[] = {
++
++	&dev_attr_data.attr,
++	&dev_attr_position.attr,
++#if YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS532 \
++	|| YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS533 \
++	|| YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS537
++	&dev_attr_hard_offset.attr,
++
++#endif
++#if YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS537
++	&dev_attr_mag_average_sample.attr,
++#endif
++	NULL
++};
++static struct attribute_group yas_attribute_group = {
++	.attrs = yas_attributes
++};
++
++static void yas_work_func(struct work_struct *work)
++{
++	struct yas_state *st
++		= container_of((struct delayed_work *)work,
++			struct yas_state, work);
++	struct yas_data mag[1];
++	int32_t poll_delay;
++	uint32_t time_before, time_after;
++	int ret, i;
++
++	time_before = yas_current_time();
++	mutex_lock(&st->lock);
++	ret = st->mag.measure(mag, 1);
++	if (ret == 1) {
++		for (i = 0; i < 3; i++)
++			st->compass_data[i] = mag[0].xyz.v[i];
++	}
++	poll_delay = st->poll_delay;
++	mutex_unlock(&st->lock);
++	if (ret == 1) {
++		/* report magnetic data in [nT] */
++		input_report_abs(st->input_dev, ABS_X, mag[0].xyz.v[0]);
++		input_report_abs(st->input_dev, ABS_Y, mag[0].xyz.v[1]);
++		input_report_abs(st->input_dev, ABS_Z, mag[0].xyz.v[2]);
++		input_sync(st->input_dev);
++	}
++	time_after = yas_current_time();
++	poll_delay = poll_delay - (time_after - time_before);
++	if (poll_delay <= 0)
++		poll_delay = 1;
++	schedule_delayed_work(&st->work, msecs_to_jiffies(poll_delay));
++}
++
++#ifdef CONFIG_HAS_EARLYSUSPEND
++static void yas_early_suspend(struct early_suspend *h)
++{
++	struct yas_state *st = container_of(h, struct yas_state, sus);
++	if (atomic_read(&st->enable)) {
++		cancel_delayed_work_sync(&st->work);
++		st->mag.set_enable(0);
++	}
++}
++
++
++static void yas_late_resume(struct early_suspend *h)
++{
++	struct yas_state *st = container_of(h, struct yas_state, sus);
++	if (atomic_read(&st->enable)) {
++		st->mag.set_enable(1);
++		schedule_delayed_work(&st->work, 0);
++	}
++}
++#endif
++
++static int yas_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
++{
++	struct yas_state *st = NULL;
++	struct input_dev *input_dev = NULL;
++	int ret, i;
++
++	this_client = i2c;
++	input_dev = input_allocate_device();
++	if (input_dev == NULL) {
++		ret = -ENOMEM;
++		goto error_free;
++	}
++	st = kzalloc(sizeof(struct yas_state), GFP_KERNEL);
++	if (st == NULL) {
++		ret = -ENOMEM;
++		goto error_ret;
++	}
++	i2c_set_clientdata(i2c, st);
++
++	input_dev->name = YAS_MSM_NAME;
++	input_dev->dev.parent = &i2c->dev;
++	input_dev->id.bustype = BUS_I2C;
++	set_bit(EV_ABS, input_dev->evbit);
++	input_set_abs_params(input_dev, ABS_X, INT_MIN, INT_MAX, 0, 0);
++	input_set_abs_params(input_dev, ABS_Y, INT_MIN, INT_MAX, 0, 0);
++	input_set_abs_params(input_dev, ABS_Z, INT_MIN, INT_MAX, 0, 0);
++
++	input_set_drvdata(input_dev, st);
++	atomic_set(&st->enable, 0);
++	st->input_dev = input_dev;
++	st->poll_delay = YAS_DEFAULT_SENSOR_DELAY;
++	st->mag.callback.device_open = yas_device_open;
++	st->mag.callback.device_close = yas_device_close;
++	st->mag.callback.device_write = yas_device_write;
++	st->mag.callback.device_read = yas_device_read;
++	st->mag.callback.usleep = yas_usleep;
++	st->mag.callback.current_time = yas_current_time;
++	INIT_DELAYED_WORK(&st->work, yas_work_func);
++	mutex_init(&st->lock);
++#ifdef CONFIG_HAS_EARLYSUSPEND
++	st->sus.level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN + 1;
++	st->sus.suspend = yas_early_suspend;
++	st->sus.resume = yas_late_resume;
++	register_early_suspend(&st->sus);
++#endif
++	for (i = 0; i < 3; i++)
++		st->compass_data[i] = 0;
++
++	ret = input_register_device(input_dev);
++	if (ret)
++		goto error_free_device;
++
++	st->cdev = sensors_cdev;
++	st->cdev.sensors_enable = yas_enable_set;
++	st->cdev.sensors_poll_delay = yas_poll_delay_set;
++
++	ret = sensors_classdev_register(&i2c->dev, &st->cdev);
++	if (ret) {
++		dev_err(&i2c->dev, "class device create failed: %d\n", ret);
++		goto error_classdev_unregister;
++	}
++
++	st->dev = st->cdev.dev;
++
++	ret = sysfs_create_group(&st->dev->kobj, &yas_attribute_group);
++	if (ret)
++		goto error_unregister_device;
++	ret = yas_mag_driver_init(&st->mag);
++	if (ret < 0) {
++		ret = -EFAULT;
++		goto error_remove_sysfs;
++	}
++	ret = st->mag.init();
++	if (ret < 0) {
++		ret = -EFAULT;
++		goto error_remove_sysfs;
++	}
++	return 0;
++
++error_remove_sysfs:
++	sysfs_remove_group(&st->dev->kobj, &yas_attribute_group);
++error_unregister_device:
++	device_unregister(st->dev);
++error_classdev_unregister:
++	 sensors_classdev_unregister(&st->cdev);
++error_free_device:
++	input_free_device(input_dev);
++error_free:
++#ifdef CONFIG_HAS_EARLYSUSPEND
++	unregister_early_suspend(&st->sus);
++#endif
++	kfree(st);
++error_ret:
++	i2c_set_clientdata(i2c, NULL);
++	this_client = NULL;
++	return ret;
++}
++
++static int yas_remove(struct i2c_client *i2c)
++{
++	struct yas_state *st = i2c_get_clientdata(i2c);
++	if (st != NULL) {
++#ifdef CONFIG_HAS_EARLYSUSPEND
++		unregister_early_suspend(&st->sus);
++#endif
++		yas_disable(st);
++		st->mag.term();
++		sysfs_remove_group(&st->dev->kobj,
++				&yas_attribute_group);
++		input_unregister_device(st->input_dev);
++		input_free_device(st->input_dev);
++		device_unregister(st->dev);
++		class_destroy(st->class);
++		kfree(st);
++		this_client = NULL;
++	}
++	return 0;
++}
++
++#ifdef CONFIG_PM_SLEEP
++static int yas_suspend(struct device *dev)
++{
++	struct i2c_client *i2c = dev_get_drvdata(dev);
++	struct yas_state *st = i2c_get_clientdata(i2c);
++	if (atomic_read(&st->enable)) {
++		cancel_delayed_work_sync(&st->work);
++		st->mag.set_enable(0);
++	}
++	return 0;
++}
++
++static int yas_resume(struct device *dev)
++{
++	struct i2c_client *i2c = dev_get_drvdata(dev);
++	struct yas_state *st = i2c_get_clientdata(i2c);
++	if (atomic_read(&st->enable)) {
++		st->mag.set_enable(1);
++		schedule_delayed_work(&st->work, 0);
++	}
++	return 0;
++}
++
++static SIMPLE_DEV_PM_OPS(yas_pm_ops, yas_suspend, yas_resume);
++#define YAS_PM_OPS (&yas_pm_ops)
++#else
++#define YAS_PM_OPS NULL
++#endif
++
++static const struct i2c_device_id yas_id[] = {
++	{YAS_MSM_NAME, 0},
++	{ }
++};
++MODULE_DEVICE_TABLE(i2c, yas_id);
++
++
++static struct of_device_id yas_match_table[] = {
++	{ .compatible = "yamaha,yas533", },
++	{ },
++};
++
++static struct i2c_driver yas_driver = {
++	.driver = {
++		.name	= YAS_MSM_NAME,
++		.owner	= THIS_MODULE,
++		.pm	= YAS_PM_OPS,
++		.of_match_table = yas_match_table,
++	},
++	.probe		= yas_probe,
++	.remove		= yas_remove,
++	.id_table	= yas_id,
++};
++static int __init yas_driver_init(void)
++{
++	return i2c_add_driver(&yas_driver);
++}
++
++static void __exit yas_driver_exit(void)
++{
++	i2c_del_driver(&yas_driver);
++}
++
++module_init(yas_driver_init);
++module_exit(yas_driver_exit);
++
++MODULE_DESCRIPTION("Yamaha Magnetometer I2C driver");
++MODULE_LICENSE("GPL v2");
++MODULE_VERSION("1.6.2.1020d");
+-- 
+1.7.9.5
+

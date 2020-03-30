@@ -1,0 +1,86 @@
+From 78e27738f16cb02ba3c487effa7b1ed1b63caca2 Mon Sep 17 00:00:00 2001
+From: chenhl0630 <chenhl0630@thundersoft.com>
+Date: Tue, 6 Dec 2016 17:25:25 +0800
+Subject: [PATCH] ARM: dts: msm: Add ov16880 camera dtsi
+
+Add ov16880 devicetree description for msm8976
+
+Change-Id: I8c99054cbb1d0ee557550399f158d13892728d14
+Signed-off-by: chenhl0630 <chenhl0630@thundersoft.com>
+---
+ .../boot/dts/qcom/msm8976-camera-sensor-qrd.dtsi   | 43 ----------------------
+ 1 file changed, 43 deletions(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8976-camera-sensor-qrd.dtsi b/arch/arm/boot/dts/qcom/msm8976-camera-sensor-qrd.dtsi
+index 4dd4b7c..08d0029 100644
+--- a/arch/arm/boot/dts/qcom/msm8976-camera-sensor-qrd.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8976-camera-sensor-qrd.dtsi
+@@ -38,38 +38,8 @@
+ 	eeprom0: qcom,eeprom@0{
+ 		cell-index = <0>;
+ 		reg = <0x00>;
+-		qcom,eeprom-name = "sunny_q13v06k";
+ 		compatible = "qcom,eeprom";
+-		qcom,slave-addr = <0x20>;
+ 		qcom,cci-master = <0>;
+-		qcom,num-blocks = <8>;
+-
+-		qcom,page0 = <1 0x0100 2 0x01 1 1>;
+-		qcom,poll0 = <0 0x0 2 0 1 1>;
+-		qcom,mem0 = <0 0x0 2 0 1 0>;
+-		qcom,page1 = <1 0x5002 2 0x5 1 1>;
+-		qcom,poll1 = <0 0x0 2 0 1 1>;
+-		qcom,mem1 = <0 0x0 2 0 1 0>;
+-		qcom,page2 = <1 0x3d84 2 0xc0 1 0>;
+-		qcom,poll2 = <0 0x0 2 0 1 1>;
+-		qcom,mem2 = <0 0x0 2 0 1 0>;
+-		qcom,page3 = <1 0x3d88 2 0x7220 2 0>;
+-		qcom,poll3 = <0 0x0 2 0 1 1>;
+-		qcom,mem3 = <0 0x0 2 0 1 0>;
+-		qcom,page4 = <1 0x3d8a 2 0x73BA 2 0>;
+-		qcom,poll4 = <0 0x0 2 0 1 1>;
+-		qcom,mem4 = <0 0x0 2 0 1 0>;
+-		qcom,page5 = <1 0x3d81 2 0x01 1 15>;
+-		qcom,poll5 = <0 0x0 2 0 1 1>;
+-		qcom,mem5 = <411 0x7220 2 0 1 0>;
+-		qcom,page6 = <1 0x5002 2 0x7 1 1>;
+-		qcom,poll6 = <0 0x0 2 0 1 1>;
+-		qcom,mem6 = <0 0x0 2 0 1 0>;
+-		qcom,page7 = <0 0 0 0 0 0>;
+-		qcom,poll7 = <0 0 0 0 0 0>;
+-		qcom,saddr7 = <0xa0>;
+-		qcom,mem7 = <470 0x16ba 2 0 1 0>;
+-
+ 		cam_vdig-supply = <&pm8950_l23>;
+ 		cam_vana-supply = <&pm8950_l22>;
+ 		cam_vio-supply = <&pm8950_l6>;
+@@ -93,18 +63,6 @@
+ 		qcom,gpio-req-tbl-label = "MCAM1_MCLK0",
+ 			"MCAM1_RESET",
+ 			"MCAM1_STANDBY";
+-
+-		qcom,cam-power-seq-type = "sensor_vreg",
+-			"sensor_vreg", "sensor_vreg",
+-			"sensor_clk",
+-			"sensor_gpio", "sensor_gpio";
+-		qcom,cam-power-seq-val = "cam_vio",
+-			"cam_vana", "cam_vdig",
+-			"sensor_cam_mclk",
+-			"sensor_gpio_reset",
+-			"sensor_gpio_standby";
+-		qcom,cam-power-seq-cfg-val = <1 1 1 24000000 1 1>;
+-		qcom,cam-power-seq-delay = <1 1 5 5 5 10>;
+ 		status = "ok";
+ 		clocks = <&clock_gcc clk_mclk0_clk_src>,
+ 				<&clock_gcc clk_gcc_camss_mclk0_clk>;
+@@ -199,7 +157,6 @@
+ 		cell-index = <0>;
+ 		compatible = "qcom,camera";
+ 		reg = <0x0>;
+-		qcom,special-support-sensors = "ov13850_q13v06k";
+ 		qcom,csiphy-sd-index = <0>;
+ 		qcom,csid-sd-index = <0>;
+ 		qcom,mount-angle = <90>;
+-- 
+1.9.1
+

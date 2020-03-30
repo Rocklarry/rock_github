@@ -1,0 +1,22 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/rock/workspack/code_test/learn/test/src/test.c
+stdio.h
+-
+syslog.h
+-
+string.h
+-
+memory.h
+-
+math.h
+-
+unistd.h
+-
+

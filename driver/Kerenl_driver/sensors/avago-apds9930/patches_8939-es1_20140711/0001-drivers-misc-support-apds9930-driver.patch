@@ -1,0 +1,66 @@
+From 06eeec169e2532c76bf6590ab90a8f1377b2872b Mon Sep 17 00:00:00 2001
+From: chenqingfeng <chenqf0228@thundersoft.com>
+Date: Wed, 9 Jul 2014 11:23:53 +0800
+Subject: [PATCH] drivers:misc: support apds9930 driver
+
+Driver support apds9930
+
+Change-Id: I18a4f33034d32da56523d556821943f92d92b04b
+Signed-off-by: Qingfeng Chen <chenqf0228@thundersoft.com>
+---
+ drivers/misc/apds993x.c |   22 +++++++++++-----------
+ 1 file changed, 11 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/misc/apds993x.c b/drivers/misc/apds993x.c
+index ea1e71b..acf68c0 100644
+--- a/drivers/misc/apds993x.c
++++ b/drivers/misc/apds993x.c
+@@ -1,9 +1,9 @@
+ /*
+  * apds993x.c - Linux kernel modules for ambient light + proximity sensor
+  *
+- * Copyright (C) 2012 Lee Kai Koon <kai-koon.lee@avagotech.com>
+- * Copyright (C) 2012 Avago Technologies
+- * Copyright (C) 2013 LGE Inc.
++ * Copyright (C) 2012-2014 Lee Kai Koon <kai-koon.lee@avagotech.com>
++ * Copyright (C) 2012-2014 Avago Technologies
++ * Copyright (C) 2013-2014 LGE Inc.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License as published by
+@@ -281,11 +281,11 @@ static struct sensors_classdev sensors_light_cdev = {
+ 	.max_range = "60000",
+ 	.resolution = "0.0125",
+ 	.sensor_power = "0.20",
+-	.min_delay = 0, /* in microseconds */
++	.min_delay = 3000, /* in microseconds */
+ 	.fifo_reserved_event_count = 0,
+ 	.fifo_max_event_count = 0,
+ 	.enabled = 0,
+-	.delay_msec = 100,
++	.delay_msec = 200,
+ 	.sensors_enable = NULL,
+ 	.sensors_poll_delay = NULL,
+ };
+@@ -2469,12 +2469,12 @@ static int apds993x_probe(struct i2c_client *client,
+ 	data->ps_threshold = apds993x_ps_detection_threshold;
+ 	data->ps_hysteresis_threshold = apds993x_ps_hsyteresis_threshold;
+ 	data->ps_detection = 0;	/* default to no detection */
+-	data->enable_als_sensor = 0;	// default to 0
+-	data->enable_ps_sensor = 0;	// default to 0
+-	data->als_poll_delay = 100;	// default to 100ms
+-	data->als_atime_index = APDS993X_ALS_RES_37888;	// 100ms ATIME
+-	data->als_again_index = APDS993X_ALS_GAIN_8X;	// 8x AGAIN
+-	data->als_reduce = 0;	// no ALS 6x reduction
++	data->enable_als_sensor = 0;	/* default to 0*/
++	data->enable_ps_sensor = 0;	/* default to 0*/
++	data->als_poll_delay = 200;	/* default to 200ms */
++	data->als_atime_index = APDS993X_ALS_RES_37888;	/* 100ms ATIME*/
++	data->als_again_index = APDS993X_ALS_GAIN_8X;	/* 8x AGAIN*/
++	data->als_reduce = 0;	/* no ALS 6x reduction*/
+ 	data->als_prev_lux = 0;
+ 
+ 	/* calibration */
+-- 
+1.7.9.5
+

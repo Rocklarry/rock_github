@@ -1,0 +1,74 @@
+From c07f5520bfa72511ae3cb94988bef6c6c2ab5342 Mon Sep 17 00:00:00 2001
+From: chenx <chenxiang0527@thundersoft.com>
+Date: Thu, 21 May 2015 15:51:05 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support cm36686 devicetree
+
+Devicetree support cm36686
+
+Change-Id: I949f98fd2ae58ed6073c6a47525163c68c75da05
+Signed-off-by: Xiang Chen <chenxiang0527@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi |   30 +++++++++++++++++++++++++-
+ 1 file changed, 29 insertions(+), 1 deletion(-)
+ mode change 100755 => 100644 arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+
+diff --git a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+old mode 100755
+new mode 100644
+index 1039722..f769e1a
+--- a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+@@ -47,6 +47,17 @@
+ 		};
+ 	};
+ 
++	cm36686_int_pin {
++		qcom,pins = <&gp 113>;
++		qcom,pin-func = <0>;
++		qcom,num-grp-pins = <1>;
++		label = "cm36686-irq";
++		cm36686_default: cm36686_default {
++			drive-strength = <6>;
++			bias-pull-up;
++		};
++	};
++
+ 	tps65132-en-pin {
+ 		qcom,pins = <&gp 97>, <&gp 98>;
+ 		qcom,num-grp-pins = <2>;
+@@ -61,7 +72,7 @@
+ };
+ 
+ &i2c_0 { /* BLSP1 QUP2 */
+-	avago@39 { /* Ambient light and proximity sensor */
++/*	avago@39 { // Ambient light and proximity sensor
+ 		compatible = "avago,apds9930";
+ 		reg = <0x39>;
+ 		pinctrl-names = "default","sleep";
+@@ -81,6 +92,23 @@
+ 		avago,als-D = <129>;
+ 		avago,ga-value = <560>;
+ 	};
++*/
++	capella@60 { /* Ambient light and proximity sensor */
++		compatible = "capella,cm36686";
++		reg = <0x60>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&cm36686_default>;
++		interrupt-parent = <&msm_gpio>;
++		interrupts = <113 0x2002>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++		capella,interrupt-gpio = <&msm_gpio 113 0x2002>;
++		capella,use-polling = <0>;
++		capella,ls_poll_delay = <200>;
++		capella,ps_poll_delay = <200>;
++		capella,ps_away_thd_set = <3>;
++		capella,ps_close_thd_set = <8>;
++	};
+ 
+ 	bosch@18 { /* Accelerometer sensor */
+ 		compatible = "bosch,bma2x2";
+-- 
+1.7.9.5
+

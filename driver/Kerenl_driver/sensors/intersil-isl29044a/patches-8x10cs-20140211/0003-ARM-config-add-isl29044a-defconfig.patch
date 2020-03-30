@@ -1,0 +1,25 @@
+From 7296caa7cccab8596a25ad6415ca52f8c856a694 Mon Sep 17 00:00:00 2001
+From: guran1128 <guran1128@thundersoft.com>
+Date: Wed, 12 Feb 2014 16:51:32 +0800
+Subject: [PATCH 3/3] ARM:config:add isl29044a defconfig
+
+Support isl29044a defconfig
+
+Change-Id: I0277ec8605ce527147e8f3732f3a143588556586
+Signed-off-by: Ran Gu <guran1128@thundersoft.com>
+---
+ arch/arm/configs/msm8610_defconfig |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/configs/msm8610_defconfig b/arch/arm/configs/msm8610_defconfig
+index fb6cf3e..f00a275 100644
+--- a/arch/arm/configs/msm8610_defconfig
++++ b/arch/arm/configs/msm8610_defconfig
+@@ -499,3 +499,4 @@ CONFIG_MSM_RPM_RBCPR_STATS_V2_LOG=y
+ CONFIG_SENSORS_STK3X1X=y
+ CONFIG_SENSORS_MMA8X5X=y
+ CONFIG_SENSORS_CAPELLA_CM36283=y
++CONFIG_INTERSIL_ISL29044A=y
+-- 
+1.7.4.1
+

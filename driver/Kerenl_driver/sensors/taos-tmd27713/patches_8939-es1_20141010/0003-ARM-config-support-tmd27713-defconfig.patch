@@ -1,0 +1,37 @@
+From 2ca41c4dfd26e78bbd285101beef0d9bb686d159 Mon Sep 17 00:00:00 2001
+From: longxw <longxw0410@thundersoft.com>
+Date: Tue, 28 Oct 2014 17:07:22 +0800
+Subject: [PATCH 3/3] ARM:config: support tmd27713 defconfig
+
+Defconfig support tmd27713
+
+Change-Id: I68b4bd5d84b1be831bb2628e091ce0f6f99d222a
+Signed-off-by: Xiang Chen <chenxiang0527@thundersoft.com>
+---
+ arch/arm/configs/msm8916_defconfig |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/configs/msm8916_defconfig b/arch/arm/configs/msm8916_defconfig
+index 9fb4f3c..ff4c075 100644
+--- a/arch/arm/configs/msm8916_defconfig
++++ b/arch/arm/configs/msm8916_defconfig
+@@ -215,7 +215,7 @@ CONFIG_CMA=y
+ CONFIG_CMA_SIZE_MBYTES=8
+ CONFIG_BLK_DEV_LOOP=y
+ CONFIG_BLK_DEV_RAM=y
+-CONFIG_APDS9930=y
++#CONFIG_APDS9930=y
+ CONFIG_QSEECOM=y
+ CONFIG_SCSI=y
+ CONFIG_SCSI_TGT=y
+@@ -271,6 +271,7 @@ CONFIG_SENSORS_AKM09911=y
+ CONFIG_SENSORS_BMA2X2=y
+ CONFIG_SENSORS_MMC3416X=y
+ CONFIG_SENSORS_AKM8963=y
++CONFIG_SENSORS_TMD27713=y
+ CONFIG_SERIAL_MSM_HSL=y
+ CONFIG_SERIAL_MSM_HSL_CONSOLE=y
+ CONFIG_SERIAL_MSM_SMD=y
+-- 
+1.7.9.5
+

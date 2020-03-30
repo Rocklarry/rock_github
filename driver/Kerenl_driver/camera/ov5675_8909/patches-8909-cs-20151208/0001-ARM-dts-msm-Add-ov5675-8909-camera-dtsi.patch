@@ -1,0 +1,32 @@
+From 687eaaeb8b3dae7b3602b70dd81692287439a773 Mon Sep 17 00:00:00 2001
+From: Wei Ding <weiding@qti.qualcomm.com>
+Date: Tue, 8 Dec 2015 16:51:37 +0800
+Subject: [PATCH] ARM: dts: msm: Add ov5675 8909 camera dtsi.
+
+Add ov5675 8909 camera dtsi.
+
+Change-Id: I703fa338b5a4c6cbee284a817b67a704a2df6344
+Signed-off-by: Wei Ding <weiding@qti.qualcomm.com>
+---
+ .../boot/dts/qcom/msm8909-camera-sensor-skue.dtsi  |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+ mode change 100644 => 100755 arch/arm/boot/dts/qcom/msm8909-camera-sensor-skue.dtsi
+
+diff --git a/arch/arm/boot/dts/qcom/msm8909-camera-sensor-skue.dtsi b/arch/arm/boot/dts/qcom/msm8909-camera-sensor-skue.dtsi
+old mode 100644
+new mode 100755
+index 7f7882a..c5a5b88
+--- a/arch/arm/boot/dts/qcom/msm8909-camera-sensor-skue.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8909-camera-sensor-skue.dtsi
+@@ -147,7 +147,7 @@
+ 		cell-index = <0>;
+ 		compatible = "qcom,camera";
+ 		reg = <0x2>;
+-		qcom,special-support-sensors="ov5670_30010a3";
++		qcom,special-support-sensors="ov5675_d5v15b", "ov5670_30010a3";
+ 		qcom,eeprom-src = <&eeprom0>;
+ 		qcom,csiphy-sd-index = <0>;
+ 		qcom,csid-sd-index = <0>;
+-- 
+1.7.9.5
+

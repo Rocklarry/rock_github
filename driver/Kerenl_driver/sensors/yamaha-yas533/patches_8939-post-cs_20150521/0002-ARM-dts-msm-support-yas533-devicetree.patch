@@ -1,0 +1,47 @@
+From 708874bf4a423c482f60e3a36d0e48bdb92da3f6 Mon Sep 17 00:00:00 2001
+From: chenx <chenxiang0527@thundersoft.com>
+Date: Fri, 22 May 2015 10:12:45 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support yas533 devicetree
+
+Devicetree support yas533
+
+Change-Id: Ibf9dd44a89f34b4dbaa5e7a5784bcbc905997ffa
+Signed-off-by: Xiang Chen <chenxiang0527@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
+ mode change 100755 => 100644 arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+
+diff --git a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+old mode 100755
+new mode 100644
+index 1039722..57e0867
+--- a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+@@ -107,6 +107,13 @@
+ 		memsic,auto-report;
+ 	};
+ 
++	yamaha@2e { /* Magnetic field sensor */
++		compatible = "yamaha,yas533";
++		reg = <0x2e>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++	};
++
+ 	mpu6050@68 { /* Gyroscope and accelerometer sensor combo */
+ 		compatible = "invn,mpu6050";
+ 		reg = <0x68>;
+@@ -119,7 +126,8 @@
+ 		vlogic-supply = <&pm8916_l16>;
+ 		vi2c-supply = <&pm8916_l6>;
+ 		invn,gpio-int = <&msm_gpio 115 0x2002>;
+-		invn,place = "Portrait Down Back Side";
++		/*invn,place = "Portrait Down Back Side";*/
++		invn,place = "Landscape Left Back Side";
+ 	};
+ 
+ 	tps65132@3e {
+-- 
+1.7.9.5
+

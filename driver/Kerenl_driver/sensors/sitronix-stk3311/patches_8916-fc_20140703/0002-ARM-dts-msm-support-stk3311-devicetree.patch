@@ -1,0 +1,55 @@
+From 51fc551d5b02ac0edbbddca4abc5ceafdeec40f2 Mon Sep 17 00:00:00 2001
+From: chenqingfeng <chenqf0228@thundersoft.com>
+Date: Wed, 2 Jul 2014 20:48:18 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support stk3311 devicetree
+
+Devicetree support stk3311
+
+Change-Id: I18f1a8dbc332099fddc541bbf7c0a512827bc3c7
+Signed-off-by: Qingfeng Chen <chenqf0228@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi |   21 ++++++++++++++++++++-
+ 1 file changed, 20 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi b/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
+index af488ab..b5d2c8d 100644
+--- a/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
+@@ -88,7 +88,7 @@
+ 		akm,auto-report;
+ 	};
+ 
+-	avago@39 {
++/*	avago@39 {
+ 		compatible = "avago,apds9930";
+ 		reg = <0x39>;
+ 		pinctrl-names = "default","sleep";
+@@ -107,6 +107,25 @@
+ 		avago,als-C = <75>;
+ 		avago,als-D = <129>;
+ 		avago,ga-value = <98>;
++	};*/
++
++	stk@48 {
++		compatible = "stk,stk3x1x";
++		reg = <0x48>;
++		interrupt-parent = <&msm_gpio>;
++		interrupts = <113 0x2002>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++		stk,irq-gpio = <&msm_gpio 113 0x2002>;
++		stk,transmittance = <8000>;
++		stk,state-reg = <0x00>;
++		stk,psctrl-reg = <0x31>;
++		stk,alsctrl-reg = <0x39>;
++		stk,ledctrl-reg = <0xBF>;
++		stk,wait-reg = <0x09>;
++		stk,ps-thdh = <100>;
++		stk,ps-thdl = <50>;
++		stk,use-fir;
+ 	};
+ 
+ 	st@18 {
+-- 
+1.7.9.5
+

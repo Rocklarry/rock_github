@@ -1,0 +1,37 @@
+From 9f9363c3ec95b45c27fc6d29765f807d47ddb567 Mon Sep 17 00:00:00 2001
+From: chenxl0723 <chenxl0723@thundersoft.com>
+Date: Wed, 16 Apr 2014 16:52:04 +0800
+Subject: [PATCH 2/3] ARM:config: support ctp byd byd-tp1089a-v2
+
+Add CTP IHV-BYD@BYD-TP1089A-V2@SSD6030QN5 config
+
+Change-Id: Ic935569e0174fea70c01bf6630950b7f440e7035
+Signed-off-by: Xuelong Chen <chenxl0723@thundersoft.com>
+---
+ arch/arm/configs/msm8610_defconfig |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm/configs/msm8610_defconfig b/arch/arm/configs/msm8610_defconfig
+index 02db2f2..cd20b79 100644
+--- a/arch/arm/configs/msm8610_defconfig
++++ b/arch/arm/configs/msm8610_defconfig
+@@ -232,11 +232,12 @@ CONFIG_INPUT_EVBUG=m
+ CONFIG_KEYBOARD_GPIO=y
+ CONFIG_INPUT_TOUCHSCREEN=y
+ CONFIG_TOUCHSCREEN_ATMEL_MXT=y
+-CONFIG_TOUCHSCREEN_FT5X06=y
++CONFIG_TOUCHSCREEN_SSD6030=y
++#CONFIG_TOUCHSCREEN_FT5X06=y
+ CONFIG_TOUCHSCREEN_GEN_VKEYS=y
+-CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI4=y
+-CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_RMI4_DEV=y
+-CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE=y
++#CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI4=y
++#CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_RMI4_DEV=y
++#CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE=y
+ CONFIG_TOUCHSCREEN_GT9XX=y
+ CONFIG_GT9XX_TOUCHPANEL_DRIVER=y
+ CONFIG_INPUT_MISC=y
+-- 
+1.7.9.5
+

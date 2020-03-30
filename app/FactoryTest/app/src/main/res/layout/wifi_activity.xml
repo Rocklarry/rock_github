@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical">
+
+
+    <TextView
+        android:id="@+id/title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="WIFI TEST"
+        android:textSize="40sp"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Scaning......"
+        android:textSize="30sp"/>
+    <TextView
+        android:id="@+id/no_data"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Scan No Data"
+        android:textSize="40sp"
+        android:visibility="gone"/>
+
+    <ListView
+        android:id="@+id/wifi_list"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginTop="5dp"
+        android:divider="@null">
+    </ListView>
+
+
+    <TextView
+        android:id="@+id/tv_pass"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="TEST PASS"
+        android:textColor="#008B00"
+        android:textSize="30sp"
+        android:visibility="invisible"/>
+    
+    <TextView
+        android:id="@+id/tv_fail"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="TEST FAIL"
+        android:textColor="#ee0000"
+        android:textSize="30sp"
+        android:visibility="invisible"/>
+    <CheckBox
+        android:id="@+id/cb_start_network_test"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        android:text="Open network test"
+        />
+    <include
+        layout="@layout/layout_result"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        />
+</LinearLayout>

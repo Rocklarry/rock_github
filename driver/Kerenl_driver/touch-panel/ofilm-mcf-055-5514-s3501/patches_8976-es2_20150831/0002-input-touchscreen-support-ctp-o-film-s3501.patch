@@ -1,0 +1,368 @@
+From 9a68ebea4f14206116b026d181690af753feea44 Mon Sep 17 00:00:00 2001
+From: maoyq0504 <maoyq0504@thundersoft.com>
+Date: Mon, 24 Aug 2015 17:28:27 +0800
+Subject: [PATCH 2/2] input:touchscreen: support ctp o-film s3501
+
+Add CTP IHV-O-FILM@MCF-055-5514@S3501 driver
+
+Change-Id: I2823476e97b63a381d3bea0f3459c09847daeb0e
+Signed-off-by: Yuanqiu Mao <maoyq0504@thundersoft.com>
+---
+ drivers/input/touchscreen/synaptics_i2c_rmi4.c | 243 ++++++++++++++++++++++++-
+ drivers/input/touchscreen/synaptics_i2c_rmi4.h |   3 +
+ include/linux/input/synaptics_dsx.h            |   1 +
+ 3 files changed, 246 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/input/touchscreen/synaptics_i2c_rmi4.c b/drivers/input/touchscreen/synaptics_i2c_rmi4.c
+index 3b0e9b1..4fb3df8 100644
+--- a/drivers/input/touchscreen/synaptics_i2c_rmi4.c
++++ b/drivers/input/touchscreen/synaptics_i2c_rmi4.c
+@@ -114,6 +114,17 @@ enum device_status {
+ #define F12_MAX_X		65536
+ #define F12_MAX_Y		65536
+ 
++#define RMI4_INFO_MAX_LEN   200
++
++#define RMI4_STORE_TS_INFO(buf, id, rev, max_tch, fw_vkey_support, fw_ver) \
++			snprintf(buf, RMI4_INFO_MAX_LEN, \
++					"controller\t= synaptics\n" \
++					"model\t\t= %d rev %d\n" \
++					"max_touches\t= %d\n" \
++					"fw_vkey_support\t= %s\n" \
++					"fw_ver\t\t= %d\n", id, \
++					rev, max_tch, fw_vkey_support, fw_ver)
++
+ static int synaptics_rmi4_i2c_read(struct synaptics_rmi4_data *rmi4_data,
+ 		unsigned short addr, unsigned char *data,
+ 		unsigned short length);
+@@ -138,6 +149,9 @@ static void __maybe_unused synaptics_rmi4_release_all(
+ static int synaptics_rmi4_check_configuration(struct synaptics_rmi4_data
+ 		*rmi4_data);
+ 
++static int synaptics_rmi4_irq_enable(struct synaptics_rmi4_data *rmi4_data,
++		bool enable);
++
+ static int synaptics_rmi4_suspend(struct device *dev);
+ 
+ static int synaptics_rmi4_resume(struct device *dev);
+@@ -192,6 +206,17 @@ static int synaptics_rmi4_capacitance_button_map(
+ 				struct synaptics_rmi4_fn *fhandler);
+ 
+ static irqreturn_t synaptics_rmi4_irq(int irq, void *data);
++static ssize_t synaptics_rmi4_enable_show(struct device *dev,
++		struct device_attribute *attr, char *buf);
++
++static ssize_t synaptics_rmi4_enable_store(struct device *dev,
++		struct device_attribute *attr, const char *buf, size_t count);
++
++static ssize_t synaptics_rmi4_mt_protocol_type_show(struct device *dev,
++		struct device_attribute *attr, char *buf);
++
++static ssize_t synaptics_rmi4_ts_info_show(struct device *dev,
++		struct device_attribute *attr, char *buf);
+ 
+ #if defined(CONFIG_SECURE_TOUCH)
+ static ssize_t synaptics_secure_touch_enable_show(struct device *dev,
+@@ -452,6 +477,15 @@ static struct device_attribute attrs[] = {
+ 	__ATTR(flipy, (S_IRUGO | S_IWUSR | S_IWGRP),
+ 			synaptics_rmi4_flipy_show,
+ 			synaptics_rmi4_flipy_store),
++	__ATTR(enable, (S_IRUGO | S_IWUSR | S_IWGRP),
++			synaptics_rmi4_enable_show,
++			synaptics_rmi4_enable_store),
++	__ATTR(mt_protocol_type, S_IRUGO,
++			synaptics_rmi4_mt_protocol_type_show,
++			NULL),
++	__ATTR(ts_info, S_IRUGO,
++			synaptics_rmi4_ts_info_show,
++			NULL),
+ #if defined(CONFIG_SECURE_TOUCH)
+ 	__ATTR(secure_touch_enable, (S_IRUGO | S_IWUSR | S_IWGRP),
+ 			synaptics_secure_touch_enable_show,
+@@ -684,6 +718,90 @@ static ssize_t synaptics_secure_touch_show(struct device *dev,
+ 
+ }
+ #endif
++
++/*********************debug star**********************/
++static bool synaptics_rmi4_debug_addr_is_valid(int addr)
++{
++	if (addr < 0 || addr > 0xFFFF) {
++		pr_err("synaptics_rmi4 reg address is invalid: 0x%x\n", addr);
++		return false;
++	}
++
++	return true;
++}
++
++static int synaptics_rmi4_debug_data_set(void *_data, u64 val)
++{
++	struct synaptics_rmi4_data *data = _data;
++
++	mutex_lock(&data->input_dev->mutex);
++
++	if (synaptics_rmi4_debug_addr_is_valid(data->addr))
++		dev_info(&data->i2c_client->dev,
++				"Writing into synaptics_rmi4 registers not supported\n");
++
++	mutex_unlock(&data->input_dev->mutex);
++
++	return 0;
++}
++
++static int synaptics_rmi4_debug_data_get(void *_data, u64 *val)
++{
++	struct synaptics_rmi4_data *data = _data;
++	int rc;
++	unsigned char reg;
++
++	mutex_lock(&data->input_dev->mutex);
++
++	if (synaptics_rmi4_debug_addr_is_valid(data->addr)) {
++		rc = synaptics_rmi4_i2c_read(data, data->addr,
++						&reg, sizeof(reg));
++		if (rc < 0)
++			dev_err(&data->i2c_client->dev,
++					"synaptics_rmi4 read register 0x%x failed (%d)\n",
++					data->addr, rc);
++		else
++			*val = reg;
++	}
++
++	mutex_unlock(&data->input_dev->mutex);
++
++	return 0;
++}
++
++DEFINE_SIMPLE_ATTRIBUTE(debug_data_fops, synaptics_rmi4_debug_data_get,
++			synaptics_rmi4_debug_data_set, "0x%02llX\n");
++
++static int synaptics_rmi4_debug_addr_set(void *_data, u64 val)
++{
++	struct synaptics_rmi4_data *data = _data;
++
++	if (synaptics_rmi4_debug_addr_is_valid(val)) {
++		mutex_lock(&data->input_dev->mutex);
++		data->addr = val;
++		mutex_unlock(&data->input_dev->mutex);
++	}
++
++	return 0;
++}
++
++static int synaptics_rmi4_debug_addr_get(void *_data, u64 *val)
++{
++	struct synaptics_rmi4_data *data = _data;
++
++	mutex_lock(&data->input_dev->mutex);
++
++	if (synaptics_rmi4_debug_addr_is_valid(data->addr))
++		*val = data->addr;
++
++	mutex_unlock(&data->input_dev->mutex);
++
++	return 0;
++}
++
++DEFINE_SIMPLE_ATTRIBUTE(debug_addr_fops, synaptics_rmi4_debug_addr_get,
++		synaptics_rmi4_debug_addr_set, "0x%04llX\n");
++
+ static int synaptics_rmi4_debug_suspend_set(void *_data, u64 val)
+ {
+ 	struct synaptics_rmi4_data *rmi4_data = _data;
+@@ -708,6 +826,31 @@ static int synaptics_rmi4_debug_suspend_get(void *_data, u64 *val)
+ DEFINE_SIMPLE_ATTRIBUTE(debug_suspend_fops, synaptics_rmi4_debug_suspend_get,
+ 			synaptics_rmi4_debug_suspend_set, "%lld\n");
+ 
++/*********************debug end**********************/
++
++static void synaptics_rmi4_update_ts_info(struct synaptics_rmi4_data *rmi4_data)
++{
++	unsigned char pkg_id[4];
++	unsigned int build_id;
++	struct synaptics_rmi4_device_info *rmi;
++	/* read device package id */
++	synaptics_rmi4_i2c_read(rmi4_data,
++			rmi4_data->f01_query_base_addr + 17,
++			pkg_id,
++			sizeof(pkg_id));
++	rmi = &(rmi4_data->rmi4_mod_info);
++
++	build_id = (unsigned int)rmi->build_id[0] +
++		(unsigned int)rmi->build_id[1] * 0x100 +
++		(unsigned int)rmi->build_id[2] * 0x10000;
++
++	RMI4_STORE_TS_INFO(rmi4_data->ts_info, pkg_id[1] << 8 | pkg_id[0],
++			pkg_id[3] << 8 | pkg_id[2], rmi4_data->num_of_fingers,
++			rmi4_data->board->fw_vkey_support ? "yes" : "no",
++			build_id);
++}
++
++
+ static ssize_t synaptics_rmi4_full_pm_cycle_show(struct device *dev,
+ 		struct device_attribute *attr, char *buf)
+ {
+@@ -948,7 +1091,75 @@ static ssize_t synaptics_rmi4_flipy_store(struct device *dev,
+ 	return count;
+ }
+ 
+- /**
++/***************add  sysfy 20150820****************************/
++static ssize_t synaptics_rmi4_enable_show(struct device *dev,
++		struct device_attribute *attr, char *buf)
++{
++	struct synaptics_rmi4_data *rmi4_data = dev_get_drvdata(dev);
++
++	if (rmi4_data->suspended) {
++		dev_info(&rmi4_data->i2c_client->dev, "Already in suspend state\n");
++		return snprintf(buf, 4, "%s\n", "0");
++	}
++
++	return snprintf(buf, 4, "%s\n", rmi4_data->enable ? "1" : "0");
++}
++
++static ssize_t synaptics_rmi4_enable_store(struct device *dev,
++		 struct device_attribute *attr, const char *buf, size_t count)
++{
++	struct synaptics_rmi4_data *data = dev_get_drvdata(dev);
++	unsigned long val;
++	int rc;
++
++	if (count > 2)
++		return -EINVAL;
++
++	if (data->suspended) {
++		dev_info(&data->i2c_client->dev, "Already in suspend state\n");
++		goto no_operation;
++	}
++
++	rc = kstrtoul(buf, 10, &val);
++	if (rc != 0)
++		return rc;
++
++	if (val) {
++		synaptics_rmi4_sensor_wake(data);
++		data->touch_stopped = false;
++		synaptics_rmi4_irq_enable(data, true);
++
++		data->enable = true;
++	} else {
++		if (!data->sensor_sleep) {
++			data->touch_stopped = true;
++			wake_up(&data->wait);
++			synaptics_rmi4_irq_enable(data, false);
++			synaptics_rmi4_sensor_sleep(data);
++		}
++
++		synaptics_rmi4_release_all(data);
++		data->enable = false;
++	}
++no_operation:
++	return count;
++}
++
++static ssize_t synaptics_rmi4_mt_protocol_type_show(struct device *dev,
++		 struct device_attribute *attr, char *buf)
++{
++	return snprintf(buf, 16, "%s\n", "MT Protocol B");
++}
++
++static ssize_t synaptics_rmi4_ts_info_show(struct device *dev,
++		 struct device_attribute *attr, char *buf)
++{
++	struct synaptics_rmi4_data *data = dev_get_drvdata(dev);
++
++	return snprintf(buf, RMI4_INFO_MAX_LEN, "%s\n", data->ts_info);
++}
++
++/**
+  * synaptics_rmi4_set_page()
+  *
+  * Called by synaptics_rmi4_i2c_read() and synaptics_rmi4_i2c_write().
+@@ -1841,6 +2052,8 @@ static int synaptics_rmi4_parse_dt(struct device *dev,
+ 	rmi4_pdata->y_flip = of_property_read_bool(np, "synaptics,y-flip");
+ 	rmi4_pdata->do_lockdown = of_property_read_bool(np,
+ 			"synaptics,do-lockdown");
++	rmi4_pdata->fw_vkey_support = of_property_read_bool(np,
++			"synaptics,fw-vkey-support");
+ 
+ 	rc = synaptics_rmi4_get_dt_coords(dev, "synaptics,display-coords",
+ 			rmi4_pdata, NULL);
+@@ -3488,6 +3701,7 @@ static int synaptics_rmi4_probe(struct i2c_client *client,
+ 	rmi4_data->irq_enabled = false;
+ 	rmi4_data->fw_updating = false;
+ 	rmi4_data->suspended = false;
++	rmi4_data->enable = true;
+ 
+ 	rmi4_data->i2c_read = synaptics_rmi4_i2c_read;
+ 	rmi4_data->i2c_write = synaptics_rmi4_i2c_write;
+@@ -3694,6 +3908,30 @@ static int synaptics_rmi4_probe(struct i2c_client *client,
+ 		goto err_create_debugfs_file;
+ 	}
+ 
++	temp = debugfs_create_file("addr", S_IRUSR | S_IWUSR, rmi4_data->dir,
++					rmi4_data, &debug_addr_fops);
++	if (temp == NULL || IS_ERR(temp)) {
++		dev_err(&client->dev,
++			"%s: Failed to create addr debugfs file, rc = %ld\n",
++			__func__, PTR_ERR(temp));
++		retval = PTR_ERR(temp);
++		goto err_create_debugfs_file;
++	}
++
++	temp = debugfs_create_file("data", S_IRUSR | S_IWUSR, rmi4_data->dir,
++					rmi4_data, &debug_data_fops);
++	if (temp == NULL || IS_ERR(temp)) {
++		dev_err(&client->dev,
++			"%s: Failed to create data debugfs file, rc = %ld\n",
++			__func__, PTR_ERR(temp));
++		retval = PTR_ERR(temp);
++		goto err_create_debugfs_file;
++	}
++	rmi4_data->ts_info = kzalloc(RMI4_INFO_MAX_LEN, GFP_KERNEL);
++		if (!rmi4_data->ts_info)
++			goto err_alloc_ts_info_mem;
++
++	synaptics_rmi4_update_ts_info(rmi4_data);
+ 	for (attr_count = 0; attr_count < ARRAY_SIZE(attrs); attr_count++) {
+ 		retval = sysfs_create_file(&client->dev.kobj,
+ 				&attrs[attr_count].attr);
+@@ -3731,6 +3969,9 @@ err_sysfs:
+ 		sysfs_remove_file(&rmi4_data->input_dev->dev.kobj,
+ 				&attrs[attr_count].attr);
+ 	}
++	kfree(rmi4_data->ts_info);
++	rmi4_data->ts_info = NULL;
++err_alloc_ts_info_mem:
+ err_create_debugfs_file:
+ 	debugfs_remove_recursive(rmi4_data->dir);
+ err_create_debugfs_dir:
+diff --git a/drivers/input/touchscreen/synaptics_i2c_rmi4.h b/drivers/input/touchscreen/synaptics_i2c_rmi4.h
+index cc7f209..f8c168a 100644
+--- a/drivers/input/touchscreen/synaptics_i2c_rmi4.h
++++ b/drivers/input/touchscreen/synaptics_i2c_rmi4.h
+@@ -258,6 +258,9 @@ struct synaptics_rmi4_data {
+ 	bool flip_y;
+ 	bool fw_updating;
+ 	bool suspended;
++	bool enable;
++	char *ts_info;
++	unsigned short addr;
+ 	wait_queue_head_t wait;
+ 	bool stay_awake;
+ 	bool staying_awake;
+diff --git a/include/linux/input/synaptics_dsx.h b/include/linux/input/synaptics_dsx.h
+index 976b4bf..6b1433c 100644
+--- a/include/linux/input/synaptics_dsx.h
++++ b/include/linux/input/synaptics_dsx.h
+@@ -64,6 +64,7 @@ struct synaptics_rmi4_platform_data {
+ 	bool do_lockdown;
+ 	bool detect_device;
+ 	bool modify_reso;
++	bool fw_vkey_support;	/*add by lizc*/
+ 	unsigned irq_gpio;
+ 	u32 irq_flags;
+ 	u32 reset_flags;
+-- 
+1.9.1
+

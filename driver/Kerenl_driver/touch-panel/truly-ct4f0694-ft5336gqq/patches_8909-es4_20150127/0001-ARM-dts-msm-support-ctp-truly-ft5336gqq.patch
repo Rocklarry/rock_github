@@ -1,0 +1,59 @@
+From 65608e4cb1da9709518881b11712ad2576c4cfdb Mon Sep 17 00:00:00 2001
+From: yanqy <yanqy0911@thundersoft.com>
+Date: Mon, 26 Jan 2015 13:04:15 +0800
+Subject: [PATCH 1/2] ARM:dts:msm: support ctp truly ft5336gqq
+
+Add CTP IHV-TRULY@CT4F0694@FT5336GQQ device tree
+
+Change-Id: I02e670a815f644f102c48b39f568bddf4ade27fa
+Signed-off-by: Qiyang Yan <yanqy0911@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8909-qrd-skue.dtsi |   17 ++++++++---------
+ 1 file changed, 8 insertions(+), 9 deletions(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8909-qrd-skue.dtsi b/arch/arm/boot/dts/qcom/msm8909-qrd-skue.dtsi
+index cd313a1..62efa3c 100755
+--- a/arch/arm/boot/dts/qcom/msm8909-qrd-skue.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8909-qrd-skue.dtsi
+@@ -62,7 +62,7 @@
+ 			compatible = "focaltech,5x06";
+ 			reg = <0x38>;
+ 			interrupt-parent = <&msm_gpio>;
+-			interrupts = <13 0x2>;
++			interrupts = <13 0x2008>;
+ 			vdd-supply = <&pm8909_l17>;
+ 			vcc_i2c-supply = <&pm8909_l6>;
+ 			/* pins used by touchscreen */
+@@ -70,13 +70,12 @@
+ 			pinctrl-0 = <&ts_int_active &ts_reset_active>;
+ 			pinctrl-1 = <&ts_int_suspend &ts_reset_suspend>;
+ 			pinctrl-2 = <&ts_release>;
+-			focaltech,name = "ft6306";
+-			focaltech,family-id = <0x36>;
++			focaltech,name = "ft5336gqq";
++			focaltech,family-id = <0x14>;
+ 			focaltech,reset-gpio = <&msm_gpio 12 0x0>;
+-			focaltech,irq-gpio = <&msm_gpio 13 0x0>;
+-			focaltech,display-coords = <0 0 480 854>;
+-			focaltech,panel-coords = <0 0 480 950>;
+-			focaltech,button-map= <139 102 158>;
++			focaltech,irq-gpio = <&msm_gpio 13 0x2008>;
++			focaltech,display-coords = <0 0 720 1280>;
++			focaltech,panel-coords = <0 0 720 1400>;
+ 			focaltech,no-force-update;
+ 			focaltech,i2c-pull-up;
+ 			focaltech,group-id = <1>;
+@@ -85,8 +84,8 @@
+ 			focaltech,num-max-touches = <5>;
+ 			focaltech,fw-delay-aa-ms = <30>;
+ 			focaltech,fw-delay-55-ms = <30>;
+-			focaltech,fw-upgrade-id1 = <0x79>;
+-			focaltech,fw-upgrade-id2 = <0x18>;
++			focaltech,fw-upgrade-id1 = <0x11>;
++			focaltech,fw-upgrade-id2 = <0x11>;
+ 			focaltech,fw-delay-readid-ms = <10>;
+ 			focaltech,fw-delay-era-flsh-ms = <2000>;
+ 			focaltech,fw-auto-cal;
+-- 
+1.7.9.5
+

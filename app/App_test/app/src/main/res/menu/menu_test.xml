@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/asyncTask"
+        android:title="asyncTask"
+        app:showAsAction="never"/>
+    <item
+        android:id="@+id/file_delete"
+        android:title="file_delete"
+        app:showAsAction="never"/>
+    <item
+        android:id="@+id/mqtt_test"
+        android:title="mqtt_test"
+        app:showAsAction="never"/>
+    <item
+        android:id="@+id/file_new"
+        android:title="new"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/file_save"
+        android:title="save"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/file_more"
+        android:icon="@android:drawable/ic_menu_more"
+        android:title="more"
+        app:showAsAction="never">
+        <menu>
+            <item
+                android:id="@+id/file_more_1"
+                android:title="more1" />
+            <item
+                android:id="@+id/file_more_2"
+                android:title="more2" />
+        </menu>
+    </item>
+
+</menu>

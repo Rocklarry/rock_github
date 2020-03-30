@@ -1,0 +1,62 @@
+From a63f7e2d245f58fc40fd2deaf2e829e5c5b87ab8 Mon Sep 17 00:00:00 2001
+From: chenx <chenxiang0527@thundersoft.com>
+Date: Tue, 9 Sep 2014 09:20:50 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support mma8452 devicetree
+
+Devicetree support mma8452
+
+Change-Id: Ie36d24f3807b617ed216793caf3bb7a77d02840b
+Signed-off-by: Xiang Chen <chenxiang0527@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi |   28 ++++++++++++++++++++++++++
+ 1 file changed, 28 insertions(+)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi b/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
+index af488ab..46bca73 100644
+--- a/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
+@@ -72,6 +72,21 @@
+ 		};
+ 	};
+ 
++	mma8452_int_pin {
++		qcom,pins = <&gp 115>;
++		qcom,pin-func = <0>;
++		qcom,num-grp-pins = <1>;
++		label = "mma8452-irq";
++		mma8452_default: mma8452_default {
++			drive-strength = <6>;
++			bias-pull-up;
++		};
++		mma8452_sleep: mma8452_sleep {
++			drive-strength = <2>;
++			bias-pull-down;
++		};
++	};
++
+ };
+ 
+ &i2c_0 { /* BLSP1 QUP2 */
+@@ -160,6 +175,19 @@
+ 		};
+ 	};
+ 
++	fsl@1d {
++		compatible = "fsl,mma845x";
++		reg = <0x1d>;
++		pinctrl-names = "default","sleep";
++		pinctrl-0 = <&mma8452_default>;
++		pinctrl-1 = <&mma8452_sleep>;
++		interrupt-parent = <&msm_gpio>;
++		vdd-supply = <&pm8916_l17>;
++		vddio-supply = <&pm8916_l6>;
++		fsl,g_range = <0>;
++		fsl,sensors_position = <0>;
++	};
++
+ 	flash_lm3642:qcom,led-flash@63 {
+ 		reg = <0x63>;
+ 		cell-index = <0>;
+-- 
+1.7.9.5
+

@@ -1,0 +1,35 @@
+From a2bafaca0e3c1eba7680e90506653f9a107d7d44 Mon Sep 17 00:00:00 2001
+From: chenx <chenxiang0527@thundersoft.com>
+Date: Sun, 28 Sep 2014 09:21:59 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support bmg160 devicetree
+
+Devicetree support bmg160
+
+Change-Id: I7834e1225e85d630a7b7ad4b1a4ec25addc07052
+Signed-off-by: Xiang Chen <chenxiang0527@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi |    8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi b/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
+index 9981e42..eb292e2 100644
+--- a/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
+@@ -75,6 +75,14 @@
+ };
+ 
+ &i2c_0 { /* BLSP1 QUP2 */
++
++	bosch@69 {
++		compatible = "bosch,bmg160";
++		reg = <0x69>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++	};
++
+ 	akm@c {
+ 		compatible = "ak,ak09911";
+ 		reg = <0x0c>;
+-- 
+1.7.9.5
+

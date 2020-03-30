@@ -1,0 +1,66 @@
+From 7846cd7d65ce5d913e2e264c1f5ecb406fa824da Mon Sep 17 00:00:00 2001
+From: Zhang Zhenzhen <zhangzz6687@thundersoft.com>
+Date: Wed, 9 Apr 2014 14:01:42 +0800
+Subject: [PATCH 1/3] ARM:dts:msm: support actar h040 aw5306
+
+Add ctp ACTAR@H040@AW5306 device tree
+
+Change-Id: Ie9a68f285bca8b331e48b895b732d9a8c4077854
+Signed-off-by: Zhenzhen Zhang <zhangzz6687@thundersoft.com>
+---
+ arch/arm/boot/dts/msm8226-qrd.dtsi | 27 +++++++++++++++++++++------
+ 1 file changed, 21 insertions(+), 6 deletions(-)
+
+diff --git a/arch/arm/boot/dts/msm8226-qrd.dtsi b/arch/arm/boot/dts/msm8226-qrd.dtsi
+index 7ff97f6..128a9d5 100644
+--- a/arch/arm/boot/dts/msm8226-qrd.dtsi
++++ b/arch/arm/boot/dts/msm8226-qrd.dtsi
+@@ -18,7 +18,7 @@
+ 	};
+ 
+ 	i2c@f9927000 { /* BLSP1 QUP5 */
+-		synaptics@20 {
++	/*	synaptics@20 {
+ 			compatible = "synaptics,rmi4";
+ 			reg = <0x20>;
+ 			interrupt-parent = <&msmgpio>;
+@@ -61,16 +61,31 @@
+ 			focaltech,fw-upgrade-id2 = <0x03>;
+ 			focaltech,fw-delay-readid-ms = <10>;
+ 			focaltech,fw-delay-era-flsh-ms = <2000>;
++		}; */
++
++		awin@38 {
++			compatible = "awin,aw5206";
++			reg = <0x38>;
++			interrupt-parent = <&msmgpio>;
++			interrupts = <17 0x2>;
++			vdd-supply = <&pm8226_l19>;
++			vcc_i2c-supply = <&pm8226_lvs1>;
++			awin,name = "aw5306";
++			awin,reset-gpio = <&msmgpio 16 0x00>;
++			awin,irq-gpio = <&msmgpio 17 0x00>;
++			awin,soft-reset-delay-ms = <150>;
++			awin,num-max-touches = <5>;
++			awin,fw-vkey-support;
+ 		};
+ 	};
+ 
+ 	gen-vkeys {
+ 		compatible = "qcom,gen-vkeys";
+-		label = "ft5x06_ts";
+-		qcom,disp-maxx = <1080>;
+-		qcom,disp-maxy = <1920>;
+-		qcom,panel-maxx = <1080>;
+-		qcom,panel-maxy = <2080>;
++		label = "AW5306_ts";
++		qcom,disp-maxx = <720>;
++		qcom,disp-maxy = <1280>;
++		qcom,panel-maxx = <720>;
++		qcom,panel-maxy = <1380>;
+ 		qcom,key-codes = <139 102 158>;
+ 		qcom,y-offset = <0>;
+ 	};
+-- 
+1.8.3.1
+

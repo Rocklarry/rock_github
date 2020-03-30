@@ -1,0 +1,28 @@
+From 137ade001667a46dd5ef651b90a79dcd3ebce3ea Mon Sep 17 00:00:00 2001
+From: Li Zhanchao <lizc1023@thundersoft.com>
+Date: Tue, 13 Jan 2015 13:13:13 +0800
+Subject: [PATCH 2/3] ARM:config: support ctp toptouch gsl2682
+
+Add CTP IHV-TOPTOUCH@TTCT045030@GSL2682 config
+
+Change-Id: I1d2ba68e2ccd7e1773e28332b89e26d8b3b53eb8
+Signed-off-by: Li Zhanchao <lizc1023@thundersoft.com>
+---
+ arch/arm/configs/msm8909_defconfig |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm/configs/msm8909_defconfig b/arch/arm/configs/msm8909_defconfig
+index db514c6..dbd0d1e 100644
+--- a/arch/arm/configs/msm8909_defconfig
++++ b/arch/arm/configs/msm8909_defconfig
+@@ -288,6 +288,7 @@ CONFIG_TOUCHSCREEN_ATMEL_MXT=y
+ CONFIG_TOUCHSCREEN_FT5X06=y
+ CONFIG_TOUCHSCREEN_FT5X06_GESTURE=y
+ CONFIG_TOUCHSCREEN_GEN_VKEYS=y
++CONFIG_TOUCHSCREEN_GSL1680=y
+ CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI4=y
+ CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_RMI4_DEV=y
+ CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE=y
+-- 
+1.7.9.5
+

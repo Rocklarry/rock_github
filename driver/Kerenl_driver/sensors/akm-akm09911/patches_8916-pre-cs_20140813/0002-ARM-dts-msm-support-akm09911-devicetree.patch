@@ -1,0 +1,28 @@
+From 25daaf1f042b63d5440a55a52990ce0ab5d1e3cf Mon Sep 17 00:00:00 2001
+From: Yukun Wan <wanyk0402@thundersoft.com>
+Date: Wed, 13 Aug 2014 16:11:42 +0800
+Subject: [PATCH 2/2] ARM:dts:msm: support akm09911 devicetree
+
+Devicetree support akm09911
+
+Change-Id: Ia633461fcb5ceadcf360d30e55d2be0b5e498b1e
+Signed-off-by: Yukun Wan <wanyk0402@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi b/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
+index 9981e42..ae23e73 100644
+--- a/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8916-qrd-skuh.dtsi
+@@ -84,6 +84,7 @@
+ 		vdd-supply = <&pm8916_l17>;
+ 		vio-supply = <&pm8916_l6>;
+ 		akm,layout = <0x3>;
++		akm,poll_interval = <200>;
+ 		akm,gpio_rstn = <&msm_gpio 36 0x0>;
+ 		akm,auto-report;
+ 	};
+-- 
+1.7.9.5
+

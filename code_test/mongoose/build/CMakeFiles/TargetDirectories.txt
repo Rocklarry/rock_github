@@ -1,0 +1,12 @@
+/home/rock/workspack/code_test/mongoose/build/CMakeFiles/install/strip.dir
+/home/rock/workspack/code_test/mongoose/build/CMakeFiles/install.dir
+/home/rock/workspack/code_test/mongoose/build/CMakeFiles/list_install_components.dir
+/home/rock/workspack/code_test/mongoose/build/CMakeFiles/edit_cache.dir
+/home/rock/workspack/code_test/mongoose/build/CMakeFiles/network.dir
+/home/rock/workspack/code_test/mongoose/build/CMakeFiles/rest_server.dir
+/home/rock/workspack/code_test/mongoose/build/CMakeFiles/rebuild_cache.dir
+/home/rock/workspack/code_test/mongoose/build/CMakeFiles/avs_auth.dir
+/home/rock/workspack/code_test/mongoose/build/CMakeFiles/ssdp.dir
+/home/rock/workspack/code_test/mongoose/build/CMakeFiles/install/local.dir
+/home/rock/workspack/code_test/mongoose/build/CMakeFiles/mongoose.dir
+/home/rock/workspack/code_test/mongoose/build/CMakeFiles/client.dir

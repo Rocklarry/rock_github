@@ -1,0 +1,29 @@
+From 55fcfffafe977545d2e30ea53af9ab95c2fd36f3 Mon Sep 17 00:00:00 2001
+From: Li Zhanchao <lizc1023@thundersoft.com>
+Date: Thu, 21 May 2015 13:08:47 +0800
+Subject: [PATCH 3/3] ARM:config: support bmp280 defconfig
+
+Defconfig support bmp280
+
+Change-Id: I6ccb28cb2f2aa935baa64aa316e71559d4b3f4dc
+Signed-off-by: Li Zhanchao <lizc1023@thundersoft.com>
+---
+ arch/arm/configs/msm8916-perf_defconfig | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/arch/arm/configs/msm8916-perf_defconfig b/arch/arm/configs/msm8916-perf_defconfig
+index 7dd8192..95e2826 100644
+--- a/arch/arm/configs/msm8916-perf_defconfig
++++ b/arch/arm/configs/msm8916-perf_defconfig
+@@ -268,6 +268,8 @@ CONFIG_SENSORS_LIS3DH=y
+ CONFIG_SENSORS_MPU6050=y
+ CONFIG_SENSORS_AKM09911=y
+ CONFIG_SENSORS_BMA2X2=y
++CONFIG_SENSORS_BMP280=y
++CONFIG_SENSORS_BMP280_I2C=y
+ CONFIG_SENSORS_MMC3416X=y
+ CONFIG_SENSORS_AKM8963=y
+ # CONFIG_SERIAL_MSM_HSL is not set
+-- 
+1.9.1
+

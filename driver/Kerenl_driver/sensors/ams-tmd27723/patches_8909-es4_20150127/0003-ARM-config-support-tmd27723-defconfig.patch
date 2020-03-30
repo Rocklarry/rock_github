@@ -1,0 +1,32 @@
+From 6caba3a238e123882be1aed49cd8e226d655846a Mon Sep 17 00:00:00 2001
+From: chenx <chenxiang0527@thundersoft.com>
+Date: Mon, 26 Jan 2015 17:20:56 +0800
+Subject: [PATCH 3/3] ARM:config: support tmd27723 defconfig
+
+Defconfig support tmd27723
+
+Change-Id: I83dc175fe77195008743dc024c3dd2ca46f8575f
+Signed-off-by: Xiang Chen <chenxiang0527@thundersoft.com>
+---
+ arch/arm/configs/msm8909-1gb_defconfig |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/configs/msm8909-1gb_defconfig b/arch/arm/configs/msm8909-1gb_defconfig
+index 593dc85..5db62cb 100644
+--- a/arch/arm/configs/msm8909-1gb_defconfig
++++ b/arch/arm/configs/msm8909-1gb_defconfig
+@@ -305,8 +305,9 @@ CONFIG_INPUT_MISC=y
+ CONFIG_INPUT_UINPUT=y
+ CONFIG_INPUT_GPIO=m
+ CONFIG_SENSORS=y
+-CONFIG_APDS9930=y
+-CONFIG_SENSORS_LTR553=y
++#CONFIG_APDS9930 is not set
++CONFIG_SENSORS_TMD27723=y
++#CONFIG_SENSORS_LTR553 is not set
+ CONFIG_SENSORS_MPU6050=y
+ CONFIG_SENSORS_MMC3416X=y
+ CONFIG_SENSORS_AKM8963=y
+-- 
+1.7.9.5
+

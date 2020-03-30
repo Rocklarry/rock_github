@@ -1,0 +1,69 @@
+From c150b57640cbd29871aaa1b7dd524b60ba352cbe Mon Sep 17 00:00:00 2001
+From: yanqy <yanqy0911@thundersoft.com>
+Date: Thu, 4 Dec 2014 10:27:16 +0800
+Subject: [PATCH 2/3] ARM:dts:msm: support apds9960 devicetree
+
+Devicetree support apds9960
+
+Change-Id: Ib07b5bdc0fe2c41cf131b15e0c0ce6e50c0347ab
+Signed-off-by: Qiyang Yan <yanqy0911@thundersoft.com>
+---
+ arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi |   32 +++++++++++++++++++++++++-
+ 1 file changed, 31 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+index 8691993..de19164 100755
+--- a/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8939-qrd-skuk.dtsi
+@@ -58,10 +58,25 @@
+ 			bias-pull-down;
+ 		};
+ 	};
++	apds9960_int_pin {
++		qcom,pins = <&gp 113>;
++		qcom,pin-func = <0>;
++		qcom,num-grp-pins = <1>;
++		label = "apds9960-irq";
++		apds9960_default: apds9960_default {
++			drive-strength = <6>;
++			bias-pull-up;
++		};
++		apds9960_sleep: apds9960_sleep {
++			drive-strength = <2>;
++			bias-pull-down;
++		};
++	};
+ };
+ 
+ &i2c_0 { /* BLSP1 QUP2 */
+-	avago@39 { /* Ambient light and proximity sensor */
++/*
++	avago@39 {  Ambient light and proximity sensor
+ 		compatible = "avago,apds9930";
+ 		reg = <0x39>;
+ 		pinctrl-names = "default","sleep";
+@@ -81,6 +96,21 @@
+ 		avago,als-D = <129>;
+ 		avago,ga-value = <560>;
+ 	};
++*/
++	avago@39 {
++		compatible = "avago,apds9960";
++		reg = <0x39>;
++		pinctrl-names = "default","sleep";
++		pinctrl-0 = <&apds9960_default>;
++		pinctrl-1 = <&apds9960_sleep>;
++		interrupt-parent = <&msm_gpio>;
++		interrupts = <113 0x2002>;
++		vdd-supply = <&pm8916_l17>;
++		vio-supply = <&pm8916_l6>;
++		avago,irq-gpio = <&msm_gpio 113 0x2002>;
++		avago,ps-threshold = <200>;
++		avago,ps-hysteresis-threshold = <150>;
++	};
+ 
+ 	bosch@18 { /* Accelerometer sensor */
+ 		compatible = "bosch,bma2x2";
+-- 
+1.7.9.5
+

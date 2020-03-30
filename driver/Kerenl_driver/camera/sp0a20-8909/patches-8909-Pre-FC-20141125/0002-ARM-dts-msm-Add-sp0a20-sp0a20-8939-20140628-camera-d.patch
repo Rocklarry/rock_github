@@ -1,0 +1,78 @@
+From 4103e36562a9096e230918570f6032a59b029ab7 Mon Sep 17 00:00:00 2001
+From: Wei Ding <weiding@qti.qualcomm.com>
+Date: Mon, 24 Nov 2014 20:05:21 +0800
+Subject: [PATCH 2/3] ARM: dts: msm: Add sp0a20 sp0a20-8939-20140628 camera
+ dtsi
+
+Add sp0a20 sp0a20-8939-20140628 devicetree description for msm8909
+
+Change-Id: I20ff621a319e888c94f19730d212664dba1949ca
+Signed-off-by: Shaosong Zhang <zhangss1028@thundersoft.com>
+---
+ .../devicetree/bindings/media/video/msm-cci.txt    |  1 +
+ .../boot/dts/qcom/msm8909-camera-sensor-skua.dtsi  | 39 ++++++++++++++++++++++
+ 2 files changed, 40 insertions(+)
+
+diff --git a/Documentation/devicetree/bindings/media/video/msm-cci.txt b/Documentation/devicetree/bindings/media/video/msm-cci.txt
+index e2a2ff2..0e0c560 100644
+--- a/Documentation/devicetree/bindings/media/video/msm-cci.txt
++++ b/Documentation/devicetree/bindings/media/video/msm-cci.txt
+@@ -55,6 +55,7 @@ MSM sensor node contains properties of camera sensor
+ Required properties:
+ - compatible : should be manufacturer name followed by sensor name
+     - "qcom,camera"
++    - "qcom,sp0a20_8909"
+     - "qcom,s5k3l1yx"
+     - "sne,imx134"
+     - "qcom,imx135"
+diff --git a/arch/arm/boot/dts/qcom/msm8909-camera-sensor-skua.dtsi b/arch/arm/boot/dts/qcom/msm8909-camera-sensor-skua.dtsi
+index 237a8bd..3646a4cf 100644
+--- a/arch/arm/boot/dts/qcom/msm8909-camera-sensor-skua.dtsi
++++ b/arch/arm/boot/dts/qcom/msm8909-camera-sensor-skua.dtsi
+@@ -88,4 +88,43 @@
+ 				<&clock_gcc clk_gcc_camss_mclk1_clk>;
+ 		clock-names = "cam_src_clk", "cam_clk";
+ 	};
++
++	qcom,camera@42 {
++		compatible = "qcom,sp0a20_8909";
++		reg = <0x42 0x0>;
++		qcom,slave-id = <0x42 0x01 0xa0a>;
++		qcom,csiphy-sd-index = <0>;
++		qcom,csid-sd-index = <0>;
++		qcom,mount-angle = <270>;
++		qcom,sensor-name = "sp0a20_8909";
++		cam_vana-supply = <&pm8909_l17>;
++		cam_vio-supply = <&pm8909_l6>;
++		qcom,cam-vreg-name = "cam_vio", "cam_vana";
++		qcom,cam-vreg-type = <1 0>;
++		qcom,cam-vreg-min-voltage = <0 2850000>;
++		qcom,cam-vreg-max-voltage = <0 2850000>;
++		qcom,cam-vreg-op-mode = <0 80000>;
++		pinctrl-names = "cam_default", "cam_suspend";
++		pinctrl-0 = <&cam_sensor_mclk1_default
++			&cam_sensor_front_default>;
++		pinctrl-1 = <&cam_sensor_mclk1_sleep &cam_sensor_front_sleep>;
++		gpios = <&msm_gpio 27 0>,
++			<&msm_gpio 28 0>,
++			<&msm_gpio 33 0>;
++		qcom,gpio-reset = <1>;
++		qcom,gpio-standby = <2>;
++		qcom,gpio-req-tbl-num = <0 1 2>;
++		qcom,gpio-req-tbl-flags = <1 0 0>;
++		qcom,gpio-req-tbl-label = "CAMIF_MCLK",
++			"CAM_RESET",
++			"CAM_STANDBY";
++		qcom,csi-lane-assign = <0x0004>;
++		qcom,csi-lane-mask = <0x18>;
++		qcom,sensor-position = <1>;
++		qcom,sensor-mode = <0>;
++		qcom,cci-master = <0>;
++		clocks = <&clock_gcc clk_mclk1_clk_src>,
++			<&clock_gcc clk_gcc_camss_mclk1_clk>;
++		clock-names = "cam_src_clk", "cam_clk";
++	};
+ };
+-- 
+1.8.2.1
+
