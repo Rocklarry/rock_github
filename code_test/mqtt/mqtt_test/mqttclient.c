@@ -23,7 +23,7 @@
 #define TOPICPUB    "Question"  //更改发送的话题
 #define TOPICSUB    "temperature"
 #define QOS         1
-#define TIMEOUT     10000L
+#define TIMEOUT     100000L
 #define DISCONNECT  "out"
 
 int CONNECT = 1;
