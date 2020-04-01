@@ -7,6 +7,7 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE"/>
 
     <application
         android:allowBackup="true"
@@ -15,7 +16,9 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".test.paho_mqtt_activity"></activity>
+        <activity android:name=".test.Multi_Activity"></activity>
+        <activity android:name=".test.Udp_Activity" />
+        <activity android:name=".test.paho_mqtt_activity" />
         <activity android:name=".test.Mqtt_Activity" />
         <activity android:name=".test.AsyncTaskActivity" />
         <activity android:name=".MainActivity">
@@ -27,8 +30,6 @@
         </activity>
 
         <service android:name="org.eclipse.paho.android.service.MqttService" />
-
-
     </application>
 
 </manifest>

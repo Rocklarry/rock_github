@@ -15,12 +15,12 @@
         android:title="mqtt_test"
         app:showAsAction="never"/>
     <item
-        android:id="@+id/file_new"
-        android:title="new"
+        android:id="@+id/udp_test"
+        android:title="udp_test"
         app:showAsAction="never" />
     <item
-        android:id="@+id/file_save"
-        android:title="save"
+        android:id="@+id/multi_upd"
+        android:title="multi_upd"
         app:showAsAction="never" />
     <item
         android:id="@+id/paho_mqtt"

@@ -11,6 +11,8 @@ import android.widget.TextView;
 
 import com.learn.app_test.test.AsyncTaskActivity;
 import com.learn.app_test.test.Mqtt_Activity;
+import com.learn.app_test.test.Multi_Activity;
+import com.learn.app_test.test.Udp_Activity;
 import com.learn.app_test.test.paho_mqtt_activity;
 
 public class MainActivity extends AppCompatActivity {
@@ -55,12 +57,19 @@ public class MainActivity extends AppCompatActivity {
             case R.id.asyncTask:
                 Intent intent = new Intent(MainActivity.this, AsyncTaskActivity.class);
                 startActivity(intent);
+                break;
 
             case R.id.mqtt_test:
                 Intent intent_mqtt = new Intent(MainActivity.this, Mqtt_Activity.class);
                 startActivity(intent_mqtt);
-
-            case R.id.file_delete:
+                break;
+            case R.id.udp_test:
+                Intent intent_udp = new Intent(MainActivity.this, Udp_Activity.class);
+                startActivity(intent_udp);
+                break;
+            case R.id.multi_upd:
+                Intent intent_multi = new Intent(MainActivity.this, Multi_Activity.class);
+                startActivity(intent_multi);
                 break;
             case R.id.file_more:
                 break;
