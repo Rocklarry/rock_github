@@ -7,6 +7,7 @@
 
  ************************************************************************/
 //	gcc -Wall multi_udp_server.c -o server 
+// gcc -o server  multi_udp_server.c  -lpthread
 //	./server 230.1.1.1 7838
 
 #include <sys/types.h>
@@ -17,7 +18,10 @@
 #include <string.h>
 #include <netdb.h>
 #include <errno.h>
- 
+#include <pthread.h>
+#include <unistd.h>
+#include <fcntl.h>
+
 #define BUFLEN 255
 /*********************************************************************
 *filename: mcastserver.c
@@ -25,23 +29,17 @@
 网络编程组播测试代码
 
 *********************************************************************/
-int main(int argc, char **argv)
+
+
+int multi_bind(int sockfd, char **argv)
 {
 	struct sockaddr_in peeraddr;
 	struct in_addr ia;
-	int sockfd;
-	char recmsg[BUFLEN + 1];
-	unsigned int socklen, n;
+	int flag;
+	unsigned int socklen;
 	struct hostent *group;
 	struct ip_mreq mreq;
- 
-	/* 创建 socket 用于UDP通讯 */
-	sockfd = socket(AF_INET, SOCK_DGRAM, 0);
-	if (sockfd < 0) {
-	printf("socket creating err in udptalk\n");
-	exit(1);
-	}
- 
+
 	/* 设置要加入组播的地址 */
 	bzero(&mreq, sizeof(struct ip_mreq));
 	if (argv[1]) {
@@ -85,6 +83,11 @@ int main(int argc, char **argv)
 			exit(errno);
 		}
  
+	struct timeval tv_out;
+	tv_out.tv_sec = 3;//等待3秒
+	tv_out.tv_usec = 0;
+	setsockopt(sockfd,SOL_SOCKET,SO_RCVTIMEO,&tv_out, sizeof(tv_out));
+
 	/* 绑定自己的端口和IP信息到socket上 */
 	if (bind
 			(sockfd, (struct sockaddr *) &peeraddr,
@@ -92,21 +95,94 @@ int main(int argc, char **argv)
 		printf("Bind error\n");
 		exit(0);
 	}
+	
+	flag = fcntl(sockfd, F_GETFL, 0);
+	if (flag < 0)
+	{
+		perror("fcntl failed.\n");
+		exit(1);
+	}
+	flag |= O_NONBLOCK;
+	if (fcntl(sockfd, F_SETFL, flag) < 0)
+	{
+		perror("fcntl failed.\n");
+		exit(1);
+	}
+
+
+
+	return 0;
+}
+
+void *multi_recvfrom(char **argv)
+{
+	struct sockaddr_in peeraddr;
+	struct in_addr ia;
+	int sockfd;
+	int flag;
+	char recmsg[BUFLEN + 1];
+	unsigned int socklen, n;
+	char temp[1024];
+
  
+	/* 创建 socket 用于UDP通讯 */
+	sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+	if (sockfd < 0) {
+	printf("socket creating err in udptalk\n");
+	exit(1);
+	}
+	
+	multi_bind(sockfd,argv); 
+
+
 	/* 循环接收网络上来的组播消息 */
 	for (;;) {
+		usleep(500);
 		bzero(recmsg, BUFLEN + 1);
 		n = recvfrom(sockfd, recmsg, BUFLEN, 0,
 			(struct sockaddr *) &peeraddr, &socklen);
-		if (n < 0) {
+		if (n == -1 && errno != EAGAIN)
+		{
 			printf("recvfrom err in udptalk!\n");
 			exit(4);
-		} else {
+		} else if (n == 0 || (n==-1 && errno==EAGAIN))
+		{
+			continue;
+		}else{
 			/* 成功接收到数据报 */
 			recmsg[n] = 0;
-			printf("peer:%s", recmsg);
+			printf("n=%d\n",n);
+			//write(STDOUT_FILENO, recmsg, n);//接受不显示问题：：：用fgets获取发送 会显示  使用字符串发送不会发送
+			memset(temp,0,1024);
+			memcpy(temp,recmsg,n);
+			
+			printf("peer:%s\n", temp);
 		}
 	}
+	close(sockfd);
+	return NULL;
 }
 
+
+
+int main(int argc, char **argv[]) {
+
+	pthread_t multi_thread;
+
+	  printf("===rock=== upd_thread Starting  \n");
+  if (pthread_create(&multi_thread,NULL,(void *)multi_recvfrom,argv)==0)
+	printf("pthread_create ok !\n");
+	
+	
+	printf("===rock=== upd_thread Starting  \n");
+
+  for (;;) {
+	//printf("===rock=== main Starting  \n");
+	usleep(5000);
+
+
+  }
+
+  return 0;
+}
 

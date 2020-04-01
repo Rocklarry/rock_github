@@ -16,7 +16,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define BUFLEN 255
+#define BUFLEN 1024
 int main(int argc,char **argv)
 {
     struct sockaddr_in peeraddr,myaddr;
@@ -53,8 +53,8 @@ int main(int argc,char **argv)
         printf("no group address!\n");
         exit(0);
     }
-       
-    //设置自己的端口和IP信息
+#if 0
+    //设置自己的端口和IP信息  可以不绑定自己的IP地址
     memset(&myaddr, 0, socklen);
     myaddr.sin_family = AF_INET;
     if (argv[4])
@@ -77,6 +77,7 @@ int main(int argc,char **argv)
 		printf("Bind error\n");
 		exit(0);
     }
+#endif
 
     //循环接受用户输入的消息发送组播消息
     for (;;) 
@@ -86,6 +87,8 @@ int main(int argc,char **argv)
         if (fgets(recmsg, BUFLEN, stdin) == (char *) EOF)
             exit(0);
         //发送消息
+		sprintf(recmsg,"%s%s%s",recmsg,argv[3],argv[4]);
+		printf("%s\n",recmsg);
 		if (sendto(sockfd, recmsg, strlen(recmsg), 0,(struct sockaddr *) &peeraddr,sizeof(struct sockaddr_in)) < 0)
 		{
 			printf("sendto error!\n");
