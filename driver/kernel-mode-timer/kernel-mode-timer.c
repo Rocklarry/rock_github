@@ -28,36 +28,29 @@ MODULE_LICENSE("GPL");           //module license (must be define)
 MODULE_AUTHOR("murat demirtas <muratdemirtastr@gmail.com>");   //module author
 MODULE_DESCRIPTION("Example kernel mode timer usage");         //module descriptoin
 
- /**
- * @brief variables used in this module
- */
-static int timer_delay = 2000;
+ 
+static int timer_delay = 2000;//延时时间
 static struct timer_list my_timer;
 static long int timer_data = 40;
 #define DEBUG_MODE
 
- /**
- * @brief callback function will execute when timer period expired
- * @params data
- * @return none
- * @note timer function only call one once, you must reinit for periodic callback
- */
+static long int  tmp=0;
+
 void my_timer_callback( unsigned long data )
 {
 	volatile int ret_val;
+	tmp++;
         /* print log */
-	PINFO("kernel timer callback executing,data is %ld    *******************   \n",data);
-	/* setup timer interval to msecs */
+	PINFO("kernel timer callback executing,data is %ld     const  %ld *******************   \n",data,tmp);
+	/* 设置计时器间隔为毫秒*/
 	ret_val = mod_timer(&my_timer, jiffies + msecs_to_jiffies(timer_delay));
 	if (ret_val)
 	    	    PERR("Cant set timer, error occurred\n");
+	if (tmp >100000000)
+	tmp=0;
 }
 
- /**
- * @brief debug function with printk()
- * @params none
- * @return none
- */
+
 static void debug_when_init(void)
 {
 	#ifdef DEBUG_MODE
@@ -69,20 +62,14 @@ static void debug_when_init(void)
 	return;
 }
 
- /**
- * @brief this callback function will be fired when module installed
- * @params none
- * @info init your timers,tasks,memories,queues etc..
- * @return none
- */
+
 static int __init kernel_timer_init(void)
 {
 	int ret_val;
 	PINFO("Timer module initializing\n");
 	debug_when_init();
-	/* setup your timer to call my_timer_callback */
-	setup_timer(&my_timer, my_timer_callback, timer_data);
-	/* setup timer interval to msecs */
+
+	setup_timer(&my_timer, my_timer_callback, timer_data);//设置回调函数 参数
 
 	ret_val = mod_timer(&my_timer, jiffies + msecs_to_jiffies(timer_delay));
 
@@ -93,12 +80,7 @@ static int __init kernel_timer_init(void)
 	return 0;
 }
 
- /**
- * @brief this callback function will be fired when module removed
- * @params none
- * @info useful for freeing used objects,tasks, timers and memories
- * @return none
- */
+
 static void __exit kernel_timer_exit(void)
 {	
 	/* remove kernel timer when unloading module */
@@ -107,11 +89,7 @@ static void __exit kernel_timer_exit(void)
 	return;
 }
 
- /**
- * @brief this function will fire when module installed from kernel space
- * @params parameter can define with insmod, ex: sudo insmod module.ko 1000
- * @info S_IRUGO for a parameter that can be read by the world but cannot be changed;
- */
+
 module_init(kernel_timer_init);
 module_exit(kernel_timer_exit);
 module_param(timer_delay, int, S_IRUGO);

@@ -72,22 +72,44 @@ ssize_t simple_dev_read(struct file *file, char __user *buf,size_t count, loff_t
 ssize_t simple_dev_write(struct file *file, const char __user *buf, size_t count, loff_t *offset)
 {
 	char alpha[27];
-	int cnt;
 	printk("***********************\n");
 	memset(alpha, 0, 27);
-	if(count > 26)
-		cnt = 26;
-	else
-		cnt = count;
 		//使用copy_from_user()函数从user写数据到driver
-	if(!copy_from_user((char *)alpha, buf, cnt))
+	if(!copy_from_user((char *)alpha, buf, count))
 	  {  
 		printk(alpha);
-		printk("======%s========= \n",__func__);
-		return cnt;
+		printk("======%s=========%d \n",__func__,count);
+		return count;
 	  }  
 	else
 		return -1;
+}
+
+#define CMD_IOCTL_0		0
+#define CMD_IOCTL_1		1
+#define CMD_IOCTL_2		2
+#define CMD_IOCTL_3		3
+ssize_t simple_dev_ioctl (struct inode *node, struct file *filp, unsigned int cmd, unsigned long arg)
+{
+	switch(cmd)
+	{
+		case CMD_IOCTL_0:
+			printk("======%s====CMD_IOCTL_0 \n",__func__);
+			break; 	
+		case CMD_IOCTL_1:
+			printk("======%s====CMD_IOCTL_1 \n",__func__);
+			break; 
+		case CMD_IOCTL_2:
+			printk("======%s====CMD_IOCTL_2 \n",__func__);
+			break; 
+		case CMD_IOCTL_3:
+			printk("======%s====CMD_IOCTL_3 \n",__func__);
+			break; 
+		default:
+			return -EINVAL;
+	}
+	return 0;
+	
 }
 
 static struct cdev simple_dev;
@@ -99,6 +121,8 @@ static struct file_operations fops ={
 	.release = simple_dev_release,
 	.read = simple_dev_read,
 	.write = simple_dev_write,
+	//.compat_ioctl   = simple_dev_ioctl,
+	.unlocked_ioctl = simple_dev_ioctl,
 
 };
 
