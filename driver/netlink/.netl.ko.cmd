@@ -1,0 +1,1 @@
+cmd_/mnt/sdc/renruidong/work/test/rock_github/driver/netlink/netl.ko := ld -r -m elf_x86_64 -T ./scripts/module-common.lds --build-id  -o /mnt/sdc/renruidong/work/test/rock_github/driver/netlink/netl.ko /mnt/sdc/renruidong/work/test/rock_github/driver/netlink/netl.o /mnt/sdc/renruidong/work/test/rock_github/driver/netlink/netl.mod.o
