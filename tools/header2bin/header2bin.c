@@ -39,6 +39,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "UPort1650_8FW.h"
 #include "dbmdx_UseCases_Common.h"
 #include "dbmdx_UseCases.h"
+#include "untitdd.h"
 
 
 static void
@@ -93,6 +94,7 @@ main(int argc, char * argv[])
 	header2bin(UPort1610_16FW, sizeof(UPort1610_16FW), 003);
 	header2bin(Alexa_Model, sizeof(Alexa_Model), 004);
 	header2bin(ASRP_Pomelo, sizeof(ASRP_Pomelo), 005);
+	header2bin(UPort2222FW, sizeof(UPort2222FW), 006);
 
 
 	return EXIT_SUCCESS;
