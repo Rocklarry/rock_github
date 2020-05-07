@@ -1,0 +1,22 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/renruidong/work/test/rock_github/nod_test/wav_unpack/wave.cpp
+stdio.h
+-
+stdint.h
+-
+stdlib.h
+-
+wave.h
+/home/renruidong/work/test/rock_github/nod_test/wav_unpack/wave.h
+
+/home/renruidong/work/test/rock_github/nod_test/wav_unpack/wave.h
+cstdint
+-
+
