@@ -25,4 +25,4 @@ libnetwork.so:
 libssdp.so:
 	$(CC) $(E_CFLAG) $(E_LDFLAG) -fPIC -shared -Wl,-soname,libssdp.so -o libssdp.so -C ssdp/ssdp.c
 rest_server:libavs_auth.so libnetwork.so libssdp.so
-	$(CC) $(S_FLAGS) $(S_LDFLAG) -o rest_server -C server/server.c external/mongoose/mongoose.c external/jsmn/jsmn.c
+	$(CC) $(S_FLAGS) $(S_LDFLAG) -o rest_server -C server/server.c external/mongoose/mongoose.c 
