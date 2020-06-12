@@ -1,4 +1,4 @@
-# Install script for directory: /home/renruidong/work/test/rock_github/nod_test/wav_unpack
+# Install script for directory: /home/renruidong/work/test/rock_github/tools/wav_unpack
 
 # Set the install prefix
 IF(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -38,7 +38,7 @@ ELSE(CMAKE_INSTALL_COMPONENT)
   SET(CMAKE_INSTALL_MANIFEST "install_manifest.txt")
 ENDIF(CMAKE_INSTALL_COMPONENT)
 
-FILE(WRITE "/home/renruidong/work/test/rock_github/nod_test/wav_unpack/build/${CMAKE_INSTALL_MANIFEST}" "")
+FILE(WRITE "/home/renruidong/work/test/rock_github/tools/wav_unpack/build/${CMAKE_INSTALL_MANIFEST}" "")
 FOREACH(file ${CMAKE_INSTALL_MANIFEST_FILES})
-  FILE(APPEND "/home/renruidong/work/test/rock_github/nod_test/wav_unpack/build/${CMAKE_INSTALL_MANIFEST}" "${file}\n")
+  FILE(APPEND "/home/renruidong/work/test/rock_github/tools/wav_unpack/build/${CMAKE_INSTALL_MANIFEST}" "${file}\n")
 ENDFOREACH(file)

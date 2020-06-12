@@ -35,10 +35,10 @@ RM = /usr/bin/cmake -E remove -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/renruidong/work/test/rock_github/nod_test/wav_unpack
+CMAKE_SOURCE_DIR = /home/renruidong/work/test/rock_github/tools/wav_unpack
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/renruidong/work/test/rock_github/nod_test/wav_unpack/build
+CMAKE_BINARY_DIR = /home/renruidong/work/test/rock_github/tools/wav_unpack/build
 
 # Include any dependencies generated for this target.
 include CMakeFiles/Demo.dir/depend.make
@@ -51,17 +51,17 @@ include CMakeFiles/Demo.dir/flags.make
 
 CMakeFiles/Demo.dir/wave.cpp.o: CMakeFiles/Demo.dir/flags.make
 CMakeFiles/Demo.dir/wave.cpp.o: ../wave.cpp
-	$(CMAKE_COMMAND) -E cmake_progress_report /home/renruidong/work/test/rock_github/nod_test/wav_unpack/build/CMakeFiles $(CMAKE_PROGRESS_1)
+	$(CMAKE_COMMAND) -E cmake_progress_report /home/renruidong/work/test/rock_github/tools/wav_unpack/build/CMakeFiles $(CMAKE_PROGRESS_1)
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Building CXX object CMakeFiles/Demo.dir/wave.cpp.o"
-	/usr/bin/c++   $(CXX_DEFINES) $(CXX_FLAGS) -o CMakeFiles/Demo.dir/wave.cpp.o -c /home/renruidong/work/test/rock_github/nod_test/wav_unpack/wave.cpp
+	/usr/bin/c++   $(CXX_DEFINES) $(CXX_FLAGS) -o CMakeFiles/Demo.dir/wave.cpp.o -c /home/renruidong/work/test/rock_github/tools/wav_unpack/wave.cpp
 
 CMakeFiles/Demo.dir/wave.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/Demo.dir/wave.cpp.i"
-	/usr/bin/c++  $(CXX_DEFINES) $(CXX_FLAGS) -E /home/renruidong/work/test/rock_github/nod_test/wav_unpack/wave.cpp > CMakeFiles/Demo.dir/wave.cpp.i
+	/usr/bin/c++  $(CXX_DEFINES) $(CXX_FLAGS) -E /home/renruidong/work/test/rock_github/tools/wav_unpack/wave.cpp > CMakeFiles/Demo.dir/wave.cpp.i
 
 CMakeFiles/Demo.dir/wave.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/Demo.dir/wave.cpp.s"
-	/usr/bin/c++  $(CXX_DEFINES) $(CXX_FLAGS) -S /home/renruidong/work/test/rock_github/nod_test/wav_unpack/wave.cpp -o CMakeFiles/Demo.dir/wave.cpp.s
+	/usr/bin/c++  $(CXX_DEFINES) $(CXX_FLAGS) -S /home/renruidong/work/test/rock_github/tools/wav_unpack/wave.cpp -o CMakeFiles/Demo.dir/wave.cpp.s
 
 CMakeFiles/Demo.dir/wave.cpp.o.requires:
 .PHONY : CMakeFiles/Demo.dir/wave.cpp.o.requires
@@ -97,6 +97,6 @@ CMakeFiles/Demo.dir/clean:
 .PHONY : CMakeFiles/Demo.dir/clean
 
 CMakeFiles/Demo.dir/depend:
-	cd /home/renruidong/work/test/rock_github/nod_test/wav_unpack/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/renruidong/work/test/rock_github/nod_test/wav_unpack /home/renruidong/work/test/rock_github/nod_test/wav_unpack /home/renruidong/work/test/rock_github/nod_test/wav_unpack/build /home/renruidong/work/test/rock_github/nod_test/wav_unpack/build /home/renruidong/work/test/rock_github/nod_test/wav_unpack/build/CMakeFiles/Demo.dir/DependInfo.cmake --color=$(COLOR)
+	cd /home/renruidong/work/test/rock_github/tools/wav_unpack/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/renruidong/work/test/rock_github/tools/wav_unpack /home/renruidong/work/test/rock_github/tools/wav_unpack /home/renruidong/work/test/rock_github/tools/wav_unpack/build /home/renruidong/work/test/rock_github/tools/wav_unpack/build /home/renruidong/work/test/rock_github/tools/wav_unpack/build/CMakeFiles/Demo.dir/DependInfo.cmake --color=$(COLOR)
 .PHONY : CMakeFiles/Demo.dir/depend
 

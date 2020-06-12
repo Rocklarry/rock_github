@@ -4,7 +4,7 @@ SET(CMAKE_DEPENDS_LANGUAGES
   )
 # The set of files for implicit dependencies of each language:
 SET(CMAKE_DEPENDS_CHECK_CXX
-  "/home/renruidong/work/test/rock_github/nod_test/wav_unpack/wave.cpp" "/home/renruidong/work/test/rock_github/nod_test/wav_unpack/build/CMakeFiles/Demo.dir/wave.cpp.o"
+  "/home/renruidong/work/test/rock_github/tools/wav_unpack/wave.cpp" "/home/renruidong/work/test/rock_github/tools/wav_unpack/build/CMakeFiles/Demo.dir/wave.cpp.o"
   )
 SET(CMAKE_CXX_COMPILER_ID "GNU")
 

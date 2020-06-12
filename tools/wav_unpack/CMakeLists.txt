@@ -5,7 +5,7 @@ cmake_minimum_required (VERSION 2.8)
 
 include_directories(wave.h)
 
-SET( CMAKE_CXX_FLAGS "-std=c++11 -O3")
+SET(CMAKE_CXX_FLAGS "-std=c++0x")
 
 project (Demo1)
 # 指定生成目标

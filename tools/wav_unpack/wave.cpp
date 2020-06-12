@@ -20,8 +20,13 @@ int main(int argc, char *argv[])
 	
 	//char path[1024] = argv;
 
-    fp = fopen("/home/renruidong/work/test/rock_github/nod_test/wav_unpack/output.wav", "rb");
-	//fp = fopen("/home/renruidong/work/test/rock_github/nod_test/wav_unpack/example.wav", "rb");
+    //fp = fopen("/home/renruidong/work/test/rock_github/nod_test/wav_unpack/output.wav", "rb");
+	if(argc<2)
+	{	
+	printf("没有wav文件！！\n");
+	}
+
+	fp = fopen(argv[1], "rb");
     if (!fp) {
         printf("can't open audio file\n");
         exit(1);
