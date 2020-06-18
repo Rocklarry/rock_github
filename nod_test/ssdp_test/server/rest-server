@@ -1,0 +1,19 @@
+#!/bin/sh
+
+case "$1" in
+  start)
+        rest_server >> /var/log/restserver.log 2>&1 &
+        ;;
+  stop)
+        ps -ef | grep 'rest_server' | grep -v grep | awk '{print $1}' | xargs -r kill -9
+        ;;
+  restart)
+        "$JOB" stop
+        "$JOB" start;;
+  *)
+        echo "Usage: /etc/init.d/rest-server {start|stop|restart}"
+        exit 1
+        ;;
+esac
+
+exit 0
