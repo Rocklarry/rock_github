@@ -1,0 +1,31 @@
+From 777fad00f58c4ab64cb4857d8baea3fb5a53b4cc Mon Sep 17 00:00:00 2001
+From: rrd <rock_telp@163.com>
+Date: Sat, 19 Sep 2020 16:18:00 +0800
+Subject: [PATCH 4/4] =?UTF-8?q?=E4=BF=AE=E6=94=B9TP=E5=88=86=E8=BE=A8?=
+ =?UTF-8?q?=E7=8E=87?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+---
+ .../arch/arm/boot/dts/qcom/sc826-cn-01-evk/msm8953-sc826-evk.dtsi     | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/msm-3.18/arch/arm/boot/dts/qcom/sc826-cn-01-evk/msm8953-sc826-evk.dtsi b/kernel/msm-3.18/arch/arm/boot/dts/qcom/sc826-cn-01-evk/msm8953-sc826-evk.dtsi
+index 2247abd..1c11921 100755
+--- a/kernel/msm-3.18/arch/arm/boot/dts/qcom/sc826-cn-01-evk/msm8953-sc826-evk.dtsi
++++ b/kernel/msm-3.18/arch/arm/boot/dts/qcom/sc826-cn-01-evk/msm8953-sc826-evk.dtsi
+@@ -29,8 +29,8 @@
+                         vdd_ld-supply = <&pm8953_l17>;
+                         vcc_i2c-supply = <&pm8953_l5>;
+                         vcc_i2c_ld-supply = <&pm8953_l6>;
+-                        goodix,panel-coords = <0 0 1024 600>;
+-                        goodix,display-coords = <0 0 1024 600>;
++                        goodix,panel-coords = <0 0 800 480>;
++                        goodix,display-coords = <0 0 800 480>;
+                         goodix,button-map = <139 102 158>;
+                         goodix,enable-power-off;
+                         goodix,product-id = <968 915 9147 9157 5668>;
+-- 
+2.7.4
+

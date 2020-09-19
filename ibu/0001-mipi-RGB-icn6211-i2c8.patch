@@ -1,0 +1,2635 @@
+From c583817c892284393c538cccd3cdff8a5c93271d Mon Sep 17 00:00:00 2001
+From: rrd <rock_telp@163.com>
+Date: Sat, 19 Sep 2020 16:05:01 +0800
+Subject: [PATCH 1/4] =?UTF-8?q?=20mipi=E8=BD=ACRGB=20icn6211=20i2c8?=
+ =?UTF-8?q?=E9=85=8D=E7=BD=AE?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+---
+ .../display/include/panel_ek79007_1024p_video.h    | 1135 +-------------------
+ bootable/bootloader/lk/platform/msm8953/ICN6211.c  |  154 +++
+ .../bootloader/lk/platform/msm8953/acpuclock.c     |   48 +
+ bootable/bootloader/lk/platform/msm8953/gpio.c     |   25 +
+ .../lk/platform/msm8953/include/platform/clock.h   |    4 +
+ .../lk/platform/msm8953/include/platform/gpio.h    |    3 +
+ .../lk/platform/msm8953/include/platform/iomap.h   |   28 +
+ .../lk/platform/msm8953/include/platform/irqs.h    |    5 +
+ .../bootloader/lk/platform/msm8953/msm8953-clock.c |   66 ++
+ bootable/bootloader/lk/platform/msm8953/rules.mk   |    3 +-
+ bootable/bootloader/lk/platform/msm_shared/clock.c |    2 +
+ .../bootloader/lk/platform/msm_shared/display.c    |    7 +-
+ .../bootloader/lk/platform/msm_shared/mipi_dsi.c   |    2 +-
+ .../bootloader/lk/platform/msm_shared/rules.mk     |    2 +
+ bootable/bootloader/lk/target/msm8953/oem_panel.c  |    2 +-
+ .../bootloader/lk/target/msm8953/target_display.c  |   45 +
+ .../dsi-panel-ek79007-1024p-video.dtsi             |   40 +-
+ .../qcom/sc826-cn-01-evk/msm8953-mdss-panels.dtsi  |   12 +-
+ .../qcom/sc826-cn-01-evk/msm8953-sc826-evk.dtsi    |   28 +-
+ .../arm/boot/dts/qcom/sc826-cn-01-evk/msm8953.dtsi |    9 +-
+ kernel/msm-3.18/drivers/video/msm/mdss/mdss_dsi.c  |    7 +-
+ .../drivers/video/msm/mdss/mdss_dsi_host.c         |    4 +-
+ .../drivers/video/msm/mdss/mdss_dsi_panel.c        |   17 +
+ .../msm-3.18/drivers/video/msm/mdss/mdss_i2c_cmd.c |  357 +-----
+ 24 files changed, 563 insertions(+), 1442 deletions(-)
+ mode change 100644 => 100755 bootable/bootloader/lk/dev/gcdb/display/include/panel_ek79007_1024p_video.h
+ create mode 100755 bootable/bootloader/lk/platform/msm8953/ICN6211.c
+ mode change 100644 => 100755 bootable/bootloader/lk/platform/msm8953/gpio.c
+ mode change 100644 => 100755 bootable/bootloader/lk/platform/msm8953/include/platform/gpio.h
+ mode change 100644 => 100755 bootable/bootloader/lk/platform/msm8953/include/platform/iomap.h
+ mode change 100644 => 100755 bootable/bootloader/lk/platform/msm_shared/clock.c
+ mode change 100644 => 100755 bootable/bootloader/lk/platform/msm_shared/display.c
+ mode change 100644 => 100755 bootable/bootloader/lk/platform/msm_shared/mipi_dsi.c
+ mode change 100644 => 100755 kernel/msm-3.18/arch/arm/boot/dts/qcom/sc826-cn-01-evk/dsi-panel-ek79007-1024p-video.dtsi
+
+diff --git a/bootable/bootloader/lk/dev/gcdb/display/include/panel_ek79007_1024p_video.h b/bootable/bootloader/lk/dev/gcdb/display/include/panel_ek79007_1024p_video.h
+old mode 100644
+new mode 100755
+index efb0e82..906c011
+--- a/bootable/bootloader/lk/dev/gcdb/display/include/panel_ek79007_1024p_video.h
++++ b/bootable/bootloader/lk/dev/gcdb/display/include/panel_ek79007_1024p_video.h
+@@ -21,1105 +21,62 @@ static struct panel_config 	EK79007_1024p_video_panel_data = {
+ /* Panel resolution                                                          */
+ /*---------------------------------------------------------------------------*/
+ static struct panel_resolution EK79007_1024p_video_panel_res = {
+-	1024, 600, 160, 160, 32, 0, 12, 23, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0
++	1280, 720, 110, 220, 40, 0, 5, 20, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0
+ };
+ 
+ /*---------------------------------------------------------------------------*/
+ /* Panel Color Information                                                   */
+ /*---------------------------------------------------------------------------*/
+-//static struct color_info ILI7807D_1080p_video_color = {
++
+ static struct color_info EK79007_1024p_video_color = {
+   24, 0, 0xff, 0, 0, 0
+ };   
+-/*
+-char ili_on_cmd8[]=    
+-  {3,0xFF,0x00,0x39,0xC0,0x78,0x07,0x01};
+-char ili_on_cmd[][8]={                       
+-  {3,0xFF,0x00,0x39,0xC0,0x78,0x07,0x01},  
+-  }; 
+-*/
+-//static char ili_on_cmd[][8]={
+-//static char ek79007_on_cmd[][8]={
+-/*  {3+1,0x00,0x39,0xC0,0xFF,0x78,0x07,0x01},
+-  {1+1,0x00,0x39,0xC0,0x42,0x11,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x43,0xA3,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x44,0xA8,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x45,0x19,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x46,0x28,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x4A,0x12,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x4B,0x12,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x50,0x5F,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x51,0x5F,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0xB3,0x70,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0xB4,0x70,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0xA2,0x01,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0xA3,0x16,0xFF,0xFF},
+-  {3+1,0x00,0x39,0xC0,0xFF,0x78,0x07,0x01},
+-  {1+1,0x00,0x39,0xC0,0x22,0x06,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x36,0x00,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x63,0x04,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x64,0x08,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x6C,0x45,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x6D,0x00,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x5A,0x33,0xFF,0xFF},
+-  {3+1,0x00,0x39,0xC0,0xFF,0x78,0x07,0x06},
+-  {1+1,0x00,0x39,0xC0,0x00,0x43,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x01,0x12,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x02,0x43,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x03,0x43,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x04,0x03,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x05,0x12,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x06,0x08,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x07,0x0A,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x08,0x83,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x09,0x02,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x0A,0x30,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x0B,0x10,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x0C,0x08,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x0D,0x08,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x0E,0x00,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x0F,0x00,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x10,0x00,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x11,0x00,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x12,0x00,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x13,0x00,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x14,0x84,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x15,0x84,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x31,0x08,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x32,0x01,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x33,0x00,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x34,0x11,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x35,0x13,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x36,0x26,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x37,0x22,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x38,0x02,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x39,0x0C,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x3A,0x02,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x3B,0x02,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x3C,0x02,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x3D,0x02,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x3E,0x28,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x3F,0x29,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x40,0x2A,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x41,0x08,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x42,0x01,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x43,0x00,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x44,0x10,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x45,0x12,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x46,0x26,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x47,0x22,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x48,0x02,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x49,0x0C,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x4A,0x02,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x4B,0x02,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x4C,0x02,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x4D,0x02,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x4E,0x28,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x4F,0x29,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x50,0x2A,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x61,0x0C,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x62,0x01,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x63,0x00,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x64,0x12,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x65,0x10,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x66,0x26,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x67,0x22,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x68,0x02,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x69,0x08,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x6A,0x02,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x6B,0x02,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x6C,0x02,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x6D,0x02,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x6E,0x28,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x6F,0x29,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x70,0x2A,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x71,0x0C,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x72,0x01,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x73,0x00,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x74,0x13,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x75,0x11,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x76,0x26,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x77,0x22,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x78,0x02,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x79,0x08,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x7A,0x02,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x7B,0x02,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x7C,0x02,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x7D,0x02,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x7E,0x28,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x7F,0x29,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x80,0x2A,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0xD0,0x01,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0xD1,0x01,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0xD2,0x10,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0xD3,0x00,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0xD4,0x00,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0xD5,0x00,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0xD6,0x00,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0xD7,0x00,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0xD8,0x00,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0xD9,0x00,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0xDA,0x00,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0xDB,0x47,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0xDC,0x02,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0xDD,0x55,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x96,0x80,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0x97,0x33,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0xA0,0x10,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0xA1,0x00,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0xA2,0x08,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0xA3,0x1E,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0xA7,0x00,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0xA6,0x32,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0xA7,0x03,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0xAE,0x14,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0xE5,0x80,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0xB2,0x04,0xFF,0xFF},
+-  {1+1,0x00,0x39,0xC0,0xB3,0x04,0xFF,0xFF},
+- {3+1,0x00,0x39,0xC0,0xFF,0x78,0x07,0x02},
+- {1+1,0x00,0x39,0xC0,0x00,0x00,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x01,0x19,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x02,0x00,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x03,0x38,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x04,0x00,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x05,0x69,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x06,0x00,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x07,0x8C,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x08,0x00,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x09,0xA9,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x0A,0x00,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x0B,0xC1,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x0C,0x00,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x0D,0xD5,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x0E,0x00,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x0F,0xE8,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x10,0x00,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x11,0xF8,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x12,0x01,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x13,0x2C,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x14,0x01,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x15,0x52,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x16,0x01,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x17,0x8A,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x18,0x01,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x19,0xB4,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x1A,0x01,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x1B,0xF1,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x1C,0x02,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x1D,0x21,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x1E,0x02,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x1F,0x23,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x20,0x02,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x21,0x51,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x22,0x02,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x23,0x8A,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x24,0x02,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x25,0xB2,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x26,0x02,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x27,0xE9,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x28,0x03,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x29,0x0D,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x2A,0x03,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x2B,0x3A,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x2C,0x03,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x2D,0x47,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x2E,0x03,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x2F,0x56,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x30,0x03,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x31,0x67,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x32,0x03,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x33,0x7A,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x34,0x03,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x35,0x91,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x36,0x03,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x37,0xAC,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x38,0x03,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x39,0xC8,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x3A,0x03,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x3B,0xC1,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x3C,0x00,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x3D,0x11,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x3E,0x00,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x3F,0x38,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x40,0x00,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x41,0x69,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x42,0x00,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x43,0x8C,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x44,0x00,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x45,0xA9,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x46,0x00,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x47,0xC1,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x48,0x00,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x49,0xD5,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x4A,0x00,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x4B,0xE8,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x4C,0x00,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x4D,0xF8,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x4E,0x01,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x4F,0x2C,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x50,0x01,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x51,0x52,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x52,0x01,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x53,0x8A,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x54,0x01,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x55,0xB4,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x56,0x01,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x57,0xF1,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x58,0x02,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x59,0x21,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x5A,0x02,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x5B,0x23,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x5C,0x02,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x5D,0x51,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x5E,0x02,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x5F,0x8A,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x60,0x02,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x61,0xB2,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x62,0x02,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x63,0xE9,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x64,0x03,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x65,0x0D,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x66,0x03,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x67,0x3A,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x68,0x03,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x69,0x47,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x6A,0x03,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x6B,0x56,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x6C,0x03,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x6D,0x67,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x6E,0x03,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x6F,0x7A,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x70,0x03,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x71,0x91,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x72,0x03,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x73,0xAC,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x74,0x03,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x75,0xC8,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x76,0x03,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x77,0xEB,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x78,0x01,0xFF,0XFF},
+- {1+1,0x00,0x39,0xC0,0x79,0x01,0xFF,0XFF},
+- {3+1,0x00,0x39,0xC0,0xFF,0x78,0x07,0x03},
+- {1+1,0x00,0x39,0xC0,0x00,0x00,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x01,0x19,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x02,0x00,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x03,0x39,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x04,0x00,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x05,0x6C,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x06,0x00,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x07,0x90,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x08,0x00,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x09,0xAC,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x0A,0x00,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x0B,0xC4,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x0C,0x00,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x0D,0xD8,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x0E,0x00,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x0F,0xEA,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x10,0x00,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x11,0xFA,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x12,0x01,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x13,0x2D,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x14,0x01,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x15,0x53,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x16,0x01,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x17,0x8B,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x18,0x01,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x19,0xB5,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x1A,0x01,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x1B,0xF2,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x1C,0x02,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x1D,0x22,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x1E,0x02,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x1F,0x23,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x20,0x02,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x21,0x51,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x22,0x02,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x23,0x8B,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x24,0x02,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x25,0xB3,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x26,0x02,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x27,0xEA,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x28,0x03,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x29,0x0E,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x2A,0x03,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x2B,0x3C,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x2C,0x03,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x2D,0x4A,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x2E,0x03,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x2F,0x59,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x30,0x03,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x31,0x6A,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x32,0x03,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x33,0x7E,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x34,0x03,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x35,0x94,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x36,0x03,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x37,0xAE,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x38,0x03,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x39,0xC9,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x3A,0x03,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x3B,0xC1,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x3C,0x00,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x3D,0x11,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x3E,0x00,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x3F,0x39,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x40,0x00,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x41,0x6C,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x42,0x00,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x43,0x90,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x44,0x00,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x45,0xAC,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x46,0x00,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x47,0xC4,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x48,0x00,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x49,0xD8,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x4A,0x00,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x4B,0xEA,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x4C,0x00,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x4D,0xFA,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x4E,0x01,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x4F,0x2D,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x50,0x01,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x51,0x53,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x52,0x01,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x53,0x8B,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x54,0x01,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x55,0xB5,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x56,0x01,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x57,0xF2,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x58,0x02,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x59,0x22,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x5A,0x02,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x5B,0x23,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x5C,0x02,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x5D,0x51,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x5E,0x02,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x5F,0x8B,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x60,0x02,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x61,0xB3,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x62,0x02,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x63,0xEA,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x64,0x03,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x65,0x0E,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x66,0x03,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x67,0x3C,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x68,0x03,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x69,0x4A,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x6A,0x03,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x6B,0x59,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x6C,0x03,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x6D,0x6A,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x6E,0x03,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x6F,0x7E,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x70,0x03,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x71,0x94,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x72,0x03,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x73,0xAE,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x74,0x03,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x75,0xC9,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x76,0x03,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x77,0xEB,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x78,0x01,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x79,0x01,0xFF,0xFF},
+- {3+1,0x00,0x39,0xC0,0xFF,0x78,0x07,0x04},
+- {1+1,0x00,0x39,0xC0,0x00,0x00,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x01,0x19,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x02,0x00,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x03,0x4D,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x04,0x00,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x05,0x86,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x06,0x00,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x07,0xAB,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x08,0x00,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x09,0xC7,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x0A,0x00,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x0B,0xDD,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x0C,0x00,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x0D,0xF0,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x0E,0x01,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x0F,0x01,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x10,0x01,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x11,0x10,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x12,0x01,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x13,0x40,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x14,0x01,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x15,0x63,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x16,0x01,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x17,0x96,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x18,0x01,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x19,0xBD,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x1A,0x01,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x1B,0xF7,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x1C,0x02,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x1D,0x25,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x1E,0x02,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x1F,0x26,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x20,0x02,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x21,0x54,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x22,0x02,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x23,0x8D,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x24,0x02,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x25,0xB5,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x26,0x02,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x27,0xED,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x28,0x03,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x29,0x14,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x2A,0x03,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x2B,0x48,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x2C,0x03,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x2D,0x59,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x2E,0x03,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x2F,0x6B,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x30,0x03,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x31,0x7A,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x32,0x03,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x33,0x8B,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x34,0x03,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x35,0x9E,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x36,0x03,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x37,0xB6,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x38,0x03,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x39,0xCB,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x3A,0x03,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x3B,0xC1,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x3C,0x00,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x3D,0x11,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x3E,0x00,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x3F,0x4D,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x40,0x00,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x41,0x86,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x42,0x00,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x43,0xAB,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x44,0x00,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x45,0xC7,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x46,0x00,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x47,0xDD,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x48,0x00,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x49,0xF0,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x4A,0x01,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x4B,0x01,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x4C,0x01,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x4D,0x10,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x4E,0x01,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x4F,0x40,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x50,0x01,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x51,0x63,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x52,0x01,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x53,0x96,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x54,0x01,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x55,0xBD,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x56,0x01,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x57,0xF7,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x58,0x02,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x59,0x25,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x5A,0x02,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x5B,0x26,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x5C,0x02,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x5D,0x54,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x5E,0x02,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x5F,0x8D,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x60,0x02,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x61,0xB5,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x62,0x02,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x63,0xED,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x64,0x03,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x65,0x14,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x66,0x03,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x67,0x48,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x68,0x03,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x69,0x59,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x6A,0x03,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x6B,0x6B,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x6C,0x03,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x6D,0x7A,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x6E,0x03,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x6F,0x8B,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x70,0x03,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x71,0x9E,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x72,0x03,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x73,0xB6,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x74,0x03,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x75,0xCB,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x76,0x03,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x77,0xEB,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x78,0x01,0xFF,0xFF},
+- {1+1,0x00,0x39,0xC0,0x79,0x01,0xFF,0xFF},
+- {3+1,0x00,0x39,0xC0,0xFF,0x78,0x07,0x00}
+-*/
+-//}; 
+-//char oncmd1[]= {0x11, 0x00, 0x05, 0x80};
+-//char oncmd2[]=  {0x29, 0x00, 0x05, 0x80};
+-//char oncmd3[]= {0x35, 0x00, 0x05, 0x80};              
++
++
+ /*
+ static char ek79007_1024p_video_on_cmd0[] = {
+-        0x02, 0x00, 0x29, 0xC0,
+-        0x11, 0x00, 0xFF, 0xFF,
++	//0x04, 0x00, 0x29, 0xC0,
++	//0xB9, 0xFF, 0x83, 0x94,
+ };
+ 
+ 
+ static char ek79007_1024p_video_on_cmd1[] = {
+-        0x02, 0x00, 0x29, 0xC0,
+-        0x29, 0x00, 0xFF, 0xFF,
++	//0x29, 0x00, 0x05, 0x80
+ };
+ */
+  
+-//static struct mipi_dsi_cmd ILI7807D_1080p_video_on_command[]={
++
+ static struct mipi_dsi_cmd EK79007_1024p_video_on_command[]={
+ /*
+-	 {0x8, ek79007_1024p_video_on_cmd0, 0x78},
+-	 {0x8, ek79007_1024p_video_on_cmd1, 0x14}
+-*/
+-/*{ 8,ili_on_cmd[__LINE__-553],0},	 
+-{ 8,ili_on_cmd[__LINE__-553],0}, 
+-{ 8,ili_on_cmd[__LINE__-553],0}, 
+-{ 8,ili_on_cmd[__LINE__-553],0}, 
+-{ 8,ili_on_cmd[__LINE__-553],0}, 
+-{ 8,ili_on_cmd[__LINE__-553],0}, 
+-{ 8,ili_on_cmd[__LINE__-553],0}, 
+-{ 8,ili_on_cmd[__LINE__-553],0}, 
+-{ 8,ili_on_cmd[__LINE__-553],0}, 
+-{ 8,ili_on_cmd[__LINE__-553],0}, 
+-{ 8,ili_on_cmd[__LINE__-553],0}, 
+-{ 8,ili_on_cmd[__LINE__-553],0}, 
+-{ 8,ili_on_cmd[__LINE__-553],0}, 
+-{ 8,ili_on_cmd[__LINE__-553],0}, 
+-{ 8,ili_on_cmd[__LINE__-553],0},	 
+-{ 8,ili_on_cmd[__LINE__-553],0}, 
+-{ 8,ili_on_cmd[__LINE__-553],0},  
+-{ 8,ili_on_cmd[__LINE__-553],0},     
+-{ 8,ili_on_cmd[__LINE__-553],0},
+-{ 8,ili_on_cmd[__LINE__-553],0}, 
+-{ 8,ili_on_cmd[__LINE__-553],0}, 
+-{ 8,ili_on_cmd[__LINE__-553],0}, 
+-{ 8,ili_on_cmd[__LINE__-553],0}, 
+-{ 8,ili_on_cmd[__LINE__-553],0},                                           
+-{ 8,ili_on_cmd[__LINE__-553],0},                                           
+-{ 8,ili_on_cmd[__LINE__-553],0},                                           
+-{ 8,ili_on_cmd[__LINE__-553],0},                                           
+-{ 8,ili_on_cmd[__LINE__-553],0},                                           
+-{ 8,ili_on_cmd[__LINE__-553],0},                                           
+-{ 8,ili_on_cmd[__LINE__-553],0},                                           
+-{ 8,ili_on_cmd[__LINE__-553],0},                                           
+-{ 8,ili_on_cmd[__LINE__-553],0},                                           
+-{ 8,ili_on_cmd[__LINE__-553],0},                                           
+-{ 8,ili_on_cmd[__LINE__-553],0},                                           
+-{ 8,ili_on_cmd[__LINE__-553],0},                                           
+-{ 8,ili_on_cmd[__LINE__-553],0},                                           
+-{ 8,ili_on_cmd[__LINE__-553],0},                                           
+-{ 8,ili_on_cmd[__LINE__-553],0},                                           
+-{ 8,ili_on_cmd[__LINE__-553],0},                                           
+-{ 8,ili_on_cmd[__LINE__-553],0},                                           
+-{ 8,ili_on_cmd[__LINE__-553],0},                                           
+-{ 8,ili_on_cmd[__LINE__-553],0},                                           
+-{ 8,ili_on_cmd[__LINE__-553],0},                                           
+-{ 8,ili_on_cmd[__LINE__-553],0},                                           
+-{ 8,ili_on_cmd[__LINE__-553],0},                                           
+-{ 8,ili_on_cmd[__LINE__-553],0},                              
+-{ 8,ili_on_cmd[__LINE__-553],0},                              
+-{ 8,ili_on_cmd[__LINE__-553],0},                              
+-{ 8,ili_on_cmd[__LINE__-553],0},                              
+-{ 8,ili_on_cmd[__LINE__-553],0},                              
+-{ 8,ili_on_cmd[__LINE__-553],0},                              
+-{ 8,ili_on_cmd[__LINE__-553],0},                              
+-{ 8,ili_on_cmd[__LINE__-553],0},                              
+-{ 8,ili_on_cmd[__LINE__-553],0},                              
+-{ 8,ili_on_cmd[__LINE__-553],0},                              
+-{ 8,ili_on_cmd[__LINE__-553],0},                              
+-{ 8,ili_on_cmd[__LINE__-553],0},                              
+-{ 8,ili_on_cmd[__LINE__-553],0},                              
+-{ 8,ili_on_cmd[__LINE__-553],0},                              
+-{ 8,ili_on_cmd[__LINE__-553],0},                              
+-{ 8,ili_on_cmd[__LINE__-553],0},                                                                  
+-{ 8,ili_on_cmd[__LINE__-553],0},                              
+-{ 8,ili_on_cmd[__LINE__-553],0},                              
+-{ 8,ili_on_cmd[__LINE__-553],0},                              
+-{ 8,ili_on_cmd[__LINE__-553],0},                              
+-{ 8,ili_on_cmd[__LINE__-553],0},                              
+-{ 8,ili_on_cmd[__LINE__-553],0},                              
+-{ 8,ili_on_cmd[__LINE__-553],0},                              
+-{ 8,ili_on_cmd[__LINE__-553],0},                              
+-{ 8,ili_on_cmd[__LINE__-553],0},                              
+-{ 8,ili_on_cmd[__LINE__-553],0},                              
+-{ 8,ili_on_cmd[__LINE__-553],0},                              
+-{ 8,ili_on_cmd[__LINE__-553],0},                              
+-{ 8,ili_on_cmd[__LINE__-553],0},                              
+-{ 8,ili_on_cmd[__LINE__-553],0},                              
+-{ 8,ili_on_cmd[__LINE__-553],0},                              
+-{ 8,ili_on_cmd[__LINE__-553],0},                                                                   
+-{ 8,ili_on_cmd[__LINE__-553],0},                              
+-{ 8,ili_on_cmd[__LINE__-553],0},                              
+-{ 8,ili_on_cmd[__LINE__-553],0},                              
+-{ 8,ili_on_cmd[__LINE__-553],0},                              
+-{ 8,ili_on_cmd[__LINE__-553],0},                              
+-{ 8,ili_on_cmd[__LINE__-553],0},                              
+-{ 8,ili_on_cmd[__LINE__-553],0},                              
+-{ 8,ili_on_cmd[__LINE__-553],0},                              
+-{ 8,ili_on_cmd[__LINE__-553],0},                              
+-{ 8,ili_on_cmd[__LINE__-553],0},                              
+-{ 8,ili_on_cmd[__LINE__-553],0},                              
+-{ 8,ili_on_cmd[__LINE__-553],0},                              
+-{ 8,ili_on_cmd[__LINE__-553],0},                              
+-{ 8,ili_on_cmd[__LINE__-553],0},                              
+-{ 8,ili_on_cmd[__LINE__-553],0},                              
+-{ 8,ili_on_cmd[__LINE__-553],0},                              
+-{ 8,ili_on_cmd[__LINE__-553],0},                           
+-{ 8,ili_on_cmd[__LINE__-553],0},                           
+-{ 8,ili_on_cmd[__LINE__-553],0},                           
+-{ 8,ili_on_cmd[__LINE__-553],0},                           
+-{ 8,ili_on_cmd[__LINE__-553],0},                           
+-{ 8,ili_on_cmd[__LINE__-553],0},                           
+-{ 8,ili_on_cmd[__LINE__-553],0},                            
+-{ 8,ili_on_cmd[__LINE__-553],0},                           
+-{ 8,ili_on_cmd[__LINE__-553],0},                           
+-{ 8,ili_on_cmd[__LINE__-553],0},                           
+-{ 8,ili_on_cmd[__LINE__-553],0},                           
+-{ 8,ili_on_cmd[__LINE__-553],0},                           
+-{ 8,ili_on_cmd[__LINE__-553],0},                           
+-{ 8,ili_on_cmd[__LINE__-553],0},                           
+-{ 8,ili_on_cmd[__LINE__-553],0},                           
+-{ 8,ili_on_cmd[__LINE__-553],0},                                                             
+-{ 8,ili_on_cmd[__LINE__-553],0},                           
+-{ 8,ili_on_cmd[__LINE__-553],0},                           
+-{ 8,ili_on_cmd[__LINE__-553],0},                           
+-{ 8,ili_on_cmd[__LINE__-553],0},                           
+-{ 8,ili_on_cmd[__LINE__-553],0},                           
+-{ 8,ili_on_cmd[__LINE__-553],0},                           
+-{ 8,ili_on_cmd[__LINE__-553],0},                           
+-{ 8,ili_on_cmd[__LINE__-553],0},                           
+-{ 8,ili_on_cmd[__LINE__-553],0},                           
+-{ 8,ili_on_cmd[__LINE__-553],0},                           
+-{ 8,ili_on_cmd[__LINE__-553],0},                           
+-{ 8,ili_on_cmd[__LINE__-553],0},                           
+-{ 8,ili_on_cmd[__LINE__-553],0},                           
+-{ 8,ili_on_cmd[__LINE__-553],0},                                                          
+-{ 8,ili_on_cmd[__LINE__-553],0},                           
+-{ 8,ili_on_cmd[__LINE__-553],0},                                                               
+-{ 8,ili_on_cmd[__LINE__-553],0},                              
+-{ 8,ili_on_cmd[__LINE__-553],0},                              
+-{ 8,ili_on_cmd[__LINE__-553],0},                              
+-{ 8,ili_on_cmd[__LINE__-553],0},                              
+-{ 8,ili_on_cmd[__LINE__-553],0},                              
+-{ 8,ili_on_cmd[__LINE__-553],0},
+-{ 8,ili_on_cmd[__LINE__-553],0},
+-{ 8,ili_on_cmd[__LINE__-553],0},
+-{ 8,ili_on_cmd[__LINE__-553],0},                 
+-{ 8,ili_on_cmd[__LINE__-553],0},
+-{ 8,ili_on_cmd[__LINE__-553],0},
+-{8, ili_on_cmd[__LINE__-553],0},
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},        
+-{8, ili_on_cmd[__LINE__-553],0},                         
+-{8, ili_on_cmd[__LINE__-553],0},                         
+-{8, ili_on_cmd[__LINE__-553],0},                         
+-{8, ili_on_cmd[__LINE__-553],0},                         
+-{8, ili_on_cmd[__LINE__-553],0},                         
+-{8, ili_on_cmd[__LINE__-553],0},                         
+-{8, ili_on_cmd[__LINE__-553],0},                         
+-{8, ili_on_cmd[__LINE__-553],0},                         
+-{8, ili_on_cmd[__LINE__-553],0},                         
+-{8, ili_on_cmd[__LINE__-553],0},                         
+-{8, ili_on_cmd[__LINE__-553],0},                         
+-{8, ili_on_cmd[__LINE__-553],0},                         
+-{8, ili_on_cmd[__LINE__-553],0},                         
+-{8, ili_on_cmd[__LINE__-553],0},                         
+-{8, ili_on_cmd[__LINE__-553],0},                         
+-{8, ili_on_cmd[__LINE__-553],0},                         
+-{8, ili_on_cmd[__LINE__-553],0},                         
+-{8, ili_on_cmd[__LINE__-553],0},                         
+-{8, ili_on_cmd[__LINE__-553],0},                         
+-{8, ili_on_cmd[__LINE__-553],0},                         
+-{8, ili_on_cmd[__LINE__-553],0},                         
+-{8, ili_on_cmd[__LINE__-553],0},                         
+-{8, ili_on_cmd[__LINE__-553],0},                         
+-{8, ili_on_cmd[__LINE__-553],0},                         
+-{8, ili_on_cmd[__LINE__-553],0},                         
+-{8, ili_on_cmd[__LINE__-553],0},                         
+-{8, ili_on_cmd[__LINE__-553],0},                         
+-{8, ili_on_cmd[__LINE__-553],0},                         
+-{8, ili_on_cmd[__LINE__-553],0},                         
+-{8, ili_on_cmd[__LINE__-553],0},                         
+-{8, ili_on_cmd[__LINE__-553],0},                         
+-{8, ili_on_cmd[__LINE__-553],0},                         
+-{8, ili_on_cmd[__LINE__-553],0},                         
+-{8, ili_on_cmd[__LINE__-553],0},                         
+-{8, ili_on_cmd[__LINE__-553],0},                         
+-{8, ili_on_cmd[__LINE__-553],0},                         
+-{8, ili_on_cmd[__LINE__-553],0},                         
+-{8, ili_on_cmd[__LINE__-553],0},                         
+-{8, ili_on_cmd[__LINE__-553],0},                         
+-{8, ili_on_cmd[__LINE__-553],0},                         
+-{8, ili_on_cmd[__LINE__-553],0},                         
+-{8, ili_on_cmd[__LINE__-553],0},                         
+-{8, ili_on_cmd[__LINE__-553],0},                         
+-{8, ili_on_cmd[__LINE__-553],0},                         
+-{8, ili_on_cmd[__LINE__-553],0},                         
+-{8, ili_on_cmd[__LINE__-553],0},                         
+-{8, ili_on_cmd[__LINE__-553],0},                         
+-{8, ili_on_cmd[__LINE__-553],0},                         
+-{8, ili_on_cmd[__LINE__-553],0},                         
+-{8, ili_on_cmd[__LINE__-553],0},                         
+-{8, ili_on_cmd[__LINE__-553],0},                         
+-{8, ili_on_cmd[__LINE__-553],0},                         
+-{8, ili_on_cmd[__LINE__-553],0},                         
+-{8, ili_on_cmd[__LINE__-553],0},                         
+-{8, ili_on_cmd[__LINE__-553],0},                         
+-{8, ili_on_cmd[__LINE__-553],0},                         
+-{8, ili_on_cmd[__LINE__-553],0},                         
+-{8, ili_on_cmd[__LINE__-553],0},                         
+-{8, ili_on_cmd[__LINE__-553],0},                         
+-{8, ili_on_cmd[__LINE__-553],0},                                                         
+-{8, ili_on_cmd[__LINE__-553],0},
+-{8, ili_on_cmd[__LINE__-553],0},
+-{8, ili_on_cmd[__LINE__-553],0},
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},  
+-{8, ili_on_cmd[__LINE__-553],0},         
+-{8, ili_on_cmd[__LINE__-553],0},         
+-{8, ili_on_cmd[__LINE__-553],0},         
+-{8, ili_on_cmd[__LINE__-553],0},         
+-{8, ili_on_cmd[__LINE__-553],0},         
+-{8, ili_on_cmd[__LINE__-553],0},         
+-{8, ili_on_cmd[__LINE__-553],0},         
+-{8, ili_on_cmd[__LINE__-553],0},         
+-{8, ili_on_cmd[__LINE__-553],0},         
+-{8, ili_on_cmd[__LINE__-553],0},         
+-{8, ili_on_cmd[__LINE__-553],0},         
+-{8, ili_on_cmd[__LINE__-553],0},         
+-{8, ili_on_cmd[__LINE__-553],0},         
+-{8, ili_on_cmd[__LINE__-553],0},         
+-{8, ili_on_cmd[__LINE__-553],0},         
+-{8, ili_on_cmd[__LINE__-553],0},         
+-{8, ili_on_cmd[__LINE__-553],0},         
+-{8, ili_on_cmd[__LINE__-553],0},         
+-{8, ili_on_cmd[__LINE__-553],0},         
+-{8, ili_on_cmd[__LINE__-553],0},         
+-{8, ili_on_cmd[__LINE__-553],0},         
+-{8, ili_on_cmd[__LINE__-553],0},         
+-{8, ili_on_cmd[__LINE__-553],0},         
+-{8, ili_on_cmd[__LINE__-553],0},         
+-{8, ili_on_cmd[__LINE__-553],0},         
+-{8, ili_on_cmd[__LINE__-553],0},         
+-{8, ili_on_cmd[__LINE__-553],0},         
+-{8, ili_on_cmd[__LINE__-553],0},         
+-{8, ili_on_cmd[__LINE__-553],0},         
+-{8, ili_on_cmd[__LINE__-553],0},         
+-{8, ili_on_cmd[__LINE__-553],0},         
+-{8, ili_on_cmd[__LINE__-553],0},         
+-{8, ili_on_cmd[__LINE__-553],0},         
+-{8, ili_on_cmd[__LINE__-553],0},         
+-{8, ili_on_cmd[__LINE__-553],0},         
+-{8, ili_on_cmd[__LINE__-553],0},         
+-{8, ili_on_cmd[__LINE__-553],0},         
+-{8, ili_on_cmd[__LINE__-553],0},         
+-{8, ili_on_cmd[__LINE__-553],0},         
+-{8, ili_on_cmd[__LINE__-553],0},         
+-{8, ili_on_cmd[__LINE__-553],0},         
+-{8, ili_on_cmd[__LINE__-553],0},         
+-{8, ili_on_cmd[__LINE__-553],0},         
+-{8, ili_on_cmd[__LINE__-553],0},         
+-{8, ili_on_cmd[__LINE__-553],0},         
+-{8, ili_on_cmd[__LINE__-553],0},         
+-{8, ili_on_cmd[__LINE__-553],0},         
+-{8, ili_on_cmd[__LINE__-553],0},         
+-{8, ili_on_cmd[__LINE__-553],0},         
+-{8, ili_on_cmd[__LINE__-553],0},         
+-{8, ili_on_cmd[__LINE__-553],0},         
+-{8, ili_on_cmd[__LINE__-553],0},         
+-{8, ili_on_cmd[__LINE__-553],0},         
+-{8, ili_on_cmd[__LINE__-553],0},         
+-{8, ili_on_cmd[__LINE__-553],0},         
+-{8, ili_on_cmd[__LINE__-553],0},         
+-{8, ili_on_cmd[__LINE__-553],0},         
+-{8, ili_on_cmd[__LINE__-553],0},         
+-{8, ili_on_cmd[__LINE__-553],0},         
+-{8, ili_on_cmd[__LINE__-553],0},                        
+-{8, ili_on_cmd[__LINE__-553],0},
+-{8, ili_on_cmd[__LINE__-553],0},
+-{8, ili_on_cmd[__LINE__-553],0},
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],0},   
+-{8, ili_on_cmd[__LINE__-553],10},  
+-{4, ili_on_cmd[__LINE__-553],120},   
+-{4, ili_on_cmd[__LINE__-553],10},   
+-{4, ili_on_cmd[__LINE__-553],10},   
+-{4, oncmd1,120},
+-{4, oncmd2,10},
+-///{4, oncmd3,10}
++	//{0x8, ek79007_1024p_video_on_cmd0, 0x00},
++	//{0x4, ek79007_1024p_video_on_cmd1, 0x14}
+ */
+-};
+ 
++};
+ 
+-//#define ILI7807D_1080P_VIDEO_ON_COMMAND  ARRAY_SIZE(ILI7807D_1080p_video_on_command)
+ #define EK79007_1024P_VIDEO_ON_COMMAND  0
+-//#define EK79007_1024P_VIDEO_ON_COMMAND  2
+-
+-
+-//static char ILI7807D_1080p_video_off_cmd0[] = {
+- /* static char EK79007_1024p_video_off_cmd0[] = {
+-
+-0x28, 0x00, 0x05, 0x80 
+ 
++/* static char EK79007_1024p_video_off_cmd0[] = {
++	//0x28, 0x00, 0x05, 0x80
+ };
+ 
+-
+-//static char ILI7807D_1080p_video_off_cmd1[] = {
+-static char EK79007_1024p_video_off_cmd1[] = {
+-
+-0x10, 0x00, 0x05, 0x80 
+-
++static char EK79007_1024P_video_off_cmd1[] = {
++	//0x10, 0x00, 0x05, 0x80
+ };
+ */
+ 
+-//static struct mipi_dsi_cmd ILI7807D_1080p_video_off_command[] = {
+ static struct mipi_dsi_cmd EK79007_1024p_video_off_command[] = {
+ /*
+-{ 0x4 , EK79007_1024p_video_off_cmd0, 0x0},
+-{ 0x4 , EK79007_1024p_video_off_cmd1, 0x0}
++	{0x4, EK79007_1024P_video_off_cmd0, 0x32},
++	{0x4, EK79007_1024P_video_off_cmd1, 0x78}
+ */
+ };
+-//#define ILI7807D_1080P_VIDEO_OFF_COMMAND 2
++
+ #define EK79007_1024P_VIDEO_OFF_COMMAND 0
+-//#define EK79007_1024P_VIDEO_OFF_COMMAND 2
+ 
+ 
+-//static struct command_state ILI7807D_1080p_video_state = {
++
++
+ static struct command_state EK79007_1024p_video_state = {
+   0, 1
+ };
+@@ -1128,14 +85,14 @@ static struct command_state EK79007_1024p_video_state = {
+ /* Command mode panel information                                            */
+ /*---------------------------------------------------------------------------*/
+ 
+-//static struct commandpanel_info ILI7807D_1080p_video_command_panel = {
++
+ static struct commandpanel_info EK79007_1024p_video_command_panel = {
+   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+ };
+ /* Video mode panel information                                              */
+ /*---------------------------------------------------------------------------*/
+ 
+-//static struct videopanel_info ILI7807D_1080p_video_video_panel = {
++
+ static struct videopanel_info EK79007_1024p_video_video_panel = {
+   0, 0, 0, 0, 1, 1, 1, 0, 0x9 //modify stephen need to check
+   //1, 0, 0, 0, 1, 1, 2, 0, 0x9
+@@ -1145,48 +102,39 @@ static struct videopanel_info EK79007_1024p_video_video_panel = {
+ /* Lane Configuration                                                        */
+ /*---------------------------------------------------------------------------*/
+ 
+-//static struct lane_configuration ILI7807D_1080p_video_lane_config = {
++
+ static struct lane_configuration EK79007_1024p_video_lane_config = {
+-  //4, 0, 1, 1, 1, 1, 0 //modify stephen
+-  4, 0, 1, 1, 1, 1, 0 //need to check
++
++	4, 0, 1, 1, 1, 1, 0
+ };
+ 
+ 
+ /*---------------------------------------------------------------------------*/
+ /* Panel Timing                                                              */
+ /*---------------------------------------------------------------------------*/
+-//const uint32_t ILI7807D_1080p_video_timings[] = {
++
+ const uint32_t EK79007_1024p_video_timings[] = {
+-  //0xE6, 0x38, 0x26, 0x00, 0x68, 0x6e, 0x2A, 0x3c, 0x44, 0x03, 0x04, 0x00
+-//  0xE6, 0x22, 0x18, 0x00, 0x4A, 0x4C, 0x1C, 0x26, 0x1A, 0x03, 0x04, 0x00
+-	 0x66, 0x14, 0x0c, 0x00, 0x34, 0x38, 0x10, 0x18, 0x0e, 0x03, 0x04, 0x00
++	0x4D, 0x0C, 0x08, 0x00, 0x2C, 0x30, 0x0C, 0x10, 0x0B, 0x03, 0x04, 0x00
+ 
+ };
+ 
+-//static const uint32_t ILI7807D_1080p_14nm_video_timings[] = {
+ static const uint32_t EK79007_1024p_14nm_video_timings[] = {
+-	/* 0x24, 0x1f, 0x8, 0x9, 0x5, 0x3, 0x4, 0xa0,
+-         0x24, 0x1f, 0x8, 0x9, 0x5, 0x3, 0x4, 0xa0,
+-	 0x24, 0x1f, 0x8, 0x9, 0x5, 0x3, 0x4, 0xa0,
+-         0x24, 0x1f, 0x8, 0x9, 0x5, 0x3, 0x4, 0xa0,
+-         0x24, 0x1c, 0x8, 0xa, 0x5, 0x3, 0x4, 0xa0,
+-	*/
+-	
+-	 0x1d, 0x19, 0x4, 0x5, 0x1, 0x2, 0x4, 0xa0,
+-         0x1d, 0x19, 0x4, 0x5, 0x1, 0x2, 0x4, 0xa0,
+-	 0x1d, 0x19, 0x4, 0x5, 0x1, 0x2, 0x4, 0xa0,
+-         0x1d, 0x19, 0x4, 0x5, 0x1, 0x2, 0x4, 0xa0,
+-         0x1d, 0x0a, 0x3, 0x4, 0x1, 0x2, 0x4, 0xa0,
++	0x1e, 0x1b, 0x04, 0x06, 0x02, 0x03, 0x04, 0xa0,
++	0x1e, 0x1b, 0x04, 0x06, 0x02, 0x03, 0x04, 0xa0,
++	0x1e, 0x1b, 0x04, 0x06, 0x02, 0x03, 0x04, 0xa0,
++	0x1e, 0x1b, 0x04, 0x06, 0x02, 0x03, 0x04, 0xa0,
++	0x1e, 0x0d, 0x04, 0x05, 0x02, 0x03, 0x04, 0xa0
++
++
+ };
+ 
+-//static struct panel_timing ILI7807D_1080p_video_timing_info = {
++
+ static struct panel_timing EK79007_1024p_video_timing_info = {
+-  //0, 4, 14, 50//modify stephen
+-  0, 4, 9, 25
++	// 0, 4, 3, 41
++	0, 4, 0x05, 0x12
+ };
+ 
+-//static struct panel_reset_sequence ILI7807D_1080p_video_panel_reset_seq = {
+-//static struct panel_reset_sequence ILI7807D_1080p_video_panel_reset_seq = {
++
+ static struct panel_reset_sequence EK79007_1024p_video_panel_reset_seq = {
+ { 1, 0, 1, }, { 20, 20, 20, }, 2
+ };
+@@ -1194,21 +142,22 @@ static struct panel_reset_sequence EK79007_1024p_video_panel_reset_seq = {
+ /*---------------------------------------------------------------------------*/
+ /* Dynamic fps supported frequencies by panel                                */
+ /*---------------------------------------------------------------------------*/
+-//static const struct dfps_panel_info ILI7807D_1080p_video_dfps = {
+ static const struct dfps_panel_info EK79007_1024p_video_dfps = {
+         1, 13, {48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60}
+ };
+ 
++
++
+ /*---------------------------------------------------------------------------*/
+ /* Backlight Settings                                                        */
+ /*---------------------------------------------------------------------------*/
+ 
+-//static struct backlight ILI7807D_1080p_video_backlight = {
++
+ static struct backlight EK79007_1024p_video_backlight = {
+   1, 1, 4095, 100, 1, "PMIC_8941"
+ };
+ 
+-//#define ILI7807D_1080P_VIDEO_SIGNATURE 0xFFFF
++
+ #define EK79007_1024P_VIDEO_SIGNATURE 0xFFFF
+ 
+ #endif /*_TRULY_1080P_VIDEO_H_*/
+diff --git a/bootable/bootloader/lk/platform/msm8953/ICN6211.c b/bootable/bootloader/lk/platform/msm8953/ICN6211.c
+new file mode 100755
+index 0000000..74d1921
+--- /dev/null
++++ b/bootable/bootloader/lk/platform/msm8953/ICN6211.c
+@@ -0,0 +1,154 @@
++#include <debug.h>
++#include <platform/gpio.h>
++#include <i2c_qup.h>
++#include <blsp_qup.h>
++#include <platform/irqs.h>
++#include <kernel/thread.h>
++#include <display_resource.h>
++#include <qtimer.h>
++#include <err.h>
++
++
++
++
++
++static unsigned char slave_addr = 0x2C;
++
++
++static struct qup_i2c_dev *i2c_dev;
++static int icn6211_i2c_init()
++{
++	i2c_dev = qup_blsp_i2c_init(BLSP_ID_2,QUP_ID_3,100000,19200000);
++	if(!i2c_dev) {
++		dprintf(CRITICAL, "mipi_dsi_i2c_device_init() failed\n");
++		return ERR_NOT_VALID;
++	}
++	return NO_ERROR;
++}
++
++static unsigned char icn6211_i2c_read(unsigned char reg_addr)
++{
++    int ret = 0;
++    unsigned char val = 0 ;
++    struct i2c_msg msg_buf[] = {
++        //{0x48, I2C_M_WR, 1, &reg_addr},
++        //{0x48, I2C_M_RD, 1, &val}
++
++		{slave_addr, I2C_M_WR, 1, &reg_addr},
++        {slave_addr, I2C_M_RD, 1, &val}
++    };
++    ret = qup_i2c_xfer(i2c_dev, msg_buf, 2);
++    if(ret < 0) {
++        dprintf(CRITICAL, "qup_i2c_xfer error %d\n", ret);
++        return ret;
++    }
++    return val;
++}
++
++static int icn6211_i2c_write(unsigned char reg_addr, unsigned char val)
++{
++    int ret = 0;
++    unsigned char data_buf[] = { reg_addr, val };
++    struct i2c_msg msg_buf[] = {
++             //  {0x48, I2C_M_WR, 2, data_buf}
++		{slave_addr, I2C_M_WR, 2, data_buf}
++    };
++    ret = qup_i2c_xfer(i2c_dev, msg_buf, 1);
++	
++	dprintf(CRITICAL, " ==rrd== qup_i2c_xfera slave=0x%x add=0x%x var=0x%x \n",slave_addr, reg_addr,val);
++    if(ret < 0) {
++        dprintf(CRITICAL, "qup_i2c_xfer error %d\n", ret);
++        return ret;
++    }
++    return 0;
++}
++
++void reset_icn6211(void)
++{
++	gpio_tlmm_config(61, 0, GPIO_OUTPUT, GPIO_NO_PULL,GPIO_8MA, GPIO_DISABLE);
++	mdelay(150);
++	
++	gpio_set_dir(61,2);
++	mdelay(150);//100
++	gpio_set_dir(61,0);
++	mdelay(150);//100
++	gpio_set_dir(61,2);
++	mdelay(50);
++}
++
++
++
++
++
++
++
++void icn6211_reg_init()
++{
++	reset_icn6211(); // 刷寄存器之前，先Reset LT8911/B ,用GPIO 先拉低LT8911B的复位脚 100ms左右，再拉高，保持100ms
++
++	icn6211_i2c_write(0x20 , 0x00);// Register address : 0x08;	Value : 0xff
++	icn6211_i2c_write(0x21 , 0xD0);
++	icn6211_i2c_write(0x22 , 0x25);
++	icn6211_i2c_write(0x23 , 0x6E);
++	icn6211_i2c_write(0x24 , 0x28);
++	icn6211_i2c_write(0x25 , 0xDC);
++	icn6211_i2c_write(0x26 , 0x00);
++	icn6211_i2c_write(0x27 , 0x05);
++	icn6211_i2c_write(0x28 , 0x05);
++	icn6211_i2c_write(0x29 , 0x14);
++	icn6211_i2c_write(0x34 , 0x80);
++	icn6211_i2c_write(0x36 , 0x6E);
++	icn6211_i2c_write(0xB5 , 0xA0);
++	icn6211_i2c_write(0x5C , 0xFF);
++	icn6211_i2c_write(0x2A , 0x07);
++	icn6211_i2c_write(0x56 , 0x92);
++	icn6211_i2c_write(0x6B , 0x52);
++	icn6211_i2c_write(0x69 , 0x2C);
++	icn6211_i2c_write(0x10 , 0x40);
++	icn6211_i2c_write(0x11 , 0x88);
++	icn6211_i2c_write(0xB6 , 0x20);
++	icn6211_i2c_write(0x51 , 0x20);
++
++	//icn6211_i2c_write(0x14 , 0x43);
++	//icn6211_i2c_write(0x2A , 0x49);
++
++	icn6211_i2c_write(0x09 , 0x10);
++
++
++
++	dprintf(CRITICAL,"eliot :mdss_mipi_i2c_init end \n");
++	
++}
++//---------------------------------------------//
++
++// MIPI输入点 eDP屏的 LT8911B 寄存器设置：
++
++//**************************************************//
++// 确定要在给LT8911B 提供MIPI信号之后，再初始化LT8911B寄存器。
++//*************************************************** //
++
++void INC6211_Initial(void)
++{	
++	//unsigned char count;
++
++	//count=0;
++	icn6211_i2c_init();//初始化i2c
++
++//L1: 
++	icn6211_reg_init();
++	
++    /*
++	if(DPCD0202H!=0x77)
++	{
++		count++;
++		if(count<=5)
++			goto L1;
++		else	
++		{
++			printf("LT8911B init fail,reboot!!!\n");
++			reboot_device(0);
++		}
++	}
++	*/
++}
++/************************************** The End Of File **************************************/
+diff --git a/bootable/bootloader/lk/platform/msm8953/acpuclock.c b/bootable/bootloader/lk/platform/msm8953/acpuclock.c
+index 6b72ac9..182fa6e 100755
+--- a/bootable/bootloader/lk/platform/msm8953/acpuclock.c
++++ b/bootable/bootloader/lk/platform/msm8953/acpuclock.c
+@@ -35,6 +35,12 @@
+ #include <clock.h>
+ #include <platform/clock.h>
+ #include <platform.h>
++/*i2c add by lht*/
++#include <platform/gpio.h>
++#include <gsbi.h>
++#include <blsp_qup.h>
++/*end by lht*/
++
+ 
+ #define MAX_LOOPS	500
+ 
+@@ -567,3 +573,45 @@ void mmss_dsi_clock_disable(uint32_t flags)
+ 		writel(0x0, DSI_PIXEL1_CBCR);
+ 	}
+ }
++
++//i2c add by lht
++void clock_config_blsp_i2c(uint8_t blsp_id, uint8_t qup_id)
++{
++
++	uint8_t ret = 0;
++	char clk_name[64];
++
++	struct clk *qup_clk;
++
++	if((blsp_id != BLSP_ID_2) || (qup_id != QUP_ID_3)) {
++			dprintf(CRITICAL, "Incorrect BLSP-%d or QUP-%d configuration\n", blsp_id, qup_id);
++			ASSERT(0);
++	}
++
++	if (qup_id == QUP_ID_3) {
++			snprintf(clk_name, sizeof(clk_name), "blsp2_qup4_ahb_iface_clk");
++			dprintf(CRITICAL, " to enable %s clock\n", clk_name);
++	}
++	ret = clk_get_set_enable(clk_name, 0 , 1);
++	if (ret) {
++			dprintf(CRITICAL, "Failed to enable %s clock\n", clk_name);
++			return;
++	}
++
++	if (qup_id == QUP_ID_3) {
++			snprintf(clk_name, sizeof(clk_name), "gcc_blsp2_qup4_i2c_apps_clk");
++			dprintf(CRITICAL, " to get %s\n", clk_name);
++	}
++	qup_clk = clk_get(clk_name);
++	if (!qup_clk) {
++			dprintf(CRITICAL, "Failed to get %s\n", clk_name);
++			return;
++	}
++	ret = clk_enable(qup_clk);
++	if (ret) {
++			dprintf(CRITICAL, "Failed to enable %s\n", clk_name);
++			return;
++	}
++
++}
++/*end by lht*/
+diff --git a/bootable/bootloader/lk/platform/msm8953/gpio.c b/bootable/bootloader/lk/platform/msm8953/gpio.c
+old mode 100644
+new mode 100755
+index 9538eb2..61e4beb
+--- a/bootable/bootloader/lk/platform/msm8953/gpio.c
++++ b/bootable/bootloader/lk/platform/msm8953/gpio.c
+@@ -70,3 +70,28 @@ void gpio_config_uart_dm(uint8_t id)
+ 	gpio_tlmm_config(4, 2, GPIO_OUTPUT, GPIO_NO_PULL,
+ 				GPIO_8MA, GPIO_DISABLE);
+ }
++/*i2c add by lht*/
++
++void gpio_config_blsp_i2c(uint8_t blsp_id, uint8_t qup_id)
++{
++	if(blsp_id == BLSP_ID_2) {
++		switch (qup_id) {
++			case QUP_ID_3:
++					/* configure I2C SDA gpio */
++					gpio_tlmm_config(98, 1, GPIO_OUTPUT, GPIO_NO_PULL,
++									GPIO_8MA, GPIO_DISABLE);
++					/* configure I2C SCL gpio */
++					gpio_tlmm_config(99, 1, GPIO_OUTPUT, GPIO_NO_PULL,
++							GPIO_8MA, GPIO_DISABLE);
++			break;
++			default:
++					dprintf(CRITICAL, "Incorrect QUP id %d\n",qup_id);
++					ASSERT(0);
++		};
++	} else {
++		dprintf(CRITICAL, "Incorrect BLSP id %d\n",blsp_id);
++		ASSERT(0);
++	}
++
++}
++/*end by lht*/
+diff --git a/bootable/bootloader/lk/platform/msm8953/include/platform/clock.h b/bootable/bootloader/lk/platform/msm8953/include/platform/clock.h
+index b2e813b..d882275 100755
+--- a/bootable/bootloader/lk/platform/msm8953/include/platform/clock.h
++++ b/bootable/bootloader/lk/platform/msm8953/include/platform/clock.h
+@@ -104,4 +104,8 @@ void mmss_dsi_clock_enable(uint32_t cfg_rcgr, uint32_t dual_dsi,
+ void mmss_dsi_clock_disable(uint32_t dual_dsi);
+ void clock_usb30_init(void);
+ void clock_reset_usb_phy();
++/*i2c add by lht*/
++void clock_config_blsp_i2c(uint8_t blsp_id, uint8_t qup_id);
++/*end by lht*/
++
+ #endif
+diff --git a/bootable/bootloader/lk/platform/msm8953/include/platform/gpio.h b/bootable/bootloader/lk/platform/msm8953/include/platform/gpio.h
+old mode 100644
+new mode 100755
+index 4bc9f69..c7fc965
+--- a/bootable/bootloader/lk/platform/msm8953/include/platform/gpio.h
++++ b/bootable/bootloader/lk/platform/msm8953/include/platform/gpio.h
+@@ -69,4 +69,7 @@ void gpio_tlmm_config(uint32_t gpio,
+ 			uint8_t pull,
+ 			uint8_t drvstr,
+ 			uint32_t enable);
++/*i2c add by lht*/
++void gpio_config_blsp_i2c(uint8_t blsp_id, uint8_t qup_id);
++/*end by lht*/
+ #endif
+diff --git a/bootable/bootloader/lk/platform/msm8953/include/platform/iomap.h b/bootable/bootloader/lk/platform/msm8953/include/platform/iomap.h
+old mode 100644
+new mode 100755
+index b162644..6dba3bb
+--- a/bootable/bootloader/lk/platform/msm8953/include/platform/iomap.h
++++ b/bootable/bootloader/lk/platform/msm8953/include/platform/iomap.h
+@@ -158,6 +158,34 @@
+ #define USB2_PHY_SEL                       0x01937000
+ #define QUSB2_PHY_BASE                     0X79000
+ 
++/* i2c add by lht*/
++#define TP0
++//#define BLSP_QUP_BASE(blsp_id, qup_id) 	(PERIPH_SS_BASE + 0xB5000 + 0x1000 * qup_id)
++#ifdef TP0
++#define GCC_BLSP1_QUP3_APPS_CBCR    	(CLK_CTL_BASE + 0x04020)
++#define GCC_BLSP1_QUP3_CMD_RCGR	(CLK_CTL_BASE + 0x04000)
++#define GCC_BLSP1_QUP3_CFG_RCGR	(CLK_CTL_BASE + 0x04004)
++#endif
++#ifdef TP1
++//this BLSP1_QUP3 the real value is BLSP1_QUP2
++#define GCC_BLSP1_QUP3_APPS_CBCR    	(CLK_CTL_BASE + 0x03010)
++#define GCC_BLSP1_QUP3_CMD_RCGR	(CLK_CTL_BASE + 0x03000)
++#define GCC_BLSP1_QUP3_CFG_RCGR	(CLK_CTL_BASE + 0x03004)
++#endif
++
++/*start by lht */
++//i2c
++/***I2C_8**/
++#define GCC_BLSP2_QUP4_APPS_CBCR	(CLK_CTL_BASE + 0x18020)
++#define GCC_BLSP2_QUP4_CFG_RCGR		(CLK_CTL_BASE + 0x18004)
++#define GCC_BLSP2_QUP4_CMD_RCGR		(CLK_CTL_BASE + 0x18000)
++
++#define BLSP_QUP_BASE(blsp_id, qup_id)   (PERIPH_SS_BASE + 0x002F5000 + \
++                                         ((qup_id) * 0x1000))
++
++#define BLSP2_AHB_CBCR (CLK_CTL_BASE + 0x944)
++/*end by lht */
++
+ /* SS QMP (Qulacomm Multi Protocol) */
+ #define QMP_PHY_BASE                0x78000
+ 
+diff --git a/bootable/bootloader/lk/platform/msm8953/include/platform/irqs.h b/bootable/bootloader/lk/platform/msm8953/include/platform/irqs.h
+index 5470d77..ac22cb7 100755
+--- a/bootable/bootloader/lk/platform/msm8953/include/platform/irqs.h
++++ b/bootable/bootloader/lk/platform/msm8953/include/platform/irqs.h
+@@ -63,4 +63,9 @@
+                                                NR_BOARD_IRQS)
+ 
+ #define SMD_IRQ                                (GIC_SPI_START + 168)
++/*i2c add by lht*/
++#define BLSP_QUP_IRQ(blsp_id, qup_id)          ((blsp_id == 1) ? \
++                                               ((GIC_SPI_START + 95) + qup_id):\
++                                               ((GIC_SPI_START + 299) + qup_id))
++/*end by lht*/
+ #endif /* __IRQS_MSM8953_H */
+diff --git a/bootable/bootloader/lk/platform/msm8953/msm8953-clock.c b/bootable/bootloader/lk/platform/msm8953/msm8953-clock.c
+index 2164b48..a4ea718 100755
+--- a/bootable/bootloader/lk/platform/msm8953/msm8953-clock.c
++++ b/bootable/bootloader/lk/platform/msm8953/msm8953-clock.c
+@@ -36,6 +36,13 @@
+ #include <platform/iomap.h>
+ #include <platform.h>
+ 
++//start add 
++#include <debug.h>
++#include <platform/gpio.h>
++#include <gsbi.h>
++#include <blsp_qup.h>
++//end add
++
+ /* Mux source select values */
+ #define cxo_source_val    0
+ #define gpll0_source_val  1
+@@ -714,6 +721,56 @@ static struct vote_clk gcc_ce1_axi_clk = {
+ 	},
+ };
+ 
++
++/*i2c start  add by lht*********************************/
++
++static struct clk_freq_tbl ftbl_gcc_blsp1_2_qup1_4_i2c_apps_clk[] = {
++	F(  19200000,              cxo,    1,    0,     0),
++	F(  25000000, gpll0_out_main_div2,   16,    0,     0),
++	F(  50000000,           gpll0,   16,    0,     0),
++	F_END
++};
++
++
++static struct rcg_clk gcc_blsp2_qup4_i2c_apps_clk_src =
++{
++	.cmd_reg      = (uint32_t *) GCC_BLSP2_QUP4_CMD_RCGR,
++	.cfg_reg      = (uint32_t *) GCC_BLSP2_QUP4_CFG_RCGR,
++	.set_rate     = clock_lib2_rcg_set_rate_hid,
++	.freq_tbl     = ftbl_gcc_blsp1_2_qup1_4_i2c_apps_clk,
++	.current_freq = &rcg_dummy_freq,
++
++	.c = {
++			.dbg_name = "gcc_blsp2_qup4_i2c_apps_clk_src",
++			.ops      = &clk_ops_rcg,
++	},
++};
++
++static struct branch_clk gcc_blsp2_qup4_i2c_apps_clk =
++{
++	.cbcr_reg = (uint32_t *) GCC_BLSP2_QUP4_APPS_CBCR,
++	.parent   = &gcc_blsp2_qup4_i2c_apps_clk_src.c,
++
++	.c = {
++			.dbg_name = "gcc_blsp2_qup4_i2c_apps_clk",
++			.ops      = &clk_ops_branch,
++	},
++};
++
++static struct vote_clk gcc_blsp2_ahb_clk =
++{
++	.cbcr_reg = (uint32_t *) BLSP2_AHB_CBCR,
++	.vote_reg = (uint32_t *) APCS_CLOCK_BRANCH_ENA_VOTE,
++	.en_mask  = BIT(20),
++	.c = {
++		.dbg_name = "gcc_blsp2_ahb_clk",
++		.ops   = &clk_ops_vote,
++	},
++};
++
++/*end by lht************************************/
++
++
+ /* Clock lookup table */
+ static struct clk_lookup msm_clocks_8953[] =
+ {
+@@ -751,6 +808,15 @@ CLK_LOOKUP("mdss_esc1_clk",        mdss_esc1_clk.c),
+ 	CLK_LOOKUP("ce1_axi_clk",  gcc_ce1_axi_clk.c),
+ 	CLK_LOOKUP("ce1_core_clk", gcc_ce1_clk.c),
+ 	CLK_LOOKUP("ce1_src_clk",  ce1_clk_src.c),
++
++/*add start  by lht */
++	/* BLSP CLOCKS */
++	CLK_LOOKUP("blsp2_qup4_ahb_iface_clk", gcc_blsp2_ahb_clk.c),
++    CLK_LOOKUP("gcc_blsp2_qup4_i2c_apps_clk_src", gcc_blsp2_qup4_i2c_apps_clk_src.c),
++	CLK_LOOKUP("gcc_blsp2_qup4_i2c_apps_clk", gcc_blsp2_qup4_i2c_apps_clk.c),
++
++/*add end by  by lht*/
++
+ };
+ 
+ void platform_clock_init(void)
+diff --git a/bootable/bootloader/lk/platform/msm8953/rules.mk b/bootable/bootloader/lk/platform/msm8953/rules.mk
+index 6d840e6..f85b883 100755
+--- a/bootable/bootloader/lk/platform/msm8953/rules.mk
++++ b/bootable/bootloader/lk/platform/msm8953/rules.mk
+@@ -22,7 +22,8 @@ OBJS += \
+        $(LOCAL_DIR)/platform.o \
+        $(LOCAL_DIR)/acpuclock.o \
+        $(LOCAL_DIR)/msm8953-clock.o \
+-       $(LOCAL_DIR)/gpio.o
++       $(LOCAL_DIR)/gpio.o \
++       $(LOCAL_DIR)/ICN6211.o
+ 
+ LINKER_SCRIPT += $(BUILDDIR)/system-onesegment.ld
+ 
+diff --git a/bootable/bootloader/lk/platform/msm_shared/clock.c b/bootable/bootloader/lk/platform/msm_shared/clock.c
+old mode 100644
+new mode 100755
+index 22d8de2..82b926b
+--- a/bootable/bootloader/lk/platform/msm_shared/clock.c
++++ b/bootable/bootloader/lk/platform/msm_shared/clock.c
+@@ -82,7 +82,9 @@ int clk_enable(struct clk *clk)
+ 			goto out;
+ 
+ 		if (clk->ops->enable)
++		{
+ 			ret = clk->ops->enable(clk);
++		}
+ 		if (ret) {
+ 			clk_disable(parent);
+ 			goto out;
+diff --git a/bootable/bootloader/lk/platform/msm_shared/display.c b/bootable/bootloader/lk/platform/msm_shared/display.c
+old mode 100644
+new mode 100755
+index 8733afa..e23fee5
+--- a/bootable/bootloader/lk/platform/msm_shared/display.c
++++ b/bootable/bootloader/lk/platform/msm_shared/display.c
+@@ -36,6 +36,9 @@
+ #include <malloc.h>
+ #include <qpic.h>
+ #include <target.h>
++ /*i2c add by lht*/
++#include <qtimer.h>
++/*end by lht*/
+ #ifdef DISPLAY_TYPE_MDSS
+ #include <target/display.h>
+ #endif
+@@ -349,7 +352,9 @@ int msm_display_init(struct msm_fb_panel_data *pdata)
+ 		ret = pdata->post_power_func(1);
+ 	if (ret)
+ 		goto msm_display_init_out;
+-
++    /*i2c add by lht*/	
++    mdelay(150); 
++    /*end by lht*/
+ 	/* Turn on backlight */
+ 	if (pdata->bl_func)
+ 		ret = pdata->bl_func(1);
+diff --git a/bootable/bootloader/lk/platform/msm_shared/mipi_dsi.c b/bootable/bootloader/lk/platform/msm_shared/mipi_dsi.c
+old mode 100644
+new mode 100755
+index 8f0769f..2723119
+--- a/bootable/bootloader/lk/platform/msm_shared/mipi_dsi.c
++++ b/bootable/bootloader/lk/platform/msm_shared/mipi_dsi.c
+@@ -135,7 +135,7 @@ static int mdss_dsi_cmd_dma_trigger_for_panel(char dual_dsi,
+ 	}
+ 
+ 	writel((readl(base + INT_CTRL) | 0x01000001), base + INT_CTRL);
+-	///dprintf(SPEW, "Panel CMD: command mode dma tested successfully\n");
++	dprintf(SPEW, "Panel CMD: command mode dma tested successfully\n");
+ #endif
+ 	return status;
+ }
+diff --git a/bootable/bootloader/lk/platform/msm_shared/rules.mk b/bootable/bootloader/lk/platform/msm_shared/rules.mk
+index 7a9e688..5c583e5 100755
+--- a/bootable/bootloader/lk/platform/msm_shared/rules.mk
++++ b/bootable/bootloader/lk/platform/msm_shared/rules.mk
+@@ -661,6 +661,8 @@ DEFINES += DISPLAY_TYPE_MDSS=1
+ 			$(LOCAL_DIR)/display.o \
+ 			$(LOCAL_DIR)/mipi_dsi.o \
+ 			$(LOCAL_DIR)/mipi_dsc.o \
++			$(LOCAL_DIR)/i2c_qup.o \
++			$(LOCAL_DIR)/mipi_dsi_i2c.o \
+ 			$(LOCAL_DIR)/mipi_dsi_phy.o \
+ 			$(LOCAL_DIR)/mipi_dsi_autopll_thulium.o
+ endif
+diff --git a/bootable/bootloader/lk/target/msm8953/oem_panel.c b/bootable/bootloader/lk/target/msm8953/oem_panel.c
+index bb23b54..4b0c6e9 100755
+--- a/bootable/bootloader/lk/target/msm8953/oem_panel.c
++++ b/bootable/bootloader/lk/target/msm8953/oem_panel.c
+@@ -521,7 +521,7 @@ int oem_panel_select(const char *panel_name, struct panel_struct *panelstruct,
+ 	int32_t panel_override_id;
+ 	phy_db->pll_type = DSI_PLL_TYPE_THULIUM;
+ 
+-		dprintf(CRITICAL, "=============wj  panel_id =TRULY_1080P_VIDEO_PANEL %d   board_id_fibocom%d\n",__LINE__, board_id_fibocom);
++		dprintf(CRITICAL, "=============wj  line %d   board_id_fibocom=%d\n",__LINE__, board_id_fibocom);
+ 		dprintf(CRITICAL, "stephen in oem_panel_select\n");
+ 	if (panel_name) {
+ 		panel_override_id = panel_name_to_id(supp_panels,
+diff --git a/bootable/bootloader/lk/target/msm8953/target_display.c b/bootable/bootloader/lk/target/msm8953/target_display.c
+index 974c3b4..e727811 100755
+--- a/bootable/bootloader/lk/target/msm8953/target_display.c
++++ b/bootable/bootloader/lk/target/msm8953/target_display.c
+@@ -49,6 +49,9 @@
+ #include <qtimer.h>
+ #include <platform.h>
+ 
++#include <i2c_qup.h>
++#include <blsp_qup.h>
++
+ #include "include/panel.h"
+ #include "include/display_resource.h"
+ #include "gcdb_display.h"
+@@ -287,6 +290,37 @@ int target_panel_clock(uint8_t enable, struct msm_panel_info *pinfo)
+ 
+ }
+ 
++extern void INC6211_Initial();
++int target_display_dsi2hdmi_config(struct msm_panel_info *pinfo)
++ {
++     int ret = NO_ERROR;
++ 
++     if (!pinfo)
++         return ERR_INVALID_ARGS;
++ 
++     /*
++      * If dsi to HDMI bridge chip connected then
++      * send I2c commands to the chip
++      */
++     //if (pinfo->adv7533.dsi_setup_cfg_i2c_cmd)
++     //    ret = dsi2HDMI_i2c_write_regs(pinfo->adv7533.dsi_setup_cfg_i2c_cmd,
++      //               pinfo->adv7533.num_of_cfg_i2c_cmds);
++ 
++     //if (pinfo->adv7533.dsi_tg_i2c_cmd)
++      //   ret = dsi2HDMI_i2c_write_regs(pinfo->adv7533.dsi_tg_i2c_cmd,
++       //              pinfo->adv7533.num_of_tg_i2c_cmds);
++
++	/*add by lht*/
++	INC6211_Initial();
++	printf("LHT INC6211_Initial----end----\n");
++	ret = 0;
++	/****lht***end******/
++ 
++     return ret;
++ }
++
++
++
+ int target_panel_reset(uint8_t enable, struct panel_reset_sequence *resetseq,
+ 						struct msm_panel_info *pinfo)
+ {
+@@ -295,6 +329,10 @@ int target_panel_reset(uint8_t enable, struct panel_reset_sequence *resetseq,
+ 
+ 			dprintf(CRITICAL, "stephen in target_panel_reset\n");
+ 	if (enable) {
++	
++		printf("-------ss-LHT target_panel_reset--------\n");
++
++
+ 
+ 			dprintf(CRITICAL, "stephen in target_panel_reset enable te_gpio.pin_id=%d\n",te_gpio.pin_id);
+ 
+@@ -361,6 +399,13 @@ int target_panel_reset(uint8_t enable, struct panel_reset_sequence *resetseq,
+ 		gpio_set_dir(reset2_gpio.pin_id, 0);
+ 		gpio_set_dir(enable_gpio.pin_id, 0);
+ 	}
++	
++	
++		/*add by lht*/
++	//if(!target_pause_for_battery_charge())
++	INC6211_Initial();
++	printf("LHT INC6211_Initial----end----\n");
++	/****lht***end******/
+ 
+ 	return ret;
+ }
+diff --git a/kernel/msm-3.18/arch/arm/boot/dts/qcom/sc826-cn-01-evk/dsi-panel-ek79007-1024p-video.dtsi b/kernel/msm-3.18/arch/arm/boot/dts/qcom/sc826-cn-01-evk/dsi-panel-ek79007-1024p-video.dtsi
+old mode 100644
+new mode 100755
+index a05afe6..7070d40
+--- a/kernel/msm-3.18/arch/arm/boot/dts/qcom/sc826-cn-01-evk/dsi-panel-ek79007-1024p-video.dtsi
++++ b/kernel/msm-3.18/arch/arm/boot/dts/qcom/sc826-cn-01-evk/dsi-panel-ek79007-1024p-video.dtsi
+@@ -24,14 +24,14 @@
+ 		qcom,mdss-dsi-panel-framerate = <60>;
+ 		qcom,mdss-dsi-virtual-channel-id = <0>;
+ 		qcom,mdss-dsi-stream = <0>;
+-		qcom,mdss-dsi-panel-width = <1024>;
+-		qcom,mdss-dsi-panel-height = <600>;
+-		qcom,mdss-dsi-h-front-porch = <160>;
+-		qcom,mdss-dsi-h-back-porch = <160>;
+-		qcom,mdss-dsi-h-pulse-width = <32>;
++		qcom,mdss-dsi-panel-width = <1280>;
++		qcom,mdss-dsi-panel-height = <720>;
++		qcom,mdss-dsi-h-front-porch = <110>;
++		qcom,mdss-dsi-h-back-porch = <220>;
++		qcom,mdss-dsi-h-pulse-width = <40>;
+ 		qcom,mdss-dsi-h-sync-skew = <0>;
+-		qcom,mdss-dsi-v-back-porch = <23>;
+-		qcom,mdss-dsi-v-front-porch = <12>;
++		qcom,mdss-dsi-v-back-porch = <20>;
++		qcom,mdss-dsi-v-front-porch = <5>;
+ 		qcom,mdss-dsi-v-pulse-width = <5>;
+ 		qcom,mdss-dsi-h-left-border = <0>;
+ 		qcom,mdss-dsi-h-right-border = <0>;
+@@ -41,14 +41,18 @@
+ 		qcom,mdss-dsi-color-order = "rgb_swap_rgb";
+ 		qcom,mdss-dsi-underflow-color = <0xff>;
+ 		qcom,mdss-dsi-border-color = <0>;
+-		qcom,mdss-dsi-on-command = [29 01 00 00 78 00 02 11 00
+-		   29 01 00 00 14 00 02 29 00];
++		qcom,mdss-dsi-pixel-packing = "tight";
++		qcom,mdss-dsi-pixel-alignment = <0>;
++		qcom,mdss-command-access = "i2c";
++		qcom,mdss-dsi-on-command = [				
++					05 01 00 00 78 00 02 11 00
++					05 01 00 00 14 00 02 29 00];
+ 		qcom,mdss-dsi-off-command = [05 01 00 00 32 00 02 28 00
+-		    05 01 00 00 78 00 02 10 00];
++					05 01 00 00 78 00 02 10 00];
+ 		qcom,mdss-dsi-on-command-state = "dsi_lp_mode";
+-		qcom,mdss-dsi-off-command-state = "dsi_hs_mode";
+-		qcom,mdss-dsi-h-sync-pulse = <1>;
+-		qcom,mdss-dsi-traffic-mode = "burst_mode";
++		qcom,mdss-dsi-off-command-state = "dsi_lp_mode";
++		qcom,mdss-dsi-h-sync-pulse = <0>;
++		qcom,mdss-dsi-traffic-mode = "non_burst_sync_event";
+ 		qcom,mdss-dsi-lane-map = "lane_map_0123";
+ 		qcom,mdss-dsi-bllp-eof-power-mode;
+ 		qcom,mdss-dsi-bllp-power-mode;
+@@ -56,9 +60,9 @@
+ 		qcom,mdss-dsi-lane-1-state;
+ 		qcom,mdss-dsi-lane-2-state;
+ 		qcom,mdss-dsi-lane-3-state;
+-		qcom,mdss-dsi-panel-timings = [66 14 0c 00 34 38 10 18 0e 03 04 00];
+-		qcom,mdss-dsi-t-clk-post = <0x5>;
+-		qcom,mdss-dsi-t-clk-pre = <0x16>;
++		qcom,mdss-dsi-panel-timings = [4D 0C 08 00 2C 30 0C 10 0B 03 04 00];
++		qcom,mdss-dsi-t-clk-post = <0x05>;
++		qcom,mdss-dsi-t-clk-pre = <0x12>;
+ 		qcom,mdss-dsi-bl-min-level = <1>;
+ 		qcom,mdss-dsi-bl-max-level = <4095>;
+ 		qcom,mdss-dsi-dma-trigger = "trigger_sw";
+@@ -69,6 +73,8 @@
+                 qcom,mdss-dsi-pwm-gpio = <&pm8953_mpps 3 0>;
+ 
+ 		qcom,mdss-dsi-bl-pmic-control-type = "bl_ctrl_pwm";
+-		qcom,mdss-dsi-reset-sequence = <1 20>, <0 20>, <1 20>;
++		qcom,mdss-dsi-reset-sequence = <0 50>, <1 150>;//no use
++		qcom,mdss-dsi-force-clock-lane-hs;
++		qcom,mdss-dsi-always-on;
+ 	};
+ };
+diff --git a/kernel/msm-3.18/arch/arm/boot/dts/qcom/sc826-cn-01-evk/msm8953-mdss-panels.dtsi b/kernel/msm-3.18/arch/arm/boot/dts/qcom/sc826-cn-01-evk/msm8953-mdss-panels.dtsi
+index 2b373f0..c9dd7f3 100755
+--- a/kernel/msm-3.18/arch/arm/boot/dts/qcom/sc826-cn-01-evk/msm8953-mdss-panels.dtsi
++++ b/kernel/msm-3.18/arch/arm/boot/dts/qcom/sc826-cn-01-evk/msm8953-mdss-panels.dtsi
+@@ -94,11 +94,13 @@
+ };
+ 
+ &dsi_ek79007_1024p_video {
+-        qcom,mdss-dsi-panel-timings-phy-v2 = [1d 19 04 05 01 02 04 a0
+-        1d 19 04 05 01 02 04 a0
+-        1d 19 04 05 01 02 04 a0
+-        1d 19 04 05 01 02 04 a0
+-        1d 0a 03 04 01 02 04 a0];
++    qcom,mdss-dsi-panel-timings-phy-v2 = [
++		1e 1b 04 06 02 03 04 a0     /*Data 0*/
++        1e 1b 04 06 02 03 04 a0     /*Data 1*/
++        1e 1b 04 06 02 03 04 a0     /*Data 2*/
++        1e 1b 04 06 02 03 04 a0     /*Data 3*/
++        1e 0d 04 05 02 03 04 a0];   /*CLK lane*/
++
+ };
+ 
+ &dsi_ilisec_1080_vid {
+diff --git a/kernel/msm-3.18/arch/arm/boot/dts/qcom/sc826-cn-01-evk/msm8953-sc826-evk.dtsi b/kernel/msm-3.18/arch/arm/boot/dts/qcom/sc826-cn-01-evk/msm8953-sc826-evk.dtsi
+index d4fdf2c..2247abd 100755
+--- a/kernel/msm-3.18/arch/arm/boot/dts/qcom/sc826-cn-01-evk/msm8953-sc826-evk.dtsi
++++ b/kernel/msm-3.18/arch/arm/boot/dts/qcom/sc826-cn-01-evk/msm8953-sc826-evk.dtsi
+@@ -208,8 +208,13 @@
+                 status = "okay";
+        };
+ };*/
+-&i2c_8 { /* bd37033 */
++
++
++// bd37033 
++
++&i2c_8 { 
+ 	status = "okay";
++	/*
+ 	bd37033@40 {
+ 		compatible = "bd37033,audio";
+ 		reg = <0x40>;
+@@ -218,6 +223,7 @@
+ 		gps_pwren_gpio = <&tlmm 0 0x00>;
+ 		status = "okay";
+ 	};
++	*/
+ 	rda5807@11 {
+                 compatible = "rda5807,fm";
+                 reg = <0x11>;
+@@ -250,12 +256,12 @@
+ &i2c_8 { /* BLSP2 QUP1 (NFC) */
+ 	/*by eliot shao, 9/13/2016*/
+   status = "okay";
+-	lt8912@48 {
+-		compatible = "qcom,lt8912";
+-		reg = <0x48>;
++	icn6211@2c {
++		compatible = "qcom,icn6211";
++		reg = <0x2c>;
+ 		pinctrl-names = "default","sleep";
+-	        pinctrl-0 = <&lt_default>;
+-	        pinctrl-1 = <&lt_sleep>;
++		pinctrl-0 = <&lt_default>;
++		pinctrl-1 = <&lt_sleep>;
+ 		lt,gpio_rstn = <&tlmm 61 0x0>;
+ 	};	
+ 	
+@@ -392,12 +398,12 @@
+ &mdss_dsi0 {
+ 	qcom,dsi-pref-prim-pan = <&dsi_ek79007_1024p_video>;
+ 	pinctrl-names = "mdss_default", "mdss_sleep";
+-	pinctrl-0 = <&mdss_dsi_active &mdss_te_active>;
+-	pinctrl-1 = <&mdss_dsi_suspend &mdss_te_suspend>;
++	pinctrl-0 = <&mdss_dsi_active>;
++	pinctrl-1 = <&mdss_dsi_suspend>;
+ 
+-	qcom,platform-te-gpio = <&tlmm 24 0>;
+-	qcom,platform-reset-gpio = <&tlmm 61 0>;
+-	qcom,platform-enable-gpio = <&tlmm 137 0>;
++	//qcom,platform-te-gpio = <&tlmm 24 0>;
++	//qcom,platform-reset-gpio = <&tlmm 61 0>;
++	//qcom,platform-enable-gpio = <&tlmm 137 0>;
+ 	qcom,platform-bklight-en-gpio = <&tlmm 136 0>;
+ };
+ 
+diff --git a/kernel/msm-3.18/arch/arm/boot/dts/qcom/sc826-cn-01-evk/msm8953.dtsi b/kernel/msm-3.18/arch/arm/boot/dts/qcom/sc826-cn-01-evk/msm8953.dtsi
+index 6a98706..f764da4 100755
+--- a/kernel/msm-3.18/arch/arm/boot/dts/qcom/sc826-cn-01-evk/msm8953.dtsi
++++ b/kernel/msm-3.18/arch/arm/boot/dts/qcom/sc826-cn-01-evk/msm8953.dtsi
+@@ -901,6 +901,13 @@
+         	status = "okay";
+         	gpio_acc = <&tlmm 90 0x0>;
+ 	 };
++
++	gpio_pwm {
++		compatible = "qcom,pwm_gpio";
++		dev_name = "pwm_gpio";
++		status = "okay";
++		gpio_pwm = <&tlmm 132 0x0>;
++	 };
+         
+          warn_check {
+ 		compatible = "qcom,warn";
+@@ -924,7 +931,7 @@
+ 	        reg = <0x7af8000 0x600>;
+ 	        interrupt-names = "qup_irq";
+ 	        interrupts = <0 302 0>;
+-	        qcom,clk-freq-out = <400000>;
++	        qcom,clk-freq-out = <100000>;
+ 	        qcom,clk-freq-in  = <19200000>;
+ 	        clock-names = "iface_clk", "core_clk";
+ 	        clocks = <&clock_gcc clk_gcc_blsp2_ahb_clk>,
+diff --git a/kernel/msm-3.18/drivers/video/msm/mdss/mdss_dsi.c b/kernel/msm-3.18/drivers/video/msm/mdss/mdss_dsi.c
+index e3c9728..c4359b1 100755
+--- a/kernel/msm-3.18/drivers/video/msm/mdss/mdss_dsi.c
++++ b/kernel/msm-3.18/drivers/video/msm/mdss/mdss_dsi.c
+@@ -1412,13 +1412,16 @@ int mdss_dsi_on(struct mdss_panel_data *pdata)
+ 	if (mipi->init_delay)
+ 		usleep_range(mipi->init_delay, mipi->init_delay);
+ 
+-	if (mipi->force_clk_lane_hs) {
++	//if (mipi->force_clk_lane_hs) 
++	if(1){
+ 		u32 tmp;
+-
++		pr_err("==rrd==  =====get force_clk_lane_hs is ok");
+ 		tmp = MIPI_INP((ctrl_pdata->ctrl_base) + 0xac);
+ 		tmp |= (1<<28);
+ 		MIPI_OUTP((ctrl_pdata->ctrl_base) + 0xac, tmp);
+ 		wmb();
++	}else{
++		pr_err("==rrd== force_clk_lane_hs is false\n");
+ 	}
+ 
+ 	if (pdata->panel_info.type == MIPI_CMD_PANEL)
+diff --git a/kernel/msm-3.18/drivers/video/msm/mdss/mdss_dsi_host.c b/kernel/msm-3.18/drivers/video/msm/mdss/mdss_dsi_host.c
+index f0996fc..3699007 100755
+--- a/kernel/msm-3.18/drivers/video/msm/mdss/mdss_dsi_host.c
++++ b/kernel/msm-3.18/drivers/video/msm/mdss/mdss_dsi_host.c
+@@ -131,8 +131,8 @@ void mdss_dsi_ctrl_init(struct device *ctrl_dev,
+ 	else if (ctrl->cmd_access == CMD_ACCESS_I2C)
+ 	{
+ 		pr_err("stephen in CMD_ACCESS_I2C =still use dsi===\n");
+-		ctrl->cmdlist_commit = mdss_dsi_cmdlist_commit;
+-		//ctrl->cmdlist_commit = mdss_mipi_i2c_init;
++		//ctrl->cmdlist_commit = mdss_dsi_cmdlist_commit;
++		ctrl->cmdlist_commit = mdss_mipi_i2c_init;
+         }
+ 	ctrl->cmdlist_commit = mdss_dsi_cmdlist_commit;
+ 	ctrl->err_cont.err_time_delta = 100;
+diff --git a/kernel/msm-3.18/drivers/video/msm/mdss/mdss_dsi_panel.c b/kernel/msm-3.18/drivers/video/msm/mdss/mdss_dsi_panel.c
+index cdb7aba..3c06d90 100755
+--- a/kernel/msm-3.18/drivers/video/msm/mdss/mdss_dsi_panel.c
++++ b/kernel/msm-3.18/drivers/video/msm/mdss/mdss_dsi_panel.c
+@@ -2412,6 +2412,7 @@ static int mdss_panel_parse_dt(struct device_node *np,
+ 	const char *data;
+ 	static const char *pdest;
+ 	const char *bridge_chip_name;
++	const char *string;
+ 	struct mdss_panel_info *pinfo = &(ctrl_pdata->panel_data.panel_info);
+ 
+ 	if (mdss_dsi_is_hw_config_split(ctrl_pdata->shared_data))
+@@ -2436,6 +2437,7 @@ static int mdss_panel_parse_dt(struct device_node *np,
+ 		pinfo->mipi.mode = DSI_CMD_MODE;
+ 	pinfo->mipi.boot_mode = pinfo->mipi.mode;
+ 	tmp = 0;
++	pinfo->mipi.force_clk_lane_hs = 1;
+ 	data = of_get_property(np, "qcom,mdss-dsi-pixel-packing", NULL);
+ 	if (data && !strcmp(data, "loose"))
+ 		pinfo->mipi.pixel_packing = 1;
+@@ -2609,12 +2611,27 @@ static int mdss_panel_parse_dt(struct device_node *np,
+ 	pinfo->mipi.force_clk_lane_hs = of_property_read_bool(np,
+ 		"qcom,mdss-dsi-force-clock-lane-hs");
+ 
++	if(pinfo->mipi.force_clk_lane_hs)
++		pr_err("==rrd== force_clk_lane_hs is 1\n");
++	else
++		pr_err("==rrd== force_clk_lane_hs is 0\n");
++
+ 	rc = mdss_dsi_parse_panel_features(np, ctrl_pdata);
+ 	if (rc) {
+ 		pr_err("%s: failed to parse panel features\n", __func__);
+ 		goto error;
+ 	}
+ 
++	//add by eliot shao 2016.9.9 start 
++	rc = of_property_read_string(np,"qcom,mdss-command-access", &string);
++	if (!rc) {
++		if (!strcmp(string, "i2c")) {
++		  ctrl_pdata->cmd_access = CMD_ACCESS_I2C;
++		} else	 /*normal flow*/
++		   ctrl_pdata->cmd_access = CMD_ACCESS_DSI;
++	}
++	//add by eliot shao 2016.9.9 end 
++
+ 	mdss_dsi_parse_panel_horizintal_line_idle(np, ctrl_pdata);
+ 
+ 	mdss_dsi_parse_dfps_config(np, ctrl_pdata);
+diff --git a/kernel/msm-3.18/drivers/video/msm/mdss/mdss_i2c_cmd.c b/kernel/msm-3.18/drivers/video/msm/mdss/mdss_i2c_cmd.c
+index 1073984..e686d25 100755
+--- a/kernel/msm-3.18/drivers/video/msm/mdss/mdss_i2c_cmd.c
++++ b/kernel/msm-3.18/drivers/video/msm/mdss/mdss_i2c_cmd.c
+@@ -25,22 +25,8 @@
+ #include "mdss_i2c_cmd.h"
+ #include "mdss_dsi.h"
+ 
+-//#define TEST_PATTERN_MODE
+-enum
+-{
+-	H_act = 0,
+-	V_act,
+-	H_tol,
+-	V_tol,
+-	H_bp,
+-	H_sync,
+-	V_sync,
+-	V_bp
+-};
+-#define MIPI_Lane	4
+-//static int MIPI_Timing[]  = {1280,720,1650,750,220,40,5,20};// 1280x720 Timing
+-//static int MIPI_Timing[]  = {1024,600,1344,635,144,20,3,20};// 1280x720 Timing
+-static int MIPI_Timing[]  = {1920,1080,2200,1125,148,44,5,36};// 1920x1080 Timing
++
++#define TEST_DEMO 0
+ 
+ struct mdss_i2c_interface {
+ 	unsigned short flags;
+@@ -53,15 +39,11 @@ struct mdss_i2c_interface {
+ 	struct pinctrl_state	*pin_default;
+ 	struct pinctrl_state	*pin_sleep;
+ };
+-u8 HDMI_VIC = 0x00;
++
+ 
+ static struct mdss_i2c_interface *my_mipi_i2c ;
+ 
+ 
+-/*if I2C_TEST_OK == 1 stand for lt8912's i2c no ack , and the 
+-resource of my_mipi_i2c has been remove .must be stop here !
+-or will happen null pointer error !
+-*/
+ 
+ static int I2C_TEST_OK  = 0 ; //default
+ 	
+@@ -69,8 +51,9 @@ int HDMI_WriteI2C_Byte(int reg, int val)
+ {
+ 	int rc = 0;
+ 	rc = i2c_smbus_write_byte_data(my_mipi_i2c->mdss_mipi_i2c_client,reg,val);
++	printk(" ==rrd== HDMI_WriteI2C_Byte  reg=0x%x var=0x%x \n", reg,val);
+ 	if (rc < 0) {
+-		pr_err("eliot :HDMI_WriteI2C_Byte fail \n");
++		printk("eliot :HDMI_WriteI2C_Byte fail \n");
+         return rc;
+ 		}
+ 	return rc ;
+@@ -89,6 +72,7 @@ int HDMI_ReadI2C_Byte(int reg)
+ int Reset_chip(void)
+ {
+ 	// 拉低LT8912 的reset pin，delay 150 ms左右，再拉高
++	
+ 	pr_err("stephen start chip\n");
+ 	gpio_direction_output(my_mipi_i2c->gpio_rstn, 1);
+ 	mdelay(50);
+@@ -99,299 +83,56 @@ int Reset_chip(void)
+ 	gpio_direction_output(my_mipi_i2c->gpio_rstn, 1);
+ 
+ 	return 0;
+-}
+-int test_read(void)
+-{
+-	int val1=0,val2=0,val3=0;
+-	pr_err("eliot :test_read start \n");
+-	mutex_lock(&my_mipi_i2c->i2c_lock);
+-	my_mipi_i2c->mdss_mipi_i2c_client->addr = 0x48;
+-
+-	val1 = i2c_smbus_read_byte_data(my_mipi_i2c->mdss_mipi_i2c_client, 0x00);
+-	
+-	val2 = i2c_smbus_read_byte_data(my_mipi_i2c->mdss_mipi_i2c_client, 0x01);
+-	
+-	val3 = i2c_smbus_read_byte_data(my_mipi_i2c->mdss_mipi_i2c_client, 0x55);
+-
+-	mutex_unlock(&my_mipi_i2c->i2c_lock);
+-	pr_err("eliot :test_read reg0x00:%d,reg0x01:%d,reg0x31:%d\n",val1,val2,val3);
+-	return 0 ;
+ 	
+ }
+-#ifdef TEST_PATTERN_MODE
+-
+-static void Test_pattern_1280x720(void)
+-{
+-	my_mipi_i2c->mdss_mipi_i2c_client->addr = 0x49;
+-	HDMI_WriteI2C_Byte(0x72,0x12);
+-	HDMI_WriteI2C_Byte(0x73,0x04);//RGD_PTN_DE_DLY[7:0]
+-	HDMI_WriteI2C_Byte(0x74,0x01);//RGD_PTN_DE_DLY[11:8]  192
+-	HDMI_WriteI2C_Byte(0x75,0x19);//RGD_PTN_DE_TOP[6:0]  41
+-	HDMI_WriteI2C_Byte(0x76,0x00);//RGD_PTN_DE_CNT[7:0]
+-	HDMI_WriteI2C_Byte(0x77,0xd0);//RGD_PTN_DE_LIN[7:0]
+-	HDMI_WriteI2C_Byte(0x78,0x25);//RGD_PTN_DE_LIN[10:8],RGD_PTN_DE_CNT[11:8]
+-	HDMI_WriteI2C_Byte(0x79,0x72);//RGD_PTN_H_TOTAL[7:0]
+-	HDMI_WriteI2C_Byte(0x7a,0xee);//RGD_PTN_V_TOTAL[7:0]
+-	HDMI_WriteI2C_Byte(0x7b,0x26);//RGD_PTN_V_TOTAL[10:8],RGD_PTN_H_TOTAL[11:8]
+-	HDMI_WriteI2C_Byte(0x7c,0x28);//RGD_PTN_HWIDTH[7:0]
+-	HDMI_WriteI2C_Byte(0x7d,0x05);//RGD_PTN_HWIDTH[9:8],RGD_PTN_VWIDTH[5:0]
+-
+-	
+-	HDMI_WriteI2C_Byte(0x70,0x80);
+-	HDMI_WriteI2C_Byte(0x71,0x76);
+-
+-	// 74.25M CLK
+-	HDMI_WriteI2C_Byte(0x4e,0x99);
+-	HDMI_WriteI2C_Byte(0x4f,0x99);
+-	HDMI_WriteI2C_Byte(0x50,0x69);
+-	HDMI_WriteI2C_Byte(0x51,0x80);
+ 
+-//-------------------------------------------------------//
+-}
+ 
+-#endif
+ 
+ /*This function para Get from FAE*/
+ int mdss_mipi_i2c_init(struct mdss_dsi_ctrl_pdata *ctrl, int from_mdp)
+ {
+ 	pr_err("eliot :mdss_mipi_i2c_init start \n");
+ 	Reset_chip();
+-	/*if I2C_TEST_OK == 1 stand for lt8912's i2c no ack , and the 
+-	resource of my_mipi_i2c has been remove .must be stop here !
+-	*/
+ 	if(I2C_TEST_OK  == 1)
+ 		return 0;
+ 	// 往LT8912寄存器写值：
+ 	//******************************************//
+-		mutex_lock(&my_mipi_i2c->i2c_lock);
+-	//	DigitalClockEn();
+-	pr_err("stephen go to mdss_mipi_i2c_init==1\n");
+-		my_mipi_i2c->mdss_mipi_i2c_client->addr = 0x48; // IIC address
+-	HDMI_WriteI2C_Byte(0x08,0xff);// Register address : 0x08; 	Value : 0xff
+-	HDMI_WriteI2C_Byte(0x09,0x81);
+-	HDMI_WriteI2C_Byte(0x0a,0xff);
+-	HDMI_WriteI2C_Byte(0x0b,0x64);//
+-	HDMI_WriteI2C_Byte(0x0c,0xff);
+-
+-	HDMI_WriteI2C_Byte(0x44,0x31);// Close LVDS ouput
+-	HDMI_WriteI2C_Byte(0x51,0x1f);
+-	
+-	//******************************************//
+-	
+-	//	TxAnalog();
+-	pr_err("stephen go to mdss_mipi_i2c_init==2\n");
+-		my_mipi_i2c->mdss_mipi_i2c_client->addr = 0x48;
+-	HDMI_WriteI2C_Byte(0x31,0xa1);
+-	//HDMI_WriteI2C_Byte(0x32,0xa1);
+-	HDMI_WriteI2C_Byte(0x32,0xbf);
+-	//HDMI_WriteI2C_Byte(0x33,0x03);// 0x03 Open HDMI Tx； 0x00 Close HDMI Tx
+-	HDMI_WriteI2C_Byte(0x33,0x17);// 0x03 Open HDMI Tx； 0x00 Close HDMI Tx
+-	HDMI_WriteI2C_Byte(0x37,0x00);
+-	HDMI_WriteI2C_Byte(0x38,0x22);
+-	HDMI_WriteI2C_Byte(0x60,0x82);
+-	HDMI_WriteI2C_Byte(0x3a,0x00);
+-	
+-	//******************************************//
+-	
+-	//	CbusAnalog();
+-	pr_err("stephen go to mdss_mipi_i2c_init==3\n");
+-		my_mipi_i2c->mdss_mipi_i2c_client->addr = 0x48;
+-	HDMI_WriteI2C_Byte(0x39,0x45);
+-	HDMI_WriteI2C_Byte(0x3b,0x00);
+-	//******************************************//
+-	//*****//
+-	//MIPIAnalog()
+-	my_mipi_i2c->mdss_mipi_i2c_client->addr = 0x48;
+-	HDMI_WriteI2C_Byte(0x3e,0xc6);
+-	HDMI_WriteI2C_Byte(0x41,0x7c); //HS_eq current
+-	
+-	//	HDMIPllAnalog();
+-	pr_err("stephen go to mdss_mipi_i2c_init==4\n");
+-	my_mipi_i2c->mdss_mipi_i2c_client->addr = 0x48;
+-	HDMI_WriteI2C_Byte(0x44,0x31);
+-	HDMI_WriteI2C_Byte(0x55,0x44);
+-	HDMI_WriteI2C_Byte(0x57,0x01);
+-	HDMI_WriteI2C_Byte(0x5a,0x02);
+-	
+-	//******************************************//
+-	
+-	//	MipiBasicSet();
+-	pr_err("stephen go to mdss_mipi_i2c_init==5\n");
+-		my_mipi_i2c->mdss_mipi_i2c_client->addr = 0x49;
+-	HDMI_WriteI2C_Byte(0x10,0x01); // 0x05 
+-	HDMI_WriteI2C_Byte(0x11,0x08); // 0x12 
+-	HDMI_WriteI2C_Byte(0x12,0x04);  
+-	HDMI_WriteI2C_Byte(0x13,MIPI_Lane%0x04);  // 00 4 lane  // 01 lane // 02 2 lane //03 3 lane
+-	HDMI_WriteI2C_Byte(0x14,0x00);  
+-	HDMI_WriteI2C_Byte(0x15,0x00);
+-	HDMI_WriteI2C_Byte(0x1a,0x03);  
+-	HDMI_WriteI2C_Byte(0x1b,0x03);  
+-	
+-	
+-	//	MIPIDig1280x720();
+-	//MIPIDig();
+-	pr_err("stephen go to mdss_mipi_i2c_init==6\n");
+-		my_mipi_i2c->mdss_mipi_i2c_client->addr = 0x49;
+-		/*
+-		HDMI_WriteI2C_Byte(0x18,0x28); // hwidth
+-		HDMI_WriteI2C_Byte(0x19,0x05); // vwidth 6
+-		HDMI_WriteI2C_Byte(0x1c,0x00); // H_active[7:0]
+-		HDMI_WriteI2C_Byte(0x1d,0x05); // H_active[15:8]
+-		HDMI_WriteI2C_Byte(0x1e,0x67); // hs/vs/de pol hdmi sel pll sel
+-		HDMI_WriteI2C_Byte(0x2f,0x0c); // fifo_buff_length 12
+-		HDMI_WriteI2C_Byte(0x34,0x72); // H_total[7:0]
+-		HDMI_WriteI2C_Byte(0x35,0x06); // H_total[15:8]
+-		HDMI_WriteI2C_Byte(0x36,0xEE); // V_total[7:0]
+-		HDMI_WriteI2C_Byte(0x37,0x02); // V_total[15:8]
+-		HDMI_WriteI2C_Byte(0x38,0x14); // VBP[7:0]
+-		HDMI_WriteI2C_Byte(0x39,0x00); // VBP[15:8]
+-		HDMI_WriteI2C_Byte(0x3a,0x05); // VFP[7:0]
+-		HDMI_WriteI2C_Byte(0x3b,0x00); // VFP[15:8]
+-		HDMI_WriteI2C_Byte(0x3c,0xDC); // HBP[7:0]
+-		HDMI_WriteI2C_Byte(0x3d,0x00); // HBP[15:8]
+-		HDMI_WriteI2C_Byte(0x3e,0x6E); // HFP[7:0]
+-		HDMI_WriteI2C_Byte(0x3f,0x00); // HFP[15:8]
+-	*/
+-	HDMI_WriteI2C_Byte(0x18,(u8)(MIPI_Timing[H_sync]%256)); // hwidth
+-	HDMI_WriteI2C_Byte(0x19,(u8)(MIPI_Timing[V_sync]%256)); // vwidth
+-	HDMI_WriteI2C_Byte(0x1c,(u8)(MIPI_Timing[H_act]%256)); // H_active[7:0]
+-	HDMI_WriteI2C_Byte(0x1d,(u8)(MIPI_Timing[H_act]/256)); // H_active[15:8]
+-
+-	HDMI_WriteI2C_Byte(0x1e,0x67); // hs/vs/de pol hdmi sel pll sel
+-	HDMI_WriteI2C_Byte(0x2f,0x0c); // fifo_buff_length 12
+-
+-	HDMI_WriteI2C_Byte(0x34,(u8)(MIPI_Timing[H_tol]%256)); // H_total[7:0]
+-	HDMI_WriteI2C_Byte(0x35,(u8)(MIPI_Timing[H_tol]/256)); // H_total[15:8]
+-	HDMI_WriteI2C_Byte(0x36,(u8)(MIPI_Timing[V_tol]%256)); // V_total[7:0]
+-	HDMI_WriteI2C_Byte(0x37,(u8)(MIPI_Timing[V_tol]/256)); // V_total[15:8]
+-	HDMI_WriteI2C_Byte(0x38,(u8)(MIPI_Timing[V_bp]%256)); // VBP[7:0]
+-	HDMI_WriteI2C_Byte(0x39,(u8)(MIPI_Timing[V_bp]/256)); // VBP[15:8]
+-	HDMI_WriteI2C_Byte(0x3a,(u8)((MIPI_Timing[V_tol]-MIPI_Timing[V_act]-MIPI_Timing[V_bp]-MIPI_Timing[V_sync])%256)); // VFP[7:0]
+-	HDMI_WriteI2C_Byte(0x3b,(u8)((MIPI_Timing[V_tol]-MIPI_Timing[V_act]-MIPI_Timing[V_bp]-MIPI_Timing[V_sync])/256)); // VFP[15:8]
+-	HDMI_WriteI2C_Byte(0x3c,(u8)(MIPI_Timing[H_bp]%256)); // HBP[7:0]
+-	HDMI_WriteI2C_Byte(0x3d,(u8)(MIPI_Timing[H_bp]/256)); // HBP[15:8]
+-	HDMI_WriteI2C_Byte(0x3e,(u8)((MIPI_Timing[H_tol]-MIPI_Timing[H_act]-MIPI_Timing[H_bp]-MIPI_Timing[H_sync])%256)); // HFP[7:0]
+-	HDMI_WriteI2C_Byte(0x3f,(u8)((MIPI_Timing[H_tol]-MIPI_Timing[H_act]-MIPI_Timing[H_bp]-MIPI_Timing[H_sync])/256)); // HFP[15:8]
+-	//	DDSConfig();
+-	pr_err("stephen go to mdss_mipi_i2c_init==7\n");
+-	my_mipi_i2c->mdss_mipi_i2c_client->addr = 0x49;
+-	//HDMI_WriteI2C_Byte(0x4e,0x6A);
+-	HDMI_WriteI2C_Byte(0x4e,0x52);
+-	//HDMI_WriteI2C_Byte(0x4f,0x4D);
+-	HDMI_WriteI2C_Byte(0x4f,0xDE);
+-	//HDMI_WriteI2C_Byte(0x50,0xF3);
+-	HDMI_WriteI2C_Byte(0x50,0xc0);
+-	HDMI_WriteI2C_Byte(0x51,0x80);
+-	HDMI_WriteI2C_Byte(0x51,0x00);
+-
+-	//HDMI_WriteI2C_Byte(0x1f,0x90);
+-	HDMI_WriteI2C_Byte(0x1f,0x5E);
+-	HDMI_WriteI2C_Byte(0x20,0x01);
+-	//HDMI_WriteI2C_Byte(0x21,0x68);
+-	HDMI_WriteI2C_Byte(0x21,0x2C);
+-	HDMI_WriteI2C_Byte(0x22,0x01);
+-	//HDMI_WriteI2C_Byte(0x23,0x5E);
+-	HDMI_WriteI2C_Byte(0x23,0xFA);
+-	//HDMI_WriteI2C_Byte(0x24,0x01);
+-	HDMI_WriteI2C_Byte(0x24,0x00);
+-	//HDMI_WriteI2C_Byte(0x25,0x54);
+-	HDMI_WriteI2C_Byte(0x25,0xC8);
+-	//HDMI_WriteI2C_Byte(0x26,0x01);
+-	HDMI_WriteI2C_Byte(0x26,0x00);
+-
+-	//HDMI_WriteI2C_Byte(0x27,0x90);
+-	HDMI_WriteI2C_Byte(0x27,0x5E);
+-	HDMI_WriteI2C_Byte(0x28,0x01);
+-	//HDMI_WriteI2C_Byte(0x29,0x68);
+-	HDMI_WriteI2C_Byte(0x29,0x2C);
+-	HDMI_WriteI2C_Byte(0x2a,0x01);
+-	//HDMI_WriteI2C_Byte(0x2b,0x5E);
+-	HDMI_WriteI2C_Byte(0x2b,0xFA);
+-	//HDMI_WriteI2C_Byte(0x2c,0x01);
+-	HDMI_WriteI2C_Byte(0x2c,0x00);
+-	//HDMI_WriteI2C_Byte(0x2d,0x54);
+-	HDMI_WriteI2C_Byte(0x2d,0xC8);
+-	//HDMI_WriteI2C_Byte(0x2e,0x01);
+-	HDMI_WriteI2C_Byte(0x2e,0x00);
+-
+-      // 
+-	my_mipi_i2c->mdss_mipi_i2c_client->addr = 0x48;
+-	HDMI_WriteI2C_Byte(0x03,0x7F);
+-	mdelay(10);
+-	HDMI_WriteI2C_Byte(0x03,0xFF);
+-
+-
+-	my_mipi_i2c->mdss_mipi_i2c_client->addr = 0x49;
+-	HDMI_WriteI2C_Byte(0x42,0x64);
+-	HDMI_WriteI2C_Byte(0x43,0x00);
+-	HDMI_WriteI2C_Byte(0x44,0x04);
+-	HDMI_WriteI2C_Byte(0x45,0x00);
+-	HDMI_WriteI2C_Byte(0x46,0x59);
+-	HDMI_WriteI2C_Byte(0x47,0x00);
+-	HDMI_WriteI2C_Byte(0x48,0xf2);
+-	HDMI_WriteI2C_Byte(0x49,0x06);
+-	HDMI_WriteI2C_Byte(0x4a,0x00);
+-	HDMI_WriteI2C_Byte(0x4b,0x72);
+-	HDMI_WriteI2C_Byte(0x4c,0x45);
+-	HDMI_WriteI2C_Byte(0x4d,0x00);
+-	HDMI_WriteI2C_Byte(0x52,0x08);
+-	HDMI_WriteI2C_Byte(0x53,0x00);
+-	HDMI_WriteI2C_Byte(0x54,0xb2);
+-	HDMI_WriteI2C_Byte(0x55,0x00);
+-	HDMI_WriteI2C_Byte(0x56,0xe4);
+-	HDMI_WriteI2C_Byte(0x57,0x0d);
+-	HDMI_WriteI2C_Byte(0x58,0x00);
+-	HDMI_WriteI2C_Byte(0x59,0xe4);
+-	HDMI_WriteI2C_Byte(0x5a,0x8a);
+-	HDMI_WriteI2C_Byte(0x5b,0x00);
+-	HDMI_WriteI2C_Byte(0x5c,0x34);
+-	HDMI_WriteI2C_Byte(0x1e,0x4f);
+-	HDMI_WriteI2C_Byte(0x51,0x00);
+-	
+-	
+-	//	AudioIIsEn();
+-	pr_err("stephen go to mdss_mipi_i2c_init==8\n");
+-		my_mipi_i2c->mdss_mipi_i2c_client->addr = 0x48;
+-		HDMI_WriteI2C_Byte(0xB2,0x01);
+-		my_mipi_i2c->mdss_mipi_i2c_client->addr = 0x4a;
+-	HDMI_WriteI2C_Byte(0x06,0x08);
+-	HDMI_WriteI2C_Byte(0x07,0xF0);
+-	HDMI_WriteI2C_Byte(0x34,0xD2);
+-		
+-	
+-	HDMI_WriteI2C_Byte(0x3c,0x41);//add
+-		
+-
+-	my_mipi_i2c->mdss_mipi_i2c_client->addr = 0x4a; //add
+-	HDMI_WriteI2C_Byte(0x3e,0x0A);//add --
+-
+-	//HDMI_VIC = 0x00; 
+-	HDMI_VIC = 0x10; // 0x04:720P 60; 0x10:1080P 60; Corresponding to the resolution to be output 
+-	HDMI_WriteI2C_Byte(0x43,0x46 - HDMI_VIC);
+-	HDMI_WriteI2C_Byte(0x44,0x10);
+-	HDMI_WriteI2C_Byte(0x45,0x19);
+-	HDMI_WriteI2C_Byte(0x47,0x00 + HDMI_VIC);//add ++
+-	
+-
+-		
+-	//	MIPIRxLogicRes();
+-		my_mipi_i2c->mdss_mipi_i2c_client->addr = 0x48;
+-		HDMI_WriteI2C_Byte(0x03,0x7f);
+-		//mdelay(100);
+-		mdelay(10); //modify
+-		HDMI_WriteI2C_Byte(0x03,0xff);
+-
+-
+-		my_mipi_i2c->mdss_mipi_i2c_client->addr = 0x49;
+-		HDMI_WriteI2C_Byte(0x51,0x80);
+-		mdelay(10); 
+-		HDMI_WriteI2C_Byte(0x51,0x00);
+-		
+-#ifdef TEST_PATTERN_MODE
++	mutex_lock(&my_mipi_i2c->i2c_lock);
+ 
+-	Test_pattern_1280x720();
++	 HDMI_WriteI2C_Byte(0x20 , 0x00);// Register address : 0x08; Value : 0xff
++	 //printk(KERN_ERR "eliot :read  0x02=0x%x \n",HDMI_ReadI2C_Byte(0x20));
++	 HDMI_WriteI2C_Byte(0x21 , 0xD0);
++	 //printk(KERN_ERR "eliot :read  0x02=0x%x \n",HDMI_ReadI2C_Byte(0x21));
++	 HDMI_WriteI2C_Byte(0x22 , 0x25);
++	 //printk(KERN_ERR "eliot :read  0x02=0x%x \n",HDMI_ReadI2C_Byte(0x22));
++
++	 HDMI_WriteI2C_Byte(0x23 , 0x6E);
++	 HDMI_WriteI2C_Byte(0x24 , 0x28);
++	 HDMI_WriteI2C_Byte(0x25 , 0xDC);
++	 HDMI_WriteI2C_Byte(0x26 , 0x00);
++	 HDMI_WriteI2C_Byte(0x27 , 0x05);
++	 HDMI_WriteI2C_Byte(0x28 , 0x05);
++	 HDMI_WriteI2C_Byte(0x29 , 0x14);
++	 HDMI_WriteI2C_Byte(0x34 , 0x80);
++	 HDMI_WriteI2C_Byte(0x36 , 0x6E);
++	 HDMI_WriteI2C_Byte(0xB5 , 0xA0);
++	 HDMI_WriteI2C_Byte(0x5C , 0xFF);
++	 HDMI_WriteI2C_Byte(0x2A , 0x07);
++	 HDMI_WriteI2C_Byte(0x56 , 0x92);
++	 HDMI_WriteI2C_Byte(0x6B , 0x52);
++	 HDMI_WriteI2C_Byte(0x69 , 0x2C);
++	 HDMI_WriteI2C_Byte(0x10 , 0x40);
++	 HDMI_WriteI2C_Byte(0x11 , 0x88);
++	 HDMI_WriteI2C_Byte(0xB6 , 0x20);
++	 HDMI_WriteI2C_Byte(0x51 , 0x20);
++
++#if TEST_DEMO
++	 HDMI_WriteI2C_Byte(0x14 , 0x43);
++	 HDMI_WriteI2C_Byte(0x2A , 0x49);
++#endif 
++
++	 HDMI_WriteI2C_Byte(0x09 , 0x10);
+ 
+-#endif
+ 
+ 	mutex_unlock(&my_mipi_i2c->i2c_lock);
+ 
+@@ -482,9 +223,9 @@ static int mipi_i2c_probe(struct i2c_client *client,
+ 		err = pinctrl_select_state(my_mipi_i2c->pinctrl, my_mipi_i2c->pin_default);
+ 		if (err) {
+ 			dev_err(&client->dev, "Can't select pinctrl state\n");
+-			goto exit2;
+ 		}
+ 	}
++	
+ //modify stephen
+ 	mutex_lock(&my_mipi_i2c->lock);
+ 
+@@ -503,25 +244,27 @@ static int mipi_i2c_probe(struct i2c_client *client,
+ 
+ 		}
+ 
+-	my_mipi_i2c->mdss_mipi_i2c_client->addr = 0x48;
+     err = i2c_smbus_read_byte_data(client, 0x08);
+     if (err < 0) {
+-pr_err("stephen ====== i2c test bad==============\n");
++		pr_err("stephen ====== i2c test bad==============\n");
+ 		I2C_TEST_OK = 1 ;
+ 		mutex_unlock(&my_mipi_i2c->lock);
+ 		gpio_direction_output(my_mipi_i2c->gpio_rstn, 0);
+ 		dev_err(&client->dev, "i2c read fail: can't read from %02x: %d\n", 0, err);
+-        goto exit3;
++
+     } 
+ 	mdss_mipi_i2c_init(ctrl,from_mdp);
+-	test_read();
++
++
+ 	mutex_unlock(&my_mipi_i2c->lock);
+ 	printk("eliot :mipi_i2c_probe end ....\n");
+ 	return 0;
++/*
+ exit3:
+ 	gpio_free(my_mipi_i2c->gpio_rstn);
+ exit2:
+ 	kfree(my_mipi_i2c);
++*/
+ exit1:
+ exit0:
+ 	return err;
+@@ -529,12 +272,12 @@ exit0:
+ }
+ 
+ static const struct of_device_id mipi_i2c_of_match[] = {
+-    { .compatible = "qcom,lt8912",},
++    { .compatible = "qcom,icn6211",},
+     {},
+ };
+ 
+ static const struct i2c_device_id mipi_i2c_id[] = {
+-    {"qcom,lt8912", 0},
++    {"qcom,icn6211", 0},
+     {},
+ };
+ static int mipi_i2c_resume(struct device *tdev) {
+@@ -561,7 +304,7 @@ static const struct dev_pm_ops mipi_i2c_pm_ops =
+ 
+ static struct i2c_driver mipi_i2c_driver = {
+     .driver = {
+-        .name = "qcom,lt8912",
++        .name = "qcom,icn6211",
+         .owner    = THIS_MODULE,
+         .of_match_table = mipi_i2c_of_match,
+         .pm = &mipi_i2c_pm_ops,
+-- 
+2.7.4
+

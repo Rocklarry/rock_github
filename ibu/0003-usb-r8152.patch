@@ -1,0 +1,115 @@
+From 3930bde257f9162c51a95d3f3fa383cfd7f110c1 Mon Sep 17 00:00:00 2001
+From: rrd <rock_telp@163.com>
+Date: Sat, 19 Sep 2020 16:16:35 +0800
+Subject: [PATCH 3/4] =?UTF-8?q?usb=E8=BD=AC=E7=BD=91=E5=8D=A1=20r8152?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+---
+ .../arch/arm64/configs/msmcortex-sc826cn01-perf_defconfig   | 13 +++++++++++++
+ .../arch/arm64/configs/msmcortex-sc826cn01_defconfig        | 13 +++++++++++++
+ kernel/msm-3.18/drivers/net/usb/Makefile                    |  2 +-
+ kernel/msm-3.18/drivers/net/usb/r8152.c                     |  2 ++
+ kernel/msm-3.18/drivers/net/usb/rtl8150.c                   |  2 ++
+ 5 files changed, 31 insertions(+), 1 deletion(-)
+ mode change 100644 => 100755 kernel/msm-3.18/drivers/net/usb/Makefile
+ mode change 100644 => 100755 kernel/msm-3.18/drivers/net/usb/r8152.c
+ mode change 100644 => 100755 kernel/msm-3.18/drivers/net/usb/rtl8150.c
+
+diff --git a/kernel/msm-3.18/arch/arm64/configs/msmcortex-sc826cn01-perf_defconfig b/kernel/msm-3.18/arch/arm64/configs/msmcortex-sc826cn01-perf_defconfig
+index 895e5ae..ffd985a 100755
+--- a/kernel/msm-3.18/arch/arm64/configs/msmcortex-sc826cn01-perf_defconfig
++++ b/kernel/msm-3.18/arch/arm64/configs/msmcortex-sc826cn01-perf_defconfig
+@@ -275,6 +275,19 @@ CONFIG_PPPOPNS=y
+ CONFIG_PPP_ASYNC=y
+ CONFIG_PPP_SYNC_TTY=y
+ CONFIG_USB_USBNET=y
++
++CONFIG_USB_NET_DRIVERS = y
++CONFIG_MII=y
++CONFIG_USB_RTL8152 = y
++CONFIG_USB_RTL8150= y
++#CONFIG_USB_USBNET = y
++#CONFIG_USB_NET_CDCETHER = y
++#CONFIG_USB_NET_CDC_EEM = y
++#CONFIG_USB_NET_CDC_NCM = y
++#CONFIG_USB_NET_CDC_SUBSET =y
++#CONFIG_USB_BELKIN = y
++#CONFIG_USB_ARMLINUX = y
++
+ CONFIG_WCNSS_CORE=y
+ CONFIG_WCNSS_CORE_PRONTO=y
+ CONFIG_WCNSS_REGISTER_DUMP_ON_BITE=y
+diff --git a/kernel/msm-3.18/arch/arm64/configs/msmcortex-sc826cn01_defconfig b/kernel/msm-3.18/arch/arm64/configs/msmcortex-sc826cn01_defconfig
+index 827e37d..25c7405 100755
+--- a/kernel/msm-3.18/arch/arm64/configs/msmcortex-sc826cn01_defconfig
++++ b/kernel/msm-3.18/arch/arm64/configs/msmcortex-sc826cn01_defconfig
+@@ -275,6 +275,19 @@ CONFIG_PPPOPNS=y
+ CONFIG_PPP_ASYNC=y
+ CONFIG_PPP_SYNC_TTY=y
+ CONFIG_USB_USBNET=y
++
++CONFIG_USB_NET_DRIVERS = y
++CONFIG_MII=y
++CONFIG_USB_RTL8152 = y
++CONFIG_USB_RTL8150= y
++#CONFIG_USB_USBNET = y
++#CONFIG_USB_NET_CDCETHER = y
++#CONFIG_USB_NET_CDC_EEM = y
++#CONFIG_USB_NET_CDC_NCM = y
++#CONFIG_USB_NET_CDC_SUBSET =y
++#CONFIG_USB_BELKIN = y
++#CONFIG_USB_ARMLINUX = y
++
+ CONFIG_WCNSS_CORE=y
+ CONFIG_WCNSS_CORE_PRONTO=y
+ CONFIG_WCNSS_REGISTER_DUMP_ON_BITE=y
+diff --git a/kernel/msm-3.18/drivers/net/usb/Makefile b/kernel/msm-3.18/drivers/net/usb/Makefile
+old mode 100644
+new mode 100755
+index e2797f1..15faca4
+--- a/kernel/msm-3.18/drivers/net/usb/Makefile
++++ b/kernel/msm-3.18/drivers/net/usb/Makefile
+@@ -6,7 +6,7 @@ obj-$(CONFIG_USB_CATC)		+= catc.o
+ obj-$(CONFIG_USB_KAWETH)	+= kaweth.o
+ obj-$(CONFIG_USB_PEGASUS)	+= pegasus.o
+ obj-$(CONFIG_USB_RTL8150)	+= rtl8150.o
+-obj-$(CONFIG_USB_RTL8152)	+= r8152.o
++obj-y	+= r8152.o
+ obj-$(CONFIG_USB_HSO)		+= hso.o
+ obj-$(CONFIG_USB_NET_AX8817X)	+= asix.o
+ asix-y := asix_devices.o asix_common.o ax88172a.o
+diff --git a/kernel/msm-3.18/drivers/net/usb/r8152.c b/kernel/msm-3.18/drivers/net/usb/r8152.c
+old mode 100644
+new mode 100755
+index c6554c7..488e33c
+--- a/kernel/msm-3.18/drivers/net/usb/r8152.c
++++ b/kernel/msm-3.18/drivers/net/usb/r8152.c
+@@ -3785,6 +3785,8 @@ static int rtl8152_probe(struct usb_interface *intf,
+ 		return -ENODEV;
+ 	}
+ 
++	dev_err(&intf->dev, "==rrd== rtl8152_probe  register the device\n");
++
+ 	usb_reset_device(udev);
+ 	netdev = alloc_etherdev(sizeof(struct r8152));
+ 	if (!netdev) {
+diff --git a/kernel/msm-3.18/drivers/net/usb/rtl8150.c b/kernel/msm-3.18/drivers/net/usb/rtl8150.c
+old mode 100644
+new mode 100755
+index 6e87e57..5443e6d
+--- a/kernel/msm-3.18/drivers/net/usb/rtl8150.c
++++ b/kernel/msm-3.18/drivers/net/usb/rtl8150.c
+@@ -859,6 +859,8 @@ static int rtl8150_probe(struct usb_interface *intf,
+ 	rtl8150_t *dev;
+ 	struct net_device *netdev;
+ 
++	dev_err(&intf->dev, "==rrd== rtl8150_probe  register the device\n");
++
+ 	netdev = alloc_etherdev(sizeof(rtl8150_t));
+ 	if (!netdev)
+ 		return -ENOMEM;
+-- 
+2.7.4
+

@@ -1,0 +1,13 @@
+0001-mipi-RGB-icn6211-i2c8.patch
+	mipi 转RGB 屏
+	使用icn6211芯片
+
+	转化芯片使用i2c8 写寄存器 在mipi有信号输出时 初始化icn6211
+	目前的icn6211初始化屏分辨率寄存器不对 需要根据不同的分辨率配置寄存器
+
+
+0003-usb-r8152.patch
+	打开kernel编译配置
+	一般首先检查有没有usb设备 lsusb
+	挂在在usb下面的设备，如果没有usb设备 说明usb不通。
+	 
