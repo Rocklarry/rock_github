@@ -18,7 +18,8 @@
 
 
 typedef struct{
-  char name[4];
+  //char name[4];
+  int test;
   int  age;
 }people;
 
@@ -27,13 +28,14 @@ int main(int argc, char** argv)  // map a normal file as shared mem:
   int fd,i;
   people *p_map;
   fd=open( argv[1],O_CREAT|O_RDWR,00777 );
-  p_map = (people*)mmap(NULL,sizeof(people)*10,PROT_READ|PROT_WRITE,
+  p_map = (people*)mmap(NULL,sizeof(people),PROT_READ|PROT_WRITE,
        MAP_SHARED,fd,0);
-  for(i = 0;i<10;i++)
+  for(i = 0;i<500;i++)
   {
-  printf( "name: %s age %d;\n",(*(p_map+i)).name, (*(p_map+i)).age );
+	printf( "name: %d age %d;\n",(*(p_map+i)).test, (*(p_map+i)).age );
+	usleep(200*1000);
   }
-  munmap( p_map,sizeof(people)*10 );
+  munmap( p_map,sizeof(people) );
 
   return 0;
  }
