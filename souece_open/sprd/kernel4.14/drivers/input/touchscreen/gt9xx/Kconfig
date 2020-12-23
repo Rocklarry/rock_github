@@ -1,0 +1,25 @@
+#
+# gt9xx touchscreen module
+#
+
+config FIBOCOM_TOUCHSCREEN_GT9XX
+    tristate "gt9xx touchscreen driver"
+    depends on I2C
+    help
+      Say Y here to use gt9xx touchscreen driver.
+config FIBOCOM_GT9XX_TOUCHPANEL_UPDATE
+	tristate "Goodix GT9xx touchpanel auto update support"
+	depends on FIBOCOM_TOUCHSCREEN_GT9XX
+	default n
+	help
+	  Say Y here if you have a Goodix GT9xx touchscreen connected
+	  to your system.
+	  If unsure, say N.
+config FIBOCOM_GT9XX_TOUCHPANEL_TOOL
+	tristate "Goodix GT9xx Tools."
+	depends on FIBOCOM_TOUCHSCREEN_GT9XX
+	default n
+	help
+	  Say Y here if you want to have a Android app debug interface
+	  to your system.
+	  If unsure, say N.

@@ -1,0 +1,688 @@
+/*
+ * Copyright (c) 2015-2016, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+#include "msm8953-pinctrl.dtsi"
+#include "msm8953-audio-sc826-evk.dtsi"
+#include "msm8953-camera-sensor-sc826-evk.dtsi"
+
+&i2c_3 { /* BLSP1 QUP3 */
+                status = "okay";
+                goodix@5d {
+                        compatible = "goodix,gt9xx";
+                        reg = <0x5d>;
+                        interrupt-parent = <&tlmm>;
+                        interrupts = <65 0x2008>;
+                        reset-gpios = <&tlmm 64 0x0>;
+                        interrupt-gpios = <&tlmm 65 0x2002>;
+			avdd-supply = <&pm8953_l22>;
+                        vdd-supply = <&pm8953_l10>;
+                        vdd_ld-supply = <&pm8953_l17>;
+                        vcc_i2c-supply = <&pm8953_l5>;
+                        vcc_i2c_ld-supply = <&pm8953_l6>;
+                        goodix,panel-coords = <0 0 800 480>;
+                        goodix,display-coords = <0 0 800 480>;
+                        goodix,button-map = <139 102 158>;
+                        goodix,enable-power-off;
+                        goodix,product-id = <968 915 9147 9157 5668>;
+                        //goodix,product-id = "9157";
+                        goodix,fw_name = "gtp_fw.bin";
+                        goodix,have-touch-key;
+                        goodix,driver-send-cfg;
+			goodix,cfg-data3-0 = [
+                        //goodix,cfg-data3 = [
+                                00 00 04 58 02 05 3C 00 01 08
+                                1E 0F 50 32 03 05 00 00 00 00
+                                00 00 00 18 1A 1E 14 8C 2E 0E
+                                3C 3E EB 04 00 00 01 B0 02 2D
+                                00 00 00 00 00 03 64 32 00 00
+                                00 19 64 94 C5 02 02 00 00 04
+                                DD 1C 00 AE 26 00 8F 32 00 79
+                                42 00 68 57 00 68 00 00 00 00
+                                00 00 00 00 00 00 00 00 00 00
+                                00 00 00 00 00 00 00 00 00 00
+                                00 00 00 00 00 00 00 00 00 00
+                                00 00 02 04 06 08 0A 0C 0E 10
+                                12 14 16 18 1A 1C 00 00 00 00
+                                00 00 00 00 00 00 00 00 00 00
+                                00 00 00 02 04 06 08 0A 0C 0F
+                                10 12 13 14 16 18 1C 1D 1E 1F
+                                20 21 22 24 26 28 29 2A 00 00
+                                00 00 00 00 00 00 00 00 00 00
+                                00 00 00 00 25 01            
+                       ];
+			goodix,cfg-data2-0 = [
+                       // goodix,cfg-data2 = [
+                                FF D0 02 00 05 05 05 00 01 00
+                                00 0F 50 3C 53 11 00 00 00 00
+                                14 17 19 1E 0A 04 00 00 00 00
+                                00 00 53 00 14 00 00 84 00 00
+                                3C 19 19 64 1E 28 8B 0B 0C 37
+                                39 0C 08 20 33 00 03 02 24 00
+                                00 23 50 80 14 02 00 00 54 B1
+                                2A 99 32 8B 39 80 41 78 48 71
+                                00 00 00 00 00 00 00 F0 50 3C
+                                FF FF 27 00 00 00 0E 14 14 03
+                                04 00 21 64 0A 00 00 00 00 00
+                                00 00 00 00 00 00 00 00 00 00
+                                00 00 00 00 00 00 00 00 00 00
+                                32 20 50 3C 3C 00 00 00 00 00
+                                01 08 02 09 03 0A 04 0B 05 0C
+                                06 0D FF FF 0C 0D 0E 0F 10 11
+                                12 13 14 16 15 07 08 09 06 05
+                                04 03 02 01 00 0A FF FF FF FF
+                                00 00 00 00 00 00 00 00 00 00
+                                00 00 00 00 3C 00 05 1E 00 02
+                                2A 1E 19 14 02 00 03 0A 05 00
+                                00 00 00 00 00 00 01 FF FF 86
+                                22 03 00 00 33 00 0F 00 00 00
+                                46 32 50 00 00 00 90 4D 01
+                        ];
+
+		goodix,cfg-data0-0 = [
+                        // goodix,cfg-data0 = [
+                                50 20 03 E0 01 05 0D 00 01 0A
+                                28 0F 5A 3C 03 05 00 00 00 00
+                                00 00 08 17 19 1C 14 87 29 0A
+                                4E 50 EB 04 00 00 00 00 02 11
+                                00 01 00 00 00 00 00 00 00 00
+                                00 46 64 94 C5 02 07 00 00 04
+                                9E 48 00 8D 4D 00 7F 53 00 73
+                                59 00 67 60 00 67 00 00 00 00
+                                00 00 00 00 00 00 00 00 00 00
+                                00 00 00 00 00 00 00 00 00 00
+                                00 00 00 00 00 00 00 00 00 00
+                                00 00 02 04 06 08 0A 0C 0E 10
+                                12 14 FF FF FF FF 00 00 00 00
+                                00 00 00 00 00 00 00 00 00 00
+                                00 00 00 02 04 06 08 0A 0C 1D
+                                1E 1F 20 21 22 24 26 28 FF FF
+                                FF FF FF FF FF FF FF FF 00 00
+                                00 00 00 00 00 00 00 00 00 00
+                                00 00 00 00 A2 01 	  	    
+                        ];
+        };
+
+};
+
+&i2c_2 { /* BLSP1 QUP2 */
+                status = "okay";
+                goodix@14 {
+                        compatible = "goodix,gt9xx_14";
+			status = "disabled";
+                        reg = <0x14>;
+                        interrupt-parent = <&tlmm>;
+                        interrupts = <1 0x2008>;
+                        reset-gpios = <&tlmm 2 0x0>;
+                        interrupt-gpios = <&tlmm 1 0x2002>;
+                        vdd-supply = <&pm8953_l10>;
+                        vcc_i2c-supply = <&pm8953_l5>;
+                        goodix,panel-coords = <0 0 720 1360>;
+                        goodix,display-coords = <0 0 720 1280>;
+                        goodix,button-map = <139 102 158>;
+                        goodix,enable-power-off;
+                        goodix,product-id = <968 915 9147 9157 5668>;
+                        //goodix,product-id = "9157";
+                        goodix,fw_name = "gtp_fw.bin";
+                        goodix,have-touch-key;
+                        goodix,driver-send-cfg;
+                        goodix,cfg-data2-0 = [
+                       // goodix,cfg-data0 = [
+                                FF D0 02 00 05 05 05 00 01 00
+                                00 0F 50 3C 53 11 00 00 00 00
+                                14 17 19 1E 0A 04 00 00 00 00
+                                00 00 53 00 14 00 00 84 00 00
+                                3C 19 19 64 1E 28 8B 0B 0C 37
+                                39 0C 08 20 33 00 03 02 24 00
+                                00 23 50 80 14 02 00 00 54 B1
+                                2A 99 32 8B 39 80 41 78 48 71
+                                00 00 00 00 00 00 00 F0 50 3C
+                                FF FF 27 00 00 00 0E 14 14 03
+                                04 00 21 64 0A 00 00 00 00 00
+                                00 00 00 00 00 00 00 00 00 00
+                                00 00 00 00 00 00 00 00 00 00
+                                32 20 50 3C 3C 00 00 00 00 00
+                                01 08 02 09 03 0A 04 0B 05 0C
+                                06 0D FF FF 0C 0D 0E 0F 10 11
+                                12 13 14 16 15 07 08 09 06 05
+                                04 03 02 01 00 0A FF FF FF FF
+                                00 00 00 00 00 00 00 00 00 00
+                                00 00 00 00 3C 00 05 1E 00 02
+                                2A 1E 19 14 02 00 03 0A 05 00
+                                00 00 00 00 00 00 01 FF FF 86
+                                22 03 00 00 33 00 0F 00 00 00
+                                46 32 50 00 00 00 90 4D 01
+                        ];
+                         goodix,cfg-data0-0 = [
+                        // goodix,cfg-data2 = [
+                                43 D0 02 00 05 0A 35 00 01 08
+                                28 05 50 32 03 05 00 00 FF 7F
+                                00 00 00 18 1A 1E 14 8A 08 0B
+                                2A 2C 0C 08 00 00 02 9B 33 1D
+                                00 01 00 00 00 00 00 32 00 00
+                                1B 19 55 94 C5 02 07 00 00 04
+                                B9 1C 00 93 24 00 76 2E 00 5F
+                                3B 00 4E 4B 00 4E 00 00 00 00
+                                F0 4A 3A FF FF 27 00 00 00 00
+                                00 00 00 00 00 00 00 00 00 00
+                                00 00 00 00 00 00 00 0F 00 00
+                                44 2D 02 04 06 08 0A 0C 0E 10
+                                12 14 16 FF FF FF 00 00 00 00
+                                00 00 00 00 00 00 00 00 00 00
+                                00 00 18 16 12 10 0F 0C 0A 08
+                                06 04 02 00 1C 1D 1E 1F 20 21
+                                FF FF FF FF FF FF FF FF 00 00
+                                00 FF FF FF FF FF FF FF FF FF
+                                FF FF FF FF 28 01
+                        ];
+        };
+
+};
+
+/*&i2c_8 {
+	status = "okay";
+	bd37033@40 {
+		compatible = "bd37033,audio";
+		reg = <0x40>;
+		audio_pwren_gpio = <&tlmm 2 0x00>;
+		ahd_pwren_gpio = <&tlmm 138 0x00>;
+		gps_pwren_gpio = <&tlmm 93 0x00>;
+		status = "okay";
+	};
+};*/
+
+/**&i2c_8 {
+       status = "okay";
+       rda5807@11 {
+                compatible = "rda5807,fm";
+                reg = <0x11>;
+                status = "okay";
+       };
+};*/
+
+
+// bd37033 
+
+&i2c_8 { 
+	status = "okay";
+	/*
+	bd37033@40 {
+		compatible = "bd37033,audio";
+		reg = <0x40>;
+		audio_pwren_gpio = <&tlmm 2 0x00>;
+		//ahd_pwren_gpio = <&tlmm 138 0x00>;
+		gps_pwren_gpio = <&tlmm 0 0x00>;
+		status = "okay";
+	};
+	*/
+	rda5807@11 {
+                compatible = "rda5807,fm";
+                reg = <0x11>;
+                status = "okay";
+	};
+};	
+&i2c_5 { /* BLSP2 QUP1 (NFC) */
+/*
+	nq@28 {
+		compatible = "qcom,nq-nci";
+		reg = <0x28>;
+		qcom,nq-irq = <&tlmm 17 0x00>;
+		qcom,nq-ven = <&tlmm 16 0x00>;
+		qcom,nq-firm = <&tlmm 62 0x00>;
+		qcom,nq-clkreq = <&pm8953_gpios 2 0x00>;
+		interrupt-parent = <&tlmm>;
+		qcom,clk-src = "BBCLK2";
+		interrupts = <17 0>;
+		interrupt-names = "nfc_irq";
+		pinctrl-names = "nfc_active", "nfc_suspend";
+	 //	pinctrl-0 = <&nfc_int_active &nfc_disable_active>;
+	 //	pinctrl-1 = <&nfc_int_suspend &nfc_disable_suspend>;
+	
+		clocks = <&clock_gcc clk_bb_clk2_pin>;
+		clock-names = "ref_clk";
+	};*/	
+};
+
+
+&i2c_8 { /* BLSP2 QUP1 (NFC) */
+	/*by eliot shao, 9/13/2016*/
+  status = "okay";
+	icn6211@2c {
+		compatible = "qcom,icn6211";
+		reg = <0x2c>;
+		//pinctrl-names = "default","sleep";
+		//pinctrl-0 = <&lt_default>;
+		//pinctrl-1 = <&lt_sleep>;
+		//lt,gpio_rstn = <&tlmm 61 0x0>;
+	};	
+	
+};
+
+
+&pm8953_l10 {
+	regulator-max-microvolt = <2850000>;
+};
+
+&soc {
+	gpio_keys {
+		compatible = "gpio-keys";
+		input-name = "gpio-keys";
+		pinctrl-names = "tlmm_gpio_key_active","tlmm_gpio_key_suspend";
+		pinctrl-0 = <&gpio_key_active>;
+		pinctrl-1 = <&gpio_key_suspend>;
+
+		camera_focus {
+			label = "camera_focus";
+			gpios = <&tlmm 87 0x1>;
+			linux,input-type = <1>;
+			linux,code = <0x210>;
+			debounce-interval = <15>;
+		};
+
+		camera_snapshot {
+			label = "camera_snapshot";
+			gpios = <&tlmm 86 0x1>;
+			linux,input-type = <1>;
+			linux,code = <0x2fe>;
+			debounce-interval = <15>;
+		};
+                //add_by_zach
+                notsat_key {
+                        label = "notsat_key";
+                        gpios = <&tlmm 91 0x1>;
+                        linux,input-type = <1>;
+                        linux,code = <190>;
+                        //linux,code = <173>;
+                        debounce-interval = <15>;
+                };
+
+                sat_key {
+                        label = "sat_key";
+                        gpios = <&tlmm 9 0x1>;
+                        linux,input-type = <1>;
+                        linux,code = <67>;
+                        debounce-interval = <15>;
+                };
+                vsat_key {
+                        label = "vsat_key";
+                        gpios = <&tlmm 58 0x1>;
+                        linux,input-type = <1>;
+                        linux,code = <68>;
+                        debounce-interval = <15>;
+                };
+
+                recall_key {
+                        label = "recall_key";
+                        gpios = <&tlmm 93 0x1>;
+                        linux,input-type = <1>;
+                        linux,code = <192>;
+                        debounce-interval = <15>;
+                };
+               monitor_key {
+                        label = "monitor_key";
+                        gpios = <&tlmm 45 0x1>;
+                        linux,input-type = <1>;
+                        linux,code = <193>;
+                        debounce-interval = <15>;
+                };
+
+               navigate_key {
+                        label = "navigate_key";
+                        gpios = <&tlmm 43 0x1>;
+                        linux,input-type = <1>;
+                        linux,code = <194>;
+                        debounce-interval = <15>;
+                };
+
+               home_key {
+                        label = "home_key";
+                        gpios = <&tlmm 44 0x1>;
+                        linux,input-type = <1>;
+                        linux,code = <191>;
+						gpio-key,wakeup;
+                        debounce-interval = <15>;
+                };
+
+               btn_warn {
+			label = "btn_warn";
+			gpios = <&tlmm 88 0x1>;
+			linux,input-type = <1>;
+			linux,code = <183>;
+			debounce-interval = <15>;
+                        
+		};
+               //add_by_zach end
+	};
+
+
+
+	gpio_keys_polled {
+		compatible = "gpio-keys-polled";
+		pinctrl-names = "gpio_check_release","gpio_check_suspend";
+		pinctrl-0 = <&gpio_check_release>;
+		pinctrl-1 = <&gpio_check_suspend>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		poll-interval = <500>;
+		autorepeat;
+
+		
+			button@21 {
+				label = "GPIO Key trunk";
+				linux,input-type = <1>;
+				linux,code = <185>;
+				gpios =<&tlmm 94 0x01>;
+				debounce-interval = <15>;
+				};
+
+			button@22 {
+				label = "GPIO Key acc";
+				linux,input-type = <1>;
+				linux,code = <187>;
+				gpios =<&tlmm 90 0x01>; //0x1 ¨¦?¨¤-¡À¡§?¨¹?¦Ì
+				debounce-interval = <15>;
+				};
+
+			button@23 {
+				label = "GPIO Key warn";
+				linux,input-type = <1>;
+				linux,code = <184>;
+				gpios =<&tlmm 128 0x00>;
+				debounce-interval = <15>;
+				};
+		};
+
+
+
+	led-control {
+
+		compatible = "gpio-leds";
+		home_led {
+			gpios =<&tlmm 14 0x00>;
+			default-state = "off";
+		};
+		recall_led {
+			gpios =<&tlmm 3 0x00>;
+			default-state = "off";
+		};
+		monitor_led {
+			gpios =<&tlmm 2 0x00>;
+			default-state = "off";
+		};
+		sat_led {
+			gpios =<&tlmm 8 0x00>;
+			default-state = "off";
+		};
+		navigate_led {
+			gpios =<&tlmm 15 0x00>;
+			default-state = "off";
+		};
+	};
+
+
+/*
+	hbtp {
+		compatible = "qcom,hbtp-input";
+		vcc_ana-supply = <&pm8953_l10>;
+		vcc_dig-supply = <&pm8953_l5>;
+		qcom,afe-load = <50000>;
+		qcom,afe-vtg-min = <2850000>;
+		qcom,afe-vtg-max = <2850000>;
+		qcom,dig-load = <15000>;
+		qcom,dig-vtg-min = <1800000>;
+		qcom,dig-vtg-max = <1800000>;
+	};
+*/
+
+	/*fake_battery {
+		compatible = "ght,fake-battery";
+		ght,typec-psy-name = "typec";
+		ght,typec-otg-enable;  //added by chenjing 20190612 for typec-otg mantis 0023020
+		status = "ok";
+	};*/
+};
+/*
+&pmi_haptic{
+	qcom,actuator-type = "lra";
+	qcom,lra-auto-res-mode="qwd";
+	qcom,lra-high-z="opt1";
+	qcom,lra-res-cal-period = <0>;
+	qcom,wave-play-rate-us = <4165>;
+};
+
+&wled {
+	qcom,cons-sync-write-delay-us = <1000>;
+};
+
+&flash_led {
+	compatible = "qcom,qpnp-flash-led";
+	reg = <0xd300 0x100>;
+	qcom,follow-otst2-rb-disabled;
+};
+*/
+#include "msm8953-mdss-panels.dtsi"
+
+&mdss_mdp {
+	qcom,mdss-pref-prim-intf = "dsi";
+};
+
+&mdss_dsi {
+	hw-config = "split_dsi";
+};
+
+&mdss_dsi0 {
+	qcom,dsi-pref-prim-pan = <&dsi_ek79007_1024p_video>;
+	pinctrl-names = "mdss_default", "mdss_sleep";
+	pinctrl-0 = <&mdss_dsi_active>;
+	pinctrl-1 = <&mdss_dsi_suspend>;
+
+	//qcom,platform-te-gpio = <&tlmm 24 0>;
+	qcom,platform-reset-gpio = <&tlmm 61 0>;
+	qcom,platform-enable-gpio = <&tlmm 137 0>;
+	qcom,platform-bklight-en-gpio = <&tlmm 136 0>;
+};
+
+&mdss_dsi1 {
+	qcom,dsi-pref-prim-pan = <&dsi_ilisec_1080_vid>;
+	pinctrl-names = "mdss_default", "mdss_sleep";
+	pinctrl-0 = <&mdss_dsi_active_sec &mdss_te_active_sec>;
+	pinctrl-1 = <&mdss_dsi_suspend_sec &mdss_te_suspend_sec>;
+
+	/*qcom,bridge-index = <0>;*/
+    /*	qcom,pluggable; */
+	qcom,platform-te-gpio = <&tlmm 25 0>;
+	qcom,platform-reset-gpio = <&tlmm 62 0>;
+	qcom,platform-bklight-en-gpio = <&tlmm 135 0>;
+};
+/*
+&labibb {
+	status = "ok";
+	qpnp,qpnp-labibb-mode = "lcd";
+};
+*/
+&dsi_truly_1080_vid {
+	qcom,panel-supply-entries = <&dsi_panel_pwr_supply>;
+	qcom,mdss-dsi-pan-enable-dynamic-fps;
+	qcom,mdss-dsi-pan-fps-update = "dfps_immediate_clk_mode";
+};
+&dsi_trulysec_1080_vid {
+	qcom,panel-supply-entries = <&dsi_panel_pwr_supply>;
+	qcom,mdss-dsi-pan-enable-dynamic-fps;
+	qcom,mdss-dsi-pan-fps-update = "dfps_immediate_clk_mode";
+};
+
+&dsi_ili_1080_vid {
+        qcom,panel-supply-entries = <&dsi_panel_pwr_supply>;
+        qcom,mdss-dsi-pan-enable-dynamic-fps;
+        qcom,mdss-dsi-pan-fps-update = "dfps_immediate_clk_mode";
+};
+
+&dsi_ek79007_1024p_video {
+        qcom,panel-supply-entries = <&dsi_panel_pwr_supply>;
+        qcom,mdss-dsi-pan-enable-dynamic-fps;
+        qcom,mdss-dsi-pan-fps-update = "dfps_immediate_clk_mode";
+};
+
+&dsi_ilisec_1080_vid {
+        qcom,panel-supply-entries = <&dsi_panel_pwr_supply>;
+        qcom,mdss-dsi-pan-enable-dynamic-fps;
+        qcom,mdss-dsi-pan-fps-update = "dfps_immediate_clk_mode";
+};
+
+&dsi_truly_1080_cmd {
+	qcom,panel-supply-entries = <&dsi_panel_pwr_supply>;
+	qcom,ulps-enabled;
+	qcom,partial-update-enabled;
+	qcom,panel-roi-alignment = <2 2 4 2 1080 2>;
+};
+
+&blsp1_uart1 {
+	status = "ok";
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart_console_sleep>;
+};
+
+&blsp1_uart2 {
+	status = "ok";
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart4_console_sleep>;
+};
+
+
+&blsp2_uart1 {
+	status = "ok";
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart5_console_sleep>;
+};
+
+&mem_client_3_size {
+	qcom,peripheral-size = <0x500000>;
+};
+
+&sdhc_1 {
+	/* device core power supply */
+	vdd-supply = <&pm8953_l8>;
+	qcom,vdd-voltage-level = <2900000 2900000>;
+	qcom,vdd-current-level = <200 570000>;
+
+	/* device communication power supply */
+	vdd-io-supply = <&pm8953_l5>;
+	qcom,vdd-io-always-on;
+	qcom,vdd-io-lpm-sup;
+	qcom,vdd-io-voltage-level = <1800000 1800000>;
+	qcom,vdd-io-current-level = <200 325000>;
+
+	pinctrl-names = "active", "sleep";
+	pinctrl-0 = <&sdc1_clk_on &sdc1_cmd_on &sdc1_data_on  &sdc1_rclk_on>;
+	pinctrl-1 = <&sdc1_clk_off &sdc1_cmd_off &sdc1_data_off &sdc1_rclk_off>;
+
+	qcom,clk-rates = <400000 20000000 25000000 50000000 100000000 192000000
+								384000000>;
+	qcom,nonremovable;
+	qcom,bus-speed-mode = "HS400_1p8v", "HS200_1p8v", "DDR_1p8v";
+
+	status = "ok";
+};
+
+&sdhc_2 {
+	/* device core power supply */
+	vdd-supply = <&pm8953_l11>;
+	qcom,vdd-voltage-level = <2950000 2950000>;
+	qcom,vdd-current-level = <15000 800000>;
+
+	/* device communication power supply */
+	vdd-io-supply = <&pm8953_l12>;
+	qcom,vdd-io-voltage-level = <1800000 2950000>;
+	qcom,vdd-io-current-level = <200 22000>;
+
+	pinctrl-names = "active", "sleep";
+	pinctrl-0 = <&sdc2_clk_on &sdc2_cmd_on &sdc2_data_on &sdc2_cd_on>;
+	pinctrl-1 = <&sdc2_clk_off &sdc2_cmd_off &sdc2_data_off>;
+
+	#address-cells = <0>;
+	interrupt-parent = <&sdhc_2>;
+	interrupts = <0 1 2>;
+	#interrupt-cells = <1>;
+	interrupt-map-mask = <0xffffffff>;
+	interrupt-map = <0 &intc 0 125 0
+		1 &intc 0 221 0
+		2 &tlmm 133 0>;
+	interrupt-names = "hc_irq", "pwr_irq", "status_irq";
+	cd-gpios = <&tlmm 133 0x1>;
+
+	qcom,clk-rates = <400000 20000000 25000000 50000000 100000000
+								200000000>;
+	qcom,bus-speed-mode = "SDR12", "SDR25", "SDR50", "DDR50", "SDR104";
+
+	status = "ok";
+};
+
+/*
+&pm8953_typec {
+	//ss-mux-supply = <&pm8953_l13>;
+	qcom,ss-mux-supply-gpio = <&tlmm 21 0>;
+	qcom,ssmux-gpio = <&tlmm 139 GPIO_ACTIVE_HIGH>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&typec_ssmux_cc_config &typec_ssmux_en_config>;
+	qcom,role-reversal-supported;
+};
+*/
+
+//lihy
+&pm8953_typec {
+	//ss-mux-supply = <&pm8953_l13>;
+	//qcom,ss-mux-supply-gpio = <&tlmm 21 0>; lihy evk use 23
+	qcom,ss-mux-supply-gpio = <&tlmm 23 0>;
+	qcom,ssmux-gpio = <&tlmm 139 GPIO_ACTIVE_HIGH>;
+	//pinctrl-names = "default";
+	//pinctrl-0 = <&typec_ssmux_cc_config &typec_ssmux_en_config>;
+	qcom,role-reversal-supported;
+};
+//end
+
+
+/{
+	mtp_batterydata: qcom,battery-data {
+		qcom,batt-id-range-pct = <100>;
+		//#include "batterydata-itech-3000mah.dtsi"
+		//#include "batterydata-ascent-3450mAh.dtsi"
+		//#include "batterydata-4v3-fibocom.dtsi"
+		#include "batterydata-Fibocom_SC826CN_5200mAh.dtsi"
+	};
+};
+//lihy 0409
+/*
+&pmi8950_fg {
+	qcom,battery-data = <&mtp_batterydata>;
+};
+
+&pmi8950_charger {
+	qcom,battery-data = <&mtp_batterydata>;
+	qcom,chg-led-sw-controls;
+	qcom,chg-led-support;
+	qcom,external-typec;
+	qcom,typec-psy-name = "typec";
+};
+*/
+&pm8953_gpios {
+	/* GPIO 2 (NFC_CLK_REQ) */
+	gpio@c100 {
+		qcom,mode = <0>;
+		qcom,output-type = <0>;
+		qcom,pull = <0>;
+		qcom,vin-sel = <2>;
+		qcom,out-strength = <3>;
+		qcom,src-sel = <0>;
+		qcom,master-en = <1>;
+		status = "okay";
+	};
+};

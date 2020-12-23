@@ -1,0 +1,9 @@
+#nau8540 external codec  
+#add by yinyunfei for external codec,vendor is nuvoton
+config SND_SOC_NAU8540
+	bool
+config SND_SOC_NAU8540_1
+	bool
+config SND_SOC_NAU8540_2
+	bool
+#end

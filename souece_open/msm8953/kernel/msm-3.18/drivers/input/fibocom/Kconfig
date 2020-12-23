@@ -1,0 +1,115 @@
+#****************************************************************
+#
+# touchscreen Drivers configuration
+#
+#*****************************************************************
+menu "fibocom Touchscreen Drivers Select"
+config FIBOCOM_TOUCHSCREEN_NONE
+	bool "NONE"
+	---help---
+	This will not support TP panel.
+
+config ENABLE_DOUBLE_TOUCHSCREEN
+	bool "Goodix touchpanel GT9xx series"
+	depends on I2C
+	help
+	  Say Y here if you have a duoble Goodix GT9xx touchscreen.
+	  Gt9xx controllers are multi touch controllers which can
+	  report 5 touches at a time.
+
+          If unsure, say N.
+	
+config FIBOCOM_TOUCHSCREEN_GT9XX
+	bool "Goodix touchpanel GT9xx series"
+	depends on I2C
+	help
+	  Say Y here if you have a Goodix GT9xx touchscreen.
+	  Gt9xx controllers are multi touch controllers which can
+	  report 5 touches at a time.
+
+          If unsure, say N.
+
+config FIBOCOM_GT9XX_TOUCHPANEL_UPDATE
+	tristate "Goodix GT9xx touchpanel auto update support"
+	depends on FIBOCOM_TOUCHSCREEN_GT9XX
+	default n
+	help
+	  This enables support for firmware update for Goodix GT9xx
+	  touchscreens.
+
+	  Say Y here if you have a Goodix GT9xx touchscreen connected
+	  to your system.
+
+	  If unsure, say N.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called gt9xx_update.
+
+config FIBOCOM_GT9XX_TOUCHPANEL_DEBUG
+	tristate "Goodix GT9xx Tools for debuging"
+	depends on FIBOCOM_TOUCHSCREEN_GT9XX
+	default n
+	help
+	  This is application debug interface support for Goodix GT9xx
+	  touchscreens.
+
+	  Say Y here if you want to have a Android app debug interface
+	  to your system.
+
+	  If unsure, say N.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called gt9xx_update.
+
+
+config FIBOCOM_TOUCHSCREEN_FT5X06
+	bool "focaltech touchpanel FT5X06 series"
+	depends on I2C
+	help
+	  Say Y here if you have a Focaltech FT5X06 touchscreen.
+	  FT5X06 controllers are multi touch controllers which can
+	  report 5 touches at a time.
+
+	  If unsure, say N.
+
+config TOUCHSCREEN_FT5X06_CTP_UPG
+	bool "touchpanel FT5X06 series firmware upgrade."
+	depends on FIBOCOM_TOUCHSCREEN_FT5X06
+	help
+	  Say Y enable the fw upgrade.
+
+	  If unsure, say N.
+
+config FT5X06_GESTURE
+        bool "touchpanel gestrue wake up."
+        depends on FIBOCOM_TOUCHSCREEN_FT5X06
+        help
+          Say Y enable the gestrue wake up.
+
+          If unsure, say N.
+
+endmenu
+
+
+#****************************************************************
+#
+# touchscreen Drivers configuration
+#
+#*****************************************************************
+menu "fibocom Touchscreen Drivers Select"
+config FIBOCOM_VIRTUAL_TOUCHSCREEN
+    bool "enable a virtual touch screen"
+    default n
+    help
+       Say Y to enable a virtual touch screen, otherwise say N.
+
+config FIBOCOM_TOUCHSCREEN_NONE
+        bool "NONE"
+        ---help---
+        This will not support TP panel.
+
+endmenu
+
+
+#endmenu 
+#fibocom Drivers menu end

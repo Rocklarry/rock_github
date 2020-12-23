@@ -1,0 +1,50 @@
+
+qcom,Fibocom_SC826CN_5200mAh {
+	/* #3510176_Fibocan_SC826CN_5200mAh_Slave_Jun26th2018*/
+	qcom,max-voltage-uv = <4200000>;
+	qcom,nom-batt-capacity-mah = <5200>;
+	qcom,batt-id-kohm = <10>;
+	qcom,battery-beta = <3380>;
+	qcom,fg-cc-cv-threshold-mv = <4190>;
+	qcom,battery-type = "Fibocom_SC826CN_5200mAh";
+	qcom,chg-rslow-comp-c1 = <4990845>;
+	qcom,chg-rslow-comp-c2 = <10326630>;
+	qcom,chg-rs-to-rslow = <1159209>;
+	qcom,chg-rslow-comp-thr = <0xC1>;
+	qcom,checksum = <0x5602>;
+	qcom,gui-version = "PMI8950GUI - 2.0.0.16";
+	qcom,fg-profile-data = [
+		 4C 83 2A 74 
+		 BC 78 04 64 
+		 8E 82 86 80 
+		 C3 8D A9 89 
+		 C8 81 C1 9A 
+		 2B C4 58 D3 
+		 66 0C 69 83 
+		 19 76 A4 7A 
+		 A0 6E A3 82 
+		 28 80 4C 8D 
+		 45 89 F0 81 
+		 E9 99 FB BE 
+		 E6 D1 68 0C 
+		 B7 14 55 52 
+		 FB 6A 02 FC 
+		 49 42 32 46 
+		 FD 26 00 00 
+		 7F 40 39 3C 
+		 E5 45 00 00 
+		 00 00 00 00 
+		 00 00 00 00 
+		 D9 6B 96 69 
+		 80 77 F0 65 
+		 94 75 19 63 
+		 2D 74 29 69 
+		 41 74 15 5B 
+		 6E 8D 34 C9 
+		 15 F3 69 1A 
+		 6C A0 71 0C 
+		 28 00 FF 36 
+		 F0 11 30 03 
+		 00 00 00 0C 
+	];
+};
